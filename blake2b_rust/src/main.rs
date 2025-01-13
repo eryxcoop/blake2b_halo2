@@ -7,7 +7,7 @@ use halo2_proofs::{
 };
 
 use ff::{Field, PrimeField};
-use halo2_proofs::circuit::Value;
+use halo2_proofs::circuit::{Region, Value};
 use halo2_proofs::plonk::{Advice, Column, Expression, Selector, TableColumn};
 use halo2_proofs::poly::Rotation;
 
@@ -66,6 +66,25 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
             ]
         });
 
+        meta.create_gate("sum mod 2 ^ 64", |meta| {
+            let q_add = meta.query_selector(q_add);
+            let full_number_x = meta.query_advice(full_number_u64, Rotation(0));
+            let full_number_y = meta.query_advice(full_number_u64, Rotation(1));
+            let full_number_result = meta.query_advice(full_number_u64, Rotation(2));
+
+            let carry = meta.query_advice(carry, Rotation(2));
+            // TODO check if x, y and result are 64 bits
+            vec![
+                q_add
+                    * (full_number_result
+                        - full_number_x
+                        - full_number_y
+                        + carry
+                            * (Expression::Constant(F::from(1 << 64 - 1))
+                                + Expression::Constant(F::ONE))),
+            ]
+        });
+
         meta.lookup("range_check", |meta| {
             let limbs: Vec<Expression<F>> = limbs
                 .iter()
@@ -97,27 +116,28 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
         config: Self::Config,
         mut layouter: impl Layouter<F>,
     ) -> Result<(), plonk::Error> {
-        let value = F::from(((1u128 << 64) - 1) as u64);
-        let value_1 = F::from((1 << 16) - 1);
-        layouter.assign_region(
+        let max_u64 = F::from(((1u128 << 64) - 1) as u64);
+        let max_u16 = F::from((1 << 16) - 1);
+
+        let _ = layouter.assign_region(
             || "decompose",
             |mut region| {
-                config.q_decompose.enable(&mut region, 0)?;
-                region.assign_advice(|| "full number", config.full_number_u64, 0, || Value::known(value.clone()))?;
-                region.assign_advice(|| "limb0", config.limbs[0], 0, || Value::known(value_1.clone()))?;
-                region.assign_advice(|| "limb1", config.limbs[1], 0, || Value::known(value_1.clone()))?;
-                region.assign_advice(|| "limb2", config.limbs[2], 0, || Value::known(value_1.clone()))?;
-                region.assign_advice(|| "limb3", config.limbs[3], 0, || Value::known(value_1.clone()))?;
+
+                // let _ = config.q_add.enable(&mut region, 0);
+
+                Self::assign_row_from_values(&config, &mut region, vec![max_u64, max_u16, max_u16, max_u16, max_u16, F::ZERO], 0);
+                Self::assign_row_from_values(&config, &mut region, vec![F::ONE, F::ONE, F::ZERO, F::ZERO, F::ZERO, F::ZERO], 1);
+                Self::assign_row_from_values(&config, &mut region, vec![F::ZERO, F::ZERO, F::ZERO, F::ZERO, F::ZERO, F::ONE], 2);
+                // Self::assign_row_from_values(&config, &mut region, vec![max_u64, max_u16, max_u16, max_u16, max_u16, F::ZERO], 2);
                 Ok(())
-            },
-        )?;
+            }
+        );
 
         layouter.assign_table(
             || "range check table",
             |mut table| {
                 // assign the table
-                for i in 0..1 << 16
-                {
+                for i in 0..1 << 16 {
                     table.assign_cell(
                         || "value",
                         config.t_range16,
@@ -130,6 +150,48 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
         )?;
 
         Ok(())
+    }
+}
+
+impl<F: Field + From<u64>> Blake2bCircuit<F> {
+    fn assign_row_from_values(config: &Blake2bConfig<F>, region: &mut Region<F>, row: Vec<F>, offset: usize) {
+        let _ = config.q_decompose.enable(region, offset);
+        let _ = region.assign_advice(
+            || "full number",
+            config.full_number_u64,
+            offset.clone(),
+            || Value::known(row[0]),
+        );
+        let _ = region.assign_advice(
+            || "limb0",
+            config.limbs[0],
+            offset.clone(),
+            || Value::known(row[1]),
+        );
+        let _ = region.assign_advice(
+            || "limb1",
+            config.limbs[1],
+            offset.clone(),
+            || Value::known(row[2]),
+        );
+        let _ = region.assign_advice(
+            || "limb2",
+            config.limbs[2],
+            offset.clone(),
+            || Value::known(row[3]),
+        );
+        let _ = region.assign_advice(
+            || "limb3",
+            config.limbs[3],
+            offset.clone(),
+            || Value::known(row[4]),
+        );
+        let _ = region.assign_advice(
+            || "carry",
+            config.carry,
+            offset.clone(),
+            || Value::known(row[5]),
+        );
     }
 }
 
