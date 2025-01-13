@@ -193,20 +193,6 @@ mod tests {
     }
 
     #[test]
-    fn blake2b_hashes_correctly() {
-        let hex_in = "000102030405060708090a0b0c0d0e0f";
-        let hex_key = "";
-        let hex_out = "bfbabbef45554ccfa0dc83752a19cc35d5920956b301d558d772282bc867009168e9e98606bb5ba73a385de5749228c925a85019b71f72fe29b3cd37ca52efe6";
-        let mut input_message = hex_to_bytes(hex_in);
-        let mut key = hex_to_bytes(hex_key);
-        let expected_out = hex_to_bytes(hex_out);
-        let mut buffer_out = vec![0u8; 64];
-        let result = blake2b(&mut buffer_out, &mut key, &mut input_message);
-
-        assert_eq!(buffer_out, expected_out);
-    }
-
-    #[test]
     fn test_hashes() {
         let file_content =
             std::fs::read_to_string("./test_vector.json").expect("Failed to read file");
