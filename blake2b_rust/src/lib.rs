@@ -51,7 +51,7 @@ struct Blake2bCtx {
 
 impl Blake2bCtx {
     fn new(key: &mut Vec<u8>, outlen: usize) -> Self {
-        let mut h: [u64; 8] = BLAKE2B_IV.clone();
+        let mut h: [u64; 8] = BLAKE2B_IV;
         h[0] = h[0] ^ 0x01010000 ^ (key.len() << 8) as u64 ^ outlen as u64;
 
         Self {
@@ -66,12 +66,12 @@ impl Blake2bCtx {
 // Hash Function
 
 pub fn blake2b(out: &mut Vec<u8>, key: &mut Vec<u8>, input_message: &mut Vec<u8>) -> i32 {
-    if out.len() == 0 || out.len() > 64 || key.len() > 64 {
+    if out.is_empty() || out.len() > 64 || key.len() > 64 {
         panic!("Illegal input parameters")
     }
     let mut ctx = Blake2bCtx::new(key, out.len());
 
-    if key.len() > 0 {
+    if !key.is_empty() {
         blake2b_update(&mut ctx, key);
         ctx.c = 128;
     }
@@ -126,13 +126,15 @@ fn blake2b_compress(ctx: &mut Blake2bCtx, last: bool) {
     let mut v: [u64; 16] = [0; 16];
     let mut m: [u64; 16] = [0; 16];
 
-    for i in 0..8 {
-        v[i] = ctx.h[i];
-        v[i + 8] = BLAKE2B_IV[i];
-    }
+    v[..8].copy_from_slice(&ctx.h[..8]);
+    v[8..16].copy_from_slice(&BLAKE2B_IV[..8]);
+    // for i in 0..8 {
+    //     v[i] = ctx.h[i];
+    //     v[i + 8] = BLAKE2B_IV[i];
+    // }
 
-    v[12] = v[12] ^ ctx.t[0];
-    v[13] = v[13] ^ ctx.t[1];
+    v[12] ^= ctx.t[0];
+    v[13] ^= ctx.t[1];
 
     if last {
         v[14] = !v[14]
