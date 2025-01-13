@@ -128,10 +128,6 @@ fn blake2b_compress(ctx: &mut Blake2bCtx, last: bool) {
 
     v[..8].copy_from_slice(&ctx.h[..8]);
     v[8..16].copy_from_slice(&BLAKE2B_IV[..8]);
-    // for i in 0..8 {
-    //     v[i] = ctx.h[i];
-    //     v[i + 8] = BLAKE2B_IV[i];
-    // }
 
     v[12] ^= ctx.t[0];
     v[13] ^= ctx.t[1];
