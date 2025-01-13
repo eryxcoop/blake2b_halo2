@@ -66,6 +66,20 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
             ]
         });
 
+        meta.lookup("range_check", |meta| {
+            let limbs: Vec<Expression<F>> = limbs
+                .iter()
+                .map(|column| meta.query_advice(*column, Rotation::cur()))
+                .collect();
+            let q_decompose = meta.query_selector(q_decompose);
+            vec![
+                (q_decompose.clone() * limbs[0].clone(), t_range16),
+                (q_decompose.clone() * limbs[1].clone(), t_range16),
+                (q_decompose.clone() * limbs[2].clone(), t_range16),
+                (q_decompose.clone() * limbs[3].clone(), t_range16),
+            ]
+        });
+
         Blake2bConfig {
             _ph: PhantomData,
             q_decompose,
@@ -83,19 +97,38 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
         config: Self::Config,
         mut layouter: impl Layouter<F>,
     ) -> Result<(), plonk::Error> {
-        let value = F::from((2 << 16) - 1);
+        let value = F::from(((1u128 << 64) - 1) as u64);
+        let value_1 = F::from((1 << 16) - 1);
         layouter.assign_region(
             || "decompose",
             |mut region| {
                 config.q_decompose.enable(&mut region, 0)?;
                 region.assign_advice(|| "full number", config.full_number_u64, 0, || Value::known(value.clone()))?;
-                region.assign_advice(|| "limb0", config.limbs[0], 0, || Value::known(value.clone()))?;
-                region.assign_advice(|| "limb1", config.limbs[1], 0, || Value::known(F::ONE))?;
-                region.assign_advice(|| "limb2", config.limbs[2], 0, || Value::known(F::ZERO))?;
-                region.assign_advice(|| "limb3", config.limbs[3], 0, || Value::known(F::ZERO))?;
+                region.assign_advice(|| "limb0", config.limbs[0], 0, || Value::known(value_1.clone()))?;
+                region.assign_advice(|| "limb1", config.limbs[1], 0, || Value::known(value_1.clone()))?;
+                region.assign_advice(|| "limb2", config.limbs[2], 0, || Value::known(value_1.clone()))?;
+                region.assign_advice(|| "limb3", config.limbs[3], 0, || Value::known(value_1.clone()))?;
                 Ok(())
             },
         )?;
+
+        layouter.assign_table(
+            || "range check table",
+            |mut table| {
+                // assign the table
+                for i in 0..1 << 16
+                {
+                    table.assign_cell(
+                        || "value",
+                        config.t_range16,
+                        i.clone(),
+                        || Value::known(F::from(i.clone() as u64)),
+                    )?;
+                }
+                Ok(())
+            },
+        )?;
+
         Ok(())
     }
 }
@@ -103,6 +136,6 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
 fn main() {
     use halo2_proofs::halo2curves::bn256::Fr;
     let circuit = Blake2bCircuit::<Fr> { _ph: PhantomData };
-    let prover = MockProver::run(8, &circuit, vec![]).unwrap();
+    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
     prover.verify().unwrap();
 }
