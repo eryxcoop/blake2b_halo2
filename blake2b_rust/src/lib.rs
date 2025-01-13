@@ -181,7 +181,6 @@ mod tests {
 
     #[derive(Deserialize, Debug)]
     struct TestCase {
-        hash: String,
         #[serde(rename = "in")]
         input: String,
         key: String,
@@ -197,18 +196,18 @@ mod tests {
 
         for (i, case) in test_cases.iter().enumerate() {
             println!("Running test case {}", i);
-            run_test(&case.hash, &case.input, &case.key, &case.out);
+            run_test(&case.input, &case.key, &case.out);
         }
     }
 
-    fn run_test(hash: &str, input: &str, key: &str, expected: &str) {
+    fn run_test(input: &str, key: &str, expected: &str) {
         let mut input_message = hex_to_bytes(input);
         let mut key = hex_to_bytes(key);
         let expected_out = hex_to_bytes(expected);
         let mut buffer_out: Vec<u8> = Vec::new();
         buffer_out.resize(expected_out.len(), 0);
 
-        let result = blake2b(&mut buffer_out, &mut key, &mut input_message);
+        let _ = blake2b(&mut buffer_out, &mut key, &mut input_message);
 
         assert_eq!(
             buffer_out, expected_out,
