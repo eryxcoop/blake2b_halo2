@@ -8,12 +8,14 @@ use halo2_proofs::{
 
 use ff::Field;
 use halo2_proofs::circuit::{Region, Value};
+use halo2_proofs::halo2curves::bn256::Fr;
 use halo2_proofs::plonk::{Advice, Column, Expression, Selector, TableColumn};
 use halo2_proofs::poly::Rotation;
 
 struct Blake2bCircuit<F: Field> {
     _ph: PhantomData<F>,
     trace: [[Value<F>; 6]; 3],
+    rotation_trace: [[Value<Fr>; 5]; 2],
 }
 
 #[derive(Clone, Debug)]
@@ -24,6 +26,7 @@ struct Blake2bConfig<F: Field + Clone> {
     q_decompose: Selector,
     q_add: Selector,
     t_range16: TableColumn,
+    q_rot63: Selector,
     _ph: PhantomData<F>,
 }
 
@@ -37,6 +40,7 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
 
     #[allow(unused_variables)]
     fn configure(meta: &mut ConstraintSystem<F>) -> Self::Config {
+        // Addition
         let q_decompose = meta.complex_selector();
         let q_add = meta.complex_selector();
 
@@ -47,6 +51,9 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
             meta.advice_column(),
             meta.advice_column(),
         ];
+        for limb in limbs {
+            meta.enable_equality(limb);
+        }
         let t_range16 = meta.lookup_table_column();
         let carry = meta.advice_column();
 
@@ -88,6 +95,22 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
             Self::range_check_for_limb(meta, &limb, &q_decompose, &t_range16);
         }
 
+        // Rotation
+        let q_rot63 = meta.complex_selector();
+        let _ = meta.create_gate("rotate right 63", |meta| {
+            let q_rot63 = meta.query_selector(q_rot63);
+            let input_full_number = meta.query_advice(full_number_u64, Rotation::cur());
+            let output_full_number = meta.query_advice(full_number_u64, Rotation::next());
+            vec![
+                q_rot63
+                    * (Expression::Constant(F::from(2)) * input_full_number.clone()
+                        - output_full_number.clone())
+                    * (Expression::Constant(F::from(2)) * input_full_number
+                        - output_full_number
+                        - Expression::Constant(F::from(((1u128 << 64) - 1) as u64))),
+            ]
+        });
+
         Blake2bConfig {
             _ph: PhantomData,
             q_decompose,
@@ -96,6 +119,7 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
             limbs,
             t_range16,
             carry,
+            q_rot63
         }
     }
 
@@ -145,13 +169,15 @@ impl<F: Field + From<u64>> Blake2bCircuit<F> {
         Blake2bCircuit {
             _ph: PhantomData,
             trace: [[Value::unknown(); 6]; 3],
+            rotation_trace: [[Value::unknown(); 5]; 2],
         }
     }
 
     fn new_for_addition_alone(trace: [[Value<F>; 6]; 3]) -> Self {
         Self {
             _ph: PhantomData,
-            trace
+            trace,
+            rotation_trace: [[Value::unknown(); 5]; 2],
         }
     }
 
@@ -211,10 +237,21 @@ mod test {
     use super::*;
     use halo2_proofs::halo2curves::bn256::Fr;
 
-    fn max_u64() -> Value<Fr> { Value::known(Fr::from(((1u128 << 64) - 1) as u64)) }
-    fn max_u16() -> Value<Fr>{ Value::known(Fr::from((1 << 16) - 1)) }
-    fn one() -> Value<Fr> { Value::known(Fr::ONE) }
-    fn zero() -> Value<Fr> { Value::known(Fr::ZERO) }
+    fn max_u64() -> Value<Fr> {
+        Value::known(Fr::from(((1u128 << 64) - 1) as u64))
+    }
+    fn max_u16() -> Value<Fr> {
+        Value::known(Fr::from((1 << 16) - 1))
+    }
+    fn one() -> Value<Fr> {
+        Value::known(Fr::ONE)
+    }
+    fn zero() -> Value<Fr> {
+        Value::known(Fr::ZERO)
+    }
+    fn two_power_48() -> Value<Fr> {
+        Value::known(Fr::from(1 << 48))
+    }
 
     // Tests addition and decomposition
     #[test]
@@ -230,7 +267,14 @@ mod test {
     #[should_panic]
     fn test_negative_wrong_sum() {
         let trace = [
-            [max_u64(), max_u16(), max_u16(), max_u16(), max_u16(), zero()],
+            [
+                max_u64(),
+                max_u16(),
+                max_u16(),
+                max_u16(),
+                max_u16(),
+                zero(),
+            ],
             [one(), one(), zero(), zero(), zero(), zero()],
             [one(), one(), zero(), zero(), zero(), one()],
         ];
@@ -243,9 +287,15 @@ mod test {
     #[test]
     #[should_panic]
     fn test_negative_wrong_decomposition() {
-
         let trace = [
-            [max_u64(), max_u16(), max_u16(), max_u16(), max_u16(), zero()],
+            [
+                max_u64(),
+                max_u16(),
+                max_u16(),
+                max_u16(),
+                max_u16(),
+                zero(),
+            ],
             [zero(), zero(), zero(), zero(), zero(), zero()],
             [max_u64(), max_u16(), max_u16(), one(), max_u16(), zero()],
         ];
@@ -258,9 +308,15 @@ mod test {
     #[test]
     #[should_panic]
     fn test_negative_wrong_carry() {
-
         let trace = [
-            [max_u64(), max_u16(), max_u16(), max_u16(), max_u16(), zero()],
+            [
+                max_u64(),
+                max_u16(),
+                max_u16(),
+                max_u16(),
+                max_u16(),
+                zero(),
+            ],
             [one(), one(), zero(), zero(), zero(), zero()],
             [zero(), zero(), zero(), zero(), zero(), one() + one()],
         ];
@@ -273,9 +329,15 @@ mod test {
     #[test]
     #[should_panic]
     fn test_negative_wrong_rangecheck() {
-
         let trace = [
-            [max_u16() + one(), max_u16() + one(), zero(), zero(), zero(), zero()],
+            [
+                max_u16() + one(),
+                max_u16() + one(),
+                zero(),
+                zero(),
+                zero(),
+                zero(),
+            ],
             [zero(), zero(), zero(), zero(), zero(), zero()],
             [max_u16() + one(), zero(), one(), zero(), zero(), zero()],
         ];
@@ -285,22 +347,53 @@ mod test {
         prover.verify().unwrap();
     }
 
-    fn valid_addition_trace() -> [[Value<Fr>; 6]; 3]{
-
-        [[max_u64(), max_u16(), max_u16(), max_u16(), max_u16(), zero()],
-        [one(), one(), zero(), zero(), zero(), zero()],
-        [zero(), zero(), zero(), zero(), zero(), one()]]
+    fn valid_addition_trace() -> [[Value<Fr>; 6]; 3] {
+        [
+            [
+                max_u64(),
+                max_u16(),
+                max_u16(),
+                max_u16(),
+                max_u16(),
+                zero(),
+            ],
+            [one(), one(), zero(), zero(), zero(), zero()],
+            [zero(), zero(), zero(), zero(), zero(), one()],
+        ]
     }
 
     // Tests Rotation
     #[test]
-    fn test_positive_rotate_right_1() {
-        let addition_trace = valid_addition_trace();
+    fn test_positive_rotate_right_63() {
         let circuit = Blake2bCircuit::<Fr> {
             _ph: PhantomData,
-            trace: addition_trace,
+            trace: valid_addition_trace(),
+            rotation_trace: valid_rotation_trace(),
         };
         let prover = MockProver::run(17, &circuit, vec![]).unwrap();
         prover.verify().unwrap();
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_negative_rotate_right_63() {
+        let mut invalid_rotation_trace = valid_rotation_trace();
+        invalid_rotation_trace[0][1] = one() + invalid_rotation_trace[0][1];
+        invalid_rotation_trace[0][0] = one() + invalid_rotation_trace[0][0];
+
+        let circuit = Blake2bCircuit::<Fr> {
+            _ph: PhantomData,
+            trace: valid_addition_trace(),
+            rotation_trace: invalid_rotation_trace,
+        };
+        let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+        prover.verify().unwrap();
+    }
+
+    fn valid_rotation_trace() -> [[Value<Fr>; 5]; 2] {
+        [
+            [one(), one(), zero(), zero(), zero()],
+            [one() + one(), one() + one(), zero(), zero(), zero()],
+        ]
     }
 }
