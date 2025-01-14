@@ -78,7 +78,7 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
                 q_add
                     * (full_number_result - full_number_x - full_number_y
                         + carry
-                            * (Expression::Constant(F::from(1 << 64 - 1))
+                            * (Expression::Constant(F::from(((1u128 << 64) - 1) as u64))
                                 + Expression::Constant(F::ONE))),
             ]
         });
@@ -139,7 +139,7 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
         let _ = layouter.assign_region(
             || "decompose",
             |mut region| {
-                // let _ = config.q_add.enable(&mut region, 0);
+                let _ = config.q_add.enable(&mut region, 0);
 
                 Self::assign_row_from_values(
                     &config,
@@ -159,7 +159,6 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
                     vec![F::ZERO, F::ZERO, F::ZERO, F::ZERO, F::ZERO, F::ONE],
                     2,
                 );
-                // Self::assign_row_from_values(&config, &mut region, vec![max_u64, max_u16, max_u16, max_u16, max_u16, F::ZERO], 2);
                 Ok(())
             },
         );
