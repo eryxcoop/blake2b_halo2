@@ -129,32 +129,7 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
         config: Self::Config,
         mut layouter: impl Layouter<F>,
     ) -> Result<(), plonk::Error> {
-        let _ = layouter.assign_region(
-            || "decompose",
-            |mut region| {
-                let _ = config.q_add.enable(&mut region, 0);
-
-                Self::assign_row_from_values(
-                    &config,
-                    &mut region,
-                    self.addition_trace[0].to_vec(),
-                    0,
-                );
-                Self::assign_row_from_values(
-                    &config,
-                    &mut region,
-                    self.addition_trace[1].to_vec(),
-                    1,
-                );
-                Self::assign_row_from_values(
-                    &config,
-                    &mut region,
-                    self.addition_trace[2].to_vec(),
-                    2,
-                );
-                Ok(())
-            },
-        );
+        self.assign_addition_rows(&config, &mut layouter);
 
         layouter.assign_table(
             || "range check table",
@@ -189,6 +164,37 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
         );
 
         Ok(())
+    }
+}
+
+impl<F: Field + From<u64>> Blake2bCircuit<F> {
+    fn assign_addition_rows(&self, config: &Blake2bConfig<F>, layouter: &mut impl Layouter<F>) {
+        let _ = layouter.assign_region(
+            || "decompose",
+            |mut region| {
+                let _ = config.q_add.enable(&mut region, 0);
+
+                Self::assign_row_from_values(
+                    &config,
+                    &mut region,
+                    self.addition_trace[0].to_vec(),
+                    0,
+                );
+                Self::assign_row_from_values(
+                    &config,
+                    &mut region,
+                    self.addition_trace[1].to_vec(),
+                    1,
+                );
+                Self::assign_row_from_values(
+                    &config,
+                    &mut region,
+                    self.addition_trace[2].to_vec(),
+                    2,
+                );
+                Ok(())
+            },
+        );
     }
 }
 
