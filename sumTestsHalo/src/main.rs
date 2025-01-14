@@ -9,7 +9,7 @@ use halo2_proofs::{
 use ff::Field;
 use halo2_proofs::circuit::{Region, Value};
 use halo2_proofs::halo2curves::bn256::Fr;
-use halo2_proofs::plonk::{Advice, Column, Expression, Selector, TableColumn};
+use halo2_proofs::plonk::{Advice, Column, Error, Expression, Selector, TableColumn};
 use halo2_proofs::poly::Rotation;
 
 struct Blake2bCircuit<F: Field> {
@@ -131,21 +131,7 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
     ) -> Result<(), plonk::Error> {
         self.assign_addition_rows(&config, &mut layouter);
 
-        layouter.assign_table(
-            || "range check table",
-            |mut table| {
-                // assign the table
-                for i in 0..1 << 16 {
-                    table.assign_cell(
-                        || "value",
-                        config.t_range16,
-                        i,
-                        || Value::known(F::from(i as u64)),
-                    )?;
-                }
-                Ok(())
-            },
-        )?;
+        Self::populate_lookup_table16(&config, &mut layouter)?;
 
         // Rotation
         let _ = layouter.assign_region(
@@ -163,6 +149,27 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
             },
         );
 
+        Ok(())
+    }
+}
+
+impl<F: Field + From<u64>> Blake2bCircuit<F> {
+    fn populate_lookup_table16(config: &Blake2bConfig<F>, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
+        layouter.assign_table(
+            || "range check table",
+            |mut table| {
+                // assign the table
+                for i in 0..1 << 16 {
+                    table.assign_cell(
+                        || "value",
+                        config.t_range16,
+                        i,
+                        || Value::known(F::from(i as u64)),
+                    )?;
+                }
+                Ok(())
+            },
+        )?;
         Ok(())
     }
 }
