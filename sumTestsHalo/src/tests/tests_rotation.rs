@@ -26,15 +26,13 @@ fn test_negative_rotate_right_63() {
     prover.verify().unwrap();
 }
 
-// #[test]
-// fn test_positive_rotate_right_24() {
-//     let circuit = Blake2bCircuit::<Fr> {
-//         _ph: PhantomData,
-//         addition_trace: valid_addition_trace(),
-//         rotation_trace: [
-//             [two_power_24(), zero(), two_power_8(), zero(), zero()],
-//             [one(), one(), zero(), zero(), zero()],
-//         ],
-//     };
-//     let prover = MockProver::run(17, &circuit, vec![]).unwrap();
-//     prover.verify().unwrap();}
+#[test]
+fn test_positive_rotate_right_24() {
+    let circuit = Blake2bCircuit::<Fr> {
+        _ph: PhantomData,
+        addition_trace: valid_addition_trace(),
+        rotation_trace_64: valid_rotation_trace(),
+    };
+    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+    prover.verify().unwrap();
+}

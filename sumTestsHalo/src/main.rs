@@ -16,7 +16,7 @@ use crate::tests::valid_addition_trace;
 struct Blake2bCircuit<F: Field> {
     _ph: PhantomData<F>,
     addition_trace: [[Value<F>; 6]; 3],
-    rotation_trace: [[Value<F>; 5]; 2],
+    rotation_trace_64: [[Value<F>; 5]; 2],
 }
 
 #[derive(Clone, Debug)]
@@ -148,9 +148,9 @@ impl<F: Field + From<u64>> Blake2bCircuit<F> {
             |mut region| {
                 let _ = config.q_rot63.enable(&mut region, 0);
 
-                let mut first_row = self.rotation_trace[0].to_vec();
+                let mut first_row = self.rotation_trace_64[0].to_vec();
                 first_row.push(Value::known(F::ZERO));
-                let mut second_row = self.rotation_trace[1].to_vec();
+                let mut second_row = self.rotation_trace_64[1].to_vec();
                 second_row.push(Value::known(F::ZERO));
                 Self::assign_row_from_values(&config, &mut region, first_row, 0);
                 Self::assign_row_from_values(&config, &mut region, second_row, 1);
@@ -213,7 +213,7 @@ impl<F: Field + From<u64>> Blake2bCircuit<F> {
         Blake2bCircuit {
             _ph: PhantomData,
             addition_trace: [[Value::unknown(); 6]; 3],
-            rotation_trace: [[Value::unknown(); 5]; 2],
+            rotation_trace_64: [[Value::unknown(); 5]; 2],
         }
     }
 
@@ -221,7 +221,7 @@ impl<F: Field + From<u64>> Blake2bCircuit<F> {
         Self {
             _ph: PhantomData,
             addition_trace: trace,
-            rotation_trace: [[Value::unknown(); 5]; 2], // TODO: check this
+            rotation_trace_64: [[Value::unknown(); 5]; 2], // TODO: check this
         }
     }
 
@@ -229,7 +229,7 @@ impl<F: Field + From<u64>> Blake2bCircuit<F> {
         Self {
             _ph: PhantomData,
             addition_trace: [[Value::unknown(); 6]; 3],
-            rotation_trace,
+            rotation_trace_64: rotation_trace,
         }
     }
 
