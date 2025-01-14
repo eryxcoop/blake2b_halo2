@@ -14,8 +14,8 @@ use halo2_proofs::poly::Rotation;
 
 struct Blake2bCircuit<F: Field> {
     _ph: PhantomData<F>,
-    trace: [[Value<F>; 6]; 3],
-    rotation_trace: [[Value<Fr>; 5]; 2],
+    addition_trace: [[Value<F>; 6]; 3],
+    rotation_trace: [[Value<F>; 5]; 2],
 }
 
 #[derive(Clone, Debug)]
@@ -129,17 +129,15 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
         config: Self::Config,
         mut layouter: impl Layouter<F>,
     ) -> Result<(), plonk::Error> {
-        let max_u64 = F::from(((1u128 << 64) - 1) as u64);
-        let max_u16 = F::from((1 << 16) - 1);
 
         let _ = layouter.assign_region(
             || "decompose",
             |mut region| {
                 let _ = config.q_add.enable(&mut region, 0);
 
-                Self::assign_row_from_values(&config, &mut region, self.trace[0], 0);
-                Self::assign_row_from_values(&config, &mut region, self.trace[1], 1);
-                Self::assign_row_from_values(&config, &mut region, self.trace[2], 2);
+                Self::assign_row_from_values(&config, &mut region, self.addition_trace[0].to_vec(), 0);
+                Self::assign_row_from_values(&config, &mut region, self.addition_trace[1].to_vec(), 1);
+                Self::assign_row_from_values(&config, &mut region, self.addition_trace[2].to_vec(), 2);
                 Ok(())
             },
         );
@@ -160,6 +158,22 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
             },
         )?;
 
+        // Rotation
+        let _ = layouter.assign_region(
+            || "rotate 63",
+            |mut region| {
+                let _ = config.q_rot63.enable(&mut region, 0);
+
+                let mut first_row = self.rotation_trace[0].to_vec();
+                first_row.push(Value::known(F::ZERO));
+                let mut second_row = self.rotation_trace[1].to_vec();
+                second_row.push(Value::known(F::ZERO));
+                Self::assign_row_from_values(&config, &mut region, first_row, 0);
+                Self::assign_row_from_values(&config, &mut region, second_row, 1);
+                Ok(())
+            },
+        );
+
         Ok(())
     }
 }
@@ -168,7 +182,7 @@ impl<F: Field + From<u64>> Blake2bCircuit<F> {
     fn new_for_unknown_values() -> Self {
         Blake2bCircuit {
             _ph: PhantomData,
-            trace: [[Value::unknown(); 6]; 3],
+            addition_trace: [[Value::unknown(); 6]; 3],
             rotation_trace: [[Value::unknown(); 5]; 2],
         }
     }
@@ -176,8 +190,8 @@ impl<F: Field + From<u64>> Blake2bCircuit<F> {
     fn new_for_addition_alone(trace: [[Value<F>; 6]; 3]) -> Self {
         Self {
             _ph: PhantomData,
-            trace,
-            rotation_trace: [[Value::unknown(); 5]; 2],
+            addition_trace: trace,
+            rotation_trace: [[Value::unknown(); 5]; 2], // TODO: check this
         }
     }
 
@@ -197,7 +211,7 @@ impl<F: Field + From<u64>> Blake2bCircuit<F> {
     fn assign_row_from_values(
         config: &Blake2bConfig<F>,
         region: &mut Region<F>,
-        row: [Value<F>; 6],
+        row: Vec<Value<F>>,
         offset: usize,
     ) {
         let _ = config.q_decompose.enable(region, offset);
@@ -367,7 +381,7 @@ mod test {
     fn test_positive_rotate_right_63() {
         let circuit = Blake2bCircuit::<Fr> {
             _ph: PhantomData,
-            trace: valid_addition_trace(),
+            addition_trace: valid_addition_trace(),
             rotation_trace: valid_rotation_trace(),
         };
         let prover = MockProver::run(17, &circuit, vec![]).unwrap();
@@ -383,7 +397,7 @@ mod test {
 
         let circuit = Blake2bCircuit::<Fr> {
             _ph: PhantomData,
-            trace: valid_addition_trace(),
+            addition_trace: valid_addition_trace(),
             rotation_trace: invalid_rotation_trace,
         };
         let prover = MockProver::run(17, &circuit, vec![]).unwrap();
