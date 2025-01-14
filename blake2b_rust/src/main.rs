@@ -83,38 +83,9 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
             ]
         });
 
-        meta.lookup("range_check", |meta| {
-            let limbs: Vec<Expression<F>> = limbs
-                .iter()
-                .map(|column| meta.query_advice(*column, Rotation::cur()))
-                .collect();
-            let q_decompose = meta.query_selector(q_decompose);
-            vec![(q_decompose.clone() * limbs[0].clone(), t_range16)]
-        });
-        meta.lookup("range_check", |meta| {
-            let limbs: Vec<Expression<F>> = limbs
-                .iter()
-                .map(|column| meta.query_advice(*column, Rotation::cur()))
-                .collect();
-            let q_decompose = meta.query_selector(q_decompose);
-            vec![(q_decompose.clone() * limbs[1].clone(), t_range16)]
-        });
-        meta.lookup("range_check", |meta| {
-            let limbs: Vec<Expression<F>> = limbs
-                .iter()
-                .map(|column| meta.query_advice(*column, Rotation::cur()))
-                .collect();
-            let q_decompose = meta.query_selector(q_decompose);
-            vec![(q_decompose.clone() * limbs[2].clone(), t_range16)]
-        });
-        meta.lookup("range_check", |meta| {
-            let limbs: Vec<Expression<F>> = limbs
-                .iter()
-                .map(|column| meta.query_advice(*column, Rotation::cur()))
-                .collect();
-            let q_decompose = meta.query_selector(q_decompose);
-            vec![(q_decompose.clone() * limbs[3].clone(), t_range16)]
-        });
+        for limb in limbs {
+            Self::range_check_for_limb(meta, &limb, &q_decompose, &t_range16);
+        }
 
         Blake2bConfig {
             _ph: PhantomData,
@@ -184,6 +155,19 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
 }
 
 impl<F: Field + From<u64>> Blake2bCircuit<F> {
+    fn range_check_for_limb(
+        meta: &mut ConstraintSystem<F>,
+        limb: &Column<Advice>,
+        q_decompose: &Selector,
+        t_range16: &TableColumn,
+    ) {
+        meta.lookup(format!("lookup limb {:?}", limb), |meta| {
+            let limb: Expression<F> = meta.query_advice(*limb, Rotation::cur());
+            let q_decompose = meta.query_selector(*q_decompose);
+            vec![(q_decompose * limb, *t_range16)]
+        });
+    }
+
     fn assign_row_from_values(
         config: &Blake2bConfig<F>,
         region: &mut Region<F>,
