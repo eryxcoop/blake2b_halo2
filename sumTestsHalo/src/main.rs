@@ -32,10 +32,7 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
     type FloorPlanner = SimpleFloorPlanner;
 
     fn without_witnesses(&self) -> Self {
-        Blake2bCircuit {
-            _ph: PhantomData,
-            trace: [[Value::unknown(); 6]; 3],
-        }
+        Blake2bCircuit::new_for_unknown_values()
     }
 
     #[allow(unused_variables)]
@@ -144,6 +141,20 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
 }
 
 impl<F: Field + From<u64>> Blake2bCircuit<F> {
+    fn new_for_unknown_values() -> Self {
+        Blake2bCircuit {
+            _ph: PhantomData,
+            trace: [[Value::unknown(); 6]; 3],
+        }
+    }
+
+    fn new_for_addition_alone(trace: [[Value<F>; 6]; 3]) -> Self {
+        Self {
+            _ph: PhantomData,
+            trace
+        }
+    }
+
     fn range_check_for_limb(
         meta: &mut ConstraintSystem<F>,
         limb: &Column<Advice>,
@@ -190,10 +201,7 @@ fn main() {
         [zero, zero, zero, zero, zero, one],
     ];
 
-    let circuit = Blake2bCircuit::<Fr> {
-        _ph: PhantomData,
-        trace,
-    };
+    let circuit = Blake2bCircuit::<Fr>::new_for_addition_alone(trace);
     let prover = MockProver::run(17, &circuit, vec![]).unwrap();
     prover.verify().unwrap();
 }
@@ -201,23 +209,19 @@ fn main() {
 #[cfg(test)]
 mod test {
     use super::*;
-    #[test]
-    fn test_positive() {
-        use halo2_proofs::halo2curves::bn256::Fr;
-        let max_u64 = Value::known(Fr::from(((1u128 << 64) - 1) as u64));
-        let max_u16 = Value::known(Fr::from((1 << 16) - 1));
-        let one = Value::known(Fr::ONE);
-        let zero = Value::known(Fr::ZERO);
-        let trace = [
-            [max_u64, max_u16, max_u16, max_u16, max_u16, zero],
-            [one, one, zero, zero, zero, zero],
-            [zero, zero, zero, zero, zero, one],
-        ];
+    use halo2_proofs::halo2curves::bn256::Fr;
 
-        let circuit = Blake2bCircuit::<Fr> {
-            _ph: PhantomData,
-            trace,
-        };
+    fn max_u64() -> Value<Fr> { Value::known(Fr::from(((1u128 << 64) - 1) as u64)) }
+    fn max_u16() -> Value<Fr>{ Value::known(Fr::from((1 << 16) - 1)) }
+    fn one() -> Value<Fr> { Value::known(Fr::ONE) }
+    fn zero() -> Value<Fr> { Value::known(Fr::ZERO) }
+
+    // Tests addition and decomposition
+    #[test]
+    fn test_positive_addition() {
+        let trace = valid_addition_trace();
+
+        let circuit = Blake2bCircuit::<Fr>::new_for_addition_alone(trace);
         let prover = MockProver::run(17, &circuit, vec![]).unwrap();
         prover.verify().unwrap();
     }
@@ -225,21 +229,13 @@ mod test {
     #[test]
     #[should_panic]
     fn test_negative_wrong_sum() {
-        use halo2_proofs::halo2curves::bn256::Fr;
-        let max_u64 = Value::known(Fr::from(((1u128 << 64) - 1) as u64));
-        let max_u16 = Value::known(Fr::from((1 << 16) - 1));
-        let one = Value::known(Fr::ONE);
-        let zero = Value::known(Fr::ZERO);
         let trace = [
-            [max_u64, max_u16, max_u16, max_u16, max_u16, zero],
-            [one, one, zero, zero, zero, zero],
-            [one, one, zero, zero, zero, one],
+            [max_u64(), max_u16(), max_u16(), max_u16(), max_u16(), zero()],
+            [one(), one(), zero(), zero(), zero(), zero()],
+            [one(), one(), zero(), zero(), zero(), one()],
         ];
 
-        let circuit = Blake2bCircuit::<Fr> {
-            _ph: PhantomData,
-            trace,
-        };
+        let circuit = Blake2bCircuit::<Fr>::new_for_addition_alone(trace);
         let prover = MockProver::run(17, &circuit, vec![]).unwrap();
         prover.verify().unwrap();
     }
@@ -247,21 +243,14 @@ mod test {
     #[test]
     #[should_panic]
     fn test_negative_wrong_decomposition() {
-        use halo2_proofs::halo2curves::bn256::Fr;
-        let max_u64 = Value::known(Fr::from(((1u128 << 64) - 1) as u64));
-        let max_u16 = Value::known(Fr::from((1 << 16) - 1));
-        let one = Value::known(Fr::ONE);
-        let zero = Value::known(Fr::ZERO);
+
         let trace = [
-            [max_u64, max_u16, max_u16, max_u16, max_u16, zero],
-            [zero, zero, zero, zero, zero, zero],
-            [max_u64, max_u16, max_u16, one, max_u16, zero],
+            [max_u64(), max_u16(), max_u16(), max_u16(), max_u16(), zero()],
+            [zero(), zero(), zero(), zero(), zero(), zero()],
+            [max_u64(), max_u16(), max_u16(), one(), max_u16(), zero()],
         ];
 
-        let circuit = Blake2bCircuit::<Fr> {
-            _ph: PhantomData,
-            trace,
-        };
+        let circuit = Blake2bCircuit::<Fr>::new_for_addition_alone(trace);
         let prover = MockProver::run(17, &circuit, vec![]).unwrap();
         prover.verify().unwrap();
     }
@@ -269,21 +258,14 @@ mod test {
     #[test]
     #[should_panic]
     fn test_negative_wrong_carry() {
-        use halo2_proofs::halo2curves::bn256::Fr;
-        let max_u64 = Value::known(Fr::from(((1u128 << 64) - 1) as u64));
-        let max_u16 = Value::known(Fr::from((1 << 16) - 1));
-        let one = Value::known(Fr::ONE);
-        let zero = Value::known(Fr::ZERO);
+
         let trace = [
-            [max_u64, max_u16, max_u16, max_u16, max_u16, zero],
-            [one, one, zero, zero, zero, zero],
-            [zero, zero, zero, zero, zero, one + one],
+            [max_u64(), max_u16(), max_u16(), max_u16(), max_u16(), zero()],
+            [one(), one(), zero(), zero(), zero(), zero()],
+            [zero(), zero(), zero(), zero(), zero(), one() + one()],
         ];
 
-        let circuit = Blake2bCircuit::<Fr> {
-            _ph: PhantomData,
-            trace,
-        };
+        let circuit = Blake2bCircuit::<Fr>::new_for_addition_alone(trace);
         let prover = MockProver::run(17, &circuit, vec![]).unwrap();
         prover.verify().unwrap();
     }
@@ -291,19 +273,32 @@ mod test {
     #[test]
     #[should_panic]
     fn test_negative_wrong_rangecheck() {
-        use halo2_proofs::halo2curves::bn256::Fr;
-        let max_u16 = Value::known(Fr::from((1 << 16) - 1));
-        let one = Value::known(Fr::ONE);
-        let zero = Value::known(Fr::ZERO);
+
         let trace = [
-            [max_u16 + one, max_u16 + one, zero, zero, zero, zero],
-            [zero, zero, zero, zero, zero, zero],
-            [max_u16 + one, zero, one, zero, zero, zero],
+            [max_u16() + one(), max_u16() + one(), zero(), zero(), zero(), zero()],
+            [zero(), zero(), zero(), zero(), zero(), zero()],
+            [max_u16() + one(), zero(), one(), zero(), zero(), zero()],
         ];
 
+        let circuit = Blake2bCircuit::<Fr>::new_for_addition_alone(trace);
+        let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+        prover.verify().unwrap();
+    }
+
+    fn valid_addition_trace() -> [[Value<Fr>; 6]; 3]{
+
+        [[max_u64(), max_u16(), max_u16(), max_u16(), max_u16(), zero()],
+        [one(), one(), zero(), zero(), zero(), zero()],
+        [zero(), zero(), zero(), zero(), zero(), one()]]
+    }
+
+    // Tests Rotation
+    #[test]
+    fn test_positive_rotate_right_1() {
+        let addition_trace = valid_addition_trace();
         let circuit = Blake2bCircuit::<Fr> {
             _ph: PhantomData,
-            trace,
+            trace: addition_trace,
         };
         let prover = MockProver::run(17, &circuit, vec![]).unwrap();
         prover.verify().unwrap();
