@@ -32,6 +32,7 @@ fn test_positive_rotate_right_24() {
         _ph: PhantomData,
         addition_trace: valid_addition_trace(),
         rotation_trace_64: valid_rotation_trace(),
+        // TODO hacer traza para rotacion de 24 y agregar un nuevo key aca
     };
     let prover = MockProver::run(17, &circuit, vec![]).unwrap();
     prover.verify().unwrap();
