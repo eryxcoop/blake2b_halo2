@@ -16,9 +16,12 @@ fn one() -> Value<Fr> {
 fn zero() -> Value<Fr> {
     Value::known(Fr::ZERO)
 }
-fn two_power_48() -> Value<Fr> { Value::known(Fr::from(1 << 48)) }
 
-fn valid_addition_trace() -> [[Value<Fr>; 6]; 3] {
+fn two_power_48() -> Value<Fr> { Value::known(Fr::from(1 << 48)) }
+fn two_power_24() -> Value<Fr> { Value::known(Fr::from(1 << 24)) }
+fn two_power_8() -> Value<Fr> { Value::known(Fr::from(1 << 8)) }
+
+pub fn valid_addition_trace() -> [[Value<Fr>; 6]; 3] {
     [
         [max_u64(), max_u16(), max_u16(), max_u16(), max_u16(), zero()],
         [one(), one(), zero(), zero(), zero(), zero()],
@@ -26,7 +29,7 @@ fn valid_addition_trace() -> [[Value<Fr>; 6]; 3] {
     ]
 }
 
-fn valid_rotation_trace() -> [[Value<Fr>; 5]; 2] {
+pub fn valid_rotation_trace() -> [[Value<Fr>; 5]; 2] {
     [
         [one(), one(), zero(), zero(), zero()],
         [one() + one(), one() + one(), zero(), zero(), zero()],

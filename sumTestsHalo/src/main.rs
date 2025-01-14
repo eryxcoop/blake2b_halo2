@@ -11,6 +11,7 @@ use halo2_proofs::circuit::{Region, Value};
 use halo2_proofs::halo2curves::bn256::Fr;
 use halo2_proofs::plonk::{Advice, Column, Error, Expression, Selector, TableColumn};
 use halo2_proofs::poly::Rotation;
+use crate::tests::valid_addition_trace;
 
 struct Blake2bCircuit<F: Field> {
     _ph: PhantomData<F>,
@@ -224,6 +225,14 @@ impl<F: Field + From<u64>> Blake2bCircuit<F> {
         }
     }
 
+    fn new_for_rotation_63(rotation_trace: [[Value<F>; 5]; 2]) -> Self {
+        Self {
+            _ph: PhantomData,
+            addition_trace: [[Value::unknown(); 6]; 3],
+            rotation_trace,
+        }
+    }
+
     fn range_check_for_limb(
         meta: &mut ConstraintSystem<F>,
         limb: &Column<Advice>,
@@ -276,4 +285,4 @@ fn main() {
 }
 
 #[cfg(test)]
-mod tests;
+pub mod tests;
