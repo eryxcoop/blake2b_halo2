@@ -134,6 +134,14 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
         Self::populate_lookup_table16(&config, &mut layouter)?;
 
         // Rotation
+        self.assign_rotation_rows(&config, &mut layouter);
+
+        Ok(())
+    }
+}
+
+impl<F: Field + From<u64>> Blake2bCircuit<F> {
+    fn assign_rotation_rows(&self, config: &Blake2bConfig<F>, layouter: &mut impl Layouter<F>) {
         let _ = layouter.assign_region(
             || "rotate 63",
             |mut region| {
@@ -148,33 +156,8 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
                 Ok(())
             },
         );
-
-        Ok(())
     }
-}
 
-impl<F: Field + From<u64>> Blake2bCircuit<F> {
-    fn populate_lookup_table16(config: &Blake2bConfig<F>, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
-        layouter.assign_table(
-            || "range check table",
-            |mut table| {
-                // assign the table
-                for i in 0..1 << 16 {
-                    table.assign_cell(
-                        || "value",
-                        config.t_range16,
-                        i,
-                        || Value::known(F::from(i as u64)),
-                    )?;
-                }
-                Ok(())
-            },
-        )?;
-        Ok(())
-    }
-}
-
-impl<F: Field + From<u64>> Blake2bCircuit<F> {
     fn assign_addition_rows(&self, config: &Blake2bConfig<F>, layouter: &mut impl Layouter<F>) {
         let _ = layouter.assign_region(
             || "decompose",
@@ -202,6 +185,25 @@ impl<F: Field + From<u64>> Blake2bCircuit<F> {
                 Ok(())
             },
         );
+    }
+
+    fn populate_lookup_table16(config: &Blake2bConfig<F>, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
+        layouter.assign_table(
+            || "range check table",
+            |mut table| {
+                // assign the table
+                for i in 0..1 << 16 {
+                    table.assign_cell(
+                        || "value",
+                        config.t_range16,
+                        i,
+                        || Value::known(F::from(i as u64)),
+                    )?;
+                }
+                Ok(())
+            },
+        )?;
+        Ok(())
     }
 }
 
