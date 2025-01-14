@@ -6,7 +6,7 @@ use halo2_proofs::{
     plonk::{self, Circuit, ConstraintSystem},
 };
 
-use ff::{Field, PrimeField};
+use ff::Field;
 use halo2_proofs::circuit::{Region, Value};
 use halo2_proofs::plonk::{Advice, Column, Expression, Selector, TableColumn};
 use halo2_proofs::poly::Rotation;
@@ -76,9 +76,7 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
             // TODO check if x, y and result are 64 bits
             vec![
                 q_add
-                    * (full_number_result
-                        - full_number_x
-                        - full_number_y
+                    * (full_number_result - full_number_x - full_number_y
                         + carry
                             * (Expression::Constant(F::from(1 << 64 - 1))
                                 + Expression::Constant(F::ONE))),
@@ -91,12 +89,31 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
                 .map(|column| meta.query_advice(*column, Rotation::cur()))
                 .collect();
             let q_decompose = meta.query_selector(q_decompose);
-            vec![
-                (q_decompose.clone() * limbs[0].clone(), t_range16),
-                (q_decompose.clone() * limbs[1].clone(), t_range16),
-                (q_decompose.clone() * limbs[2].clone(), t_range16),
-                (q_decompose.clone() * limbs[3].clone(), t_range16),
-            ]
+            vec![(q_decompose.clone() * limbs[0].clone(), t_range16)]
+        });
+        meta.lookup("range_check", |meta| {
+            let limbs: Vec<Expression<F>> = limbs
+                .iter()
+                .map(|column| meta.query_advice(*column, Rotation::cur()))
+                .collect();
+            let q_decompose = meta.query_selector(q_decompose);
+            vec![(q_decompose.clone() * limbs[1].clone(), t_range16)]
+        });
+        meta.lookup("range_check", |meta| {
+            let limbs: Vec<Expression<F>> = limbs
+                .iter()
+                .map(|column| meta.query_advice(*column, Rotation::cur()))
+                .collect();
+            let q_decompose = meta.query_selector(q_decompose);
+            vec![(q_decompose.clone() * limbs[2].clone(), t_range16)]
+        });
+        meta.lookup("range_check", |meta| {
+            let limbs: Vec<Expression<F>> = limbs
+                .iter()
+                .map(|column| meta.query_advice(*column, Rotation::cur()))
+                .collect();
+            let q_decompose = meta.query_selector(q_decompose);
+            vec![(q_decompose.clone() * limbs[3].clone(), t_range16)]
         });
 
         Blake2bConfig {
@@ -122,15 +139,29 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
         let _ = layouter.assign_region(
             || "decompose",
             |mut region| {
-
                 // let _ = config.q_add.enable(&mut region, 0);
 
-                Self::assign_row_from_values(&config, &mut region, vec![max_u64, max_u16, max_u16, max_u16, max_u16, F::ZERO], 0);
-                Self::assign_row_from_values(&config, &mut region, vec![F::ONE, F::ONE, F::ZERO, F::ZERO, F::ZERO, F::ZERO], 1);
-                Self::assign_row_from_values(&config, &mut region, vec![F::ZERO, F::ZERO, F::ZERO, F::ZERO, F::ZERO, F::ONE], 2);
+                Self::assign_row_from_values(
+                    &config,
+                    &mut region,
+                    vec![max_u64, max_u16, max_u16, max_u16, max_u16, F::ZERO],
+                    0,
+                );
+                Self::assign_row_from_values(
+                    &config,
+                    &mut region,
+                    vec![F::ONE, F::ONE, F::ZERO, F::ZERO, F::ZERO, F::ZERO],
+                    1,
+                );
+                Self::assign_row_from_values(
+                    &config,
+                    &mut region,
+                    vec![F::ZERO, F::ZERO, F::ZERO, F::ZERO, F::ZERO, F::ONE],
+                    2,
+                );
                 // Self::assign_row_from_values(&config, &mut region, vec![max_u64, max_u16, max_u16, max_u16, max_u16, F::ZERO], 2);
                 Ok(())
-            }
+            },
         );
 
         layouter.assign_table(
@@ -154,7 +185,12 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
 }
 
 impl<F: Field + From<u64>> Blake2bCircuit<F> {
-    fn assign_row_from_values(config: &Blake2bConfig<F>, region: &mut Region<F>, row: Vec<F>, offset: usize) {
+    fn assign_row_from_values(
+        config: &Blake2bConfig<F>,
+        region: &mut Region<F>,
+        row: Vec<F>,
+        offset: usize,
+    ) {
         let _ = config.q_decompose.enable(region, offset);
         let _ = region.assign_advice(
             || "full number",
