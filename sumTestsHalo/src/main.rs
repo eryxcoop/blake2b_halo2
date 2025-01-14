@@ -119,7 +119,7 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
             limbs,
             t_range16,
             carry,
-            q_rot63
+            q_rot63,
         }
     }
 
@@ -129,15 +129,29 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
         config: Self::Config,
         mut layouter: impl Layouter<F>,
     ) -> Result<(), plonk::Error> {
-
         let _ = layouter.assign_region(
             || "decompose",
             |mut region| {
                 let _ = config.q_add.enable(&mut region, 0);
 
-                Self::assign_row_from_values(&config, &mut region, self.addition_trace[0].to_vec(), 0);
-                Self::assign_row_from_values(&config, &mut region, self.addition_trace[1].to_vec(), 1);
-                Self::assign_row_from_values(&config, &mut region, self.addition_trace[2].to_vec(), 2);
+                Self::assign_row_from_values(
+                    &config,
+                    &mut region,
+                    self.addition_trace[0].to_vec(),
+                    0,
+                );
+                Self::assign_row_from_values(
+                    &config,
+                    &mut region,
+                    self.addition_trace[1].to_vec(),
+                    1,
+                );
+                Self::assign_row_from_values(
+                    &config,
+                    &mut region,
+                    self.addition_trace[2].to_vec(),
+                    2,
+                );
                 Ok(())
             },
         );
