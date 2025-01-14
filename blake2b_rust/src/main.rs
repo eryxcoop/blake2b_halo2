@@ -13,6 +13,7 @@ use halo2_proofs::poly::Rotation;
 
 struct Blake2bCircuit<F: Field> {
     _ph: PhantomData<F>,
+    trace: [[Value<F>; 6]; 3],
 }
 
 #[derive(Clone, Debug)]
@@ -31,7 +32,10 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
     type FloorPlanner = SimpleFloorPlanner;
 
     fn without_witnesses(&self) -> Self {
-        Blake2bCircuit { _ph: PhantomData }
+        Blake2bCircuit {
+            _ph: PhantomData,
+            trace: [[Value::unknown(); 6]; 3],
+        }
     }
 
     #[allow(unused_variables)]
@@ -112,24 +116,9 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
             |mut region| {
                 let _ = config.q_add.enable(&mut region, 0);
 
-                Self::assign_row_from_values(
-                    &config,
-                    &mut region,
-                    vec![max_u64, max_u16, max_u16, max_u16, max_u16, F::ZERO],
-                    0,
-                );
-                Self::assign_row_from_values(
-                    &config,
-                    &mut region,
-                    vec![F::ONE, F::ONE, F::ZERO, F::ZERO, F::ZERO, F::ZERO],
-                    1,
-                );
-                Self::assign_row_from_values(
-                    &config,
-                    &mut region,
-                    vec![F::ZERO, F::ZERO, F::ZERO, F::ZERO, F::ZERO, F::ONE],
-                    2,
-                );
+                Self::assign_row_from_values(&config, &mut region, self.trace[0], 0);
+                Self::assign_row_from_values(&config, &mut region, self.trace[1], 1);
+                Self::assign_row_from_values(&config, &mut region, self.trace[2], 2);
                 Ok(())
             },
         );
@@ -142,8 +131,8 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
                     table.assign_cell(
                         || "value",
                         config.t_range16,
-                        i.clone(),
-                        || Value::known(F::from(i.clone() as u64)),
+                        i,
+                        || Value::known(F::from(i as u64)),
                     )?;
                 }
                 Ok(())
@@ -171,7 +160,7 @@ impl<F: Field + From<u64>> Blake2bCircuit<F> {
     fn assign_row_from_values(
         config: &Blake2bConfig<F>,
         region: &mut Region<F>,
-        row: Vec<F>,
+        row: [Value<F>; 6],
         offset: usize,
     ) {
         let _ = config.q_decompose.enable(region, offset);
@@ -179,44 +168,144 @@ impl<F: Field + From<u64>> Blake2bCircuit<F> {
             || "full number",
             config.full_number_u64,
             offset.clone(),
-            || Value::known(row[0]),
+            || row[0],
         );
-        let _ = region.assign_advice(
-            || "limb0",
-            config.limbs[0],
-            offset.clone(),
-            || Value::known(row[1]),
-        );
-        let _ = region.assign_advice(
-            || "limb1",
-            config.limbs[1],
-            offset.clone(),
-            || Value::known(row[2]),
-        );
-        let _ = region.assign_advice(
-            || "limb2",
-            config.limbs[2],
-            offset.clone(),
-            || Value::known(row[3]),
-        );
-        let _ = region.assign_advice(
-            || "limb3",
-            config.limbs[3],
-            offset.clone(),
-            || Value::known(row[4]),
-        );
-        let _ = region.assign_advice(
-            || "carry",
-            config.carry,
-            offset.clone(),
-            || Value::known(row[5]),
-        );
+        let _ = region.assign_advice(|| "limb0", config.limbs[0], offset.clone(), || row[1]);
+        let _ = region.assign_advice(|| "limb1", config.limbs[1], offset.clone(), || row[2]);
+        let _ = region.assign_advice(|| "limb2", config.limbs[2], offset.clone(), || row[3]);
+        let _ = region.assign_advice(|| "limb3", config.limbs[3], offset.clone(), || row[4]);
+        let _ = region.assign_advice(|| "carry", config.carry, offset.clone(), || row[5]);
     }
 }
 
 fn main() {
     use halo2_proofs::halo2curves::bn256::Fr;
-    let circuit = Blake2bCircuit::<Fr> { _ph: PhantomData };
+    let max_u64 = Value::known(Fr::from(((1u128 << 64) - 1) as u64));
+    let max_u16 = Value::known(Fr::from((1 << 16) - 1));
+    let one = Value::known(Fr::ONE);
+    let zero = Value::known(Fr::ZERO);
+    let trace = [
+        [max_u64, max_u16, max_u16, max_u16, max_u16, zero],
+        [one, one, zero, zero, zero, zero],
+        [zero, zero, zero, zero, zero, one],
+    ];
+
+    let circuit = Blake2bCircuit::<Fr> {
+        _ph: PhantomData,
+        trace,
+    };
     let prover = MockProver::run(17, &circuit, vec![]).unwrap();
     prover.verify().unwrap();
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    #[test]
+    fn test_positive() {
+        use halo2_proofs::halo2curves::bn256::Fr;
+        let max_u64 = Value::known(Fr::from(((1u128 << 64) - 1) as u64));
+        let max_u16 = Value::known(Fr::from((1 << 16) - 1));
+        let one = Value::known(Fr::ONE);
+        let zero = Value::known(Fr::ZERO);
+        let trace = [
+            [max_u64, max_u16, max_u16, max_u16, max_u16, zero],
+            [one, one, zero, zero, zero, zero],
+            [zero, zero, zero, zero, zero, one],
+        ];
+
+        let circuit = Blake2bCircuit::<Fr> {
+            _ph: PhantomData,
+            trace,
+        };
+        let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+        prover.verify().unwrap();
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_negative_wrong_sum() {
+        use halo2_proofs::halo2curves::bn256::Fr;
+        let max_u64 = Value::known(Fr::from(((1u128 << 64) - 1) as u64));
+        let max_u16 = Value::known(Fr::from((1 << 16) - 1));
+        let one = Value::known(Fr::ONE);
+        let zero = Value::known(Fr::ZERO);
+        let trace = [
+            [max_u64, max_u16, max_u16, max_u16, max_u16, zero],
+            [one, one, zero, zero, zero, zero],
+            [one, one, zero, zero, zero, one],
+        ];
+
+        let circuit = Blake2bCircuit::<Fr> {
+            _ph: PhantomData,
+            trace,
+        };
+        let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+        prover.verify().unwrap();
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_negative_wrong_decomposition() {
+        use halo2_proofs::halo2curves::bn256::Fr;
+        let max_u64 = Value::known(Fr::from(((1u128 << 64) - 1) as u64));
+        let max_u16 = Value::known(Fr::from((1 << 16) - 1));
+        let one = Value::known(Fr::ONE);
+        let zero = Value::known(Fr::ZERO);
+        let trace = [
+            [max_u64, max_u16, max_u16, max_u16, max_u16, zero],
+            [zero, zero, zero, zero, zero, zero],
+            [max_u64, max_u16, max_u16, one, max_u16, zero],
+        ];
+
+        let circuit = Blake2bCircuit::<Fr> {
+            _ph: PhantomData,
+            trace,
+        };
+        let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+        prover.verify().unwrap();
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_negative_wrong_carry() {
+        use halo2_proofs::halo2curves::bn256::Fr;
+        let max_u64 = Value::known(Fr::from(((1u128 << 64) - 1) as u64));
+        let max_u16 = Value::known(Fr::from((1 << 16) - 1));
+        let one = Value::known(Fr::ONE);
+        let zero = Value::known(Fr::ZERO);
+        let trace = [
+            [max_u64, max_u16, max_u16, max_u16, max_u16, zero],
+            [one, one, zero, zero, zero, zero],
+            [zero, zero, zero, zero, zero, one + one],
+        ];
+
+        let circuit = Blake2bCircuit::<Fr> {
+            _ph: PhantomData,
+            trace,
+        };
+        let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+        prover.verify().unwrap();
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_negative_wrong_rangecheck() {
+        use halo2_proofs::halo2curves::bn256::Fr;
+        let max_u16 = Value::known(Fr::from((1 << 16) - 1));
+        let one = Value::known(Fr::ONE);
+        let zero = Value::known(Fr::ZERO);
+        let trace = [
+            [max_u16 + one, max_u16 + one, zero, zero, zero, zero],
+            [zero, zero, zero, zero, zero, zero],
+            [max_u16 + one, zero, one, zero, zero, zero],
+        ];
+
+        let circuit = Blake2bCircuit::<Fr> {
+            _ph: PhantomData,
+            trace,
+        };
+        let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+        prover.verify().unwrap();
+    }
 }
