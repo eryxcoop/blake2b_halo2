@@ -17,6 +17,7 @@ struct Blake2bCircuit<F: Field> {
     _ph: PhantomData<F>,
     addition_trace: [[Value<F>; 6]; 3],
     rotation_trace_64: [[Value<F>; 5]; 2],
+    rotation_trace_24: [[Value<F>; 5]; 3],
 }
 
 #[derive(Clone, Debug)]
@@ -28,6 +29,7 @@ struct Blake2bConfig<F: Field + Clone> {
     q_add: Selector,
     t_range16: TableColumn,
     q_rot63: Selector,
+    q_rot24: Selector,
     _ph: PhantomData<F>,
 }
 
@@ -112,6 +114,23 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
             ]
         });
 
+        // Rotation
+        // 0 = (x*2^40 + z) - z*2^64 - y
+        let q_rot24 = meta.complex_selector();
+        let _ = meta.create_gate("rotate right 24", |meta| {
+            let q_rot24 = meta.query_selector(q_rot24);
+            let input_full_number = meta.query_advice(full_number_u64, Rotation(0));
+            let chunk = meta.query_advice(full_number_u64, Rotation(1));
+            let output_full_number = meta.query_advice(full_number_u64, Rotation(2));
+            vec![
+                q_rot24
+                    * (Expression::Constant(F::from(((1u128 << 40) - 1) as u64)) * input_full_number.clone() +
+                        chunk.clone() -
+                        Expression::Constant(F::from(((1u128 << 64) - 1) as u64)) * chunk.clone() -
+                        output_full_number.clone()),
+            ]
+        });
+
         Blake2bConfig {
             _ph: PhantomData,
             q_decompose,
@@ -121,6 +140,7 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
             t_range16,
             carry,
             q_rot63,
+            q_rot24,
         }
     }
 
@@ -136,6 +156,23 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
 
         // Rotation
         self.assign_rotation_rows(&config, &mut layouter);
+        let _ = layouter.assign_region(
+            || "rotate 24",
+            |mut region| {
+                let _ = config.q_rot24.enable(&mut region, 0);
+
+                let mut first_row = self.rotation_trace_24[0].to_vec();
+                first_row.push(Value::known(F::ZERO));
+                let mut second_row = self.rotation_trace_24[1].to_vec();
+                second_row.push(Value::known(F::ZERO));
+                let mut third_row = self.rotation_trace_24[1].to_vec();
+                third_row.push(Value::known(F::ZERO));
+                Self::assign_row_from_values(&&config, &mut region, first_row, 0);
+                Self::assign_row_from_values(&&config, &mut region, second_row, 1);
+                Self::assign_row_from_values(&&config, &mut region, third_row, 2);
+                Ok(())
+            },
+        );
 
         Ok(())
     }
@@ -214,6 +251,7 @@ impl<F: Field + From<u64>> Blake2bCircuit<F> {
             _ph: PhantomData,
             addition_trace: [[Value::unknown(); 6]; 3],
             rotation_trace_64: [[Value::unknown(); 5]; 2],
+            rotation_trace_24: [[Value::unknown(); 5]; 3],
         }
     }
 
@@ -222,6 +260,7 @@ impl<F: Field + From<u64>> Blake2bCircuit<F> {
             _ph: PhantomData,
             addition_trace: trace,
             rotation_trace_64: [[Value::unknown(); 5]; 2], // TODO: check this
+            rotation_trace_24: [[Value::unknown(); 5]; 3],
         }
     }
 
@@ -230,6 +269,7 @@ impl<F: Field + From<u64>> Blake2bCircuit<F> {
             _ph: PhantomData,
             addition_trace: [[Value::unknown(); 6]; 3],
             rotation_trace_64: rotation_trace,
+            rotation_trace_24: [[Value::unknown(); 5]; 3],
         }
     }
 

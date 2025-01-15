@@ -1,8 +1,9 @@
 use std::marker::PhantomData;
+use halo2_proofs::circuit::Value;
 use halo2_proofs::dev::MockProver;
 use halo2_proofs::halo2curves::bn256::Fr;
 use crate::Blake2bCircuit;
-use crate::tests::{one, two_power_24, two_power_8, valid_addition_trace, valid_rotation_trace, zero};
+use crate::tests::{max_u16, max_u64, one, two_power_24, two_power_8, valid_addition_trace, valid_rotation_trace, zero};
 
 #[test]
 fn test_positive_rotate_right_63() {
@@ -32,8 +33,14 @@ fn test_positive_rotate_right_24() {
         _ph: PhantomData,
         addition_trace: valid_addition_trace(),
         rotation_trace_64: valid_rotation_trace(),
-        // TODO hacer traza para rotacion de 24 y agregar un nuevo key aca
+        // TODO chequear traza y despues hacer otro test mas complejo
+        rotation_trace_24: [
+            [max_u64(), max_u16(), max_u16(), max_u16(), max_u16()],
+            [Value::known(Fr::from(((1u128 << 40) - 1) as u64)), max_u16(), max_u16(), Value::known(Fr::from((1 << 8) - 1)), zero()],
+            [max_u64(), max_u16(), max_u16(), max_u16(), max_u16()],
+        ],
     };
     let prover = MockProver::run(17, &circuit, vec![]).unwrap();
     prover.verify().unwrap();
 }
+
