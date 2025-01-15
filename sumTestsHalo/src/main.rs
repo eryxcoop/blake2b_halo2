@@ -8,15 +8,13 @@ use halo2_proofs::{
 
 use ff::Field;
 use halo2_proofs::circuit::{Region, Value};
-use halo2_proofs::halo2curves::bn256::Fr;
 use halo2_proofs::plonk::{Advice, Column, Error, Expression, Selector, TableColumn};
 use halo2_proofs::poly::Rotation;
-use crate::tests::valid_addition_trace;
 
 struct Blake2bCircuit<F: Field> {
     _ph: PhantomData<F>,
     addition_trace: [[Value<F>; 6]; 3],
-    rotation_trace_64: [[Value<F>; 5]; 2],
+    rotation_trace_63: [[Value<F>; 5]; 2],
     rotation_trace_24: [[Value<F>; 5]; 3],
 }
 
@@ -28,6 +26,7 @@ struct Blake2bConfig<F: Field + Clone> {
     q_decompose: Selector,
     q_add: Selector,
     t_range16: TableColumn,
+    t_range8: TableColumn,
     q_rot63: Selector,
     q_rot24: Selector,
     _ph: PhantomData<F>,
@@ -58,6 +57,7 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
             meta.enable_equality(limb);
         }
         let t_range16 = meta.lookup_table_column();
+        let t_range8 = meta.lookup_table_column();
         let carry = meta.advice_column();
 
         meta.create_gate("decompose in 16bit words", |meta| {
@@ -124,12 +124,19 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
             let output_full_number = meta.query_advice(full_number_u64, Rotation(2));
             vec![
                 q_rot24
-                    * (Expression::Constant(F::from(((1u128 << 40)) as u64)) * input_full_number.clone() +
+                    * (Expression::Constant(F::from((1u128 << 40) as u64)) * input_full_number.clone() +
                         chunk.clone() -
-                        Expression::Constant(F::from(((1u128 << 64)) as u64)) * chunk.clone() -
+                        Expression::Constant(F::from((1u128 << 63) as u64) * F::from(2)) * chunk.clone() -
                         output_full_number.clone()),
             ]
         });
+
+        meta.lookup(format!("lookup rotate24 chunks"), |meta| {
+            let limb: Expression<F> = meta.query_advice(limbs[2], Rotation(1));
+            let q_rot24 = meta.query_selector(q_rot24);
+            vec![(q_rot24 * limb, t_range8)]
+        });
+
 
         Blake2bConfig {
             _ph: PhantomData,
@@ -138,6 +145,7 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
             full_number_u64,
             limbs,
             t_range16,
+            t_range8,
             carry,
             q_rot63,
             q_rot24,
@@ -174,6 +182,8 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
             },
         );
 
+        Self::populate_lookup_table8(&config, &mut layouter)?;
+
         Ok(())
     }
 }
@@ -185,9 +195,9 @@ impl<F: Field + From<u64>> Blake2bCircuit<F> {
             |mut region| {
                 let _ = config.q_rot63.enable(&mut region, 0);
 
-                let mut first_row = self.rotation_trace_64[0].to_vec();
+                let mut first_row = self.rotation_trace_63[0].to_vec();
                 first_row.push(Value::known(F::ZERO));
-                let mut second_row = self.rotation_trace_64[1].to_vec();
+                let mut second_row = self.rotation_trace_63[1].to_vec();
                 second_row.push(Value::known(F::ZERO));
                 Self::assign_row_from_values(&config, &mut region, first_row, 0);
                 Self::assign_row_from_values(&config, &mut region, second_row, 1);
@@ -226,14 +236,32 @@ impl<F: Field + From<u64>> Blake2bCircuit<F> {
     }
 
     fn populate_lookup_table16(config: &Blake2bConfig<F>, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
+        let table_name = "range 16bit check table";
+        let max_value = 1 << 16;
+        let lookup_column = config.t_range16;
+        Self::check_lookup_table(layouter, lookup_column, table_name, max_value)?;
+
+        Ok(())
+    }
+
+    fn populate_lookup_table8(config: &Blake2bConfig<F>, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
+        let table_name = "range 8bit check table";
+        let max_value = 1 << 8;
+        let lookup_column = config.t_range8;
+
+        Self::check_lookup_table(layouter, lookup_column, table_name, max_value)?;
+        Ok(())
+    }
+
+    fn check_lookup_table(layouter: &mut impl Layouter<F>, lookup_column: TableColumn, table_name: &str, max_value: usize) -> Result<(), Error> {
         layouter.assign_table(
-            || "range check table",
+            || table_name,
             |mut table| {
                 // assign the table
-                for i in 0..1 << 16 {
+                for i in 0..max_value {
                     table.assign_cell(
                         || "value",
-                        config.t_range16,
+                        lookup_column,
                         i,
                         || Value::known(F::from(i as u64)),
                     )?;
@@ -250,7 +278,7 @@ impl<F: Field + From<u64>> Blake2bCircuit<F> {
         Blake2bCircuit {
             _ph: PhantomData,
             addition_trace: [[Value::unknown(); 6]; 3],
-            rotation_trace_64: [[Value::unknown(); 5]; 2],
+            rotation_trace_63: [[Value::unknown(); 5]; 2],
             rotation_trace_24: [[Value::unknown(); 5]; 3],
         }
     }
@@ -259,7 +287,7 @@ impl<F: Field + From<u64>> Blake2bCircuit<F> {
         Self {
             _ph: PhantomData,
             addition_trace: trace,
-            rotation_trace_64: [[Value::unknown(); 5]; 2], // TODO: check this
+            rotation_trace_63: [[Value::unknown(); 5]; 2], // TODO: check this
             rotation_trace_24: [[Value::unknown(); 5]; 3],
         }
     }
@@ -268,7 +296,7 @@ impl<F: Field + From<u64>> Blake2bCircuit<F> {
         Self {
             _ph: PhantomData,
             addition_trace: [[Value::unknown(); 6]; 3],
-            rotation_trace_64: rotation_trace,
+            rotation_trace_63: rotation_trace,
             rotation_trace_24: [[Value::unknown(); 5]; 3],
         }
     }

@@ -10,16 +10,22 @@ fn max_u64() -> Value<Fr> {
 fn max_u16() -> Value<Fr> {
     Value::known(Fr::from((1 << 16) - 1))
 }
+fn max_u24() -> Value<Fr> {
+    known_value_from_number((1u128 << 24) - 1)
+}
+fn max_u8() -> Value<Fr> {
+    Value::known(Fr::from((1 << 8) - 1))
+}
+fn max_u40() -> Value<Fr> {
+    Value::known(Fr::from(((1u128 << 40) - 1) as u64))
+}
+
 fn one() -> Value<Fr> {
     Value::known(Fr::ONE)
 }
 fn zero() -> Value<Fr> {
     Value::known(Fr::ZERO)
 }
-
-fn two_power_48() -> Value<Fr> { Value::known(Fr::from(1 << 48)) }
-fn two_power_24() -> Value<Fr> { Value::known(Fr::from(1 << 24)) }
-fn two_power_8() -> Value<Fr> { Value::known(Fr::from(1 << 8)) }
 
 pub fn valid_addition_trace() -> [[Value<Fr>; 6]; 3] {
     [
@@ -29,9 +35,13 @@ pub fn valid_addition_trace() -> [[Value<Fr>; 6]; 3] {
     ]
 }
 
-pub fn valid_rotation_trace() -> [[Value<Fr>; 5]; 2] {
+pub fn valid_rotation_trace_63() -> [[Value<Fr>; 5]; 2] {
     [
         [one(), one(), zero(), zero(), zero()],
         [one() + one(), one() + one(), zero(), zero(), zero()],
     ]
+}
+
+fn known_value_from_number(number: u128) -> Value<Fr> {
+    Value::known(Fr::from(number as u64))
 }
