@@ -35,8 +35,25 @@ fn test_positive_rotate_right_24() {
         rotation_trace_64: valid_rotation_trace(),
         // TODO chequear traza y despues hacer otro test mas complejo
         rotation_trace_24: [
+            [Value::known(Fr::from(((1u128 << 24) - 1) as u64)), max_u16(), Value::known(Fr::from((1 << 8) - 1)), zero(), zero()],
+            [zero(), zero(), zero(), zero(), zero()],
+            [Value::known(Fr::from((((1u128 << 24) - 1) * (1u128 << 40)) as u64)), zero(), zero(), Value::known(Fr::from(((1 << 8) - 1) * (1 << 8))), max_u16()],
+        ],
+    };
+    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+    prover.verify().unwrap();
+}
+
+#[test]
+fn test_positive_rotate_right_24_b() {
+    let circuit = Blake2bCircuit::<Fr> {
+        _ph: PhantomData,
+        addition_trace: valid_addition_trace(),
+        rotation_trace_64: valid_rotation_trace(),
+        // TODO chequear traza y despues hacer otro test mas complejo
+        rotation_trace_24: [
             [max_u64(), max_u16(), max_u16(), max_u16(), max_u16()],
-            [Value::known(Fr::from(((1u128 << 40) - 1) as u64)), max_u16(), max_u16(), Value::known(Fr::from((1 << 8) - 1)), zero()],
+            [Value::known(Fr::from(((1u128 << 40) - 1) as u64)), max_u16(), max_u16(), Value::known(Fr::from(((1 << 8) - 1))), zero()],
             [max_u64(), max_u16(), max_u16(), max_u16(), max_u16()],
         ],
     };

@@ -124,9 +124,9 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
             let output_full_number = meta.query_advice(full_number_u64, Rotation(2));
             vec![
                 q_rot24
-                    * (Expression::Constant(F::from(((1u128 << 40) - 1) as u64)) * input_full_number.clone() +
+                    * (Expression::Constant(F::from(((1u128 << 40)) as u64)) * input_full_number.clone() +
                         chunk.clone() -
-                        Expression::Constant(F::from(((1u128 << 64) - 1) as u64)) * chunk.clone() -
+                        Expression::Constant(F::from(((1u128 << 64)) as u64)) * chunk.clone() -
                         output_full_number.clone()),
             ]
         });
@@ -165,7 +165,7 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
                 first_row.push(Value::known(F::ZERO));
                 let mut second_row = self.rotation_trace_24[1].to_vec();
                 second_row.push(Value::known(F::ZERO));
-                let mut third_row = self.rotation_trace_24[1].to_vec();
+                let mut third_row = self.rotation_trace_24[2].to_vec();
                 third_row.push(Value::known(F::ZERO));
                 Self::assign_row_from_values(&&config, &mut region, first_row, 0);
                 Self::assign_row_from_values(&&config, &mut region, second_row, 1);
