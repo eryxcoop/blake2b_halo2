@@ -194,9 +194,9 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
                 let out: Expression<F> = meta.query_advice(limb, Rotation(2));
                 let q_xor = meta.query_selector(q_xor);
                 vec![
-                    (q_xor * left, t_xor_left),
-                    (q_xor * right, t_xor_right),
-                    (q_xor * out, t_xor_out),
+                    (q_xor.clone() * left, t_xor_left),
+                    (q_xor.clone() * right, t_xor_right),
+                    (q_xor.clone() * out, t_xor_out),
                 ]
             });
         }
@@ -244,15 +244,33 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
                 second_row.push(Value::known(F::ZERO));
                 let mut third_row = self.rotation_trace_24[2].to_vec();
                 third_row.push(Value::known(F::ZERO));
-                Self::assign_row_from_values(&&config, &mut region, first_row, 0);
-                Self::assign_row_from_values(&&config, &mut region, second_row, 1);
-                Self::assign_row_from_values(&&config, &mut region, third_row, 2);
+                Self::assign_row_from_values(&config, &mut region, first_row, 0);
+                Self::assign_row_from_values(&config, &mut region, second_row, 1);
+                Self::assign_row_from_values(&config, &mut region, third_row, 2);
                 Ok(())
             },
         );
 
         Self::populate_lookup_table8(&config, &mut layouter)?;
 
+        // XOR operation
+
+        Self::populate_xor_lookup_table(&config, &mut layouter)?;
+
+        let _ = layouter.assign_region(
+            || "xor",
+            |mut region| {
+                let _ = config.q_xor.enable(&mut region, 0);
+
+                let first_row = self.xor_trace[0].to_vec();
+                let second_row = self.xor_trace[1].to_vec();
+                let third_row = self.xor_trace[2].to_vec();
+                Self::assign_8bit_row_from_values(&config, &mut region, first_row, 0);
+                Self::assign_8bit_row_from_values(&config, &mut region, second_row, 1);
+                Self::assign_8bit_row_from_values(&config, &mut region, third_row, 2);
+                Ok(())
+            },
+        );
         Ok(())
     }
 }
@@ -328,6 +346,46 @@ impl<F: Field + From<u64>> Blake2bCircuit<F> {
         Ok(())
     }
 
+    fn populate_xor_lookup_table(
+        config: &Blake2bConfig<F>,
+        layouter: &mut impl Layouter<F>,
+    ) -> Result<(), Error> {
+        let table_name = "xor check table";
+
+        layouter.assign_table(
+            || table_name,
+            |mut table| {
+                // assign the table
+                for left in 0..256 {
+                    for right in 0..256 {
+                        let index = left * 256 + right;
+                        let result = left ^ right;
+                        table.assign_cell(
+                            || "left_value",
+                            config.t_xor_left,
+                            index,
+                            || Value::known(F::from(left as u64)),
+                        )?;
+                        table.assign_cell(
+                            || "right_value",
+                            config.t_xor_right,
+                            index,
+                            || Value::known(F::from(right as u64)),
+                        )?;
+                        table.assign_cell(
+                            || "out_value",
+                            config.t_xor_out,
+                            index,
+                            || Value::known(F::from(result as u64)),
+                        )?;
+                    }
+                }
+                Ok(())
+            },
+        )?;
+        Ok(())
+    }
+
     fn check_lookup_table(
         layouter: &mut impl Layouter<F>,
         lookup_column: TableColumn,
@@ -360,7 +418,7 @@ impl<F: Field + From<u64>> Blake2bCircuit<F> {
             addition_trace: [[Value::unknown(); 6]; 3],
             rotation_trace_63: [[Value::unknown(); 5]; 2],
             rotation_trace_24: [[Value::unknown(); 5]; 3],
-            xor_trace: [[Value::unknown(); 9]; 4],
+            xor_trace: [[Value::unknown(); 9]; 3],
         }
     }
 
@@ -370,7 +428,7 @@ impl<F: Field + From<u64>> Blake2bCircuit<F> {
             addition_trace: trace,
             rotation_trace_63: [[Value::unknown(); 5]; 2], // TODO: check this
             rotation_trace_24: [[Value::unknown(); 5]; 3],
-            xor_trace: [[Value::unknown(); 9]; 4],
+            xor_trace: [[Value::unknown(); 9]; 3],
         }
     }
 
@@ -380,7 +438,7 @@ impl<F: Field + From<u64>> Blake2bCircuit<F> {
             addition_trace: [[Value::unknown(); 6]; 3],
             rotation_trace_63: rotation_trace,
             rotation_trace_24: [[Value::unknown(); 5]; 3],
-            xor_trace: [[Value::unknown(); 9]; 4],
+            xor_trace: [[Value::unknown(); 9]; 3],
         }
     }
 
@@ -417,17 +475,30 @@ impl<F: Field + From<u64>> Blake2bCircuit<F> {
         offset: usize,
     ) {
         let _ = config.q_decompose.enable(region, offset);
-        let _ = region.assign_advice(
-            || "full number",
-            config.full_number_u64,
-            offset.clone(),
-            || row[0],
-        );
-        let _ = region.assign_advice(|| "limb0", config.limbs[0], offset.clone(), || row[1]);
-        let _ = region.assign_advice(|| "limb1", config.limbs[1], offset.clone(), || row[2]);
-        let _ = region.assign_advice(|| "limb2", config.limbs[2], offset.clone(), || row[3]);
-        let _ = region.assign_advice(|| "limb3", config.limbs[3], offset.clone(), || row[4]);
-        let _ = region.assign_advice(|| "carry", config.carry, offset.clone(), || row[5]);
+        let _ = region.assign_advice(|| "full number", config.full_number_u64, offset, || row[0]);
+        let _ = region.assign_advice(|| "limb0", config.limbs[0], offset, || row[1]);
+        let _ = region.assign_advice(|| "limb1", config.limbs[1], offset, || row[2]);
+        let _ = region.assign_advice(|| "limb2", config.limbs[2], offset, || row[3]);
+        let _ = region.assign_advice(|| "limb3", config.limbs[3], offset, || row[4]);
+        let _ = region.assign_advice(|| "carry", config.carry, offset, || row[5]);
+    }
+
+    fn assign_8bit_row_from_values(
+        config: &Blake2bConfig<F>,
+        region: &mut Region<F>,
+        row: Vec<Value<F>>,
+        offset: usize,
+    ) {
+        let _ = config.q_decompose_8.enable(region, offset);
+        let _ = region.assign_advice(|| "full number", config.full_number_u64, offset, || row[0]);
+        for i in 0..8 {
+            let _ = region.assign_advice(
+                || format!("limb{}", i),
+                config.limbs_8_bits[i],
+                offset,
+                || row[i + 1],
+            );
+        }
     }
 }
 

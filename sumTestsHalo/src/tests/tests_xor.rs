@@ -1,5 +1,5 @@
 use super::*;
-use crate::auxiliar_functions::{spread, trash, value_for};
+use crate::auxiliar_functions::value_for;
 
 #[test]
 fn test_positive_xor() {

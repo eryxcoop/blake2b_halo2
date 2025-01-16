@@ -73,7 +73,7 @@ fn _test_rotate24(rotation_trace: [[Value<Fr>; 5]; 3]) {
         addition_trace: valid_addition_trace(),
         rotation_trace_63: valid_rotation_trace_63(),
         rotation_trace_24: rotation_trace,
-        xor_trace: [[Value::unknown(); 9]; 4],
+        xor_trace: [[Value::unknown(); 9]; 3],
     };
 
     let prover = MockProver::run(17, &circuit, vec![]).unwrap();
