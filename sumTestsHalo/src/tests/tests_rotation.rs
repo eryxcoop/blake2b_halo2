@@ -3,7 +3,6 @@ use crate::Blake2bCircuit;
 use halo2_proofs::circuit::Value;
 use halo2_proofs::dev::MockProver;
 use halo2_proofs::halo2curves::bn256::Fr;
-use std::marker::PhantomData;
 
 #[test]
 fn test_positive_rotate_right_63() {
@@ -30,7 +29,10 @@ fn test_negative_rotate_right_63() {
 #[test]
 fn test_positive_rotate_right_24() {
     let rotation_trace = valid_rotation24_trace();
-    _test_rotate24(rotation_trace);
+    let circuit = Blake2bCircuit::<Fr>::new_for_rotation_24(rotation_trace);
+
+    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+    prover.verify().unwrap();
 }
 
 #[test]
@@ -40,7 +42,10 @@ fn test_positive_rotate_right_24_b() {
         [max_u40(), max_u16(), max_u16(), max_u8(), zero()],
         [max_u64(), max_u16(), max_u16(), max_u16(), max_u16()],
     ];
-    _test_rotate24(rotation_trace);
+    let circuit = Blake2bCircuit::<Fr>::new_for_rotation_24(rotation_trace);
+
+    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+    prover.verify().unwrap();
 }
 
 #[test]
@@ -51,7 +56,10 @@ fn test_negative_rotate_right_24() {
         [max_u40(), max_u16(), max_u16(), max_u8(), zero()],
         [one(), one(), zero(), zero(), zero()],
     ];
-    _test_rotate24(rotation_trace);
+    let circuit = Blake2bCircuit::<Fr>::new_for_rotation_24(rotation_trace);
+
+    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+    prover.verify().unwrap();
 }
 
 #[test]
@@ -62,23 +70,13 @@ fn test_rotate_right_24_chunk_out_of_range() {
         [max_u40() + one(), zero(), zero(), max_u8() + one(), zero()],
         [zero(), zero(), zero(), zero(), zero()],
     ];
-    _test_rotate24(rotation_trace);
-}
-
-//   ---------- Aux ----------------------
-
-fn _test_rotate24(rotation_trace: [[Value<Fr>; 5]; 3]) {
-    let circuit = Blake2bCircuit::<Fr> {
-        _ph: PhantomData,
-        addition_trace: valid_addition_trace(),
-        rotation_trace_63: valid_rotation_trace_63(),
-        rotation_trace_24: rotation_trace,
-        xor_trace: [[Value::unknown(); 9]; 3],
-    };
+    let circuit = Blake2bCircuit::<Fr>::new_for_rotation_24(rotation_trace);
 
     let prover = MockProver::run(17, &circuit, vec![]).unwrap();
     prover.verify().unwrap();
 }
+
+//   ---------- Aux ----------------------
 
 fn valid_rotation24_trace() -> [[Value<Fr>; 5]; 3] {
     [

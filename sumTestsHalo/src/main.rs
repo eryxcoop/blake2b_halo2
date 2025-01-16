@@ -22,18 +22,21 @@ struct Blake2bCircuit<F: Field> {
 #[derive(Clone, Debug)]
 struct Blake2bConfig<F: Field + Clone> {
     full_number_u64: Column<Advice>,
+
+    // Working with 4 limbs of u16
     limbs: [Column<Advice>; 4],
     carry: Column<Advice>,
-    q_decompose: Selector,
+    q_decompose_16: Selector,
     q_add: Selector,
     t_range16: TableColumn,
     t_range8: TableColumn,
     q_rot63: Selector,
     q_rot24: Selector,
 
+    // Working with 8 limbs of u8
     q_decompose_8: Selector,
-    q_xor: Selector,
     limbs_8_bits: [Column<Advice>; 8],
+    q_xor: Selector,
     t_xor_left: TableColumn,
     t_xor_right: TableColumn,
     t_xor_out: TableColumn,
@@ -52,7 +55,7 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
     #[allow(unused_variables)]
     fn configure(meta: &mut ConstraintSystem<F>) -> Self::Config {
         // Addition
-        let q_decompose = meta.complex_selector();
+        let q_decompose_16 = meta.complex_selector();
         let q_add = meta.complex_selector();
 
         let full_number_u64 = meta.advice_column();
@@ -70,7 +73,7 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
         let carry = meta.advice_column();
 
         meta.create_gate("decompose in 16bit words", |meta| {
-            let q_decompose = meta.query_selector(q_decompose);
+            let q_decompose = meta.query_selector(q_decompose_16);
             let full_number = meta.query_advice(full_number_u64, Rotation::cur());
             let limbs: Vec<Expression<F>> = limbs
                 .iter()
@@ -104,12 +107,12 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
         });
 
         for limb in limbs {
-            Self::range_check_for_limb(meta, &limb, &q_decompose, &t_range16);
+            Self::range_check_for_limb_16_bits(meta, &limb, &q_decompose_16, &t_range16);
         }
 
         // Rotation
         let q_rot63 = meta.complex_selector();
-        let _ = meta.create_gate("rotate right 63", |meta| {
+        meta.create_gate("rotate right 63", |meta| {
             let q_rot63 = meta.query_selector(q_rot63);
             let input_full_number = meta.query_advice(full_number_u64, Rotation::cur());
             let output_full_number = meta.query_advice(full_number_u64, Rotation::next());
@@ -126,7 +129,7 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
         // Rotation
         // 0 = (x*2^40 + z) - z*2^64 - y
         let q_rot24 = meta.complex_selector();
-        let _ = meta.create_gate("rotate right 24", |meta| {
+        meta.create_gate("rotate right 24", |meta| {
             let q_rot24 = meta.query_selector(q_rot24);
             let input_full_number = meta.query_advice(full_number_u64, Rotation(0));
             let chunk = meta.query_advice(full_number_u64, Rotation(1));
@@ -142,7 +145,7 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
             ]
         });
 
-        meta.lookup(format!("lookup rotate24 chunks"), |meta| {
+        meta.lookup("lookup rotate_24 chunks", |meta| {
             let limb: Expression<F> = meta.query_advice(limbs[2], Rotation(1));
             let q_rot24 = meta.query_selector(q_rot24);
             vec![(q_rot24 * limb, t_range8)]
@@ -187,7 +190,7 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
         });
 
         for limb in limbs_8_bits {
-            Self::range_check_for_limb_8bits(meta, &limb, &q_decompose_8, &t_range8);
+            Self::range_check_for_limb_8_bits(meta, &limb, &q_decompose_8, &t_range8);
             meta.lookup(format!("xor lookup limb {:?}", limb), |meta| {
                 let left: Expression<F> = meta.query_advice(limb, Rotation::cur());
                 let right: Expression<F> = meta.query_advice(limb, Rotation::next());
@@ -203,7 +206,7 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
 
         Blake2bConfig {
             _ph: PhantomData,
-            q_decompose,
+            q_decompose_16,
             q_decompose_8,
             q_add,
             full_number_u64,
@@ -286,8 +289,8 @@ impl<F: Field + From<u64>> Blake2bCircuit<F> {
                 first_row.push(Value::known(F::ZERO));
                 let mut second_row = self.rotation_trace_63[1].to_vec();
                 second_row.push(Value::known(F::ZERO));
-                Self::assign_row_from_values(&config, &mut region, first_row, 0);
-                Self::assign_row_from_values(&config, &mut region, second_row, 1);
+                Self::assign_row_from_values(config, &mut region, first_row, 0);
+                Self::assign_row_from_values(config, &mut region, second_row, 1);
                 Ok(())
             },
         );
@@ -300,19 +303,19 @@ impl<F: Field + From<u64>> Blake2bCircuit<F> {
                 let _ = config.q_add.enable(&mut region, 0);
 
                 Self::assign_row_from_values(
-                    &config,
+                    config,
                     &mut region,
                     self.addition_trace[0].to_vec(),
                     0,
                 );
                 Self::assign_row_from_values(
-                    &config,
+                    config,
                     &mut region,
                     self.addition_trace[1].to_vec(),
                     1,
                 );
                 Self::assign_row_from_values(
-                    &config,
+                    config,
                     &mut region,
                     self.addition_trace[2].to_vec(),
                     2,
@@ -412,37 +415,33 @@ impl<F: Field + From<u64>> Blake2bCircuit<F> {
 }
 
 impl<F: Field + From<u64>> Blake2bCircuit<F> {
+    fn _unknown_trace_for_rotation_63() -> [[Value<F>; 5]; 2] {
+        [[Value::unknown(); 5]; 2]
+    }
+
+    fn _unknown_trace_for_addition() -> [[Value<F>; 6]; 3] {
+        [[Value::unknown(); 6]; 3]
+    }
+
+    fn _unknown_trace_for_rotation_24() -> [[Value<F>; 5]; 3] {
+        [[Value::unknown(); 5]; 3]
+    }
+
+    fn _unknown_trace_for_xor() -> [[Value<F>; 9]; 3] {
+        [[Value::unknown(); 9]; 3]
+    }
+
     fn new_for_unknown_values() -> Self {
         Blake2bCircuit {
             _ph: PhantomData,
-            addition_trace: [[Value::unknown(); 6]; 3],
-            rotation_trace_63: [[Value::unknown(); 5]; 2],
-            rotation_trace_24: [[Value::unknown(); 5]; 3],
-            xor_trace: [[Value::unknown(); 9]; 3],
+            addition_trace: Self::_unknown_trace_for_addition(),
+            rotation_trace_63: Self::_unknown_trace_for_rotation_63(),
+            rotation_trace_24: Self::_unknown_trace_for_rotation_24(),
+            xor_trace: Self::_unknown_trace_for_xor(),
         }
     }
 
-    fn new_for_addition_alone(trace: [[Value<F>; 6]; 3]) -> Self {
-        Self {
-            _ph: PhantomData,
-            addition_trace: trace,
-            rotation_trace_63: [[Value::unknown(); 5]; 2], // TODO: check this
-            rotation_trace_24: [[Value::unknown(); 5]; 3],
-            xor_trace: [[Value::unknown(); 9]; 3],
-        }
-    }
-
-    fn new_for_rotation_63(rotation_trace: [[Value<F>; 5]; 2]) -> Self {
-        Self {
-            _ph: PhantomData,
-            addition_trace: [[Value::unknown(); 6]; 3],
-            rotation_trace_63: rotation_trace,
-            rotation_trace_24: [[Value::unknown(); 5]; 3],
-            xor_trace: [[Value::unknown(); 9]; 3],
-        }
-    }
-
-    fn range_check_for_limb(
+    fn range_check_for_limb_16_bits(
         meta: &mut ConstraintSystem<F>,
         limb: &Column<Advice>,
         q_decompose: &Selector,
@@ -455,7 +454,7 @@ impl<F: Field + From<u64>> Blake2bCircuit<F> {
         });
     }
 
-    fn range_check_for_limb_8bits(
+    fn range_check_for_limb_8_bits(
         meta: &mut ConstraintSystem<F>,
         limb: &Column<Advice>,
         q_decompose_8: &Selector,
@@ -474,7 +473,7 @@ impl<F: Field + From<u64>> Blake2bCircuit<F> {
         row: Vec<Value<F>>,
         offset: usize,
     ) {
-        let _ = config.q_decompose.enable(region, offset);
+        let _ = config.q_decompose_16.enable(region, offset);
         let _ = region.assign_advice(|| "full number", config.full_number_u64, offset, || row[0]);
         let _ = region.assign_advice(|| "limb0", config.limbs[0], offset, || row[1]);
         let _ = region.assign_advice(|| "limb1", config.limbs[1], offset, || row[2]);
@@ -504,17 +503,7 @@ impl<F: Field + From<u64>> Blake2bCircuit<F> {
 
 fn main() {
     use halo2_proofs::halo2curves::bn256::Fr;
-    let max_u64 = Value::known(Fr::from(((1u128 << 64) - 1) as u64));
-    let max_u16 = Value::known(Fr::from((1 << 16) - 1));
-    let one = Value::known(Fr::ONE);
-    let zero = Value::known(Fr::ZERO);
-    let trace = [
-        [max_u64, max_u16, max_u16, max_u16, max_u16, zero],
-        [one, one, zero, zero, zero, zero],
-        [zero, zero, zero, zero, zero, one],
-    ];
-
-    let circuit = Blake2bCircuit::<Fr>::new_for_addition_alone(trace);
+    let circuit = Blake2bCircuit::<Fr>::new_for_unknown_values();
     let prover = MockProver::run(17, &circuit, vec![]).unwrap();
     prover.verify().unwrap();
 }
