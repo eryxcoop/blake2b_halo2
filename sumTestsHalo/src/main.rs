@@ -516,3 +516,4 @@ fn main() {
 pub mod auxiliar_functions;
 #[cfg(test)]
 pub mod tests;
+pub mod chips;
