@@ -1,16 +1,16 @@
 use super::*;
 
 #[derive(Clone, Debug)]
-struct Decompose8Chip<F: Field> {
+pub struct Decompose8Chip<F: Field> {
     full_number_u64: Column<Advice>,
     limbs_8_bits: [Column<Advice>; 8],
-    q_decompose_8: Selector,
+    pub q_decompose_8: Selector,
     t_range8: TableColumn,
     _ph: PhantomData<F>,
 }
 
 impl<F: Field + From<u64>> Decompose8Chip<F> {
-    fn configure(
+    pub fn configure(
         meta: &mut ConstraintSystem<F>,
         full_number_u64: Column<Advice>,
         limbs_8_bits: [Column<Advice>; 8],
@@ -46,12 +46,30 @@ impl<F: Field + From<u64>> Decompose8Chip<F> {
             });
         }
 
-        Decompose8Chip {
+        Self {
             full_number_u64,
             limbs_8_bits,
             q_decompose_8,
             t_range8,
             _ph: PhantomData,
+        }
+    }
+
+    pub fn assign_8bit_row_from_values(
+        &mut self,
+        region: &mut Region<F>,
+        row: Vec<Value<F>>,
+        offset: usize,
+    ) {
+        let _ = self.q_decompose_8.enable(region, offset);
+        let _ = region.assign_advice(|| "full number", self.full_number_u64, offset, || row[0]);
+        for i in 0..8 {
+            let _ = region.assign_advice(
+                || format!("limb{}", i),
+                self.limbs_8_bits[i],
+                offset,
+                || row[i + 1],
+            );
         }
     }
 }

@@ -10,6 +10,7 @@ use ff::Field;
 use halo2_proofs::circuit::{Region, Value};
 use halo2_proofs::plonk::{Advice, Column, Error, Expression, Selector, TableColumn};
 use halo2_proofs::poly::Rotation;
+use crate::chips::decompose_8_chip::Decompose8Chip;
 
 struct Blake2bCircuit<F: Field> {
     _ph: PhantomData<F>,
@@ -35,7 +36,7 @@ struct Blake2bConfig<F: Field + Clone> {
     q_rot24: Selector,
 
     // Working with 8 limbs of u8
-    q_decompose_8: Selector,
+    decompose_8_chip: Decompose8Chip<F>,
     limbs_8_bits: [Column<Advice>; 8],
     q_xor: Selector,
     t_xor_left: TableColumn,
@@ -163,35 +164,16 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
             meta.advice_column(),
             meta.advice_column(),
         ];
+
         let q_xor = meta.complex_selector();
-        let q_decompose_8 = meta.complex_selector();
         let t_xor_left = meta.lookup_table_column();
         let t_xor_right = meta.lookup_table_column();
         let t_xor_out = meta.lookup_table_column();
 
-        meta.create_gate("decompose 8", |meta| {
-            let q_decompose_8 = meta.query_selector(q_decompose_8);
-            let full_number = meta.query_advice(full_number_u64, Rotation::cur());
-            let limbs: Vec<Expression<F>> = limbs_8_bits
-                .iter()
-                .map(|column| meta.query_advice(*column, Rotation::cur()))
-                .collect();
-            vec![
-                q_decompose_8
-                    * (full_number
-                        - limbs[0].clone()
-                        - limbs[1].clone() * Expression::Constant(F::from(1 << 8))
-                        - limbs[2].clone() * Expression::Constant(F::from(1 << 16))
-                        - limbs[3].clone() * Expression::Constant(F::from(1 << 24))
-                        - limbs[4].clone() * Expression::Constant(F::from(1 << 32))
-                        - limbs[5].clone() * Expression::Constant(F::from(1 << 40))
-                        - limbs[6].clone() * Expression::Constant(F::from(1 << 48))
-                        - limbs[7].clone() * Expression::Constant(F::from(1 << 56))),
-            ]
-        });
+        let decompose_8_chip = Decompose8Chip::configure(meta, full_number_u64, limbs_8_bits, t_range8);
 
         for limb in limbs_8_bits {
-            Self::range_check_for_limb_8_bits(meta, &limb, &q_decompose_8, &t_range8);
+            Self::range_check_for_limb_8_bits(meta, &limb, &decompose_8_chip.q_decompose_8, &t_range8);
             meta.lookup(format!("xor lookup limb {:?}", limb), |meta| {
                 let left: Expression<F> = meta.query_advice(limb, Rotation::cur());
                 let right: Expression<F> = meta.query_advice(limb, Rotation::next());
@@ -205,10 +187,11 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
             });
         }
 
+
         Blake2bConfig {
             _ph: PhantomData,
+            decompose_8_chip,
             q_decompose_16,
-            q_decompose_8,
             q_add,
             full_number_u64,
             limbs,
@@ -228,7 +211,7 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
     #[allow(unused_variables)]
     fn synthesize(
         &self,
-        config: Self::Config,
+        mut config: Self::Config,
         mut layouter: impl Layouter<F>,
     ) -> Result<(), plonk::Error> {
         self.assign_addition_rows(&config, &mut layouter);
@@ -270,9 +253,14 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
                     let first_row = self.xor_trace[0].to_vec();
                     let second_row = self.xor_trace[1].to_vec();
                     let third_row = self.xor_trace[2].to_vec();
-                    Self::assign_8bit_row_from_values(&config, &mut region, first_row, 0);
-                    Self::assign_8bit_row_from_values(&config, &mut region, second_row, 1);
-                    Self::assign_8bit_row_from_values(&config, &mut region, third_row, 2);
+
+                    config.decompose_8_chip.assign_8bit_row_from_values(&mut region, first_row, 0);
+                    config.decompose_8_chip.assign_8bit_row_from_values(&mut region, second_row, 1);
+                    config.decompose_8_chip.assign_8bit_row_from_values(&mut region, third_row, 2);
+
+                    // Self::assign_8bit_row_from_values(&config, &mut region, first_row, 0);
+                    // Self::assign_8bit_row_from_values(&config, &mut region, second_row, 1);
+                    // Self::assign_8bit_row_from_values(&config, &mut region, third_row, 2);
                     Ok(())
                 },
             );
@@ -487,23 +475,6 @@ impl<F: Field + From<u64>> Blake2bCircuit<F> {
         let _ = region.assign_advice(|| "carry", config.carry, offset, || row[5]);
     }
 
-    fn assign_8bit_row_from_values(
-        config: &Blake2bConfig<F>,
-        region: &mut Region<F>,
-        row: Vec<Value<F>>,
-        offset: usize,
-    ) {
-        let _ = config.q_decompose_8.enable(region, offset);
-        let _ = region.assign_advice(|| "full number", config.full_number_u64, offset, || row[0]);
-        for i in 0..8 {
-            let _ = region.assign_advice(
-                || format!("limb{}", i),
-                config.limbs_8_bits[i],
-                offset,
-                || row[i + 1],
-            );
-        }
-    }
 }
 
 fn main() {
