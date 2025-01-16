@@ -10,6 +10,7 @@ use ff::Field;
 use halo2_proofs::circuit::{Region, Value};
 use halo2_proofs::plonk::{Advice, Column, Error, Expression, Selector, TableColumn};
 use halo2_proofs::poly::Rotation;
+use crate::chips::decompose_16_chip::Decompose16Chip;
 use crate::chips::decompose_8_chip::Decompose8Chip;
 use crate::chips::xor_chip::XorChip;
 
@@ -29,12 +30,12 @@ struct Blake2bConfig<F: Field + Clone> {
     // Working with 4 limbs of u16
     limbs: [Column<Advice>; 4],
     carry: Column<Advice>,
-    q_decompose_16: Selector,
     q_add: Selector,
     t_range16: TableColumn,
     t_range8: TableColumn,
     q_rot63: Selector,
     q_rot24: Selector,
+    decompose_16_chip: Decompose16Chip<F>,
 
     // Working with 8 limbs of u8
     limbs_8_bits: [Column<Advice>; 8],
@@ -55,7 +56,6 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
     #[allow(unused_variables)]
     fn configure(meta: &mut ConstraintSystem<F>) -> Self::Config {
         // Addition
-        let q_decompose_16 = meta.complex_selector();
         let q_add = meta.complex_selector();
 
         let full_number_u64 = meta.advice_column();
@@ -72,22 +72,7 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
         let t_range8 = meta.lookup_table_column();
         let carry = meta.advice_column();
 
-        meta.create_gate("decompose in 16bit words", |meta| {
-            let q_decompose = meta.query_selector(q_decompose_16);
-            let full_number = meta.query_advice(full_number_u64, Rotation::cur());
-            let limbs: Vec<Expression<F>> = limbs
-                .iter()
-                .map(|column| meta.query_advice(*column, Rotation::cur()))
-                .collect();
-            vec![
-                q_decompose
-                    * (full_number
-                        - limbs[0].clone()
-                        - limbs[1].clone() * Expression::Constant(F::from(1 << 16))
-                        - limbs[2].clone() * Expression::Constant(F::from(1 << 32))
-                        - limbs[3].clone() * Expression::Constant(F::from(1 << 48))),
-            ]
-        });
+        let decompose_16_chip = Decompose16Chip::configure(meta, full_number_u64, limbs, t_range16);
 
         meta.create_gate("sum mod 2 ^ 64", |meta| {
             let q_add = meta.query_selector(q_add);
@@ -107,7 +92,7 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
         });
 
         for limb in limbs {
-            Self::range_check_for_limb_16_bits(meta, &limb, &q_decompose_16, &t_range16);
+            Self::range_check_for_limb_16_bits(meta, &limb, &decompose_16_chip.q_decompose, &t_range16);
         }
 
         // Rotation
@@ -170,8 +155,8 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
         Blake2bConfig {
             _ph: PhantomData,
             decompose_8_chip,
+            decompose_16_chip,
             xor_chip,
-            q_decompose_16,
             q_add,
             full_number_u64,
             limbs,
@@ -190,12 +175,12 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
         mut config: Self::Config,
         mut layouter: impl Layouter<F>,
     ) -> Result<(), plonk::Error> {
-        self.assign_addition_rows(&config, &mut layouter);
+        self.assign_addition_rows(&mut config, &mut layouter);
 
         Self::populate_lookup_table16(&config, &mut layouter)?;
 
         // Rotation
-        self.assign_rotation_rows(&config, &mut layouter);
+        self.assign_rotation_rows(&mut config, &mut layouter);
         let _ = layouter.assign_region(
             || "rotate 24",
             |mut region| {
@@ -207,9 +192,9 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
                 second_row.push(Value::known(F::ZERO));
                 let mut third_row = self.rotation_trace_24[2].to_vec();
                 third_row.push(Value::known(F::ZERO));
-                Self::assign_row_from_values(&config, &mut region, first_row, 0);
-                Self::assign_row_from_values(&config, &mut region, second_row, 1);
-                Self::assign_row_from_values(&config, &mut region, third_row, 2);
+                Self::assign_row_from_values(&mut config, &mut region, first_row, 0);
+                Self::assign_row_from_values(&mut config, &mut region, second_row, 1);
+                Self::assign_row_from_values(&mut config, &mut region, third_row, 2);
                 Ok(())
             },
         );
@@ -228,7 +213,7 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
 }
 
 impl<F: Field + From<u64>> Blake2bCircuit<F> {
-    fn assign_rotation_rows(&self, config: &Blake2bConfig<F>, layouter: &mut impl Layouter<F>) {
+    fn assign_rotation_rows(&self, config: &mut Blake2bConfig<F>, layouter: &mut impl Layouter<F>) {
         let _ = layouter.assign_region(
             || "rotate 63",
             |mut region| {
@@ -245,7 +230,7 @@ impl<F: Field + From<u64>> Blake2bCircuit<F> {
         );
     }
 
-    fn assign_addition_rows(&self, config: &Blake2bConfig<F>, layouter: &mut impl Layouter<F>) {
+    fn assign_addition_rows(&self, config: &mut Blake2bConfig<F>, layouter: &mut impl Layouter<F>) {
         let _ = layouter.assign_region(
             || "decompose",
             |mut region| {
@@ -365,17 +350,13 @@ impl<F: Field + From<u64>> Blake2bCircuit<F> {
     }
 
     fn assign_row_from_values(
-        config: &Blake2bConfig<F>,
+        config: &mut Blake2bConfig<F>,
         region: &mut Region<F>,
         row: Vec<Value<F>>,
         offset: usize,
     ) {
-        let _ = config.q_decompose_16.enable(region, offset);
-        let _ = region.assign_advice(|| "full number", config.full_number_u64, offset, || row[0]);
-        let _ = region.assign_advice(|| "limb0", config.limbs[0], offset, || row[1]);
-        let _ = region.assign_advice(|| "limb1", config.limbs[1], offset, || row[2]);
-        let _ = region.assign_advice(|| "limb2", config.limbs[2], offset, || row[3]);
-        let _ = region.assign_advice(|| "limb3", config.limbs[3], offset, || row[4]);
+        let _ = config.decompose_16_chip.assign_16bit_row_from_values(region, row.clone(), offset);
+
         let _ = region.assign_advice(|| "carry", config.carry, offset, || row[5]);
     }
 
