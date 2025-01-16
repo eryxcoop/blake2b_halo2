@@ -12,6 +12,7 @@ use halo2_proofs::plonk::{Advice, Column, Error, Expression, Selector, TableColu
 use halo2_proofs::poly::Rotation;
 use crate::chips::decompose_16_chip::Decompose16Chip;
 use crate::chips::decompose_8_chip::Decompose8Chip;
+use crate::chips::sum_mod64_chip::SumMod64Chip;
 use crate::chips::xor_chip::XorChip;
 
 struct Blake2bCircuit<F: Field> {
@@ -30,11 +31,11 @@ struct Blake2bConfig<F: Field + Clone> {
     // Working with 4 limbs of u16
     limbs: [Column<Advice>; 4],
     carry: Column<Advice>,
-    q_add: Selector,
     t_range16: TableColumn,
     t_range8: TableColumn,
     q_rot63: Selector,
     q_rot24: Selector,
+    sum_mod64_chip: SumMod64Chip<F>,
     decompose_16_chip: Decompose16Chip<F>,
 
     // Working with 8 limbs of u8
@@ -56,8 +57,6 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
     #[allow(unused_variables)]
     fn configure(meta: &mut ConstraintSystem<F>) -> Self::Config {
         // Addition
-        let q_add = meta.complex_selector();
-
         let full_number_u64 = meta.advice_column();
         let limbs = [
             meta.advice_column(),
@@ -74,26 +73,7 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
 
         let decompose_16_chip = Decompose16Chip::configure(meta, full_number_u64, limbs, t_range16);
 
-        meta.create_gate("sum mod 2 ^ 64", |meta| {
-            let q_add = meta.query_selector(q_add);
-            let full_number_x = meta.query_advice(full_number_u64, Rotation(0));
-            let full_number_y = meta.query_advice(full_number_u64, Rotation(1));
-            let full_number_result = meta.query_advice(full_number_u64, Rotation(2));
-
-            let carry = meta.query_advice(carry, Rotation(2));
-            // TODO check if x, y and result are 64 bits
-            vec![
-                q_add
-                    * (full_number_result - full_number_x - full_number_y
-                        + carry
-                            * (Expression::Constant(F::from(((1u128 << 64) - 1) as u64))
-                                + Expression::Constant(F::ONE))),
-            ]
-        });
-
-        for limb in limbs {
-            Self::range_check_for_limb_16_bits(meta, &limb, &decompose_16_chip.q_decompose, &t_range16);
-        }
+        let sum_mod64_chip = SumMod64Chip::configure(meta, limbs, decompose_16_chip.clone(), full_number_u64, carry, t_range16);
 
         // Rotation
         let q_rot63 = meta.complex_selector();
@@ -157,7 +137,7 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
             decompose_8_chip,
             decompose_16_chip,
             xor_chip,
-            q_add,
+            sum_mod64_chip,
             full_number_u64,
             limbs,
             t_range16,
@@ -175,7 +155,7 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
         mut config: Self::Config,
         mut layouter: impl Layouter<F>,
     ) -> Result<(), plonk::Error> {
-        self.assign_addition_rows(&mut config, &mut layouter);
+        config.sum_mod64_chip.assign_addition_rows(&mut layouter, self.addition_trace);
 
         Self::populate_lookup_table16(&config, &mut layouter)?;
 
@@ -225,35 +205,6 @@ impl<F: Field + From<u64>> Blake2bCircuit<F> {
                 second_row.push(Value::known(F::ZERO));
                 Self::assign_row_from_values(config, &mut region, first_row, 0);
                 Self::assign_row_from_values(config, &mut region, second_row, 1);
-                Ok(())
-            },
-        );
-    }
-
-    fn assign_addition_rows(&self, config: &mut Blake2bConfig<F>, layouter: &mut impl Layouter<F>) {
-        let _ = layouter.assign_region(
-            || "decompose",
-            |mut region| {
-                let _ = config.q_add.enable(&mut region, 0);
-
-                Self::assign_row_from_values(
-                    config,
-                    &mut region,
-                    self.addition_trace[0].to_vec(),
-                    0,
-                );
-                Self::assign_row_from_values(
-                    config,
-                    &mut region,
-                    self.addition_trace[1].to_vec(),
-                    1,
-                );
-                Self::assign_row_from_values(
-                    config,
-                    &mut region,
-                    self.addition_trace[2].to_vec(),
-                    2,
-                );
                 Ok(())
             },
         );
@@ -334,19 +285,6 @@ impl<F: Field + From<u64>> Blake2bCircuit<F> {
             xor_trace: Self::_unknown_trace_for_xor(),
             should_create_xor_table: false,
         }
-    }
-
-    fn range_check_for_limb_16_bits(
-        meta: &mut ConstraintSystem<F>,
-        limb: &Column<Advice>,
-        q_decompose: &Selector,
-        t_range16: &TableColumn,
-    ) {
-        meta.lookup(format!("lookup limb {:?}", limb), |meta| {
-            let limb: Expression<F> = meta.query_advice(*limb, Rotation::cur());
-            let q_decompose = meta.query_selector(*q_decompose);
-            vec![(q_decompose * limb, *t_range16)]
-        });
     }
 
     fn assign_row_from_values(
