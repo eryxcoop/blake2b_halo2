@@ -16,7 +16,7 @@ struct Blake2bCircuit<F: Field> {
     addition_trace: [[Value<F>; 6]; 3],
     rotation_trace_63: [[Value<F>; 5]; 2],
     rotation_trace_24: [[Value<F>; 5]; 3],
-    xor_trace: [[Value<F>; 9]; 4],
+    xor_trace: [[Value<F>; 9]; 3],
 }
 
 #[derive(Clone, Debug)]
@@ -30,6 +30,14 @@ struct Blake2bConfig<F: Field + Clone> {
     t_range8: TableColumn,
     q_rot63: Selector,
     q_rot24: Selector,
+
+    q_decompose_8: Selector,
+    q_xor: Selector,
+    limbs_8_bits: [Column<Advice>; 8],
+    t_xor_left: TableColumn,
+    t_xor_right: TableColumn,
+    t_xor_out: TableColumn,
+
     _ph: PhantomData<F>,
 }
 
@@ -140,9 +148,63 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
             vec![(q_rot24 * limb, t_range8)]
         });
 
+        // config for xor
+        let limbs_8_bits = [
+            meta.advice_column(),
+            meta.advice_column(),
+            meta.advice_column(),
+            meta.advice_column(),
+            meta.advice_column(),
+            meta.advice_column(),
+            meta.advice_column(),
+            meta.advice_column(),
+        ];
+        let q_xor = meta.complex_selector();
+        let q_decompose_8 = meta.complex_selector();
+        let t_xor_left = meta.lookup_table_column();
+        let t_xor_right = meta.lookup_table_column();
+        let t_xor_out = meta.lookup_table_column();
+
+        meta.create_gate("decompose 8", |meta| {
+            let q_decompose_8 = meta.query_selector(q_decompose_8);
+            let full_number = meta.query_advice(full_number_u64, Rotation::cur());
+            let limbs: Vec<Expression<F>> = limbs_8_bits
+                .iter()
+                .map(|column| meta.query_advice(*column, Rotation::cur()))
+                .collect();
+            vec![
+                q_decompose_8
+                    * (full_number
+                        - limbs[0].clone()
+                        - limbs[1].clone() * Expression::Constant(F::from(1 << 8))
+                        - limbs[2].clone() * Expression::Constant(F::from(1 << 16))
+                        - limbs[3].clone() * Expression::Constant(F::from(1 << 24))
+                        - limbs[4].clone() * Expression::Constant(F::from(1 << 32))
+                        - limbs[5].clone() * Expression::Constant(F::from(1 << 40))
+                        - limbs[6].clone() * Expression::Constant(F::from(1 << 48))
+                        - limbs[7].clone() * Expression::Constant(F::from(1 << 56))),
+            ]
+        });
+
+        for limb in limbs_8_bits {
+            Self::range_check_for_limb_8bits(meta, &limb, &q_decompose_8, &t_range8);
+            meta.lookup(format!("xor lookup limb {:?}", limb), |meta| {
+                let left: Expression<F> = meta.query_advice(limb, Rotation::cur());
+                let right: Expression<F> = meta.query_advice(limb, Rotation::next());
+                let out: Expression<F> = meta.query_advice(limb, Rotation(2));
+                let q_xor = meta.query_selector(q_xor);
+                vec![
+                    (q_xor * left, t_xor_left),
+                    (q_xor * right, t_xor_right),
+                    (q_xor * out, t_xor_out),
+                ]
+            });
+        }
+
         Blake2bConfig {
             _ph: PhantomData,
             q_decompose,
+            q_decompose_8,
             q_add,
             full_number_u64,
             limbs,
@@ -151,6 +213,11 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
             carry,
             q_rot63,
             q_rot24,
+            limbs_8_bits,
+            q_xor,
+            t_xor_left,
+            t_xor_right,
+            t_xor_out,
         }
     }
 
@@ -327,6 +394,19 @@ impl<F: Field + From<u64>> Blake2bCircuit<F> {
             let limb: Expression<F> = meta.query_advice(*limb, Rotation::cur());
             let q_decompose = meta.query_selector(*q_decompose);
             vec![(q_decompose * limb, *t_range16)]
+        });
+    }
+
+    fn range_check_for_limb_8bits(
+        meta: &mut ConstraintSystem<F>,
+        limb: &Column<Advice>,
+        q_decompose_8: &Selector,
+        t_range8: &TableColumn,
+    ) {
+        meta.lookup(format!("lookup limb {:?}", limb), |meta| {
+            let limb: Expression<F> = meta.query_advice(*limb, Rotation::cur());
+            let q_decompose_8 = meta.query_selector(*q_decompose_8);
+            vec![(q_decompose_8 * limb, *t_range8)]
         });
     }
 
