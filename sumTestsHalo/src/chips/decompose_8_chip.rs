@@ -5,7 +5,7 @@ struct Decompose8Chip<F: Field> {
     full_number_u64: Column<Advice>,
     limbs_8_bits: [Column<Advice>; 8],
     q_decompose_8: Selector,
-    t_range_8: TableColumn,
+    t_range8: TableColumn,
     _ph: PhantomData<F>,
 }
 
@@ -14,6 +14,7 @@ impl<F: Field + From<u64>> Decompose8Chip<F> {
         meta: &mut ConstraintSystem<F>,
         full_number_u64: Column<Advice>,
         limbs_8_bits: [Column<Advice>; 8],
+        t_range8: TableColumn,
     ) -> Self {
         let q_decompose_8 = meta.complex_selector();
         meta.create_gate("decompose in 8 bit words", |meta| {
@@ -37,7 +38,6 @@ impl<F: Field + From<u64>> Decompose8Chip<F> {
             ]
         });
 
-        let t_range8 = meta.lookup_table_column();
         for limb in limbs_8_bits {
             meta.lookup("lookup range check 8 bits", |meta| {
                 let limb: Expression<F> = meta.query_advice(limb, Rotation::cur());
@@ -46,6 +46,12 @@ impl<F: Field + From<u64>> Decompose8Chip<F> {
             });
         }
 
-        Decompose8Chip {}
+        Decompose8Chip {
+            full_number_u64,
+            limbs_8_bits,
+            q_decompose_8,
+            t_range8,
+            _ph: PhantomData,
+        }
     }
 }
