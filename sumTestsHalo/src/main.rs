@@ -6,14 +6,14 @@ use halo2_proofs::{
     plonk::{self, Circuit, ConstraintSystem},
 };
 
-use ff::Field;
-use halo2_proofs::circuit::{Region, Value};
-use halo2_proofs::plonk::{Advice, Column, Error, Expression, Selector, TableColumn};
-use halo2_proofs::poly::Rotation;
 use crate::chips::decompose_16_chip::Decompose16Chip;
 use crate::chips::decompose_8_chip::Decompose8Chip;
 use crate::chips::sum_mod64_chip::SumMod64Chip;
 use crate::chips::xor_chip::XorChip;
+use ff::Field;
+use halo2_proofs::circuit::{Region, Value};
+use halo2_proofs::plonk::{Advice, Column, Error, Expression, Selector, TableColumn};
+use halo2_proofs::poly::Rotation;
 
 struct Blake2bCircuit<F: Field> {
     _ph: PhantomData<F>,
@@ -73,7 +73,14 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
 
         let decompose_16_chip = Decompose16Chip::configure(meta, full_number_u64, limbs, t_range16);
 
-        let sum_mod64_chip = SumMod64Chip::configure(meta, limbs, decompose_16_chip.clone(), full_number_u64, carry, t_range16);
+        let sum_mod64_chip = SumMod64Chip::configure(
+            meta,
+            limbs,
+            decompose_16_chip.clone(),
+            full_number_u64,
+            carry,
+            t_range16,
+        );
 
         // Rotation
         let q_rot63 = meta.complex_selector();
@@ -128,9 +135,14 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
             meta.advice_column(),
         ];
 
-
-        let decompose_8_chip = Decompose8Chip::configure(meta, full_number_u64, limbs_8_bits, t_range8);
-        let xor_chip = XorChip::configure(meta, limbs_8_bits, decompose_8_chip.clone(), full_number_u64);
+        let decompose_8_chip =
+            Decompose8Chip::configure(meta, full_number_u64, limbs_8_bits, t_range8);
+        let xor_chip = XorChip::configure(
+            meta,
+            limbs_8_bits,
+            decompose_8_chip.clone(),
+            full_number_u64,
+        );
 
         Blake2bConfig {
             _ph: PhantomData,
@@ -155,7 +167,9 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
         mut config: Self::Config,
         mut layouter: impl Layouter<F>,
     ) -> Result<(), plonk::Error> {
-        config.sum_mod64_chip.assign_addition_rows(&mut layouter, self.addition_trace);
+        config
+            .sum_mod64_chip
+            .assign_addition_rows(&mut layouter, self.addition_trace);
 
         Self::populate_lookup_table16(&config, &mut layouter)?;
 
@@ -185,7 +199,9 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
 
         if self.should_create_xor_table {
             config.xor_chip.populate_xor_lookup_table(&mut layouter)?;
-            config.xor_chip.create_xor_region(&mut layouter, self.xor_trace);
+            config
+                .xor_chip
+                .create_xor_region(&mut layouter, self.xor_trace);
         }
 
         Ok(())
@@ -293,11 +309,12 @@ impl<F: Field + From<u64>> Blake2bCircuit<F> {
         row: Vec<Value<F>>,
         offset: usize,
     ) {
-        let _ = config.decompose_16_chip.assign_16bit_row_from_values(region, row.clone(), offset);
+        let _ = config
+            .decompose_16_chip
+            .assign_16bit_row_from_values(region, row.clone(), offset);
 
         let _ = region.assign_advice(|| "carry", config.carry, offset, || row[5]);
     }
-
 }
 
 fn main() {
@@ -308,6 +325,6 @@ fn main() {
 }
 
 pub mod auxiliar_functions;
+pub mod chips;
 #[cfg(test)]
 pub mod tests;
-pub mod chips;

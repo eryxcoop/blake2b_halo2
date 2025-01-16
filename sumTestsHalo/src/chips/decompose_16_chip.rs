@@ -9,7 +9,6 @@ pub struct Decompose16Chip<F: Field> {
     _ph: PhantomData<F>,
 }
 
-
 impl<F: Field + From<u64>> Decompose16Chip<F> {
     pub fn configure(
         meta: &mut ConstraintSystem<F>,
@@ -29,10 +28,10 @@ impl<F: Field + From<u64>> Decompose16Chip<F> {
             vec![
                 q_decompose
                     * (full_number
-                    - limbs[0].clone()
-                    - limbs[1].clone() * Expression::Constant(F::from(1 << 16))
-                    - limbs[2].clone() * Expression::Constant(F::from(1 << 32))
-                    - limbs[3].clone() * Expression::Constant(F::from(1 << 48))),
+                        - limbs[0].clone()
+                        - limbs[1].clone() * Expression::Constant(F::from(1 << 16))
+                        - limbs[2].clone() * Expression::Constant(F::from(1 << 32))
+                        - limbs[3].clone() * Expression::Constant(F::from(1 << 48))),
             ]
         });
 

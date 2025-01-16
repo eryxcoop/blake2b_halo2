@@ -13,11 +13,12 @@ pub struct XorChip<F: Field> {
 }
 
 impl<F: Field + From<u64>> XorChip<F> {
-    pub fn configure(meta: &mut ConstraintSystem<F>,
-                     limbs_8_bits: [Column<Advice>; 8],
-                     mut decompose_8_chip: Decompose8Chip<F>,
-                     full_number_u64: Column<Advice>,) -> Self {
-
+    pub fn configure(
+        meta: &mut ConstraintSystem<F>,
+        limbs_8_bits: [Column<Advice>; 8],
+        mut decompose_8_chip: Decompose8Chip<F>,
+        full_number_u64: Column<Advice>,
+    ) -> Self {
         let q_xor = meta.complex_selector();
         let t_xor_left = meta.lookup_table_column();
         let t_xor_right = meta.lookup_table_column();
@@ -50,7 +51,10 @@ impl<F: Field + From<u64>> XorChip<F> {
         }
     }
 
-    pub fn populate_xor_lookup_table(&mut self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
+    pub fn populate_xor_lookup_table(
+        &mut self,
+        layouter: &mut impl Layouter<F>,
+    ) -> Result<(), Error> {
         let table_name = "xor check table";
 
         layouter.assign_table(
@@ -87,8 +91,11 @@ impl<F: Field + From<u64>> XorChip<F> {
         Ok(())
     }
 
-    pub fn create_xor_region(&mut self, layouter: &mut impl Layouter<F>, xor_trace: [[Value<F>; 9]; 3]){
-
+    pub fn create_xor_region(
+        &mut self,
+        layouter: &mut impl Layouter<F>,
+        xor_trace: [[Value<F>; 9]; 3],
+    ) {
         let _ = layouter.assign_region(
             || "xor",
             |mut region| {
@@ -98,9 +105,12 @@ impl<F: Field + From<u64>> XorChip<F> {
                 let second_row = xor_trace[1].to_vec();
                 let third_row = xor_trace[2].to_vec();
 
-                self.decompose_8_chip.assign_8bit_row_from_values(&mut region, first_row, 0);
-                self.decompose_8_chip.assign_8bit_row_from_values(&mut region, second_row, 1);
-                self.decompose_8_chip.assign_8bit_row_from_values(&mut region, third_row, 2);
+                self.decompose_8_chip
+                    .assign_8bit_row_from_values(&mut region, first_row, 0);
+                self.decompose_8_chip
+                    .assign_8bit_row_from_values(&mut region, second_row, 1);
+                self.decompose_8_chip
+                    .assign_8bit_row_from_values(&mut region, third_row, 2);
 
                 Ok(())
             },

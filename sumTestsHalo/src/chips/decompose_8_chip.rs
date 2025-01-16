@@ -72,7 +72,6 @@ impl<F: Field + From<u64>> Decompose8Chip<F> {
         Self::_range_check_for_limb_8_bits(meta, limb, &self.q_decompose_8, &self.t_range8);
     }
 
-
     pub fn assign_8bit_row_from_values(
         &mut self,
         region: &mut Region<F>,

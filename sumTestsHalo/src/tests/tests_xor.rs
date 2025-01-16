@@ -65,7 +65,7 @@ fn test_bad_range_check_limb_u8() {
     let badly_decomposed_xor_trace: [[Value<Fr>; 9]; 3] = [
         out_of_range_decomposition_row,
         row_decomposed_in_8_limbs_from_u64(0u64), // b
-        out_of_range_decomposition_row, // a xor b
+        out_of_range_decomposition_row,           // a xor b
     ];
 
     let circuit = Blake2bCircuit::<Fr>::new_for_xor_alone(badly_decomposed_xor_trace);
