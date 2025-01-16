@@ -50,7 +50,6 @@ fn test_bad_decomposition_in_8_bit_limbs() {
 #[test]
 #[should_panic]
 fn test_bad_range_check_limb_u8() {
-    // TODO: check why this test is passing when not enforced the range check
     let out_of_range_decomposition_row = [
         value_for((1 << 16) - 1),
         value_for((1 << 16) - 1),
@@ -64,8 +63,8 @@ fn test_bad_range_check_limb_u8() {
     ];
 
     let badly_decomposed_xor_trace: [[Value<Fr>; 9]; 3] = [
-        row_decomposed_in_8_limbs_from_u64(((1u128 << 64) - 1) as u64), // a
-        row_decomposed_in_8_limbs_from_u64(((1u128 << 64) - 1) as u64 - ((1 << 16) - 1) as u64), // b
+        out_of_range_decomposition_row,
+        row_decomposed_in_8_limbs_from_u64(0u64), // b
         out_of_range_decomposition_row, // a xor b
     ];
 
