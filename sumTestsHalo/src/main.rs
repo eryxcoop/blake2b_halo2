@@ -11,6 +11,7 @@ use halo2_proofs::circuit::{Region, Value};
 use halo2_proofs::plonk::{Advice, Column, Error, Expression, Selector, TableColumn};
 use halo2_proofs::poly::Rotation;
 use crate::chips::decompose_8_chip::Decompose8Chip;
+use crate::chips::xor_chip::XorChip;
 
 struct Blake2bCircuit<F: Field> {
     _ph: PhantomData<F>,
@@ -36,12 +37,9 @@ struct Blake2bConfig<F: Field + Clone> {
     q_rot24: Selector,
 
     // Working with 8 limbs of u8
-    decompose_8_chip: Decompose8Chip<F>,
     limbs_8_bits: [Column<Advice>; 8],
-    q_xor: Selector,
-    t_xor_left: TableColumn,
-    t_xor_right: TableColumn,
-    t_xor_out: TableColumn,
+    xor_chip: XorChip<F>,
+    decompose_8_chip: Decompose8Chip<F>,
 
     _ph: PhantomData<F>,
 }
@@ -165,32 +163,14 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
             meta.advice_column(),
         ];
 
-        let q_xor = meta.complex_selector();
-        let t_xor_left = meta.lookup_table_column();
-        let t_xor_right = meta.lookup_table_column();
-        let t_xor_out = meta.lookup_table_column();
 
         let decompose_8_chip = Decompose8Chip::configure(meta, full_number_u64, limbs_8_bits, t_range8);
-
-        for limb in limbs_8_bits {
-            Self::range_check_for_limb_8_bits(meta, &limb, &decompose_8_chip.q_decompose_8, &t_range8);
-            meta.lookup(format!("xor lookup limb {:?}", limb), |meta| {
-                let left: Expression<F> = meta.query_advice(limb, Rotation::cur());
-                let right: Expression<F> = meta.query_advice(limb, Rotation::next());
-                let out: Expression<F> = meta.query_advice(limb, Rotation(2));
-                let q_xor = meta.query_selector(q_xor);
-                vec![
-                    (q_xor.clone() * left, t_xor_left),
-                    (q_xor.clone() * right, t_xor_right),
-                    (q_xor.clone() * out, t_xor_out),
-                ]
-            });
-        }
-
+        let xor_chip = XorChip::configure(meta, limbs_8_bits, decompose_8_chip.clone(), full_number_u64);
 
         Blake2bConfig {
             _ph: PhantomData,
             decompose_8_chip,
+            xor_chip,
             q_decompose_16,
             q_add,
             full_number_u64,
@@ -201,10 +181,6 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
             q_rot63,
             q_rot24,
             limbs_8_bits,
-            q_xor,
-            t_xor_left,
-            t_xor_right,
-            t_xor_out,
         }
     }
 
@@ -243,27 +219,8 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
         // XOR operation
 
         if self.should_create_xor_table {
-            Self::populate_xor_lookup_table(&config, &mut layouter)?;
-
-            let _ = layouter.assign_region(
-                || "xor",
-                |mut region| {
-                    let _ = config.q_xor.enable(&mut region, 0);
-
-                    let first_row = self.xor_trace[0].to_vec();
-                    let second_row = self.xor_trace[1].to_vec();
-                    let third_row = self.xor_trace[2].to_vec();
-
-                    config.decompose_8_chip.assign_8bit_row_from_values(&mut region, first_row, 0);
-                    config.decompose_8_chip.assign_8bit_row_from_values(&mut region, second_row, 1);
-                    config.decompose_8_chip.assign_8bit_row_from_values(&mut region, third_row, 2);
-
-                    // Self::assign_8bit_row_from_values(&config, &mut region, first_row, 0);
-                    // Self::assign_8bit_row_from_values(&config, &mut region, second_row, 1);
-                    // Self::assign_8bit_row_from_values(&config, &mut region, third_row, 2);
-                    Ok(())
-                },
-            );
+            config.xor_chip.populate_xor_lookup_table(&mut layouter)?;
+            config.xor_chip.create_xor_region(&mut layouter, self.xor_trace);
         }
 
         Ok(())
@@ -341,46 +298,6 @@ impl<F: Field + From<u64>> Blake2bCircuit<F> {
         Ok(())
     }
 
-    fn populate_xor_lookup_table(
-        config: &Blake2bConfig<F>,
-        layouter: &mut impl Layouter<F>,
-    ) -> Result<(), Error> {
-        let table_name = "xor check table";
-
-        layouter.assign_table(
-            || table_name,
-            |mut table| {
-                // assign the table
-                for left in 0..256 {
-                    for right in 0..256 {
-                        let index = left * 256 + right;
-                        let result = left ^ right;
-                        table.assign_cell(
-                            || "left_value",
-                            config.t_xor_left,
-                            index,
-                            || Value::known(F::from(left as u64)),
-                        )?;
-                        table.assign_cell(
-                            || "right_value",
-                            config.t_xor_right,
-                            index,
-                            || Value::known(F::from(right as u64)),
-                        )?;
-                        table.assign_cell(
-                            || "out_value",
-                            config.t_xor_out,
-                            index,
-                            || Value::known(F::from(result as u64)),
-                        )?;
-                    }
-                }
-                Ok(())
-            },
-        )?;
-        Ok(())
-    }
-
     fn check_lookup_table(
         layouter: &mut impl Layouter<F>,
         lookup_column: TableColumn,
@@ -444,19 +361,6 @@ impl<F: Field + From<u64>> Blake2bCircuit<F> {
             let limb: Expression<F> = meta.query_advice(*limb, Rotation::cur());
             let q_decompose = meta.query_selector(*q_decompose);
             vec![(q_decompose * limb, *t_range16)]
-        });
-    }
-
-    fn range_check_for_limb_8_bits(
-        meta: &mut ConstraintSystem<F>,
-        limb: &Column<Advice>,
-        q_decompose_8: &Selector,
-        t_range8: &TableColumn,
-    ) {
-        meta.lookup(format!("lookup limb {:?}", limb), |meta| {
-            let limb: Expression<F> = meta.query_advice(*limb, Rotation::cur());
-            let q_decompose_8 = meta.query_selector(*q_decompose_8);
-            vec![(q_decompose_8 * limb, *t_range8)]
         });
     }
 

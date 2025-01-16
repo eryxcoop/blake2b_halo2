@@ -5,7 +5,7 @@ pub struct Decompose8Chip<F: Field> {
     full_number_u64: Column<Advice>,
     limbs_8_bits: [Column<Advice>; 8],
     pub q_decompose_8: Selector,
-    t_range8: TableColumn,
+    pub t_range8: TableColumn,
     _ph: PhantomData<F>,
 }
 
@@ -39,11 +39,7 @@ impl<F: Field + From<u64>> Decompose8Chip<F> {
         });
 
         for limb in limbs_8_bits {
-            meta.lookup("lookup range check 8 bits", |meta| {
-                let limb: Expression<F> = meta.query_advice(limb, Rotation::cur());
-                let q_decompose_8 = meta.query_selector(q_decompose_8);
-                vec![(q_decompose_8 * limb, t_range8)]
-            });
+            Self::_range_check_for_limb_8_bits(meta, &limb, &q_decompose_8, &t_range8);
         }
 
         Self {
@@ -54,6 +50,28 @@ impl<F: Field + From<u64>> Decompose8Chip<F> {
             _ph: PhantomData,
         }
     }
+
+    fn _range_check_for_limb_8_bits(
+        meta: &mut ConstraintSystem<F>,
+        limb: &Column<Advice>,
+        q_decompose_8: &Selector,
+        t_range8: &TableColumn,
+    ) {
+        meta.lookup(format!("lookup limb {:?}", limb), |meta| {
+            let limb: Expression<F> = meta.query_advice(*limb, Rotation::cur());
+            let q_decompose_8 = meta.query_selector(*q_decompose_8);
+            vec![(q_decompose_8 * limb, *t_range8)]
+        });
+    }
+
+    pub fn range_check_for_limb_8_bits(
+        &mut self,
+        meta: &mut ConstraintSystem<F>,
+        limb: &Column<Advice>,
+    ) {
+        Self::_range_check_for_limb_8_bits(meta, limb, &self.q_decompose_8, &self.t_range8);
+    }
+
 
     pub fn assign_8bit_row_from_values(
         &mut self,
