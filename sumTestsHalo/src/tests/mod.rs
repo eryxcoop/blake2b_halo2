@@ -36,6 +36,7 @@ impl<F: Field + From<u64>> Blake2bCircuit<F> {
             rotation_trace_63: Self::_unknown_trace_for_rotation_63(), // TODO: check this
             rotation_trace_24: Self::_unknown_trace_for_rotation_24(),
             xor_trace: Self::_unknown_trace_for_xor(),
+            should_create_xor_table: false,
         }
     }
 
@@ -46,6 +47,7 @@ impl<F: Field + From<u64>> Blake2bCircuit<F> {
             rotation_trace_63,
             rotation_trace_24: Self::_unknown_trace_for_rotation_24(),
             xor_trace: Self::_unknown_trace_for_xor(),
+            should_create_xor_table: false,
         }
     }
 
@@ -56,6 +58,7 @@ impl<F: Field + From<u64>> Blake2bCircuit<F> {
             rotation_trace_63: Self::_unknown_trace_for_rotation_63(),
             rotation_trace_24,
             xor_trace: Self::_unknown_trace_for_xor(),
+            should_create_xor_table: false,
         }
     }
 
@@ -66,6 +69,7 @@ impl<F: Field + From<u64>> Blake2bCircuit<F> {
             rotation_trace_63: Self::_unknown_trace_for_rotation_63(),
             rotation_trace_24: Self::_unknown_trace_for_rotation_24(),
             xor_trace,
+            should_create_xor_table: true,
         }
     }
 }

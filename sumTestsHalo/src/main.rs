@@ -17,6 +17,7 @@ struct Blake2bCircuit<F: Field> {
     rotation_trace_63: [[Value<F>; 5]; 2],
     rotation_trace_24: [[Value<F>; 5]; 3],
     xor_trace: [[Value<F>; 9]; 3],
+    should_create_xor_table: bool,
 }
 
 #[derive(Clone, Debug)]
@@ -258,22 +259,25 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
 
         // XOR operation
 
-        Self::populate_xor_lookup_table(&config, &mut layouter)?;
+        if self.should_create_xor_table {
+            Self::populate_xor_lookup_table(&config, &mut layouter)?;
 
-        let _ = layouter.assign_region(
-            || "xor",
-            |mut region| {
-                let _ = config.q_xor.enable(&mut region, 0);
+            let _ = layouter.assign_region(
+                || "xor",
+                |mut region| {
+                    let _ = config.q_xor.enable(&mut region, 0);
 
-                let first_row = self.xor_trace[0].to_vec();
-                let second_row = self.xor_trace[1].to_vec();
-                let third_row = self.xor_trace[2].to_vec();
-                Self::assign_8bit_row_from_values(&config, &mut region, first_row, 0);
-                Self::assign_8bit_row_from_values(&config, &mut region, second_row, 1);
-                Self::assign_8bit_row_from_values(&config, &mut region, third_row, 2);
-                Ok(())
-            },
-        );
+                    let first_row = self.xor_trace[0].to_vec();
+                    let second_row = self.xor_trace[1].to_vec();
+                    let third_row = self.xor_trace[2].to_vec();
+                    Self::assign_8bit_row_from_values(&config, &mut region, first_row, 0);
+                    Self::assign_8bit_row_from_values(&config, &mut region, second_row, 1);
+                    Self::assign_8bit_row_from_values(&config, &mut region, third_row, 2);
+                    Ok(())
+                },
+            );
+        }
+
         Ok(())
     }
 }
@@ -438,6 +442,7 @@ impl<F: Field + From<u64>> Blake2bCircuit<F> {
             rotation_trace_63: Self::_unknown_trace_for_rotation_63(),
             rotation_trace_24: Self::_unknown_trace_for_rotation_24(),
             xor_trace: Self::_unknown_trace_for_xor(),
+            should_create_xor_table: false,
         }
     }
 
