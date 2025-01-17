@@ -39,14 +39,7 @@ impl<F: Field + From<u64>> SumMod64Chip<F> {
             ]
         });
 
-        for limb in limbs {
-            Self::range_check_for_limb_16_bits(
-                meta,
-                &limb,
-                &decompose_16_chip.q_decompose,
-                &t_range16,
-            );
-        }
+        decompose_16_chip.range_check_for_limbs(meta);
 
         Self {
             decompose_16_chip,
@@ -57,19 +50,6 @@ impl<F: Field + From<u64>> SumMod64Chip<F> {
             t_range16,
             _ph: PhantomData,
         }
-    }
-
-    fn range_check_for_limb_16_bits(
-        meta: &mut ConstraintSystem<F>,
-        limb: &Column<Advice>,
-        q_decompose: &Selector,
-        t_range16: &TableColumn,
-    ) {
-        meta.lookup(format!("lookup limb {:?}", limb), |meta| {
-            let limb: Expression<F> = meta.query_advice(*limb, Rotation::cur());
-            let q_decompose = meta.query_selector(*q_decompose);
-            vec![(q_decompose * limb, *t_range16)]
-        });
     }
 
     pub fn assign_addition_rows(

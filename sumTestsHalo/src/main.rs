@@ -167,8 +167,6 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
     }
 }
 
-impl<F: Field + From<u64>> Blake2bCircuit<F> {}
-
 impl<F: Field + From<u64>> Blake2bCircuit<F> {
     fn populate_lookup_table16(
         config: &Blake2bConfig<F>,

@@ -68,8 +68,6 @@ impl<F: Field + From<u64>> Rotate24Chip<F> {
                 decompose_chip.assign_16bit_row_from_values(&mut region, first_row.clone(), 0);
                 decompose_chip.assign_16bit_row_from_values(&mut region, second_row.clone(), 1);
                 decompose_chip.assign_16bit_row_from_values(&mut region, third_row.clone(), 2);
-                // TODO esta bien no llenar el carry?
-                // let _ = region.assign_advice(|| "carry", config.carry, offset, || row[5]);
 
                 Ok(())
             },

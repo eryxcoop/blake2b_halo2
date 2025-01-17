@@ -4,8 +4,8 @@ use super::*;
 pub struct Decompose16Chip<F: Field> {
     full_number_u64: Column<Advice>,
     limbs: [Column<Advice>; 4],
-    pub q_decompose: Selector,
-    pub t_range16: TableColumn,
+    q_decompose: Selector,
+    t_range16: TableColumn,
     _ph: PhantomData<F>,
 }
 
@@ -57,4 +57,29 @@ impl<F: Field + From<u64>> Decompose16Chip<F> {
         let _ = region.assign_advice(|| "limb2", self.limbs[2], offset, || row[3]);
         let _ = region.assign_advice(|| "limb3", self.limbs[3], offset, || row[4]);
     }
+
+    pub fn range_check_for_limbs(&self, meta: &mut ConstraintSystem<F>) {
+        for limb in self.limbs {
+            Self::range_check_for_limb_16_bits(
+                meta,
+                &limb,
+                self.q_decompose,
+                self.t_range16,
+            );
+        }
+    }
+
+    fn range_check_for_limb_16_bits(
+        meta: &mut ConstraintSystem<F>,
+        limb: &Column<Advice>,
+        q_decompose: Selector,
+        t_range16: TableColumn,
+    ) {
+        meta.lookup(format!("lookup limb {:?}", limb), |meta| {
+            let limb: Expression<F> = meta.query_advice(*limb, Rotation::cur());
+            let q_decompose = meta.query_selector(q_decompose);
+            vec![(q_decompose * limb, t_range16)]
+        });
+    }
+
 }
