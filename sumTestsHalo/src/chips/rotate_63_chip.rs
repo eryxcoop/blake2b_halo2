@@ -2,7 +2,7 @@ use super::*;
 
 #[derive(Clone, Debug)]
 pub struct Rotate63Chip<F: Field> {
-    pub q_rot63: Selector,
+    q_rot63: Selector,
     full_number_u64: Column<Advice>,
     _ph: PhantomData<F>,
 }

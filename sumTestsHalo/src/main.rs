@@ -14,6 +14,7 @@ use ff::Field;
 use halo2_proofs::circuit::{Region, Value};
 use halo2_proofs::plonk::{Advice, Column, Error, Expression, Selector, TableColumn};
 use halo2_proofs::poly::Rotation;
+use crate::chips::rotate_24_chip::Rotate24Chip;
 use crate::chips::rotate_63_chip::Rotate63Chip;
 
 struct Blake2bCircuit<F: Field> {
@@ -35,7 +36,7 @@ struct Blake2bConfig<F: Field + Clone> {
     t_range16: TableColumn,
     t_range8: TableColumn,
     rotate_63_chip: Rotate63Chip<F>,
-    q_rot24: Selector,
+    rotate_24_chip: Rotate24Chip<F>,
     sum_mod64_chip: SumMod64Chip<F>,
     decompose_16_chip: Decompose16Chip<F>,
 
@@ -87,29 +88,7 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
         let rotate_63_chip = Rotate63Chip::configure(meta, full_number_u64);
 
         // Rotation
-        // 0 = (x*2^40 + z) - z*2^64 - y
-        let q_rot24 = meta.complex_selector();
-        meta.create_gate("rotate right 24", |meta| {
-            let q_rot24 = meta.query_selector(q_rot24);
-            let input_full_number = meta.query_advice(full_number_u64, Rotation(0));
-            let chunk = meta.query_advice(full_number_u64, Rotation(1));
-            let output_full_number = meta.query_advice(full_number_u64, Rotation(2));
-            vec![
-                q_rot24
-                    * (Expression::Constant(F::from((1u128 << 40) as u64))
-                        * input_full_number.clone()
-                        + chunk.clone()
-                        - Expression::Constant(F::from((1u128 << 63) as u64) * F::from(2))
-                            * chunk.clone()
-                        - output_full_number.clone()),
-            ]
-        });
-
-        meta.lookup("lookup rotate_24 chunks", |meta| {
-            let limb: Expression<F> = meta.query_advice(limbs[2], Rotation(1));
-            let q_rot24 = meta.query_selector(q_rot24);
-            vec![(q_rot24 * limb, t_range8)]
-        });
+        let rotate_24_chip = Rotate24Chip::configure(meta, full_number_u64, limbs, t_range8);
 
         // config for xor
         let limbs_8_bits = [
@@ -138,14 +117,14 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
             decompose_16_chip,
             xor_chip,
             sum_mod64_chip,
+            rotate_63_chip,
+            rotate_24_chip,
             full_number_u64,
             limbs,
+            carry,
+            limbs_8_bits,
             t_range16,
             t_range8,
-            carry,
-            rotate_63_chip,
-            q_rot24,
-            limbs_8_bits,
         }
     }
 
@@ -168,7 +147,7 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
         let _ = layouter.assign_region(
             || "rotate 24",
             |mut region| {
-                let _ = config.q_rot24.enable(&mut region, 0);
+                let _ = config.rotate_24_chip.q_rot24.enable(&mut region, 0);
 
                 let mut first_row = self.rotation_trace_24[0].to_vec();
                 first_row.push(Value::known(F::ZERO));
