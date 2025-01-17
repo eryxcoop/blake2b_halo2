@@ -90,10 +90,7 @@ impl<F: Field + From<u64>> Decompose8Chip<F> {
         }
     }
 
-    pub fn populate_lookup_table8(
-        &self,
-        layouter: &mut impl Layouter<F>,
-    ) -> Result<(), Error> {
+    pub fn populate_lookup_table8(&self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
         let table_name = "range 8bit check table";
         let max_value = 1 << 8;
         let lookup_column = self.t_range8;

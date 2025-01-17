@@ -60,12 +60,7 @@ impl<F: Field + From<u64>> Decompose16Chip<F> {
 
     pub fn range_check_for_limbs(&self, meta: &mut ConstraintSystem<F>) {
         for limb in self.limbs {
-            Self::range_check_for_limb_16_bits(
-                meta,
-                &limb,
-                self.q_decompose,
-                self.t_range16,
-            );
+            Self::range_check_for_limb_16_bits(meta, &limb, self.q_decompose, self.t_range16);
         }
     }
 
@@ -82,10 +77,7 @@ impl<F: Field + From<u64>> Decompose16Chip<F> {
         });
     }
 
-    pub fn populate_lookup_table16(
-        &self,
-        layouter: &mut impl Layouter<F>,
-    ) -> Result<(), Error> {
+    pub fn populate_lookup_table16(&self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
         let table_name = "range 16bit check table";
         let max_value = 1 << 16;
         self.fill_lookup_table(layouter, table_name, max_value)?;
@@ -116,5 +108,4 @@ impl<F: Field + From<u64>> Decompose16Chip<F> {
         )?;
         Ok(())
     }
-
 }

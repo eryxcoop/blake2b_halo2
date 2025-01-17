@@ -100,7 +100,8 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
             Decompose8Chip::configure(meta, full_number_u64, limbs_8_bits, t_range8);
 
         // Rotation 24
-        let rotate_24_chip = Rotate24Chip::configure(meta, full_number_u64, limbs, decompose_8_chip.clone());
+        let rotate_24_chip =
+            Rotate24Chip::configure(meta, full_number_u64, limbs, decompose_8_chip.clone());
 
         // Xor
         let xor_chip = XorChip::configure(
@@ -136,7 +137,9 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
             .sum_mod64_chip
             .assign_addition_rows(&mut layouter, self.addition_trace);
 
-        config.decompose_16_chip.populate_lookup_table16(&mut layouter)?;
+        config
+            .decompose_16_chip
+            .populate_lookup_table16(&mut layouter)?;
 
         // Rotation
         config.rotate_63_chip.assign_rotation_rows(
@@ -150,7 +153,9 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
             self.rotation_trace_24,
         );
 
-        config.decompose_8_chip.populate_lookup_table8(&mut layouter)?;
+        config
+            .decompose_8_chip
+            .populate_lookup_table8(&mut layouter)?;
 
         // XOR operation
 

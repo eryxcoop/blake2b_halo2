@@ -1,16 +1,18 @@
+use super::*;
 use std::array;
 use std::marker::PhantomData;
-use super::*;
-
 
 pub struct XorCircuit<F: Field> {
     _ph: PhantomData<F>,
     trace: [[Value<F>; 9]; 3],
 }
 
-impl<F:Field> XorCircuit<F> {
+impl<F: Field> XorCircuit<F> {
     pub fn new_for_trace(trace: [[Value<F>; 9]; 3]) -> Self {
-        Self { _ph: PhantomData, trace }
+        Self {
+            _ph: PhantomData,
+            trace,
+        }
     }
 }
 
@@ -19,7 +21,10 @@ impl<F: Field + From<u64>> Circuit<F> for XorCircuit<F> {
     type FloorPlanner = SimpleFloorPlanner;
 
     fn without_witnesses(&self) -> Self {
-        XorCircuit { _ph: PhantomData,  trace: XorChip::unknown_trace()}
+        XorCircuit {
+            _ph: PhantomData,
+            trace: XorChip::unknown_trace(),
+        }
     }
 
     #[allow(unused_variables)]
@@ -45,7 +50,9 @@ impl<F: Field + From<u64>> Circuit<F> for XorCircuit<F> {
         mut config: Self::Config,
         mut layouter: impl Layouter<F>,
     ) -> Result<(), Error> {
-        config.decompose_8_chip.populate_lookup_table8(&mut layouter)?;
+        config
+            .decompose_8_chip
+            .populate_lookup_table8(&mut layouter)?;
         config.populate_xor_lookup_table(&mut layouter)?;
         config.create_xor_region(&mut layouter, self.trace);
 
