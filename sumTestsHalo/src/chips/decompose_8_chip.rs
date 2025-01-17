@@ -89,4 +89,30 @@ impl<F: Field + From<u64>> Decompose8Chip<F> {
             );
         }
     }
+
+    pub fn populate_lookup_table8(
+        &self,
+        layouter: &mut impl Layouter<F>,
+    ) -> Result<(), Error> {
+        let table_name = "range 8bit check table";
+        let max_value = 1 << 8;
+        let lookup_column = self.t_range8;
+
+        layouter.assign_table(
+            || table_name,
+            |mut table| {
+                // assign the table
+                for i in 0..max_value {
+                    table.assign_cell(
+                        || "value",
+                        lookup_column,
+                        i,
+                        || Value::known(F::from(i as u64)),
+                    )?;
+                }
+                Ok(())
+            },
+        )?;
+        Ok(())
+    }
 }

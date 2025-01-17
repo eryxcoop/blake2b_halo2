@@ -148,7 +148,7 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
             self.rotation_trace_24,
         );
 
-        Self::populate_lookup_table8(&config, &mut layouter)?;
+        config.decompose_8_chip.populate_lookup_table8(&mut layouter)?;
 
         // XOR operation
 
@@ -159,44 +159,6 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
                 .create_xor_region(&mut layouter, self.xor_trace);
         }
 
-        Ok(())
-    }
-}
-
-impl<F: Field + From<u64>> Blake2bCircuit<F> {
-    fn populate_lookup_table8(
-        config: &Blake2bConfig<F>,
-        layouter: &mut impl Layouter<F>,
-    ) -> Result<(), Error> {
-        let table_name = "range 8bit check table";
-        let max_value = 1 << 8;
-        let lookup_column = config.t_range8;
-
-        Self::check_lookup_table(layouter, lookup_column, table_name, max_value)?;
-        Ok(())
-    }
-
-    fn check_lookup_table(
-        layouter: &mut impl Layouter<F>,
-        lookup_column: TableColumn,
-        table_name: &str,
-        max_value: usize,
-    ) -> Result<(), Error> {
-        layouter.assign_table(
-            || table_name,
-            |mut table| {
-                // assign the table
-                for i in 0..max_value {
-                    table.assign_cell(
-                        || "value",
-                        lookup_column,
-                        i,
-                        || Value::known(F::from(i as u64)),
-                    )?;
-                }
-                Ok(())
-            },
-        )?;
         Ok(())
     }
 }
