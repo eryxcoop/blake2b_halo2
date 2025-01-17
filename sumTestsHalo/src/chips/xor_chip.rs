@@ -2,7 +2,7 @@ use super::*;
 
 #[derive(Clone, Debug)]
 pub struct XorChip<F: Field> {
-    decompose_8_chip: Decompose8Chip<F>,
+    pub decompose_8_chip: Decompose8Chip<F>,
     full_number_u64: Column<Advice>,
     limbs_8_bits: [Column<Advice>; 8],
     t_xor_left: TableColumn,

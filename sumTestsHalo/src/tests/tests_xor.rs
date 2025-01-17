@@ -9,8 +9,12 @@ fn test_positive_xor() {
         row_decomposed_in_8_limbs_from_u64(0),                          // a xor b
     ];
 
-    let circuit = Blake2bCircuit::<Fr>::new_for_xor_alone(valid_xor_trace);
+    let circuit = XorCircuit::<Fr> {
+        _ph: PhantomData,
+        trace: valid_xor_trace,
+    };
     let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+
     prover.verify().unwrap();
 }
 
@@ -93,4 +97,67 @@ fn row_decomposed_in_8_limbs_from_u64(x: u64) -> [Value<Fr>; 9] {
         value_for(limbs[6]),
         value_for(limbs[7]),
     ]
+}
+
+use std::marker::PhantomData;
+
+use halo2_proofs::{
+    circuit::{Layouter, SimpleFloorPlanner},
+    dev::MockProver,
+    plonk::{self, Circuit, ConstraintSystem},
+};
+
+use ff::Field;
+
+struct XorCircuit<F: Field> {
+    _ph: PhantomData<F>,
+    trace: [[Value<F>; 9]; 3],
+}
+
+impl<F: Field + From<u64>> Circuit<F> for XorCircuit<F> {
+    type Config = XorChip<F>;
+    type FloorPlanner = SimpleFloorPlanner;
+
+    fn without_witnesses(&self) -> Self {
+        XorCircuit { _ph: PhantomData,  trace: XorChip::_unknown_trace()}
+    }
+
+    #[allow(unused_variables)]
+    fn configure(meta: &mut ConstraintSystem<F>) -> Self::Config {
+        let full_number_u64 = meta.advice_column();
+        let limbs_8_bits = [
+            meta.advice_column(),
+            meta.advice_column(),
+            meta.advice_column(),
+            meta.advice_column(),
+            meta.advice_column(),
+            meta.advice_column(),
+            meta.advice_column(),
+            meta.advice_column(),
+        ];
+        let t_range8 = meta.lookup_table_column();
+
+        let decompose_8_chip =
+            Decompose8Chip::configure(meta, full_number_u64, limbs_8_bits, t_range8);
+
+        XorChip::configure(
+            meta,
+            limbs_8_bits,
+            decompose_8_chip.clone(),
+            full_number_u64,
+        )
+    }
+
+    #[allow(unused_variables)]
+    fn synthesize(
+        &self,
+        mut config: Self::Config,
+        mut layouter: impl Layouter<F>,
+    ) -> Result<(), Error> {
+        config.decompose_8_chip.populate_lookup_table8(&mut layouter)?;
+        config.populate_xor_lookup_table(&mut layouter)?;
+        config.create_xor_region(&mut layouter, self.trace);
+
+        Ok(())
+    }
 }
