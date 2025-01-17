@@ -33,7 +33,6 @@ struct Blake2bConfig<F: Field + Clone> {
     // Working with 4 limbs of u16
     limbs: [Column<Advice>; 4],
     carry: Column<Advice>,
-    t_range16: TableColumn,
     t_range8: TableColumn,
     rotate_63_chip: Rotate63Chip<F>,
     rotate_24_chip: Rotate24Chip<F>,
@@ -69,11 +68,10 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
         for limb in limbs {
             meta.enable_equality(limb);
         }
-        let t_range16 = meta.lookup_table_column();
         let t_range8 = meta.lookup_table_column();
         let carry = meta.advice_column();
 
-        let decompose_16_chip = Decompose16Chip::configure(meta, full_number_u64, limbs, t_range16);
+        let decompose_16_chip = Decompose16Chip::configure(meta, full_number_u64, limbs);
 
         let sum_mod64_chip = SumMod64Chip::configure(
             meta,
@@ -81,7 +79,6 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
             decompose_16_chip.clone(),
             full_number_u64,
             carry,
-            t_range16,
         );
 
         // Rotation
@@ -123,7 +120,6 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
             limbs,
             carry,
             limbs_8_bits,
-            t_range16,
             t_range8,
         }
     }

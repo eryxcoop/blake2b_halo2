@@ -7,7 +7,6 @@ pub struct SumMod64Chip<F: Field> {
     carry: Column<Advice>,
     limbs: [Column<Advice>; 4],
     q_add: Selector,
-    t_range16: TableColumn,
     _ph: PhantomData<F>,
 }
 
@@ -18,7 +17,6 @@ impl<F: Field + From<u64>> SumMod64Chip<F> {
         decompose_16_chip: Decompose16Chip<F>,
         full_number_u64: Column<Advice>,
         carry: Column<Advice>,
-        t_range16: TableColumn,
     ) -> Self {
         let q_add = meta.complex_selector();
 
@@ -47,7 +45,6 @@ impl<F: Field + From<u64>> SumMod64Chip<F> {
             limbs,
             carry,
             q_add,
-            t_range16,
             _ph: PhantomData,
         }
     }

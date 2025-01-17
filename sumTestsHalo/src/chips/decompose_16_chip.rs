@@ -14,9 +14,9 @@ impl<F: Field + From<u64>> Decompose16Chip<F> {
         meta: &mut ConstraintSystem<F>,
         full_number_u64: Column<Advice>,
         limbs: [Column<Advice>; 4],
-        t_range16: TableColumn,
     ) -> Self {
         let q_decompose = meta.complex_selector();
+        let t_range16 = meta.lookup_table_column();
 
         meta.create_gate("decompose in 16bit words", |meta| {
             let q_decompose = meta.query_selector(q_decompose);
