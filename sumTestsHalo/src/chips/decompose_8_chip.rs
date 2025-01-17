@@ -4,7 +4,7 @@ use super::*;
 pub struct Decompose8Chip<F: Field> {
     full_number_u64: Column<Advice>,
     limbs_8_bits: [Column<Advice>; 8],
-    pub q_decompose_8: Selector,
+    q_decompose_8: Selector,
     pub t_range8: TableColumn,
     _ph: PhantomData<F>,
 }

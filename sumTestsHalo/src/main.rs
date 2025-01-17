@@ -14,6 +14,7 @@ use ff::Field;
 use halo2_proofs::circuit::{Region, Value};
 use halo2_proofs::plonk::{Advice, Column, Error, Expression, Selector, TableColumn};
 use halo2_proofs::poly::Rotation;
+use crate::chips::rotate_63_chip::Rotate63Chip;
 
 struct Blake2bCircuit<F: Field> {
     _ph: PhantomData<F>,
@@ -33,7 +34,7 @@ struct Blake2bConfig<F: Field + Clone> {
     carry: Column<Advice>,
     t_range16: TableColumn,
     t_range8: TableColumn,
-    q_rot63: Selector,
+    rotate_63_chip: Rotate63Chip<F>,
     q_rot24: Selector,
     sum_mod64_chip: SumMod64Chip<F>,
     decompose_16_chip: Decompose16Chip<F>,
@@ -83,20 +84,7 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
         );
 
         // Rotation
-        let q_rot63 = meta.complex_selector();
-        meta.create_gate("rotate right 63", |meta| {
-            let q_rot63 = meta.query_selector(q_rot63);
-            let input_full_number = meta.query_advice(full_number_u64, Rotation::cur());
-            let output_full_number = meta.query_advice(full_number_u64, Rotation::next());
-            vec![
-                q_rot63
-                    * (Expression::Constant(F::from(2)) * input_full_number.clone()
-                        - output_full_number.clone())
-                    * (Expression::Constant(F::from(2)) * input_full_number
-                        - output_full_number
-                        - Expression::Constant(F::from(((1u128 << 64) - 1) as u64))),
-            ]
-        });
+        let rotate_63_chip = Rotate63Chip::configure(meta, full_number_u64);
 
         // Rotation
         // 0 = (x*2^40 + z) - z*2^64 - y
@@ -155,7 +143,7 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
             t_range16,
             t_range8,
             carry,
-            q_rot63,
+            rotate_63_chip,
             q_rot24,
             limbs_8_bits,
         }
@@ -208,12 +196,14 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
     }
 }
 
+impl<F: Field + From<u64>> Blake2bCircuit<F> {}
+
 impl<F: Field + From<u64>> Blake2bCircuit<F> {
     fn assign_rotation_rows(&self, config: &mut Blake2bConfig<F>, layouter: &mut impl Layouter<F>) {
         let _ = layouter.assign_region(
             || "rotate 63",
             |mut region| {
-                let _ = config.q_rot63.enable(&mut region, 0);
+                let _ = config.rotate_63_chip.q_rot63.enable(&mut region, 0);
 
                 let mut first_row = self.rotation_trace_63[0].to_vec();
                 first_row.push(Value::known(F::ZERO));
