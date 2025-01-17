@@ -116,4 +116,8 @@ impl<F: Field + From<u64>> XorChip<F> {
             },
         );
     }
+
+    pub fn _unknown_trace() -> [[Value<F>; 9]; 3] {
+        [[Value::unknown(); 9]; 3]
+    }
 }

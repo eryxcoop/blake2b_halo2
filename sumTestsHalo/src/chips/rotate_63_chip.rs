@@ -43,9 +43,7 @@ impl<F: Field + From<u64>> Rotate63Chip<F> {
                 let _ = self.q_rot63.enable(&mut region, 0);
 
                 let mut first_row = trace[0].to_vec();
-                first_row.push(Value::known(F::ZERO));
                 let mut second_row = trace[1].to_vec();
-                second_row.push(Value::known(F::ZERO));
                 decompose_chip.assign_16bit_row_from_values(&mut region, first_row.clone(), 0);
                 decompose_chip.assign_16bit_row_from_values(&mut region, second_row.clone(), 1);
                 Ok(())
