@@ -3,8 +3,8 @@ use super::*;
 #[derive(Clone, Debug)]
 pub struct Decompose8Chip<F: Field> {
     full_number_u64: Column<Advice>,
-    limbs_8_bits: [Column<Advice>; 8],
-    q_decompose_8: Selector,
+    limbs: [Column<Advice>; 8],
+    q_decompose: Selector,
     pub t_range8: TableColumn,
     _ph: PhantomData<F>,
 }
@@ -44,8 +44,8 @@ impl<F: Field + From<u64>> Decompose8Chip<F> {
 
         Self {
             full_number_u64,
-            limbs_8_bits,
-            q_decompose_8,
+            limbs: limbs_8_bits,
+            q_decompose: q_decompose_8,
             t_range8,
             _ph: PhantomData,
         }
@@ -69,7 +69,7 @@ impl<F: Field + From<u64>> Decompose8Chip<F> {
         meta: &mut ConstraintSystem<F>,
         limb: &Column<Advice>,
     ) {
-        Self::_range_check_for_limb_8_bits(meta, limb, &self.q_decompose_8, &self.t_range8);
+        Self::_range_check_for_limb_8_bits(meta, limb, &self.q_decompose, &self.t_range8);
     }
 
     pub fn assign_8bit_row_from_values(
@@ -78,12 +78,12 @@ impl<F: Field + From<u64>> Decompose8Chip<F> {
         row: Vec<Value<F>>,
         offset: usize,
     ) {
-        let _ = self.q_decompose_8.enable(region, offset);
+        let _ = self.q_decompose.enable(region, offset);
         let _ = region.assign_advice(|| "full number", self.full_number_u64, offset, || row[0]);
         for i in 0..8 {
             let _ = region.assign_advice(
                 || format!("limb{}", i),
-                self.limbs_8_bits[i],
+                self.limbs[i],
                 offset,
                 || row[i + 1],
             );
