@@ -138,7 +138,7 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
             .sum_mod64_chip
             .assign_addition_rows(&mut layouter, self.addition_trace);
 
-        Self::populate_lookup_table16(&config, &mut layouter)?;
+        config.decompose_16_chip.populate_lookup_table16(&mut layouter)?;
 
         // Rotation
         config.rotate_63_chip.assign_rotation_rows(
@@ -168,18 +168,6 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
 }
 
 impl<F: Field + From<u64>> Blake2bCircuit<F> {
-    fn populate_lookup_table16(
-        config: &Blake2bConfig<F>,
-        layouter: &mut impl Layouter<F>,
-    ) -> Result<(), Error> {
-        let table_name = "range 16bit check table";
-        let max_value = 1 << 16;
-        let lookup_column = config.t_range16;
-        Self::check_lookup_table(layouter, lookup_column, table_name, max_value)?;
-
-        Ok(())
-    }
-
     fn populate_lookup_table8(
         config: &Blake2bConfig<F>,
         layouter: &mut impl Layouter<F>,

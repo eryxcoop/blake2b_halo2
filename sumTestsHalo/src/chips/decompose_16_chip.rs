@@ -82,4 +82,39 @@ impl<F: Field + From<u64>> Decompose16Chip<F> {
         });
     }
 
+    pub fn populate_lookup_table16(
+        &self,
+        layouter: &mut impl Layouter<F>,
+    ) -> Result<(), Error> {
+        let table_name = "range 16bit check table";
+        let max_value = 1 << 16;
+        self.fill_lookup_table(layouter, table_name, max_value)?;
+
+        Ok(())
+    }
+
+    fn fill_lookup_table(
+        &self,
+        layouter: &mut impl Layouter<F>,
+        table_name: &str,
+        max_value: usize,
+    ) -> Result<(), Error> {
+        layouter.assign_table(
+            || table_name,
+            |mut table| {
+                // assign the table
+                for i in 0..max_value {
+                    table.assign_cell(
+                        || "value",
+                        self.t_range16,
+                        i,
+                        || Value::known(F::from(i as u64)),
+                    )?;
+                }
+                Ok(())
+            },
+        )?;
+        Ok(())
+    }
+
 }
