@@ -44,20 +44,10 @@ impl<F: Field + From<u64>> Rotate63Chip<F> {
                 first_row.push(Value::known(F::ZERO));
                 let mut second_row = trace[1].to_vec();
                 second_row.push(Value::known(F::ZERO));
-                self.assign_row_from_values(&mut region, decompose_chip, first_row, 0);
-                self.assign_row_from_values(&mut region, decompose_chip, second_row, 1);
+                let _ = decompose_chip.assign_16bit_row_from_values(&mut region, first_row.clone(), 0);
+                let _ = decompose_chip.assign_16bit_row_from_values(&mut region, second_row.clone(), 1);
                 Ok(())
             },
         );
-    }
-
-    fn assign_row_from_values(
-        &self,
-        region: &mut Region<F>,
-        decompose_chip: &mut Decompose16Chip<F>,
-        row: Vec<Value<F>>,
-        offset: usize,
-    ) {
-        let _ = decompose_chip.assign_16bit_row_from_values(region, row.clone(), offset);
     }
 }

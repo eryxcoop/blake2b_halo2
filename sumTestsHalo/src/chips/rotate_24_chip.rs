@@ -46,4 +46,29 @@ impl<F: Field + From<u64>> Rotate24Chip<F> {
         }
 
     }
+    pub fn assign_rotation_rows(&self,
+                                layouter: &mut impl Layouter<F>,
+                                decompose_chip: &mut Decompose16Chip<F>,
+                                trace: [[Value<F>; 5]; 3]) {
+        let _ = layouter.assign_region(
+            || "rotate 24",
+            |mut region| {
+                let _ = self.q_rot24.enable(&mut region, 0);
+
+                let mut first_row = trace[0].to_vec();
+                first_row.push(Value::known(F::ZERO));
+                let mut second_row = trace[1].to_vec();
+                second_row.push(Value::known(F::ZERO));
+                let mut third_row = trace[2].to_vec();
+                third_row.push(Value::known(F::ZERO));
+                let _ = decompose_chip.assign_16bit_row_from_values(&mut region, first_row.clone(), 0);
+                let _ = decompose_chip.assign_16bit_row_from_values(&mut region, second_row.clone(), 1);
+                let _ = decompose_chip.assign_16bit_row_from_values(&mut region, third_row.clone(), 2);
+                // TODO esta bien no llenar el carry?
+                // let _ = region.assign_advice(|| "carry", config.carry, offset, || row[5]);
+
+                Ok(())
+            },
+        );
+    }
 }

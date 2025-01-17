@@ -144,22 +144,8 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
         config.rotate_63_chip.assign_rotation_rows(
             &mut layouter, &mut config.decompose_16_chip, self.rotation_trace_63
         );
-        let _ = layouter.assign_region(
-            || "rotate 24",
-            |mut region| {
-                let _ = config.rotate_24_chip.q_rot24.enable(&mut region, 0);
-
-                let mut first_row = self.rotation_trace_24[0].to_vec();
-                first_row.push(Value::known(F::ZERO));
-                let mut second_row = self.rotation_trace_24[1].to_vec();
-                second_row.push(Value::known(F::ZERO));
-                let mut third_row = self.rotation_trace_24[2].to_vec();
-                third_row.push(Value::known(F::ZERO));
-                Self::assign_row_from_values(&mut config, &mut region, first_row, 0);
-                Self::assign_row_from_values(&mut config, &mut region, second_row, 1);
-                Self::assign_row_from_values(&mut config, &mut region, third_row, 2);
-                Ok(())
-            },
+        config.rotate_24_chip.assign_rotation_rows(
+            &mut layouter, &mut config.decompose_16_chip, self.rotation_trace_24
         );
 
         Self::populate_lookup_table8(&config, &mut layouter)?;
@@ -255,19 +241,6 @@ impl<F: Field + From<u64>> Blake2bCircuit<F> {
             xor_trace: Self::_unknown_trace_for_xor(),
             should_create_xor_table: false,
         }
-    }
-
-    fn assign_row_from_values(
-        config: &mut Blake2bConfig<F>,
-        region: &mut Region<F>,
-        row: Vec<Value<F>>,
-        offset: usize,
-    ) {
-        let _ = config
-            .decompose_16_chip
-            .assign_16bit_row_from_values(region, row.clone(), offset);
-
-        let _ = region.assign_advice(|| "carry", config.carry, offset, || row[5]);
     }
 }
 
