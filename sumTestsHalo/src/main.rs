@@ -84,9 +84,6 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
         // Rotation
         let rotate_63_chip = Rotate63Chip::configure(meta, full_number_u64);
 
-        // Rotation
-        let rotate_24_chip = Rotate24Chip::configure(meta, full_number_u64, limbs, t_range8);
-
         // config for xor
         let limbs_8_bits = [
             meta.advice_column(),
@@ -101,6 +98,11 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
 
         let decompose_8_chip =
             Decompose8Chip::configure(meta, full_number_u64, limbs_8_bits, t_range8);
+
+        // Rotation 24
+        let rotate_24_chip = Rotate24Chip::configure(meta, full_number_u64, limbs, decompose_8_chip.clone());
+
+        // Xor
         let xor_chip = XorChip::configure(
             meta,
             limbs_8_bits,
