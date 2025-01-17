@@ -3,7 +3,7 @@ use super::*;
 #[derive(Clone, Debug)]
 pub struct Rotate63Chip<F: Field> {
     q_rot63: Selector,
-    full_number_u64: Column<Advice>,
+    // full_number_u64: Column<Advice>,
     _ph: PhantomData<F>,
 }
 
@@ -26,7 +26,6 @@ impl<F: Field + From<u64>> Rotate63Chip<F> {
 
         Self {
             q_rot63,
-            full_number_u64,
             _ph: PhantomData,
         }
     }
@@ -42,8 +41,8 @@ impl<F: Field + From<u64>> Rotate63Chip<F> {
             |mut region| {
                 let _ = self.q_rot63.enable(&mut region, 0);
 
-                let mut first_row = trace[0].to_vec();
-                let mut second_row = trace[1].to_vec();
+                let first_row = trace[0].to_vec();
+                let second_row = trace[1].to_vec();
                 decompose_chip.assign_16bit_row_from_values(&mut region, first_row.clone(), 0);
                 decompose_chip.assign_16bit_row_from_values(&mut region, second_row.clone(), 1);
                 Ok(())

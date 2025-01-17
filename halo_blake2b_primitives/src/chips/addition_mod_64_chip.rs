@@ -3,9 +3,9 @@ use super::*;
 #[derive(Clone, Debug)]
 pub struct AdditionMod64Chip<F: Field> {
     pub decompose_16_chip: Decompose16Chip<F>,
-    full_number_u64: Column<Advice>,
+    // full_number_u64: Column<Advice>,
     carry: Column<Advice>,
-    limbs: [Column<Advice>; 4],
+    // limbs: [Column<Advice>; 4],
     q_add: Selector,
     _ph: PhantomData<F>,
 }
@@ -13,7 +13,6 @@ pub struct AdditionMod64Chip<F: Field> {
 impl<F: Field + From<u64>> AdditionMod64Chip<F> {
     pub fn configure(
         meta: &mut ConstraintSystem<F>,
-        limbs: [Column<Advice>; 4],
         decompose_16_chip: Decompose16Chip<F>,
         full_number_u64: Column<Advice>,
         carry: Column<Advice>,
@@ -41,8 +40,6 @@ impl<F: Field + From<u64>> AdditionMod64Chip<F> {
 
         Self {
             decompose_16_chip,
-            full_number_u64,
-            limbs,
             carry,
             q_add,
             _ph: PhantomData,

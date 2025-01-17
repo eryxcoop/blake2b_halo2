@@ -3,8 +3,8 @@ use super::*;
 #[derive(Clone, Debug)]
 pub struct XorChip<F: Field> {
     pub decompose_8_chip: Decompose8Chip<F>,
-    full_number_u64: Column<Advice>,
-    limbs_8_bits: [Column<Advice>; 8],
+    // full_number_u64: Column<Advice>,
+    // limbs_8_bits: [Column<Advice>; 8],
     t_xor_left: TableColumn,
     t_xor_right: TableColumn,
     t_xor_out: TableColumn,
@@ -17,7 +17,6 @@ impl<F: Field + From<u64>> XorChip<F> {
         meta: &mut ConstraintSystem<F>,
         limbs_8_bits: [Column<Advice>; 8],
         mut decompose_8_chip: Decompose8Chip<F>,
-        full_number_u64: Column<Advice>,
     ) -> Self {
         let q_xor = meta.complex_selector();
         let t_xor_left = meta.lookup_table_column();
@@ -41,8 +40,6 @@ impl<F: Field + From<u64>> XorChip<F> {
 
         Self {
             decompose_8_chip,
-            full_number_u64,
-            limbs_8_bits,
             t_xor_left,
             t_xor_right,
             t_xor_out,

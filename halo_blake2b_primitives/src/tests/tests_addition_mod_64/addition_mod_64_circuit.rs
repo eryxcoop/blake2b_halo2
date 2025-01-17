@@ -1,5 +1,5 @@
-use std::array;
 use super::*;
+use std::array;
 
 pub struct AdditionMod64Circuit<F: Field> {
     _ph: PhantomData<F>,
@@ -27,13 +27,12 @@ impl<F: Field + From<u64>> Circuit<F> for AdditionMod64Circuit<F> {
     }
 
     fn configure(meta: &mut ConstraintSystem<F>) -> Self::Config {
-
         let full_number_u64 = meta.advice_column();
         let limbs: [Column<Advice>; 4] = array::from_fn(|_| meta.advice_column());
         let carry = meta.advice_column();
         let decompose_16_chip = Decompose16Chip::configure(meta, full_number_u64, limbs);
 
-        AdditionMod64Chip::configure(meta, limbs, decompose_16_chip, full_number_u64, carry)
+        AdditionMod64Chip::configure(meta, decompose_16_chip, full_number_u64, carry)
     }
 
     #[allow(unused_variables)]
@@ -42,7 +41,9 @@ impl<F: Field + From<u64>> Circuit<F> for AdditionMod64Circuit<F> {
         mut config: Self::Config,
         mut layouter: impl Layouter<F>,
     ) -> Result<(), Error> {
-        config.decompose_16_chip.populate_lookup_table16(&mut layouter)?;
+        config
+            .decompose_16_chip
+            .populate_lookup_table16(&mut layouter)?;
         config.assign_addition_rows(&mut layouter, self.trace);
         Ok(())
     }

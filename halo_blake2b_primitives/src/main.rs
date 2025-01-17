@@ -6,11 +6,11 @@ use halo2_proofs::{
     plonk::{Circuit, ConstraintSystem},
 };
 
+use crate::chips::addition_mod_64_chip::AdditionMod64Chip;
 use crate::chips::decompose_16_chip::Decompose16Chip;
 use crate::chips::decompose_8_chip::Decompose8Chip;
 use crate::chips::rotate_24_chip::Rotate24Chip;
 use crate::chips::rotate_63_chip::Rotate63Chip;
-use crate::chips::sum_mod64_chip::AdditionMod64Chip;
 use crate::chips::xor_chip::XorChip;
 use ff::Field;
 use halo2_proofs::circuit::{Region, Value};
@@ -28,19 +28,19 @@ struct Blake2bCircuit<F: Field> {
 
 #[derive(Clone, Debug)]
 struct Blake2bConfig<F: Field + Clone> {
-    full_number_u64: Column<Advice>,
+    // full_number_u64: Column<Advice>,
 
     // Working with 4 limbs of u16
-    limbs: [Column<Advice>; 4],
-    carry: Column<Advice>,
-    t_range8: TableColumn,
+    // limbs: [Column<Advice>; 4],
+    // carry: Column<Advice>,
+    // t_range8: TableColumn,
     rotate_63_chip: Rotate63Chip<F>,
     rotate_24_chip: Rotate24Chip<F>,
     sum_mod64_chip: AdditionMod64Chip<F>,
     decompose_16_chip: Decompose16Chip<F>,
 
     // Working with 8 limbs of u8
-    limbs_8_bits: [Column<Advice>; 8],
+    // limbs_8_bits: [Column<Advice>; 8],
     xor_chip: XorChip<F>,
     decompose_8_chip: Decompose8Chip<F>,
 
@@ -73,13 +73,8 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
 
         let decompose_16_chip = Decompose16Chip::configure(meta, full_number_u64, limbs);
 
-        let sum_mod64_chip = AdditionMod64Chip::configure(
-            meta,
-            limbs,
-            decompose_16_chip.clone(),
-            full_number_u64,
-            carry,
-        );
+        let sum_mod64_chip =
+            AdditionMod64Chip::configure(meta, decompose_16_chip.clone(), full_number_u64, carry);
 
         // Rotation
         let rotate_63_chip = Rotate63Chip::configure(meta, full_number_u64);
@@ -104,12 +99,7 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
             Rotate24Chip::configure(meta, full_number_u64, limbs, decompose_8_chip.clone());
 
         // Xor
-        let xor_chip = XorChip::configure(
-            meta,
-            limbs_8_bits,
-            decompose_8_chip.clone(),
-            full_number_u64,
-        );
+        let xor_chip = XorChip::configure(meta, limbs_8_bits, decompose_8_chip.clone());
 
         Blake2bConfig {
             _ph: PhantomData,
@@ -119,11 +109,6 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
             sum_mod64_chip,
             rotate_63_chip,
             rotate_24_chip,
-            full_number_u64,
-            limbs,
-            carry,
-            limbs_8_bits,
-            t_range8,
         }
     }
 

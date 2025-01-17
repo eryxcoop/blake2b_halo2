@@ -1,7 +1,7 @@
 mod addition_mod_64_circuit;
 
-use crate::tests::tests_addition_mod_64::addition_mod_64_circuit::AdditionMod64Circuit;
 use super::*;
+use crate::tests::tests_addition_mod_64::addition_mod_64_circuit::AdditionMod64Circuit;
 
 #[test]
 fn test_positive_addition() {
@@ -12,7 +12,7 @@ fn test_positive_addition() {
 
 #[test]
 #[should_panic]
-fn test_negative_wrong_sum() {
+fn test_wrong_sum_with_overflow() {
     let trace = [
         [
             max_u64(),
@@ -26,7 +26,7 @@ fn test_negative_wrong_sum() {
         [one(), one(), zero(), zero(), zero(), one()],
     ];
 
-    let circuit = Blake2bCircuit::<Fr>::new_for_addition_alone(trace);
+    let circuit = AdditionMod64Circuit::<Fr>::new_for_trace(trace);
     let prover = MockProver::run(17, &circuit, vec![]).unwrap();
     prover.verify().unwrap();
 }
@@ -47,7 +47,7 @@ fn test_negative_wrong_decomposition() {
         [max_u64(), max_u16(), max_u16(), one(), max_u16(), zero()],
     ];
 
-    let circuit = Blake2bCircuit::<Fr>::new_for_addition_alone(trace);
+    let circuit = AdditionMod64Circuit::<Fr>::new_for_trace(trace);
     let prover = MockProver::run(17, &circuit, vec![]).unwrap();
     prover.verify().unwrap();
 }
@@ -68,7 +68,7 @@ fn test_negative_wrong_carry() {
         [zero(), zero(), zero(), zero(), zero(), one() + one()],
     ];
 
-    let circuit = Blake2bCircuit::<Fr>::new_for_addition_alone(trace);
+    let circuit = AdditionMod64Circuit::<Fr>::new_for_trace(trace);
     let prover = MockProver::run(17, &circuit, vec![]).unwrap();
     prover.verify().unwrap();
 }
@@ -89,7 +89,7 @@ fn test_negative_wrong_rangecheck() {
         [max_u16() + one(), zero(), one(), zero(), zero(), zero()],
     ];
 
-    let circuit = Blake2bCircuit::<Fr>::new_for_addition_alone(trace);
+    let circuit = AdditionMod64Circuit::<Fr>::new_for_trace(trace);
     let prover = MockProver::run(17, &circuit, vec![]).unwrap();
     prover.verify().unwrap();
 }

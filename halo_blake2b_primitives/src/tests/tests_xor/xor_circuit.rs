@@ -35,7 +35,7 @@ impl<F: Field + From<u64>> Circuit<F> for XorCircuit<F> {
         let decompose_8_chip =
             Decompose8Chip::configure(meta, full_number_u64, limbs_8_bits, t_range8);
 
-        XorChip::configure(meta, limbs_8_bits, decompose_8_chip.clone(), full_number_u64)
+        XorChip::configure(meta, limbs_8_bits, decompose_8_chip.clone())
     }
 
     #[allow(unused_variables)]
