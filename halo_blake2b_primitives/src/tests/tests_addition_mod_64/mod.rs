@@ -1,12 +1,11 @@
 mod addition_mod_64_circuit;
 
+use crate::tests::tests_addition_mod_64::addition_mod_64_circuit::AdditionMod64Circuit;
 use super::*;
 
 #[test]
 fn test_positive_addition() {
-    let trace = valid_addition_trace();
-
-    let circuit = Blake2bCircuit::<Fr>::new_for_addition_alone(trace);
+    let circuit = AdditionMod64Circuit::<Fr>::new_for_trace(valid_addition_trace());
     let prover = MockProver::run(17, &circuit, vec![]).unwrap();
     prover.verify().unwrap();
 }

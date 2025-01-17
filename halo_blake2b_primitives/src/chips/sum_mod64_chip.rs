@@ -2,7 +2,7 @@ use super::*;
 
 #[derive(Clone, Debug)]
 pub struct AdditionMod64Chip<F: Field> {
-    decompose_16_chip: Decompose16Chip<F>,
+    pub decompose_16_chip: Decompose16Chip<F>,
     full_number_u64: Column<Advice>,
     carry: Column<Advice>,
     limbs: [Column<Advice>; 4],
