@@ -30,4 +30,34 @@ impl<F: Field + From<u64>> Rotate63Chip<F> {
             _ph: PhantomData,
         }
     }
+
+    pub fn assign_rotation_rows(&self,
+                            layouter: &mut impl Layouter<F>,
+                            decompose_chip: &mut Decompose16Chip<F>,
+                            trace: [[Value<F>; 5]; 2]) {
+        let _ = layouter.assign_region(
+            || "rotate 63",
+            |mut region| {
+                let _ = self.q_rot63.enable(&mut region, 0);
+
+                let mut first_row = trace[0].to_vec();
+                first_row.push(Value::known(F::ZERO));
+                let mut second_row = trace[1].to_vec();
+                second_row.push(Value::known(F::ZERO));
+                self.assign_row_from_values(&mut region, decompose_chip, first_row, 0);
+                self.assign_row_from_values(&mut region, decompose_chip, second_row, 1);
+                Ok(())
+            },
+        );
+    }
+
+    fn assign_row_from_values(
+        &self,
+        region: &mut Region<F>,
+        decompose_chip: &mut Decompose16Chip<F>,
+        row: Vec<Value<F>>,
+        offset: usize,
+    ) {
+        let _ = decompose_chip.assign_16bit_row_from_values(region, row.clone(), offset);
+    }
 }

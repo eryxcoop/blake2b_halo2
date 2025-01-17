@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 use halo2_proofs::{
     circuit::{Layouter, SimpleFloorPlanner},
     dev::MockProver,
-    plonk::{self, Circuit, ConstraintSystem},
+    plonk::{Circuit, ConstraintSystem},
 };
 
 use crate::chips::decompose_16_chip::Decompose16Chip;
@@ -154,7 +154,7 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
         &self,
         mut config: Self::Config,
         mut layouter: impl Layouter<F>,
-    ) -> Result<(), plonk::Error> {
+    ) -> Result<(), Error> {
         config
             .sum_mod64_chip
             .assign_addition_rows(&mut layouter, self.addition_trace);
@@ -162,7 +162,9 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
         Self::populate_lookup_table16(&config, &mut layouter)?;
 
         // Rotation
-        self.assign_rotation_rows(&mut config, &mut layouter);
+        config.rotate_63_chip.assign_rotation_rows(
+            &mut layouter, &mut config.decompose_16_chip, self.rotation_trace_63
+        );
         let _ = layouter.assign_region(
             || "rotate 24",
             |mut region| {
@@ -199,23 +201,6 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
 impl<F: Field + From<u64>> Blake2bCircuit<F> {}
 
 impl<F: Field + From<u64>> Blake2bCircuit<F> {
-    fn assign_rotation_rows(&self, config: &mut Blake2bConfig<F>, layouter: &mut impl Layouter<F>) {
-        let _ = layouter.assign_region(
-            || "rotate 63",
-            |mut region| {
-                let _ = config.rotate_63_chip.q_rot63.enable(&mut region, 0);
-
-                let mut first_row = self.rotation_trace_63[0].to_vec();
-                first_row.push(Value::known(F::ZERO));
-                let mut second_row = self.rotation_trace_63[1].to_vec();
-                second_row.push(Value::known(F::ZERO));
-                Self::assign_row_from_values(config, &mut region, first_row, 0);
-                Self::assign_row_from_values(config, &mut region, second_row, 1);
-                Ok(())
-            },
-        );
-    }
-
     fn populate_lookup_table16(
         config: &Blake2bConfig<F>,
         layouter: &mut impl Layouter<F>,
