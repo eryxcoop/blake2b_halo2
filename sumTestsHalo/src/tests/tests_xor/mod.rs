@@ -27,7 +27,7 @@ fn test_xor_badly_done() {
         row_decomposed_in_8_limbs_from_u64(0),                          // a xor b
     ];
 
-    let circuit = Blake2bCircuit::<Fr>::new_for_xor_alone(incorrect_xor_trace);
+    let circuit = XorCircuit::<Fr>::new_for_trace(incorrect_xor_trace);
 
     let prover = MockProver::run(17, &circuit, vec![]).unwrap();
     prover.verify().unwrap();
@@ -45,7 +45,7 @@ fn test_bad_decomposition_in_8_bit_limbs() {
         badly_decomposed_row,                                           // a xor b
     ];
 
-    let circuit = Blake2bCircuit::<Fr>::new_for_xor_alone(badly_decomposed_xor_trace);
+    let circuit = XorCircuit::<Fr>::new_for_trace(badly_decomposed_xor_trace);
 
     let prover = MockProver::run(17, &circuit, vec![]).unwrap();
     prover.verify().unwrap();
@@ -72,7 +72,7 @@ fn test_bad_range_check_limb_u8() {
         out_of_range_decomposition_row,           // a xor b
     ];
 
-    let circuit = Blake2bCircuit::<Fr>::new_for_xor_alone(badly_decomposed_xor_trace);
+    let circuit = XorCircuit::<Fr>::new_for_trace(badly_decomposed_xor_trace);
 
     let prover = MockProver::run(17, &circuit, vec![]).unwrap();
     prover.verify().unwrap();
