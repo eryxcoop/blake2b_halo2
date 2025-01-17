@@ -21,13 +21,12 @@ impl<F: Field + From<u64>> Circuit<F> for XorCircuit<F> {
     type FloorPlanner = SimpleFloorPlanner;
 
     fn without_witnesses(&self) -> Self {
-        XorCircuit {
+        Self {
             _ph: PhantomData,
             trace: XorChip::unknown_trace(),
         }
     }
 
-    #[allow(unused_variables)]
     fn configure(meta: &mut ConstraintSystem<F>) -> Self::Config {
         let full_number_u64 = meta.advice_column();
         let limbs_8_bits: [Column<Advice>; 8] = array::from_fn(|_| meta.advice_column());

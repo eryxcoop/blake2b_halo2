@@ -1,7 +1,6 @@
-use crate::tests::{max_u16, max_u64, one, valid_addition_trace, zero};
-use crate::Blake2bCircuit;
-use halo2_proofs::dev::MockProver;
-use halo2_proofs::halo2curves::bn256::Fr;
+mod addition_mod_64_circuit;
+
+use super::*;
 
 #[test]
 fn test_positive_addition() {

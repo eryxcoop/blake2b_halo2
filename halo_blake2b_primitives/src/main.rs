@@ -10,7 +10,7 @@ use crate::chips::decompose_16_chip::Decompose16Chip;
 use crate::chips::decompose_8_chip::Decompose8Chip;
 use crate::chips::rotate_24_chip::Rotate24Chip;
 use crate::chips::rotate_63_chip::Rotate63Chip;
-use crate::chips::sum_mod64_chip::SumMod64Chip;
+use crate::chips::sum_mod64_chip::AdditionMod64Chip;
 use crate::chips::xor_chip::XorChip;
 use ff::Field;
 use halo2_proofs::circuit::{Region, Value};
@@ -36,7 +36,7 @@ struct Blake2bConfig<F: Field + Clone> {
     t_range8: TableColumn,
     rotate_63_chip: Rotate63Chip<F>,
     rotate_24_chip: Rotate24Chip<F>,
-    sum_mod64_chip: SumMod64Chip<F>,
+    sum_mod64_chip: AdditionMod64Chip<F>,
     decompose_16_chip: Decompose16Chip<F>,
 
     // Working with 8 limbs of u8
@@ -73,7 +73,7 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
 
         let decompose_16_chip = Decompose16Chip::configure(meta, full_number_u64, limbs);
 
-        let sum_mod64_chip = SumMod64Chip::configure(
+        let sum_mod64_chip = AdditionMod64Chip::configure(
             meta,
             limbs,
             decompose_16_chip.clone(),
@@ -176,7 +176,7 @@ impl<F: Field + From<u64>> Blake2bCircuit<F> {
     }
 
     fn _unknown_trace_for_addition() -> [[Value<F>; 6]; 3] {
-        [[Value::unknown(); 6]; 3]
+        AdditionMod64Chip::unknown_trace()
     }
 
     fn _unknown_trace_for_rotation_24() -> [[Value<F>; 5]; 3] {

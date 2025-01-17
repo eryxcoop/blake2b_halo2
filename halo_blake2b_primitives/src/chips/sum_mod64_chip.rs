@@ -1,7 +1,7 @@
 use super::*;
 
 #[derive(Clone, Debug)]
-pub struct SumMod64Chip<F: Field> {
+pub struct AdditionMod64Chip<F: Field> {
     decompose_16_chip: Decompose16Chip<F>,
     full_number_u64: Column<Advice>,
     carry: Column<Advice>,
@@ -10,7 +10,7 @@ pub struct SumMod64Chip<F: Field> {
     _ph: PhantomData<F>,
 }
 
-impl<F: Field + From<u64>> SumMod64Chip<F> {
+impl<F: Field + From<u64>> AdditionMod64Chip<F> {
     pub fn configure(
         meta: &mut ConstraintSystem<F>,
         limbs: [Column<Advice>; 4],
@@ -77,5 +77,9 @@ impl<F: Field + From<u64>> SumMod64Chip<F> {
             .assign_16bit_row_from_values(region, row.clone(), offset);
 
         let _ = region.assign_advice(|| "carry", self.carry, offset, || row[5]);
+    }
+
+    pub fn unknown_trace() -> [[Value<F>; 6]; 3] {
+        [[Value::unknown(); 6]; 3]
     }
 }
