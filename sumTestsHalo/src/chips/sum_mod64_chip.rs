@@ -6,7 +6,7 @@ pub struct SumMod64Chip<F: Field> {
     full_number_u64: Column<Advice>,
     carry: Column<Advice>,
     limbs: [Column<Advice>; 4],
-    pub q_add: Selector,
+    q_add: Selector,
     t_range16: TableColumn,
     _ph: PhantomData<F>,
 }
@@ -96,8 +96,7 @@ impl<F: Field + From<u64>> SumMod64Chip<F> {
         row: Vec<Value<F>>,
         offset: usize,
     ) {
-        let _ = self
-            .decompose_16_chip
+        self.decompose_16_chip
             .assign_16bit_row_from_values(region, row.clone(), offset);
 
         let _ = region.assign_advice(|| "carry", self.carry, offset, || row[5]);

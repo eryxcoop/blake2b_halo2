@@ -8,14 +8,14 @@ use halo2_proofs::{
 
 use crate::chips::decompose_16_chip::Decompose16Chip;
 use crate::chips::decompose_8_chip::Decompose8Chip;
+use crate::chips::rotate_24_chip::Rotate24Chip;
+use crate::chips::rotate_63_chip::Rotate63Chip;
 use crate::chips::sum_mod64_chip::SumMod64Chip;
 use crate::chips::xor_chip::XorChip;
 use ff::Field;
 use halo2_proofs::circuit::{Region, Value};
 use halo2_proofs::plonk::{Advice, Column, Error, Expression, Selector, TableColumn};
 use halo2_proofs::poly::Rotation;
-use crate::chips::rotate_24_chip::Rotate24Chip;
-use crate::chips::rotate_63_chip::Rotate63Chip;
 
 struct Blake2bCircuit<F: Field> {
     _ph: PhantomData<F>,
@@ -142,10 +142,14 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
 
         // Rotation
         config.rotate_63_chip.assign_rotation_rows(
-            &mut layouter, &mut config.decompose_16_chip, self.rotation_trace_63
+            &mut layouter,
+            &mut config.decompose_16_chip,
+            self.rotation_trace_63,
         );
         config.rotate_24_chip.assign_rotation_rows(
-            &mut layouter, &mut config.decompose_16_chip, self.rotation_trace_24
+            &mut layouter,
+            &mut config.decompose_16_chip,
+            self.rotation_trace_24,
         );
 
         Self::populate_lookup_table8(&config, &mut layouter)?;

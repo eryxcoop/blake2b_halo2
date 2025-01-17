@@ -2,7 +2,7 @@ use super::*;
 
 #[derive(Clone, Debug)]
 pub struct Rotate24Chip<F: Field> {
-    pub q_rot24: Selector,
+    q_rot24: Selector,
     full_number_u64: Column<Advice>,
     limbs: [Column<Advice>; 4],
     pub t_range8: TableColumn,
@@ -10,8 +10,11 @@ pub struct Rotate24Chip<F: Field> {
 }
 
 impl<F: Field + From<u64>> Rotate24Chip<F> {
-    pub fn configure(meta: &mut ConstraintSystem<F>, full_number_u64: Column<Advice>, limbs: [Column<Advice>; 4],
-                     t_range8: TableColumn,
+    pub fn configure(
+        meta: &mut ConstraintSystem<F>,
+        full_number_u64: Column<Advice>,
+        limbs: [Column<Advice>; 4],
+        t_range8: TableColumn,
     ) -> Self {
         let q_rot24 = meta.complex_selector();
         // 0 = (x*2^40 + z) - z*2^64 - y
@@ -23,11 +26,11 @@ impl<F: Field + From<u64>> Rotate24Chip<F> {
             vec![
                 q_rot24
                     * (Expression::Constant(F::from((1u128 << 40) as u64))
-                    * input_full_number.clone()
-                    + chunk.clone()
-                    - Expression::Constant(F::from((1u128 << 63) as u64) * F::from(2))
-                    * chunk.clone()
-                    - output_full_number.clone()),
+                        * input_full_number.clone()
+                        + chunk.clone()
+                        - Expression::Constant(F::from((1u128 << 63) as u64) * F::from(2))
+                            * chunk.clone()
+                        - output_full_number.clone()),
             ]
         });
 
@@ -44,12 +47,13 @@ impl<F: Field + From<u64>> Rotate24Chip<F> {
             q_rot24,
             _ph: PhantomData,
         }
-
     }
-    pub fn assign_rotation_rows(&self,
-                                layouter: &mut impl Layouter<F>,
-                                decompose_chip: &mut Decompose16Chip<F>,
-                                trace: [[Value<F>; 5]; 3]) {
+    pub fn assign_rotation_rows(
+        &self,
+        layouter: &mut impl Layouter<F>,
+        decompose_chip: &mut Decompose16Chip<F>,
+        trace: [[Value<F>; 5]; 3],
+    ) {
         let _ = layouter.assign_region(
             || "rotate 24",
             |mut region| {
@@ -61,9 +65,9 @@ impl<F: Field + From<u64>> Rotate24Chip<F> {
                 second_row.push(Value::known(F::ZERO));
                 let mut third_row = trace[2].to_vec();
                 third_row.push(Value::known(F::ZERO));
-                let _ = decompose_chip.assign_16bit_row_from_values(&mut region, first_row.clone(), 0);
-                let _ = decompose_chip.assign_16bit_row_from_values(&mut region, second_row.clone(), 1);
-                let _ = decompose_chip.assign_16bit_row_from_values(&mut region, third_row.clone(), 2);
+                decompose_chip.assign_16bit_row_from_values(&mut region, first_row.clone(), 0);
+                decompose_chip.assign_16bit_row_from_values(&mut region, second_row.clone(), 1);
+                decompose_chip.assign_16bit_row_from_values(&mut region, third_row.clone(), 2);
                 // TODO esta bien no llenar el carry?
                 // let _ = region.assign_advice(|| "carry", config.carry, offset, || row[5]);
 
