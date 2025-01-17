@@ -1,8 +1,8 @@
-mod circuit;
+mod xor_circuit;
 
 use super::*;
 use crate::auxiliar_functions::value_for;
-use crate::tests::tests_xor::circuit::XorCircuit;
+use crate::tests::tests_xor::xor_circuit::XorCircuit;
 
 #[test]
 fn test_positive_xor() {
