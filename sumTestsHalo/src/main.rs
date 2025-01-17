@@ -179,7 +179,7 @@ impl<F: Field + From<u64>> Blake2bCircuit<F> {
     }
 
     fn _unknown_trace_for_xor() -> [[Value<F>; 9]; 3] {
-        XorChip::_unknown_trace()
+        XorChip::unknown_trace()
     }
 
     fn new_for_unknown_values() -> Self {
