@@ -9,12 +9,12 @@ pub fn max_u64() -> Value<Fr> {
     Value::known(Fr::from(((1u128 << 64) - 1) as u64))
 }
 pub fn max_u16() -> Value<Fr> {
-    let number = (1 << 16) - 1;
+    let number = (1u64 << 16) - 1;
     value_for(number)
 }
 
 pub fn max_u24() -> Value<Fr> {
-    known_value_from_number((1u128 << 24) - 1)
+    value_for((1u64 << 24) - 1)
 }
 pub fn max_u8() -> Value<Fr> {
     Value::known(Fr::from((1 << 8) - 1))
@@ -48,10 +48,20 @@ pub fn spread(mut n: u16) -> u32 {
     spread
 }
 
-pub fn value_for(number: u64) -> Value<Fr> {
-    Value::known(Fr::from(number))
+pub fn value_for<T>(number: T) -> Value<Fr> 
+where
+    T: Into<u128>
+{
+    Value::known(field_element_for(number))
 }
 
-pub fn known_value_from_number(number: u128) -> Value<Fr> {
-    Value::known(Fr::from(number as u64))
+pub fn field_element_for<T>(number: T) -> Fr
+where
+    T: Into<u128>
+{
+    let number: u128 = number.into();
+    let lo: u64 = (number % (1u128 << 64)) as u64;
+    let hi: u64 = (number / (1u128 << 64)) as u64;
+    let field_pow64 = Fr::from(1 << 63) * Fr::from(2);
+    Fr::from(hi) * field_pow64 + Fr::from(lo)
 }

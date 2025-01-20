@@ -83,16 +83,16 @@ fn valid_rotation24_trace() -> [[Value<Fr>; 5]; 3] {
         [
             max_u24(),
             max_u16(),
-            known_value_from_number((1 << 8) - 1),
+            value_for((1u64 << 8) - 1),
             zero(),
             zero(),
         ],
         [zero(), zero(), zero(), zero(), zero()],
         [
-            known_value_from_number(((1u128 << 24) - 1) << 40),
+            value_for(((1u128 << 24) - 1) << 40),
             zero(),
             zero(),
-            known_value_from_number(((1 << 8) - 1) << 8),
+            value_for(((1u64 << 8) - 1) << 8),
             max_u16(),
         ],
     ]

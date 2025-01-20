@@ -36,8 +36,8 @@ fn test_xor_badly_done() {
 #[test]
 #[should_panic]
 fn test_bad_decomposition_in_8_bit_limbs() {
-    let mut badly_decomposed_row = [value_for(0); 9];
-    badly_decomposed_row[4] = value_for(1);
+    let mut badly_decomposed_row = [value_for(0u16); 9];
+    badly_decomposed_row[4] = value_for(1u16);
 
     let badly_decomposed_xor_trace: [[Value<Fr>; 9]; 3] = [
         row_decomposed_in_8_limbs_from_u64(((1u128 << 64) - 1) as u64), // a
@@ -55,15 +55,15 @@ fn test_bad_decomposition_in_8_bit_limbs() {
 #[should_panic]
 fn test_bad_range_check_limb_u8() {
     let out_of_range_decomposition_row = [
-        value_for((1 << 16) - 1),
-        value_for((1 << 16) - 1),
-        value_for(0),
-        value_for(0),
-        value_for(0),
-        value_for(0),
-        value_for(0),
-        value_for(0),
-        value_for(0),
+        value_for((1u32 << 16) - 1),
+        value_for((1u32 << 16) - 1),
+        value_for(0u16),
+        value_for(0u16),
+        value_for(0u16),
+        value_for(0u16),
+        value_for(0u16),
+        value_for(0u16),
+        value_for(0u16),
     ];
 
     let badly_decomposed_xor_trace: [[Value<Fr>; 9]; 3] = [
