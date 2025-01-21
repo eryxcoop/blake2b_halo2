@@ -48,9 +48,10 @@ pub fn spread(mut n: u16) -> u32 {
     spread
 }
 
-pub fn value_for<T>(number: T) -> Value<Fr> 
+pub fn value_for<T, F>(number: T) -> Value<F> 
 where
-    T: Into<u128>
+    T: Into<u128>,
+    F: Field + From<u64>
 {
     Value::known(field_for(number))
 }
@@ -65,4 +66,18 @@ where
     let hi: u64 = (number / (1u128 << 64)) as u64;
     let field_pow64 = F::from(1 << 63) * F::from(2);
     F::from(hi) * field_pow64 + F::from(lo)
+}
+
+pub fn generate_row_8bits<F>(number: u128) -> [Value<F>; 10]
+where F: Field + From<u64>
+{
+    let mut number = number;
+    let mut ans = [Value::unknown(); 10];
+    ans[0] = value_for(number);
+    ans[9] = value_for(0u8);
+    for i in 1..9 {
+        ans[i] = value_for(number % 256);
+        number /= 256;
+    }
+    ans
 }

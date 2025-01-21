@@ -5,9 +5,7 @@ use super::*;
 #[derive(Clone, Debug)]
 pub struct Sum8BitsChip<F: Field> {
     decompose_8_chip: Decompose8Chip<F>,
-    full_number_u64: Column<Advice>,
     carry: Column<Advice>,
-    limbs: [Column<Advice>; 8],
     q_add: Selector,
     _ph: PhantomData<F>,
 }
@@ -15,7 +13,6 @@ pub struct Sum8BitsChip<F: Field> {
 impl<F: Field + From<u64>> Sum8BitsChip<F> {
     pub fn configure(
         meta: &mut ConstraintSystem<F>,
-        limbs: [Column<Advice>; 8],
         decompose_8_chip: Decompose8Chip<F>,
         full_number_u64: Column<Advice>,
         carry: Column<Advice>,
@@ -40,8 +37,6 @@ impl<F: Field + From<u64>> Sum8BitsChip<F> {
 
         Self {
             decompose_8_chip,
-            full_number_u64,
-            limbs,
             carry,
             q_add,
             _ph: PhantomData,
