@@ -91,15 +91,19 @@ impl<F: Field + From<u64>> Decompose8Chip<F> {
     }
 
     pub fn populate_lookup_table8(&self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
-        let table_name = "range 8bit check table";
-        let max_value = 1 << 8;
         let lookup_column = self.t_range8;
+        Self::populate_lookup_table8_outside(layouter, lookup_column)
+    }
 
+    pub fn populate_lookup_table8_outside(
+        layouter: &mut impl Layouter<F>,
+        lookup_column: TableColumn,
+    ) -> Result<(), Error> {
         layouter.assign_table(
-            || table_name,
+            || "range 8bit check table",
             |mut table| {
                 // assign the table
-                for i in 0..max_value {
+                for i in 0..1 << 8 {
                     table.assign_cell(
                         || "value",
                         lookup_column,
@@ -109,7 +113,6 @@ impl<F: Field + From<u64>> Decompose8Chip<F> {
                 }
                 Ok(())
             },
-        )?;
-        Ok(())
+        )
     }
 }

@@ -30,7 +30,6 @@ struct Blake2bCircuit<F: Field> {
 #[derive(Clone, Debug)]
 struct Blake2bConfig<F: Field + Clone> {
     // Working with 4 limbs of u16
-    rotate_24_chip: Rotate24Chip<F>,
     sum_mod64_chip: AdditionMod64Chip<F>,
     decompose_16_chip: Decompose16Chip<F>,
 
@@ -80,16 +79,11 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
         let decompose_8_chip =
             Decompose8Chip::configure(meta, full_number_u64, limbs_8_bits, t_range8);
 
-        // Rotation 24
-        let rotate_24_chip =
-            Rotate24Chip::configure(meta, full_number_u64, limbs, decompose_8_chip.clone());
-
         Blake2bConfig {
             _ph: PhantomData,
             decompose_8_chip,
             decompose_16_chip,
             sum_mod64_chip,
-            rotate_24_chip,
         }
     }
 
@@ -99,19 +93,19 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
         mut config: Self::Config,
         mut layouter: impl Layouter<F>,
     ) -> Result<(), Error> {
-        config
-            .decompose_16_chip
-            .populate_lookup_table16(&mut layouter)?;
-
-        config.rotate_24_chip.assign_rotation_rows(
-            &mut layouter,
-            &mut config.decompose_16_chip,
-            self.rotation_trace_24,
-        );
-
-        config
-            .decompose_8_chip
-            .populate_lookup_table8(&mut layouter)?;
+        // config
+        //     .decompose_16_chip
+        //     .populate_lookup_table16(&mut layouter)?;
+        //
+        // config.rotate_24_chip.assign_rotation_rows(
+        //     &mut layouter,
+        //     &mut config.decompose_16_chip,
+        //     self.rotation_trace_24,
+        // );
+        //
+        // config
+        //     .decompose_8_chip
+        //     .populate_lookup_table8(&mut layouter)?;
 
         Ok(())
     }

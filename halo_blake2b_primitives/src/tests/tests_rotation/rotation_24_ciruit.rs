@@ -3,19 +3,20 @@ use std::array;
 use std::marker::PhantomData;
 
 #[derive(Clone)]
-pub struct Rotation63Config<F: Field> {
+pub struct Rotation24Config<F: Field> {
     _ph: PhantomData<F>,
-    rotation_63_chip: Rotate63Chip<F>,
+    rotation_24_chip: Rotate24Chip<F>,
     decompose_16_chip: Decompose16Chip<F>,
+    t_range8: TableColumn,
 }
 
-pub struct Rotation63Circuit<F: Field> {
+pub struct Rotation24Circuit<F: Field> {
     _ph: PhantomData<F>,
-    trace: [[Value<F>; 5]; 2],
+    trace: [[Value<F>; 5]; 3],
 }
 
-impl<F: Field> Rotation63Circuit<F> {
-    pub fn new_for_trace(trace: [[Value<F>; 5]; 2]) -> Self {
+impl<F: Field> Rotation24Circuit<F> {
+    pub fn new_for_trace(trace: [[Value<F>; 5]; 3]) -> Self {
         Self {
             _ph: PhantomData,
             trace,
@@ -23,14 +24,14 @@ impl<F: Field> Rotation63Circuit<F> {
     }
 }
 
-impl<F: Field + From<u64>> Circuit<F> for Rotation63Circuit<F> {
-    type Config = Rotation63Config<F>;
+impl<F: Field + From<u64>> Circuit<F> for Rotation24Circuit<F> {
+    type Config = Rotation24Config<F>;
     type FloorPlanner = SimpleFloorPlanner;
 
     fn without_witnesses(&self) -> Self {
         Self {
             _ph: PhantomData,
-            trace: Rotate63Chip::unknown_trace(),
+            trace: Rotate24Chip::unknown_trace(),
         }
     }
 
@@ -41,12 +42,15 @@ impl<F: Field + From<u64>> Circuit<F> for Rotation63Circuit<F> {
         let decompose_16_chip = Decompose16Chip::configure(meta, full_number_u64, limbs_4_bits);
         decompose_16_chip.range_check_for_limbs(meta);
 
-        let rotation_63_chip = Rotate63Chip::configure(meta, full_number_u64);
+        let t_range8 = meta.lookup_table_column();
+        let rotation_24_chip =
+            Rotate24Chip::configure(meta, full_number_u64, limbs_4_bits, t_range8);
 
         Self::Config {
             _ph: PhantomData,
+            rotation_24_chip,
             decompose_16_chip,
-            rotation_63_chip,
+            t_range8,
         }
     }
 
@@ -56,12 +60,14 @@ impl<F: Field + From<u64>> Circuit<F> for Rotation63Circuit<F> {
         mut config: Self::Config,
         mut layouter: impl Layouter<F>,
     ) -> Result<(), Error> {
+        Decompose8Chip::populate_lookup_table8_outside(&mut layouter, config.t_range8)?;
         config
             .decompose_16_chip
             .populate_lookup_table16(&mut layouter)?;
-        config.rotation_63_chip.assign_rotation_rows(
+
+        config.rotation_24_chip.assign_rotation_rows(
             &mut layouter,
-            &mut config.decompose_16_chip.clone(),
+            &mut config.decompose_16_chip,
             self.trace,
         );
 

@@ -3,9 +3,6 @@ use super::*;
 #[derive(Clone, Debug)]
 pub struct Rotate24Chip<F: Field> {
     q_rot24: Selector,
-    // full_number_u64: Column<Advice>,
-    // limbs: [Column<Advice>; 4],
-    // decompose_8_chip: Decompose8Chip<F>,
     _ph: PhantomData<F>,
 }
 
@@ -14,7 +11,7 @@ impl<F: Field + From<u64>> Rotate24Chip<F> {
         meta: &mut ConstraintSystem<F>,
         full_number_u64: Column<Advice>,
         limbs: [Column<Advice>; 4],
-        decompose_8_chip: Decompose8Chip<F>,
+        t_range8: TableColumn,
     ) -> Self {
         let q_rot24 = meta.complex_selector();
         // 0 = (x*2^40 + z) - z*2^64 - y
@@ -37,7 +34,7 @@ impl<F: Field + From<u64>> Rotate24Chip<F> {
         meta.lookup("lookup rotate_24 chunks", |meta| {
             let limb: Expression<F> = meta.query_advice(limbs[2], Rotation(1));
             let q_rot24 = meta.query_selector(q_rot24);
-            vec![(q_rot24 * limb, decompose_8_chip.t_range8)]
+            vec![(q_rot24 * limb, t_range8)]
         });
 
         Self {

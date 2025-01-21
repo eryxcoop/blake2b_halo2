@@ -1,7 +1,8 @@
+mod rotation_24_ciruit;
 mod rotation_63_circuit;
-// mod rotation_24_ciruit;
 
 use super::*;
+use crate::tests::tests_rotation::rotation_24_ciruit::Rotation24Circuit;
 use crate::tests::tests_rotation::rotation_63_circuit::Rotation63Circuit;
 use crate::Blake2bCircuit;
 use halo2_proofs::circuit::Value;
@@ -44,7 +45,7 @@ fn test_badly_decomposed_rotate_right_63() {
 #[test]
 fn test_positive_rotate_right_24() {
     let rotation_trace = _valid_rotation24_trace();
-    let circuit = Blake2bCircuit::<Fr>::new_for_rotation_24(rotation_trace);
+    let circuit = Rotation24Circuit::<Fr>::new_for_trace(rotation_trace);
 
     let prover = MockProver::run(17, &circuit, vec![]).unwrap();
     prover.verify().unwrap();
@@ -57,7 +58,7 @@ fn test_positive_rotate_right_24_b() {
         [max_u40(), max_u16(), max_u16(), max_u8(), zero()],
         [max_u64(), max_u16(), max_u16(), max_u16(), max_u16()],
     ];
-    let circuit = Blake2bCircuit::<Fr>::new_for_rotation_24(rotation_trace);
+    let circuit = Rotation24Circuit::<Fr>::new_for_trace(rotation_trace);
 
     let prover = MockProver::run(17, &circuit, vec![]).unwrap();
     prover.verify().unwrap();
@@ -71,7 +72,7 @@ fn test_negative_rotate_right_24() {
         [max_u40(), max_u16(), max_u16(), max_u8(), zero()],
         [one(), one(), zero(), zero(), zero()],
     ];
-    let circuit = Blake2bCircuit::<Fr>::new_for_rotation_24(rotation_trace);
+    let circuit = Rotation24Circuit::<Fr>::new_for_trace(rotation_trace);
 
     let prover = MockProver::run(17, &circuit, vec![]).unwrap();
     prover.verify().unwrap();
@@ -85,7 +86,7 @@ fn test_rotate_right_24_chunk_out_of_range() {
         [max_u40() + one(), zero(), zero(), max_u8() + one(), zero()],
         [zero(), zero(), zero(), zero(), zero()],
     ];
-    let circuit = Blake2bCircuit::<Fr>::new_for_rotation_24(rotation_trace);
+    let circuit = Rotation24Circuit::<Fr>::new_for_trace(rotation_trace);
 
     let prover = MockProver::run(17, &circuit, vec![]).unwrap();
     prover.verify().unwrap();
