@@ -4,7 +4,6 @@ use super::*;
 
 #[derive(Clone, Debug)]
 pub struct Sum8BitsChip<F: Field> {
-    decompose_8_chip: Decompose8Chip<F>,
     carry: Column<Advice>,
     q_add: Selector,
     _ph: PhantomData<F>,
@@ -27,7 +26,6 @@ impl<F: Field + From<u64>> Sum8BitsChip<F> {
 
             let carry = meta.query_advice(carry, Rotation(2));
 
-            // TODO check if x, y and result are 64 bits
             vec![
                 q_add
                     * (full_number_result - full_number_x - full_number_y
@@ -36,7 +34,6 @@ impl<F: Field + From<u64>> Sum8BitsChip<F> {
         });
 
         Self {
-            decompose_8_chip,
             carry,
             q_add,
             _ph: PhantomData,
@@ -47,15 +44,16 @@ impl<F: Field + From<u64>> Sum8BitsChip<F> {
         &mut self,
         layouter: &mut impl Layouter<F>,
         addition_trace: [[Value<F>; 10]; 3],
+        decompose_8_chip: &mut Decompose8Chip<F>
     ) {
         let _ = layouter.assign_region(
             || "decompose",
             |mut region| {
                 let _ = self.q_add.enable(&mut region, 0);
 
-                Self::assign_row_from_values(self, &mut region, addition_trace[0].to_vec(), 0);
-                Self::assign_row_from_values(self, &mut region, addition_trace[1].to_vec(), 1);
-                Self::assign_row_from_values(self, &mut region, addition_trace[2].to_vec(), 2);
+                self.assign_row_from_values(&mut region, addition_trace[0].to_vec(), 0, decompose_8_chip);
+                self.assign_row_from_values(&mut region, addition_trace[1].to_vec(), 1, decompose_8_chip);
+                self.assign_row_from_values(&mut region, addition_trace[2].to_vec(), 2, decompose_8_chip);
                 Ok(())
             },
         );
@@ -66,10 +64,9 @@ impl<F: Field + From<u64>> Sum8BitsChip<F> {
         region: &mut Region<F>,
         row: Vec<Value<F>>,
         offset: usize,
+        decompose_8_chip: &mut Decompose8Chip<F>
     ) {
-        self.decompose_8_chip
-            .assign_8bit_row_from_values(region, row.clone(), offset);
-
+        decompose_8_chip.assign_8bit_row_from_values(region, row.clone(), offset);
         let _ = region.assign_advice(|| "carry", self.carry, offset, || row[9]);
     }
 }

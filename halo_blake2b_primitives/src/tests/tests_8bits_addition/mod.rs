@@ -1,3 +1,4 @@
+use super::*;
 use crate::auxiliar_functions::*;
 use halo2_proofs::dev::MockProver;
 use halo2_proofs::halo2curves::bn256::Fr;
