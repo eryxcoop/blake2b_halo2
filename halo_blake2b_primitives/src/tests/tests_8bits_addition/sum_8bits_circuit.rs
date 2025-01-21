@@ -1,13 +1,7 @@
-use crate::auxiliar_functions::*;
-use crate::tests::{max_u16, max_u64, one, zero};
-use crate::Blake2bCircuit;
-use halo2_proofs::halo2curves::bn256::Fr;
-
 use std::marker::PhantomData;
 
 use halo2_proofs::{
     circuit::{Layouter, SimpleFloorPlanner},
-    dev::MockProver,
     plonk::{Circuit, ConstraintSystem},
 };
 
@@ -17,18 +11,13 @@ use ff::Field;
 use halo2_proofs::circuit::Value;
 use halo2_proofs::plonk::Error;
 
-struct Sum8BitsTestCircuit<F: Field> {
+pub struct Sum8BitsTestCircuit<F: Field> {
     _ph: PhantomData<F>,
     trace: [[Value<F>; 10]; 3],
 }
 
 #[derive(Clone, Debug)]
-struct Sum8BitsTestConfig<F: Field + Clone> {
-    // full_number_u64: Column<Advice>,
-    //
-    // limbs: [Column<Advice>; 8],
-    // carry: Column<Advice>,
-    // t_range8: TableColumn,
+pub struct Sum8BitsTestConfig<F: Field + Clone> {
     sum_8bits_chip: Sum8BitsChip<F>,
     decompose_8_chip: Decompose8Chip<F>,
 
@@ -79,10 +68,6 @@ impl<F: Field + From<u64>> Circuit<F> for Sum8BitsTestCircuit<F> {
             _ph: PhantomData,
             decompose_8_chip,
             sum_8bits_chip,
-            // full_number_u64,
-            // limbs,
-            // carry,
-            // t_range8,
         }
     }
 
@@ -102,38 +87,11 @@ impl<F: Field + From<u64>> Circuit<F> for Sum8BitsTestCircuit<F> {
     }
 }
 
-#[test]
-fn test_positive_addition() {
-    let trace = [
-        generate_row_8bits::<Fr>(1),
-        generate_row_8bits::<Fr>(1),
-        generate_row_8bits::<Fr>(2),
-
-    ];
-
-    let circuit = Sum8BitsTestCircuit::<Fr> {
-        _ph: PhantomData,
-        trace: trace,
-    };
-    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
-    prover.verify().unwrap();
+impl<F: Field> Sum8BitsTestCircuit<F> {
+    pub fn new_for_trace(trace: [[Value<F>; 10]; 3]) -> Self {
+        Self {
+            _ph: PhantomData,
+            trace,
+        }
+    }
 }
-
-#[test]
-#[should_panic]
-fn test_negative_addition() {
-    let trace = [
-        generate_row_8bits::<Fr>(1),
-        generate_row_8bits::<Fr>(1),
-        generate_row_8bits::<Fr>(3),
-
-    ];
-
-    let circuit = Sum8BitsTestCircuit::<Fr> {
-        _ph: PhantomData,
-        trace: trace,
-    };
-    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
-    prover.verify().unwrap();
-}
-
