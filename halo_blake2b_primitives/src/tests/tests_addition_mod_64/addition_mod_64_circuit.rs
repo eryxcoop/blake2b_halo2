@@ -1,6 +1,12 @@
 use super::*;
 use std::array;
 
+#[derive(Clone)]
+pub struct AdditionMod64Config<F: Field> {
+    addition_mod_64_chip: AdditionMod64Chip<F>,
+    decompose_16_chip: Decompose16Chip<F>
+}
+
 pub struct AdditionMod64Circuit<F: Field> {
     _ph: PhantomData<F>,
     trace: [[Value<F>; 6]; 3],
@@ -16,7 +22,7 @@ impl<F: Field> AdditionMod64Circuit<F> {
 }
 
 impl<F: Field + From<u64>> Circuit<F> for AdditionMod64Circuit<F> {
-    type Config = AdditionMod64Chip<F>; // TODO: there should be a wrapper for this, not using directly the chip
+    type Config = AdditionMod64Config<F>;
     type FloorPlanner = SimpleFloorPlanner;
 
     fn without_witnesses(&self) -> Self {
@@ -30,9 +36,14 @@ impl<F: Field + From<u64>> Circuit<F> for AdditionMod64Circuit<F> {
         let full_number_u64 = meta.advice_column();
         let limbs: [Column<Advice>; 4] = array::from_fn(|_| meta.advice_column());
         let carry = meta.advice_column();
-        let decompose_16_chip = Decompose16Chip::configure(meta, full_number_u64, limbs);
 
-        AdditionMod64Chip::configure(meta, decompose_16_chip, full_number_u64, carry)
+        let decompose_16_chip = Decompose16Chip::configure(meta, full_number_u64, limbs);
+        let addition_mod_64_chip = AdditionMod64Chip::configure(meta, decompose_16_chip.clone(), full_number_u64, carry);
+
+        Self::Config {
+            addition_mod_64_chip,
+            decompose_16_chip,
+        }
     }
 
     #[allow(unused_variables)]
@@ -41,10 +52,8 @@ impl<F: Field + From<u64>> Circuit<F> for AdditionMod64Circuit<F> {
         mut config: Self::Config,
         mut layouter: impl Layouter<F>,
     ) -> Result<(), Error> {
-        config
-            .decompose_16_chip
-            .populate_lookup_table16(&mut layouter)?;
-        config.assign_addition_rows(&mut layouter, self.trace);
+        config.decompose_16_chip.populate_lookup_table16(&mut layouter)?;
+        config.addition_mod_64_chip.assign_addition_rows(&mut layouter, self.trace, &mut config.decompose_16_chip);
         Ok(())
     }
 }

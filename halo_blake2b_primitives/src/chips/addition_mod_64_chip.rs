@@ -2,10 +2,7 @@ use super::*;
 
 #[derive(Clone, Debug)]
 pub struct AdditionMod64Chip<F: Field> {
-    pub decompose_16_chip: Decompose16Chip<F>,
-    // full_number_u64: Column<Advice>,
     carry: Column<Advice>,
-    // limbs: [Column<Advice>; 4],
     q_add: Selector,
     _ph: PhantomData<F>,
 }
@@ -39,7 +36,6 @@ impl<F: Field + From<u64>> AdditionMod64Chip<F> {
         decompose_16_chip.range_check_for_limbs(meta);
 
         Self {
-            decompose_16_chip,
             carry,
             q_add,
             _ph: PhantomData,
@@ -50,15 +46,16 @@ impl<F: Field + From<u64>> AdditionMod64Chip<F> {
         &mut self,
         layouter: &mut impl Layouter<F>,
         addition_trace: [[Value<F>; 6]; 3],
+        decompose_16_chip: &mut Decompose16Chip<F>
     ) {
         let _ = layouter.assign_region(
             || "decompose",
             |mut region| {
                 let _ = self.q_add.enable(&mut region, 0);
 
-                Self::assign_row_from_values(self, &mut region, addition_trace[0].to_vec(), 0);
-                Self::assign_row_from_values(self, &mut region, addition_trace[1].to_vec(), 1);
-                Self::assign_row_from_values(self, &mut region, addition_trace[2].to_vec(), 2);
+                self.assign_row_from_values(&mut region, addition_trace[0].to_vec(), 0, decompose_16_chip);
+                self.assign_row_from_values(&mut region, addition_trace[1].to_vec(), 1, decompose_16_chip);
+                self.assign_row_from_values(&mut region, addition_trace[2].to_vec(), 2, decompose_16_chip);
                 Ok(())
             },
         );
@@ -69,9 +66,9 @@ impl<F: Field + From<u64>> AdditionMod64Chip<F> {
         region: &mut Region<F>,
         row: Vec<Value<F>>,
         offset: usize,
+        decompose_16_chip: &mut Decompose16Chip<F>,
     ) {
-        self.decompose_16_chip
-            .assign_16bit_row_from_values(region, row.clone(), offset);
+        decompose_16_chip.assign_16bit_row_from_values(region, row.clone(), offset);
 
         let _ = region.assign_advice(|| "carry", self.carry, offset, || row[5]);
     }
