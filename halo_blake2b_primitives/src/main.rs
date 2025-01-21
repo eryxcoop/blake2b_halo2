@@ -24,17 +24,10 @@ pub mod tests;
 
 struct Blake2bCircuit<F: Field> {
     _ph: PhantomData<F>,
-    rotation_trace_24: [[Value<F>; 5]; 3],
 }
 
 #[derive(Clone, Debug)]
 struct Blake2bConfig<F: Field + Clone> {
-    // Working with 4 limbs of u16
-    sum_mod64_chip: AdditionMod64Chip<F>,
-    decompose_16_chip: Decompose16Chip<F>,
-
-    // Working with 8 limbs of u8
-    decompose_8_chip: Decompose8Chip<F>,
     _ph: PhantomData<F>,
 }
 
@@ -48,42 +41,9 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
 
     #[allow(unused_variables)]
     fn configure(meta: &mut ConstraintSystem<F>) -> Self::Config {
-        // Addition
-        let full_number_u64 = meta.advice_column();
-        let limbs = [
-            meta.advice_column(),
-            meta.advice_column(),
-            meta.advice_column(),
-            meta.advice_column(),
-        ];
-        let t_range8 = meta.lookup_table_column();
-        let carry = meta.advice_column();
-
-        let decompose_16_chip = Decompose16Chip::configure(meta, full_number_u64, limbs);
-
-        let sum_mod64_chip =
-            AdditionMod64Chip::configure(meta, decompose_16_chip.clone(), full_number_u64, carry);
-
-        // config for xor
-        let limbs_8_bits = [
-            meta.advice_column(),
-            meta.advice_column(),
-            meta.advice_column(),
-            meta.advice_column(),
-            meta.advice_column(),
-            meta.advice_column(),
-            meta.advice_column(),
-            meta.advice_column(),
-        ];
-
-        let decompose_8_chip =
-            Decompose8Chip::configure(meta, full_number_u64, limbs_8_bits, t_range8);
 
         Blake2bConfig {
             _ph: PhantomData,
-            decompose_8_chip,
-            decompose_16_chip,
-            sum_mod64_chip,
         }
     }
 
@@ -93,19 +53,6 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
         mut config: Self::Config,
         mut layouter: impl Layouter<F>,
     ) -> Result<(), Error> {
-        // config
-        //     .decompose_16_chip
-        //     .populate_lookup_table16(&mut layouter)?;
-        //
-        // config.rotate_24_chip.assign_rotation_rows(
-        //     &mut layouter,
-        //     &mut config.decompose_16_chip,
-        //     self.rotation_trace_24,
-        // );
-        //
-        // config
-        //     .decompose_8_chip
-        //     .populate_lookup_table8(&mut layouter)?;
 
         Ok(())
     }
@@ -115,7 +62,6 @@ impl<F: Field + From<u64>> Blake2bCircuit<F> {
     fn new_for_unknown_values() -> Self {
         Blake2bCircuit {
             _ph: PhantomData,
-            rotation_trace_24: Rotate24Chip::unknown_trace(),
         }
     }
 }

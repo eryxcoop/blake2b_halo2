@@ -5,7 +5,7 @@ use crate::tests::tests_addition_mod_64::addition_mod_64_circuit::AdditionMod64C
 
 #[test]
 fn test_positive_addition() {
-    let circuit = AdditionMod64Circuit::<Fr>::new_for_trace(valid_addition_trace());
+    let circuit = AdditionMod64Circuit::<Fr>::new_for_trace(_valid_addition_trace());
     let prover = MockProver::run(17, &circuit, vec![]).unwrap();
     prover.verify().unwrap();
 }
@@ -92,4 +92,19 @@ fn test_negative_wrong_rangecheck() {
     let circuit = AdditionMod64Circuit::<Fr>::new_for_trace(trace);
     let prover = MockProver::run(17, &circuit, vec![]).unwrap();
     prover.verify().unwrap();
+}
+
+fn _valid_addition_trace() -> [[Value<Fr>; 6]; 3] {
+    [
+        [
+            max_u64(),
+            max_u16(),
+            max_u16(),
+            max_u16(),
+            max_u16(),
+            zero(),
+        ],
+        [one(), one(), zero(), zero(), zero(), zero()],
+        [zero(), zero(), zero(), zero(), zero(), one()],
+    ]
 }
