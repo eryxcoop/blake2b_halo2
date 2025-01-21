@@ -27,8 +27,14 @@ impl<F: PrimeField> Rotate32Chip<F> {
             || "rotate 32",
             |mut region| {
 
-                decompose_chip.assign_8bit_row_from_values(&mut region, trace[0].to_vec(), 0);
-                decompose_chip.assign_8bit_row_from_values(&mut region, trace[1].to_vec(), 1);
+                let first_row = decompose_chip.assign_8bit_row_from_values(&mut region, trace[0].to_vec(), 0).unwrap();
+                let second_row = decompose_chip.assign_8bit_row_from_values(&mut region, trace[1].to_vec(), 1).unwrap();
+
+                for i in 0..7 {
+                    let top_cell = first_row[i].cell();
+                    let bottom_cell = second_row[(i + 4) % 8].cell();
+                    region.constrain_equal(top_cell, bottom_cell)?;
+                }
 
                 Ok(())
             },

@@ -111,6 +111,20 @@ fn test_positive_rotate_right_32(){
     prover.verify().unwrap();
 }
 
+#[test]
+#[should_panic]
+fn test_negative_rotate_right_32(){
+    let first_row: [Value<Fr>; 9] = generate_row_8bits((1u64 << 32) - 1u64)[0..9].try_into().unwrap();
+    let second_row: [Value<Fr>; 9] = generate_row_8bits((1u128 << 64) - 1)[0..9].try_into().unwrap();
+    let invalid_rotation_32_trace = [first_row, second_row];
+
+    let circuit = Rotation32Circuit::<Fr>::new_for_trace(invalid_rotation_32_trace);
+
+    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+    prover.verify().unwrap();
+}
+
+
 // ------------ AUX ------------ //
 
 fn _valid_rotation24_trace() -> [[Value<Fr>; 5]; 3] {

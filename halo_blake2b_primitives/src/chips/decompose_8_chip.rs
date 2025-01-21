@@ -1,3 +1,4 @@
+use halo2_proofs::circuit::AssignedCell;
 use super::*;
 
 #[derive(Clone, Debug)]
@@ -77,17 +78,19 @@ impl<F: Field + From<u64>> Decompose8Chip<F> {
         region: &mut Region<F>,
         row: Vec<Value<F>>,
         offset: usize,
-    ) {
+    ) -> Option<Vec<AssignedCell<F,F>>> {
         let _ = self.q_decompose.enable(region, offset);
-        let _ = region.assign_advice(|| "full number", self.full_number_u64, offset, || row[0]);
-        for i in 0..8 {
-            let _ = region.assign_advice(
+        let _ = region.assign_advice(|| "full number", self.full_number_u64, offset, || row[0]).unwrap();
+
+        let cells = (0..8).map(|i|{
+            region.assign_advice(
                 || format!("limb{}", i),
                 self.limbs[i],
                 offset,
                 || row[i + 1],
-            );
-        }
+            )
+        }).collect::<Result<Vec<_>, _>>().ok();
+        cells
     }
 
     pub fn populate_lookup_table8(&self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {

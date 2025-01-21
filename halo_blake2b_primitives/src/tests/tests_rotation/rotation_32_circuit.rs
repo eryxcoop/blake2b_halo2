@@ -40,7 +40,11 @@ impl<F: PrimeField> Circuit<F> for Rotation32Circuit<F> {
 
     fn configure(meta: &mut ConstraintSystem<F>) -> Self::Config {
         let full_number_u64 = meta.advice_column();
-        let limbs: [Column<Advice>; 8] = array::from_fn(|_| meta.advice_column());
+        let limbs: [Column<Advice>; 8] = array::from_fn(|_| {
+            let column = meta.advice_column();
+            meta.enable_equality(column);
+            column
+        });
 
         let t_range8 = meta.lookup_table_column();
         let decompose_8_chip = Decompose8Chip::configure(meta, full_number_u64, limbs, t_range8);
