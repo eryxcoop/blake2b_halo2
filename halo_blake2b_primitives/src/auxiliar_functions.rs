@@ -6,7 +6,7 @@ pub fn trash() -> Value<Fr> {
     zero()
 }
 pub fn max_u64() -> Value<Fr> {
-    value_for((1u128 << 64 ) - 1)
+    value_for((1u128 << 64) - 1)
 }
 pub fn max_u16() -> Value<Fr> {
     let number = (1u64 << 16) - 1;
@@ -20,7 +20,7 @@ pub fn max_u8() -> Value<Fr> {
     value_for((1u64 << 8) - 1)
 }
 pub fn max_u40() -> Value<Fr> {
-    value_for((1u128 << 40 ) - 1)
+    value_for((1u128 << 40) - 1)
 }
 
 pub fn one() -> Value<Fr> {
@@ -48,10 +48,10 @@ pub fn spread(mut n: u16) -> u32 {
     spread
 }
 
-pub fn value_for<T, F>(number: T) -> Value<F> 
+pub fn value_for<T, F>(number: T) -> Value<F>
 where
     T: Into<u128>,
-    F: Field + From<u64>
+    F: Field + From<u64>,
 {
     Value::known(field_for(number))
 }
@@ -59,7 +59,7 @@ where
 pub fn field_for<T, F>(number: T) -> F
 where
     T: Into<u128>,
-    F: Field + From<u64>
+    F: Field + From<u64>,
 {
     let number: u128 = number.into();
     let lo: u64 = (number % (1u128 << 64)) as u64;
@@ -69,7 +69,8 @@ where
 }
 
 pub fn generate_row_8bits<F>(number: u128) -> [Value<F>; 10]
-where F: Field + From<u64>
+where
+    F: Field + From<u64>,
 {
     let mut number = number;
     let mut ans = [Value::unknown(); 10];

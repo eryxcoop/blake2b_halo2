@@ -9,8 +9,11 @@ pub struct Rotate63Chip<F: Field> {
 }
 
 impl<F: Field + From<u64>> Rotate63Chip<F> {
-    pub fn configure(meta: &mut ConstraintSystem<F>, full_number_u64: Column<Advice>,
-                     decompose_16_chip: Decompose16Chip<F>) -> Self {
+    pub fn configure(
+        meta: &mut ConstraintSystem<F>,
+        full_number_u64: Column<Advice>,
+        decompose_16_chip: Decompose16Chip<F>,
+    ) -> Self {
         let q_rot63 = meta.complex_selector();
         meta.create_gate("rotate right 63", |meta| {
             let q_rot63 = meta.query_selector(q_rot63);

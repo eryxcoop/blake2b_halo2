@@ -41,9 +41,14 @@ impl<F: Field + From<u64>> Circuit<F> for Rotation63Circuit<F> {
         mut config: Self::Config,
         mut layouter: impl Layouter<F>,
     ) -> Result<(), Error> {
-
-        config.decompose_16_chip.populate_lookup_table16(&mut layouter)?;
-        config.assign_rotation_rows(&mut layouter, &mut config.decompose_16_chip.clone(), self.trace);
+        config
+            .decompose_16_chip
+            .populate_lookup_table16(&mut layouter)?;
+        config.assign_rotation_rows(
+            &mut layouter,
+            &mut config.decompose_16_chip.clone(),
+            self.trace,
+        );
 
         Ok(())
     }

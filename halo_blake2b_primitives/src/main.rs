@@ -17,30 +17,25 @@ use halo2_proofs::circuit::{Region, Value};
 use halo2_proofs::plonk::{Advice, Column, Error, Expression, Selector, TableColumn};
 use halo2_proofs::poly::Rotation;
 
+pub mod auxiliar_functions;
+pub mod chips;
+#[cfg(test)]
+pub mod tests;
+
 struct Blake2bCircuit<F: Field> {
     _ph: PhantomData<F>,
-    rotation_trace_63: [[Value<F>; 5]; 2],
     rotation_trace_24: [[Value<F>; 5]; 3],
 }
 
 #[derive(Clone, Debug)]
 struct Blake2bConfig<F: Field + Clone> {
-    // full_number_u64: Column<Advice>,
-
     // Working with 4 limbs of u16
-    // limbs: [Column<Advice>; 4],
-    // carry: Column<Advice>,
-    // t_range8: TableColumn,
-    // rotate_63_chip: Rotate63Chip<F>,
     rotate_24_chip: Rotate24Chip<F>,
     sum_mod64_chip: AdditionMod64Chip<F>,
     decompose_16_chip: Decompose16Chip<F>,
 
     // Working with 8 limbs of u8
-    // limbs_8_bits: [Column<Advice>; 8],
-    // xor_chip: XorChip<F>,
     decompose_8_chip: Decompose8Chip<F>,
-
     _ph: PhantomData<F>,
 }
 
@@ -62,9 +57,6 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
             meta.advice_column(),
             meta.advice_column(),
         ];
-        for limb in limbs {
-            meta.enable_equality(limb);
-        }
         let t_range8 = meta.lookup_table_column();
         let carry = meta.advice_column();
 
@@ -107,11 +99,9 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
         mut config: Self::Config,
         mut layouter: impl Layouter<F>,
     ) -> Result<(), Error> {
-
         config
             .decompose_16_chip
             .populate_lookup_table16(&mut layouter)?;
-
 
         config.rotate_24_chip.assign_rotation_rows(
             &mut layouter,
@@ -128,10 +118,6 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
 }
 
 impl<F: Field + From<u64>> Blake2bCircuit<F> {
-    fn _unknown_trace_for_rotation_63() -> [[Value<F>; 5]; 2] {
-        Rotate63Chip::unknown_trace()
-    }
-
     fn _unknown_trace_for_rotation_24() -> [[Value<F>; 5]; 3] {
         [[Value::unknown(); 5]; 3]
     }
@@ -139,7 +125,6 @@ impl<F: Field + From<u64>> Blake2bCircuit<F> {
     fn new_for_unknown_values() -> Self {
         Blake2bCircuit {
             _ph: PhantomData,
-            rotation_trace_63: Self::_unknown_trace_for_rotation_63(),
             rotation_trace_24: Self::_unknown_trace_for_rotation_24(),
         }
     }
@@ -152,7 +137,3 @@ fn main() {
     prover.verify().unwrap();
 }
 
-pub mod auxiliar_functions;
-pub mod chips;
-#[cfg(test)]
-pub mod tests;

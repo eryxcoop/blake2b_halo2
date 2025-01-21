@@ -108,7 +108,6 @@ fn test_positive_addition() {
         generate_row_8bits::<Fr>(1),
         generate_row_8bits::<Fr>(1),
         generate_row_8bits::<Fr>(2),
-
     ];
 
     let circuit = Sum8BitsTestCircuit::<Fr> {
@@ -126,7 +125,6 @@ fn test_negative_addition() {
         generate_row_8bits::<Fr>(1),
         generate_row_8bits::<Fr>(1),
         generate_row_8bits::<Fr>(3),
-
     ];
 
     let circuit = Sum8BitsTestCircuit::<Fr> {
@@ -136,4 +134,3 @@ fn test_negative_addition() {
     let prover = MockProver::run(17, &circuit, vec![]).unwrap();
     prover.verify().unwrap();
 }
-
