@@ -1,6 +1,8 @@
 use super::*;
 use std::array;
 use std::marker::PhantomData;
+use crate::chips::decompose_8_chip::Decompose8Chip;
+use crate::chips::xor_chip::XorChip;
 
 #[derive(Clone)]
 pub struct XorConfig<F: Field> {

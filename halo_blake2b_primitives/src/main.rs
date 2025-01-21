@@ -6,12 +6,6 @@ use halo2_proofs::{
     plonk::{Circuit, ConstraintSystem},
 };
 
-use crate::chips::addition_mod_64_chip::AdditionMod64Chip;
-use crate::chips::decompose_16_chip::Decompose16Chip;
-use crate::chips::decompose_8_chip::Decompose8Chip;
-use crate::chips::rotate_24_chip::Rotate24Chip;
-use crate::chips::rotate_63_chip::Rotate63Chip;
-use crate::chips::xor_chip::XorChip;
 use ff::Field;
 use halo2_proofs::circuit::{Region, Value};
 use halo2_proofs::plonk::{Advice, Column, Error, Expression, Selector, TableColumn};
@@ -50,8 +44,8 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
     #[allow(unused_variables)]
     fn synthesize(
         &self,
-        mut config: Self::Config,
-        mut layouter: impl Layouter<F>,
+        config: Self::Config,
+        layouter: impl Layouter<F>,
     ) -> Result<(), Error> {
 
         Ok(())

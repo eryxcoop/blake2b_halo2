@@ -1,5 +1,7 @@
 use super::*;
 use std::array;
+use crate::chips::addition_mod_64_chip::AdditionMod64Chip;
+use crate::chips::decompose_16_chip::Decompose16Chip;
 
 #[derive(Clone)]
 pub struct AdditionMod64Config<F: Field> {

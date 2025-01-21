@@ -1,3 +1,4 @@
+use crate::chips::decompose_16_chip::Decompose16Chip;
 use super::*;
 
 #[derive(Clone, Debug)]

@@ -1,3 +1,4 @@
+use crate::chips::decompose_8_chip::Decompose8Chip;
 use super::*;
 
 #[derive(Clone, Debug)]
