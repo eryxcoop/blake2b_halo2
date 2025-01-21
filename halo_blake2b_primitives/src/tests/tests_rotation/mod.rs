@@ -1,4 +1,5 @@
 mod rotation_63_circuit;
+// mod rotation_24_ciruit;
 
 use super::*;
 use crate::tests::tests_rotation::rotation_63_circuit::Rotation63Circuit;

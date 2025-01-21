@@ -118,14 +118,10 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
 }
 
 impl<F: Field + From<u64>> Blake2bCircuit<F> {
-    fn _unknown_trace_for_rotation_24() -> [[Value<F>; 5]; 3] {
-        [[Value::unknown(); 5]; 3]
-    }
-
     fn new_for_unknown_values() -> Self {
         Blake2bCircuit {
             _ph: PhantomData,
-            rotation_trace_24: Self::_unknown_trace_for_rotation_24(),
+            rotation_trace_24: Rotate24Chip::unknown_trace(),
         }
     }
 }

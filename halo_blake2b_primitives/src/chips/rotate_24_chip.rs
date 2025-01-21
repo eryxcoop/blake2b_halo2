@@ -67,4 +67,8 @@ impl<F: Field + From<u64>> Rotate24Chip<F> {
             },
         );
     }
+
+    pub fn unknown_trace() -> [[Value<F>; 5]; 3] {
+        [[Value::unknown(); 5]; 3]
+    }
 }

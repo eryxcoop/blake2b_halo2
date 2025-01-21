@@ -23,13 +23,6 @@ pub fn valid_addition_trace() -> [[Value<Fr>; 6]; 3] {
 }
 
 impl<F: Field + From<u64>> Blake2bCircuit<F> {
-    fn new_for_addition_alone(addition_trace: [[Value<F>; 6]; 3]) -> Self {
-        Self {
-            _ph: PhantomData,
-            rotation_trace_24: Self::_unknown_trace_for_rotation_24(),
-        }
-    }
-
     fn new_for_rotation_24(rotation_trace_24: [[Value<F>; 5]; 3]) -> Self {
         Self {
             _ph: PhantomData,
