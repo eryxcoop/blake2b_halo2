@@ -70,6 +70,6 @@ impl<F: Field + From<u64>> Sum8BitsChip<F> {
         self.decompose_8_chip
             .assign_8bit_row_from_values(region, row.clone(), offset);
 
-        let _ = region.assign_advice(|| "carry", self.carry, offset, || row[5]);
+        let _ = region.assign_advice(|| "carry", self.carry, offset, || row[9]);
     }
 }

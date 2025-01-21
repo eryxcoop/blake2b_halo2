@@ -68,11 +68,12 @@ where
     F::from(hi) * field_pow64 + F::from(lo)
 }
 
-pub fn generate_row_8bits<F>(number: u128) -> [Value<F>; 10]
+pub fn generate_row_8bits<T, F>(number: T) -> [Value<F>; 10]
 where
     F: Field + From<u64>,
+    T: Into<u128>,
 {
-    let mut number = number;
+    let mut number: u128 = number.into();
     let mut ans = [Value::unknown(); 10];
     ans[0] = value_for(number);
     ans[9] = value_for(0u8);
