@@ -2,15 +2,15 @@ use super::*;
 use halo2_proofs::circuit::AssignedCell;
 
 #[derive(Clone, Debug)]
-pub struct Decompose8Chip<F: Field> {
-    full_number_u64: Column<Advice>,
+pub struct Decompose8Chip<F: PrimeField> {
+    pub full_number_u64: Column<Advice>,
     limbs: [Column<Advice>; 8],
     q_decompose: Selector,
     pub t_range8: TableColumn,
     _ph: PhantomData<F>,
 }
 
-impl<F: Field + From<u64>> Decompose8Chip<F> {
+impl<F: PrimeField> Decompose8Chip<F> {
     pub fn configure(
         meta: &mut ConstraintSystem<F>,
         full_number_u64: Column<Advice>,
@@ -121,5 +121,41 @@ impl<F: Field + From<u64>> Decompose8Chip<F> {
                 Ok(())
             },
         )
+    }
+
+    pub fn generate_8bit_row_from_value(
+        &mut self,
+        region: &mut Region<F>,
+        value: Value<F>,
+        offset: usize,
+    ) -> Result<AssignedCell<F, F>, Error> {
+        let _ = self.q_decompose.enable(region, offset);
+        let result = region.assign_advice(|| "full number", self.full_number_u64, offset, || value);
+
+        let limb_0 = Self::get_limb_from(value, 0);
+        let limb_1 = Self::get_limb_from(value, 1);
+        let limb_2 = Self::get_limb_from(value, 2);
+        let limb_3 = Self::get_limb_from(value, 3);
+        let limb_4 = Self::get_limb_from(value, 4);
+        let limb_5 = Self::get_limb_from(value, 5);
+        let limb_6 = Self::get_limb_from(value, 6);
+        let limb_7 = Self::get_limb_from(value, 7);
+
+        let limbs: [Value<F>; 8] = [
+            limb_0, limb_1, limb_2, limb_3, limb_4, limb_5, limb_6, limb_7,
+        ];
+
+        for (i, limb) in limbs.iter().enumerate() {
+            let _ = region.assign_advice(|| format!("limb{}", i), self.limbs[i], offset, || *limb);
+        }
+        result
+    }
+
+    fn get_limb_from(value: Value<F>, limb_number: usize) -> Value<F> {
+        value.and_then(|v| {
+            let binding = v.to_repr();
+            let a_bytes = binding.as_ref();
+            Value::known(F::from(a_bytes[limb_number] as u64))
+        })
     }
 }

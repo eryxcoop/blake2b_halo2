@@ -6,7 +6,7 @@ use halo2_proofs::{
     plonk::{Circuit, ConstraintSystem},
 };
 
-use ff::Field;
+use ff::{Field, PrimeField};
 use halo2_proofs::circuit::{Region, Value};
 use halo2_proofs::plonk::{Advice, Column, Error, Expression, Selector, TableColumn};
 use halo2_proofs::poly::Rotation;
@@ -16,16 +16,16 @@ pub mod chips;
 #[cfg(test)]
 pub mod tests;
 
-struct Blake2bCircuit<F: Field> {
+struct Blake2bCircuit<F: PrimeField> {
     _ph: PhantomData<F>,
 }
 
 #[derive(Clone, Debug)]
-struct Blake2bConfig<F: Field + Clone> {
+struct Blake2bConfig<F: PrimeField + Clone> {
     _ph: PhantomData<F>,
 }
 
-impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
+impl<F: PrimeField> Circuit<F> for Blake2bCircuit<F> {
     type Config = Blake2bConfig<F>;
     type FloorPlanner = SimpleFloorPlanner;
 
@@ -44,7 +44,7 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
     }
 }
 
-impl<F: Field + From<u64>> Blake2bCircuit<F> {
+impl<F: PrimeField> Blake2bCircuit<F> {
     fn new_for_unknown_values() -> Self {
         Blake2bCircuit { _ph: PhantomData }
     }

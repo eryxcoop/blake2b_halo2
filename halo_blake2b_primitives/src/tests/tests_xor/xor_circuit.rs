@@ -4,19 +4,12 @@ use crate::chips::xor_chip::XorChip;
 use std::array;
 use std::marker::PhantomData;
 
-#[derive(Clone)]
-pub struct XorConfig<F: Field> {
-    _ph: PhantomData<F>,
-    xor_chip: XorChip<F>,
-    decompose_8_chip: Decompose8Chip<F>,
-}
-
-pub struct XorCircuit<F: Field> {
+pub struct XorCircuit<F: PrimeField> {
     _ph: PhantomData<F>,
     trace: [[Value<F>; 9]; 3],
 }
 
-impl<F: Field> XorCircuit<F> {
+impl<F: PrimeField> XorCircuit<F> {
     pub fn new_for_trace(trace: [[Value<F>; 9]; 3]) -> Self {
         Self {
             _ph: PhantomData,
@@ -25,7 +18,7 @@ impl<F: Field> XorCircuit<F> {
     }
 }
 
-impl<F: Field + From<u64>> Circuit<F> for XorCircuit<F> {
+impl<F: PrimeField> Circuit<F> for XorCircuit<F> {
     type Config = XorConfig<F>;
     type FloorPlanner = SimpleFloorPlanner;
 
@@ -63,9 +56,11 @@ impl<F: Field + From<u64>> Circuit<F> for XorCircuit<F> {
             .populate_lookup_table8(&mut layouter)?;
 
         config.xor_chip.populate_xor_lookup_table(&mut layouter)?;
-        config
-            .xor_chip
-            .create_xor_region(&mut layouter, self.trace, &mut config.decompose_8_chip);
+        config.xor_chip.populate_xor_region(
+            &mut layouter,
+            self.trace,
+            &mut config.decompose_8_chip,
+        );
 
         Ok(())
     }

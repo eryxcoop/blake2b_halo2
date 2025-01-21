@@ -1,4 +1,4 @@
-use ff::Field;
+use ff::{Field, PrimeField};
 use halo2_proofs::circuit::Value;
 use halo2_proofs::halo2curves::bn256::Fr;
 
@@ -82,4 +82,22 @@ where
         number /= 256;
     }
     ans
+}
+
+pub fn convert_to_u64<F: PrimeField>(a: F) -> u64 {
+    let binding = a.to_repr();
+    let a_bytes = binding.as_ref();
+
+    let mut a_value: u64 = 0;
+    for (i, b) in a_bytes[0..8].iter().enumerate() {
+        a_value += ((*b as u64) * (1u64 << (8 * i))) as u64;
+    }
+    a_value
+}
+
+pub fn xor_field_elements<F: PrimeField>(a: F, b: F) -> F {
+    let a_value = convert_to_u64(a);
+    let b_value = convert_to_u64(b);
+
+    F::from(a_value ^ b_value)
 }

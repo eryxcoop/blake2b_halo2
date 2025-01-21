@@ -6,19 +6,19 @@ use std::array;
 use std::marker::PhantomData;
 
 #[derive(Clone)]
-pub struct Rotation24Config<F: Field + From<u64>> {
+pub struct Rotation24Config<F: PrimeField> {
     _ph: PhantomData<F>,
     rotation_24_chip: Rotate24Chip<F>,
     decompose_16_chip: Decompose16Chip<F>,
     t_range8: TableColumn,
 }
 
-pub struct Rotation24Circuit<F: Field> {
+pub struct Rotation24Circuit<F: PrimeField> {
     _ph: PhantomData<F>,
     trace: [[Value<F>; 5]; 3],
 }
 
-impl<F: Field> Rotation24Circuit<F> {
+impl<F: PrimeField> Rotation24Circuit<F> {
     pub fn new_for_trace(trace: [[Value<F>; 5]; 3]) -> Self {
         Self {
             _ph: PhantomData,
@@ -27,7 +27,7 @@ impl<F: Field> Rotation24Circuit<F> {
     }
 }
 
-impl<F: Field + From<u64>> Circuit<F> for Rotation24Circuit<F> {
+impl<F: PrimeField> Circuit<F> for Rotation24Circuit<F> {
     type Config = Rotation24Config<F>;
     type FloorPlanner = SimpleFloorPlanner;
 

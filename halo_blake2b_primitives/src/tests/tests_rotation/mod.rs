@@ -129,9 +129,7 @@ fn test_positive_random_rotate_right_32() {
     let n: u64 = rng.gen();
     let pow32 = 1u64 << 32;
     let expected_result = ((n % pow32) << 32) + (n / pow32);
-    let first_row: [Value<Fr>; 9] = generate_row_8bits(n)[0..9]
-        .try_into()
-        .unwrap();
+    let first_row: [Value<Fr>; 9] = generate_row_8bits(n)[0..9].try_into().unwrap();
     let second_row: [Value<Fr>; 9] = generate_row_8bits(expected_result)[0..9]
         .try_into()
         .unwrap();
@@ -163,12 +161,8 @@ fn test_negative_rotate_right_32() {
 #[test]
 #[should_panic]
 fn test_negative_correct_rotation32_wrong_decomposition() {
-    let mut first_row: [Value<Fr>; 9] = generate_row_8bits(1u64 << 32)[0..9]
-        .try_into()
-        .unwrap();
-    let second_row: [Value<Fr>; 9] = generate_row_8bits(1u64)[0..9]
-        .try_into()
-        .unwrap();
+    let mut first_row: [Value<Fr>; 9] = generate_row_8bits(1u64 << 32)[0..9].try_into().unwrap();
+    let second_row: [Value<Fr>; 9] = generate_row_8bits(1u64)[0..9].try_into().unwrap();
     first_row[4] = value_for(0u8);
     first_row[3] = value_for(1u16 << 8);
     let invalid_rotation_32_trace = [first_row, second_row];
@@ -198,9 +192,7 @@ fn test_positive_random_rotate_right_24() {
     let n: u64 = rng.gen();
     let pow24 = 1u64 << 24;
     let expected_result = ((n % pow24) << 40) + (n / pow24);
-    let first_row: [Value<Fr>; 9] = generate_row_8bits(n)[0..9]
-        .try_into()
-        .unwrap();
+    let first_row: [Value<Fr>; 9] = generate_row_8bits(n)[0..9].try_into().unwrap();
     let second_row: [Value<Fr>; 9] = generate_row_8bits(expected_result)[0..9]
         .try_into()
         .unwrap();
@@ -228,12 +220,8 @@ fn test_negative_rotate_right_24_limbs() {
 #[test]
 #[should_panic]
 fn test_negative_correct_rotation24_wrong_decomposition() {
-    let mut first_row: [Value<Fr>; 9] = generate_row_8bits(1u64 << 32)[0..9]
-        .try_into()
-        .unwrap();
-    let second_row: [Value<Fr>; 9] = generate_row_8bits(1u64 << 8)[0..9]
-        .try_into()
-        .unwrap();
+    let mut first_row: [Value<Fr>; 9] = generate_row_8bits(1u64 << 32)[0..9].try_into().unwrap();
+    let second_row: [Value<Fr>; 9] = generate_row_8bits(1u64 << 8)[0..9].try_into().unwrap();
     first_row[4] = value_for(0u8);
     first_row[3] = value_for(1u16 << 8);
     let invalid_rotation_24_trace = [first_row, second_row];
@@ -263,9 +251,7 @@ fn test_positive_random_rotate_right_16() {
     let n: u64 = rng.gen();
     let pow16 = 1u64 << 16;
     let expected_result = ((n % pow16) << 48) + (n / pow16);
-    let first_row: [Value<Fr>; 9] = generate_row_8bits(n)[0..9]
-        .try_into()
-        .unwrap();
+    let first_row: [Value<Fr>; 9] = generate_row_8bits(n)[0..9].try_into().unwrap();
     let second_row: [Value<Fr>; 9] = generate_row_8bits(expected_result)[0..9]
         .try_into()
         .unwrap();
@@ -293,12 +279,8 @@ fn test_negative_rotate_right_16_limbs() {
 #[test]
 #[should_panic]
 fn test_negative_correct_rotation16_wrong_decomposition() {
-    let mut first_row: [Value<Fr>; 9] = generate_row_8bits(1u64 << 32)[0..9]
-        .try_into()
-        .unwrap();
-    let second_row: [Value<Fr>; 9] = generate_row_8bits(1u64 << 16)[0..9]
-        .try_into()
-        .unwrap();
+    let mut first_row: [Value<Fr>; 9] = generate_row_8bits(1u64 << 32)[0..9].try_into().unwrap();
+    let second_row: [Value<Fr>; 9] = generate_row_8bits(1u64 << 16)[0..9].try_into().unwrap();
     first_row[4] = value_for(0u8);
     first_row[3] = value_for(1u16 << 8);
     let invalid_rotation_16_trace = [first_row, second_row];

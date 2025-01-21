@@ -9,7 +9,7 @@ pub struct Sum8BitsChip<F: Field> {
     _ph: PhantomData<F>,
 }
 
-impl<F: Field + From<u64>> Sum8BitsChip<F> {
+impl<F: PrimeField> Sum8BitsChip<F> {
     pub fn configure(
         meta: &mut ConstraintSystem<F>,
         full_number_u64: Column<Advice>,

@@ -1,8 +1,9 @@
 use super::*;
 use crate::chips::decompose_8_chip::Decompose8Chip;
+use halo2_proofs::circuit::AssignedCell;
 
 #[derive(Clone, Debug)]
-pub struct XorChip<F: Field> {
+pub struct XorChip<F: PrimeField> {
     t_xor_left: TableColumn,
     t_xor_right: TableColumn,
     t_xor_out: TableColumn,
@@ -10,7 +11,7 @@ pub struct XorChip<F: Field> {
     _ph: PhantomData<F>,
 }
 
-impl<F: Field + From<u64>> XorChip<F> {
+impl<F: PrimeField> XorChip<F> {
     pub fn configure(
         meta: &mut ConstraintSystem<F>,
         limbs_8_bits: [Column<Advice>; 8],
@@ -84,12 +85,13 @@ impl<F: Field + From<u64>> XorChip<F> {
         Ok(())
     }
 
-    pub fn create_xor_region(
+    pub fn populate_xor_region(
         &mut self,
         layouter: &mut impl Layouter<F>,
         xor_trace: [[Value<F>; 9]; 3],
         decompose_8_chip: &mut Decompose8Chip<F>,
     ) {
+        // This method receives a trace and just assigns it to the circuit
         let _ = layouter.assign_region(
             || "xor",
             |mut region| {
@@ -106,6 +108,36 @@ impl<F: Field + From<u64>> XorChip<F> {
                 Ok(())
             },
         );
+    }
+
+    pub fn generate_xor_region(
+        &mut self,
+        layouter: &mut impl Layouter<F>,
+        value_a: Value<F>,
+        value_b: Value<F>,
+        decompose_8_chip: &mut Decompose8Chip<F>,
+    ) -> Result<AssignedCell<F, F>, Error> {
+        // This method receives two values and generates the xor operation. It generates the trace
+        // instead of receiving it and just filling the cells
+        let result = layouter.assign_region(
+            || "xor",
+            |mut region| {
+                let _ = self.q_xor.enable(&mut region, 0);
+
+                let result_value = value_a.and_then(|v0| {
+                    value_b
+                        .and_then(|v1| Value::known(auxiliar_functions::xor_field_elements(v0, v1)))
+                });
+
+                decompose_8_chip.generate_8bit_row_from_value(&mut region, value_a, 0)?;
+                decompose_8_chip.generate_8bit_row_from_value(&mut region, value_b, 1)?;
+                let result_cell =
+                    decompose_8_chip.generate_8bit_row_from_value(&mut region, result_value, 2)?;
+
+                Ok(result_cell)
+            },
+        );
+        result
     }
 
     pub fn unknown_trace() -> [[Value<F>; 9]; 3] {

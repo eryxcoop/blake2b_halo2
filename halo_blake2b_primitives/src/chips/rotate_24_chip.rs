@@ -7,7 +7,7 @@ pub struct Rotate24Chip<F: Field + From<u64>> {
     _ph: PhantomData<F>,
 }
 
-impl<F: Field + From<u64>> Rotate24Chip<F> {
+impl<F: PrimeField> Rotate24Chip<F> {
     pub fn configure(
         meta: &mut ConstraintSystem<F>,
         full_number_u64: Column<Advice>,
