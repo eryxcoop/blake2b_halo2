@@ -1,5 +1,4 @@
 use super::*;
-use crate::auxiliar_functions::*;
 use halo2_proofs::dev::MockProver;
 use halo2_proofs::halo2curves::bn256::Fr;
 use rand::Rng;
@@ -156,6 +155,23 @@ fn test_negative_sum_correct_but_unnecessary_carry() {
         generate_row_8bits::<u64, Fr>(3),
     ];
     trace[2][9] = value_for(1u8);
+    let circuit = Sum8BitsTestCircuit::<Fr>::new_for_trace(trace);
+    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+    prover.verify().unwrap();
+}
+
+#[test]
+#[should_panic]
+fn test_negative_sum_correct_but_decomposition_exceedes_range_check() {
+    // This should panic because, although the sum is correct and the decomposition adds up,
+    // the decomposition does not respect the max sizes
+    let mut trace = [
+        generate_row_8bits::<u64, Fr>(1 << 8),
+        generate_row_8bits::<u128, Fr>((1 << 8) - 1),
+        generate_row_8bits::<u64, Fr>((1 << 9) - 1),
+    ];
+    trace[0][1] = value_for(1u16 << 8);
+    trace[0][2] = value_for(0u8);
     let circuit = Sum8BitsTestCircuit::<Fr>::new_for_trace(trace);
     let prover = MockProver::run(17, &circuit, vec![]).unwrap();
     prover.verify().unwrap();
