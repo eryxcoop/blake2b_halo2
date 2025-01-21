@@ -1,12 +1,15 @@
+mod rotation_63_circuit;
+
 use super::*;
 use crate::Blake2bCircuit;
 use halo2_proofs::circuit::Value;
 use halo2_proofs::dev::MockProver;
 use halo2_proofs::halo2curves::bn256::Fr;
+use crate::tests::tests_rotation::rotation_63_circuit::Rotation63Circuit;
 
 #[test]
 fn test_positive_rotate_right_63() {
-    let circuit = Blake2bCircuit::<Fr>::new_for_rotation_63(valid_rotation_trace_63());
+    let circuit = Rotation63Circuit::<Fr>::new_for_trace(valid_rotation_trace_63());
     let prover = MockProver::run(17, &circuit, vec![]).unwrap();
     prover.verify().unwrap();
 }
@@ -21,7 +24,7 @@ fn test_negative_rotate_right_63() {
     invalid_rotation_trace[0][1] = one() + invalid_rotation_trace[0][1];
     invalid_rotation_trace[0][0] = one() + invalid_rotation_trace[0][0];
 
-    let circuit = Blake2bCircuit::<Fr>::new_for_rotation_63(invalid_rotation_trace);
+    let circuit = Rotation63Circuit::<Fr>::new_for_trace(invalid_rotation_trace);
     let prover = MockProver::run(17, &circuit, vec![]).unwrap();
     prover.verify().unwrap();
 }

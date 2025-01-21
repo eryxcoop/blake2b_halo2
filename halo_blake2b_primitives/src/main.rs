@@ -31,14 +31,14 @@ struct Blake2bConfig<F: Field + Clone> {
     // limbs: [Column<Advice>; 4],
     // carry: Column<Advice>,
     // t_range8: TableColumn,
-    rotate_63_chip: Rotate63Chip<F>,
+    // rotate_63_chip: Rotate63Chip<F>,
     rotate_24_chip: Rotate24Chip<F>,
     sum_mod64_chip: AdditionMod64Chip<F>,
     decompose_16_chip: Decompose16Chip<F>,
 
     // Working with 8 limbs of u8
     // limbs_8_bits: [Column<Advice>; 8],
-    xor_chip: XorChip<F>,
+    // xor_chip: XorChip<F>,
     decompose_8_chip: Decompose8Chip<F>,
 
     _ph: PhantomData<F>,
@@ -73,9 +73,6 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
         let sum_mod64_chip =
             AdditionMod64Chip::configure(meta, decompose_16_chip.clone(), full_number_u64, carry);
 
-        // Rotation
-        let rotate_63_chip = Rotate63Chip::configure(meta, full_number_u64);
-
         // config for xor
         let limbs_8_bits = [
             meta.advice_column(),
@@ -95,16 +92,11 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
         let rotate_24_chip =
             Rotate24Chip::configure(meta, full_number_u64, limbs, decompose_8_chip.clone());
 
-        // Xor
-        let xor_chip = XorChip::configure(meta, limbs_8_bits, decompose_8_chip.clone());
-
         Blake2bConfig {
             _ph: PhantomData,
             decompose_8_chip,
             decompose_16_chip,
-            xor_chip,
             sum_mod64_chip,
-            rotate_63_chip,
             rotate_24_chip,
         }
     }
@@ -120,12 +112,7 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
             .decompose_16_chip
             .populate_lookup_table16(&mut layouter)?;
 
-        // Rotation
-        config.rotate_63_chip.assign_rotation_rows(
-            &mut layouter,
-            &mut config.decompose_16_chip,
-            self.rotation_trace_63,
-        );
+
         config.rotate_24_chip.assign_rotation_rows(
             &mut layouter,
             &mut config.decompose_16_chip,
@@ -142,7 +129,7 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
 
 impl<F: Field + From<u64>> Blake2bCircuit<F> {
     fn _unknown_trace_for_rotation_63() -> [[Value<F>; 5]; 2] {
-        [[Value::unknown(); 5]; 2]
+        Rotate63Chip::unknown_trace()
     }
 
     fn _unknown_trace_for_rotation_24() -> [[Value<F>; 5]; 3] {
