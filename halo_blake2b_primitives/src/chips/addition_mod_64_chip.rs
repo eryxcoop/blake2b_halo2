@@ -23,7 +23,6 @@ impl<F: Field + From<u64>> AdditionMod64Chip<F> {
             let full_number_result = meta.query_advice(full_number_u64, Rotation(2));
 
             let carry = meta.query_advice(carry, Rotation(2));
-            // TODO check if x, y and result are 64 bits
             vec![
                 q_add
                     * (full_number_result - full_number_x - full_number_y

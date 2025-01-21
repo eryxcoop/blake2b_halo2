@@ -1,6 +1,4 @@
 use crate::auxiliar_functions::*;
-use crate::tests::{max_u16, max_u64, one, zero};
-use crate::Blake2bCircuit;
 use halo2_proofs::halo2curves::bn256::Fr;
 
 use std::marker::PhantomData;

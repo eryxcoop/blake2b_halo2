@@ -4,7 +4,6 @@ mod rotation_63_circuit;
 use super::*;
 use crate::tests::tests_rotation::rotation_24_ciruit::Rotation24Circuit;
 use crate::tests::tests_rotation::rotation_63_circuit::Rotation63Circuit;
-use crate::Blake2bCircuit;
 use halo2_proofs::circuit::Value;
 use halo2_proofs::dev::MockProver;
 use halo2_proofs::halo2curves::bn256::Fr;

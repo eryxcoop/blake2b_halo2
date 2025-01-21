@@ -3,8 +3,6 @@ use super::*;
 #[derive(Clone, Debug)]
 pub struct XorChip<F: Field> {
     pub decompose_8_chip: Decompose8Chip<F>,
-    // full_number_u64: Column<Advice>,
-    // limbs_8_bits: [Column<Advice>; 8],
     t_xor_left: TableColumn,
     t_xor_right: TableColumn,
     t_xor_out: TableColumn,
