@@ -6,7 +6,7 @@ use crate::chips::decompose_8_chip::Decompose8Chip;
 use crate::chips::rotate_24_chip::Rotate24Chip;
 
 #[derive(Clone)]
-pub struct Rotation24Config<F: Field> {
+pub struct Rotation24Config<F: Field + From<u64>> {
     _ph: PhantomData<F>,
     rotation_24_chip: Rotate24Chip<F>,
     decompose_16_chip: Decompose16Chip<F>,

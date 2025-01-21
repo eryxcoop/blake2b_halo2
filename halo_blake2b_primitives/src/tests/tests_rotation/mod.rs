@@ -1,5 +1,6 @@
 mod rotation_24_ciruit;
 mod rotation_63_circuit;
+mod rotation_32_circuit;
 
 use super::*;
 use crate::tests::tests_rotation::rotation_24_ciruit::Rotation24Circuit;
@@ -7,6 +8,9 @@ use crate::tests::tests_rotation::rotation_63_circuit::Rotation63Circuit;
 use halo2_proofs::circuit::Value;
 use halo2_proofs::dev::MockProver;
 use halo2_proofs::halo2curves::bn256::Fr;
+use crate::tests::tests_rotation::rotation_32_circuit::Rotation32Circuit;
+
+// ------------ ROTATION 63 ------------ //
 
 #[test]
 fn test_positive_rotate_right_63() {
@@ -40,6 +44,8 @@ fn test_badly_decomposed_rotate_right_63() {
     let prover = MockProver::run(17, &circuit, vec![]).unwrap();
     prover.verify().unwrap();
 }
+
+// ------------ ROTATION 24 ------------ //
 
 #[test]
 fn test_positive_rotate_right_24() {
@@ -91,7 +97,21 @@ fn test_rotate_right_24_chunk_out_of_range() {
     prover.verify().unwrap();
 }
 
-//   ---------- Aux ----------------------
+// ------------ ROTATION 32 ------------ //
+
+#[test]
+fn test_positive_rotate_right_32(){
+    let first_row: [Value<Fr>; 9] = generate_row_8bits((1u64 << 32) - 1u64)[0..9].try_into().unwrap();
+    let second_row: [Value<Fr>; 9] = generate_row_8bits((1u128 << 64) - (1u128 << 32))[0..9].try_into().unwrap();
+    let valid_rotation_32_trace = [first_row, second_row];
+
+    let circuit = Rotation32Circuit::<Fr>::new_for_trace(valid_rotation_32_trace);
+
+    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+    prover.verify().unwrap();
+}
+
+// ------------ AUX ------------ //
 
 fn _valid_rotation24_trace() -> [[Value<Fr>; 5]; 3] {
     [
