@@ -6,7 +6,7 @@ pub fn trash() -> Value<Fr> {
     zero()
 }
 pub fn max_u64() -> Value<Fr> {
-    Value::known(Fr::from(((1u128 << 64) - 1) as u64))
+    value_for((1u128 << 64 ) - 1)
 }
 pub fn max_u16() -> Value<Fr> {
     let number = (1u64 << 16) - 1;
@@ -17,10 +17,10 @@ pub fn max_u24() -> Value<Fr> {
     value_for((1u64 << 24) - 1)
 }
 pub fn max_u8() -> Value<Fr> {
-    Value::known(Fr::from((1 << 8) - 1))
+    value_for((1u64 << 8) - 1)
 }
 pub fn max_u40() -> Value<Fr> {
-    Value::known(Fr::from(((1u128 << 40) - 1) as u64))
+    value_for((1u128 << 40 ) - 1)
 }
 
 pub fn one() -> Value<Fr> {
@@ -52,16 +52,17 @@ pub fn value_for<T>(number: T) -> Value<Fr>
 where
     T: Into<u128>
 {
-    Value::known(field_element_for(number))
+    Value::known(field_for(number))
 }
 
-pub fn field_element_for<T>(number: T) -> Fr
+pub fn field_for<T, F>(number: T) -> F
 where
-    T: Into<u128>
+    T: Into<u128>,
+    F: Field + From<u64>
 {
     let number: u128 = number.into();
     let lo: u64 = (number % (1u128 << 64)) as u64;
     let hi: u64 = (number / (1u128 << 64)) as u64;
-    let field_pow64 = Fr::from(1 << 63) * Fr::from(2);
-    Fr::from(hi) * field_pow64 + Fr::from(lo)
+    let field_pow64 = F::from(1 << 63) * F::from(2);
+    F::from(hi) * field_pow64 + F::from(lo)
 }
