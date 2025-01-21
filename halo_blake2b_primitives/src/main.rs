@@ -19,11 +19,8 @@ use halo2_proofs::poly::Rotation;
 
 struct Blake2bCircuit<F: Field> {
     _ph: PhantomData<F>,
-    addition_trace: [[Value<F>; 6]; 3],
     rotation_trace_63: [[Value<F>; 5]; 2],
     rotation_trace_24: [[Value<F>; 5]; 3],
-    xor_trace: [[Value<F>; 9]; 3],
-    should_create_xor_table: bool,
 }
 
 #[derive(Clone, Debug)]
@@ -118,9 +115,6 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
         mut config: Self::Config,
         mut layouter: impl Layouter<F>,
     ) -> Result<(), Error> {
-        config
-            .sum_mod64_chip
-            .assign_addition_rows(&mut layouter, self.addition_trace);
 
         config
             .decompose_16_chip
@@ -142,15 +136,6 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
             .decompose_8_chip
             .populate_lookup_table8(&mut layouter)?;
 
-        // XOR operation
-
-        if self.should_create_xor_table {
-            config.xor_chip.populate_xor_lookup_table(&mut layouter)?;
-            config
-                .xor_chip
-                .create_xor_region(&mut layouter, self.xor_trace);
-        }
-
         Ok(())
     }
 }
@@ -160,26 +145,15 @@ impl<F: Field + From<u64>> Blake2bCircuit<F> {
         [[Value::unknown(); 5]; 2]
     }
 
-    fn _unknown_trace_for_addition() -> [[Value<F>; 6]; 3] {
-        AdditionMod64Chip::unknown_trace()
-    }
-
     fn _unknown_trace_for_rotation_24() -> [[Value<F>; 5]; 3] {
         [[Value::unknown(); 5]; 3]
-    }
-
-    fn _unknown_trace_for_xor() -> [[Value<F>; 9]; 3] {
-        XorChip::unknown_trace()
     }
 
     fn new_for_unknown_values() -> Self {
         Blake2bCircuit {
             _ph: PhantomData,
-            addition_trace: Self::_unknown_trace_for_addition(),
             rotation_trace_63: Self::_unknown_trace_for_rotation_63(),
             rotation_trace_24: Self::_unknown_trace_for_rotation_24(),
-            xor_trace: Self::_unknown_trace_for_xor(),
-            should_create_xor_table: false,
         }
     }
 }
