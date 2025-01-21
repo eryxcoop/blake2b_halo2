@@ -57,7 +57,6 @@ impl<F: Field + From<u64>> XorChip<F> {
         layouter.assign_table(
             || table_name,
             |mut table| {
-                // assign the table
                 for left in 0..256 {
                     for right in 0..256 {
                         let index = left * 256 + right;
