@@ -2,18 +2,12 @@ use super::*;
 
 #[derive(Clone, Debug)]
 pub struct Rotate63Chip<F: Field> {
-    pub decompose_16_chip: Decompose16Chip<F>,
     q_rot63: Selector,
-    // full_number_u64: Column<Advice>,
     _ph: PhantomData<F>,
 }
 
 impl<F: Field + From<u64>> Rotate63Chip<F> {
-    pub fn configure(
-        meta: &mut ConstraintSystem<F>,
-        full_number_u64: Column<Advice>,
-        decompose_16_chip: Decompose16Chip<F>,
-    ) -> Self {
+    pub fn configure(meta: &mut ConstraintSystem<F>, full_number_u64: Column<Advice>) -> Self {
         let q_rot63 = meta.complex_selector();
         meta.create_gate("rotate right 63", |meta| {
             let q_rot63 = meta.query_selector(q_rot63);
@@ -28,12 +22,10 @@ impl<F: Field + From<u64>> Rotate63Chip<F> {
                         - Expression::Constant(F::from(((1u128 << 64) - 1) as u64))),
             ]
         });
-        decompose_16_chip.range_check_for_limbs(meta);
 
         Self {
             _ph: PhantomData,
             q_rot63,
-            decompose_16_chip,
         }
     }
 

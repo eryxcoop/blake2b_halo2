@@ -132,4 +132,3 @@ fn main() {
     let prover = MockProver::run(17, &circuit, vec![]).unwrap();
     prover.verify().unwrap();
 }
-

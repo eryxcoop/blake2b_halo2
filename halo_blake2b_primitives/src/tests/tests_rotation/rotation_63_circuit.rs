@@ -1,6 +1,14 @@
 use super::*;
+use crate::chips::rotate_63_chip;
 use std::array;
 use std::marker::PhantomData;
+
+#[derive(Clone)]
+pub struct Rotation63Config<F: Field> {
+    _ph: PhantomData<F>,
+    rotation_63_chip: Rotate63Chip<F>,
+    decompose_16_chip: Decompose16Chip<F>,
+}
 
 pub struct Rotation63Circuit<F: Field> {
     _ph: PhantomData<F>,
@@ -17,7 +25,7 @@ impl<F: Field> Rotation63Circuit<F> {
 }
 
 impl<F: Field + From<u64>> Circuit<F> for Rotation63Circuit<F> {
-    type Config = Rotate63Chip<F>;
+    type Config = Rotation63Config<F>;
     type FloorPlanner = SimpleFloorPlanner;
 
     fn without_witnesses(&self) -> Self {
@@ -32,7 +40,15 @@ impl<F: Field + From<u64>> Circuit<F> for Rotation63Circuit<F> {
         let limbs_4_bits: [Column<Advice>; 4] = array::from_fn(|_| meta.advice_column());
 
         let decompose_16_chip = Decompose16Chip::configure(meta, full_number_u64, limbs_4_bits);
-        Rotate63Chip::configure(meta, full_number_u64, decompose_16_chip)
+        decompose_16_chip.range_check_for_limbs(meta);
+
+        let rotation_63_chip = Rotate63Chip::configure(meta, full_number_u64);
+
+        Self::Config {
+            _ph: PhantomData,
+            decompose_16_chip,
+            rotation_63_chip,
+        }
     }
 
     #[allow(unused_variables)]
@@ -44,7 +60,7 @@ impl<F: Field + From<u64>> Circuit<F> for Rotation63Circuit<F> {
         config
             .decompose_16_chip
             .populate_lookup_table16(&mut layouter)?;
-        config.assign_rotation_rows(
+        config.rotation_63_chip.assign_rotation_rows(
             &mut layouter,
             &mut config.decompose_16_chip.clone(),
             self.trace,
