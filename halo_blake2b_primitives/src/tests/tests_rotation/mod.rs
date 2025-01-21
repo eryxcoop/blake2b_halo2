@@ -31,6 +31,17 @@ fn test_negative_rotate_right_63() {
 }
 
 #[test]
+#[should_panic]
+fn test_badly_decomposed_rotate_right_63() {
+    let mut invalid_rotation_trace = _valid_rotation_63_trace();
+    invalid_rotation_trace[1][2] = one();
+
+    let circuit = Rotation63Circuit::<Fr>::new_for_trace(invalid_rotation_trace);
+    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+    prover.verify().unwrap();
+}
+
+#[test]
 fn test_positive_rotate_right_24() {
     let rotation_trace = _valid_rotation24_trace();
     let circuit = Blake2bCircuit::<Fr>::new_for_rotation_24(rotation_trace);
