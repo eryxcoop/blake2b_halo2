@@ -2,7 +2,6 @@ use super::*;
 
 #[derive(Clone, Debug)]
 pub struct XorChip<F: Field> {
-    pub decompose_8_chip: Decompose8Chip<F>,
     t_xor_left: TableColumn,
     t_xor_right: TableColumn,
     t_xor_out: TableColumn,
@@ -37,7 +36,6 @@ impl<F: Field + From<u64>> XorChip<F> {
         }
 
         Self {
-            decompose_8_chip,
             t_xor_left,
             t_xor_right,
             t_xor_out,
@@ -89,6 +87,7 @@ impl<F: Field + From<u64>> XorChip<F> {
         &mut self,
         layouter: &mut impl Layouter<F>,
         xor_trace: [[Value<F>; 9]; 3],
+        decompose_8_chip: &mut Decompose8Chip<F>
     ) {
         let _ = layouter.assign_region(
             || "xor",
@@ -99,12 +98,9 @@ impl<F: Field + From<u64>> XorChip<F> {
                 let second_row = xor_trace[1].to_vec();
                 let third_row = xor_trace[2].to_vec();
 
-                self.decompose_8_chip
-                    .assign_8bit_row_from_values(&mut region, first_row, 0);
-                self.decompose_8_chip
-                    .assign_8bit_row_from_values(&mut region, second_row, 1);
-                self.decompose_8_chip
-                    .assign_8bit_row_from_values(&mut region, third_row, 2);
+                decompose_8_chip.assign_8bit_row_from_values(&mut region, first_row, 0);
+                decompose_8_chip.assign_8bit_row_from_values(&mut region, second_row, 1);
+                decompose_8_chip.assign_8bit_row_from_values(&mut region, third_row, 2);
 
                 Ok(())
             },
