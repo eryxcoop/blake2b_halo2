@@ -1,14 +1,14 @@
+mod limb_rotation_circuit;
 mod rotation_24_ciruit;
 mod rotation_63_circuit;
-mod rotation_32_circuit;
 
 use super::*;
+use crate::tests::tests_rotation::limb_rotation_circuit::LimbRotationCircuit;
 use crate::tests::tests_rotation::rotation_24_ciruit::Rotation24Circuit;
 use crate::tests::tests_rotation::rotation_63_circuit::Rotation63Circuit;
 use halo2_proofs::circuit::Value;
 use halo2_proofs::dev::MockProver;
 use halo2_proofs::halo2curves::bn256::Fr;
-use crate::tests::tests_rotation::rotation_32_circuit::Rotation32Circuit;
 
 // ------------ ROTATION 63 ------------ //
 
@@ -100,12 +100,16 @@ fn test_rotate_right_24_chunk_out_of_range() {
 // ------------ ROTATION 32 ------------ //
 
 #[test]
-fn test_positive_rotate_right_32(){
-    let first_row: [Value<Fr>; 9] = generate_row_8bits((1u64 << 32) - 1u64)[0..9].try_into().unwrap();
-    let second_row: [Value<Fr>; 9] = generate_row_8bits((1u128 << 64) - (1u128 << 32))[0..9].try_into().unwrap();
+fn test_positive_rotate_right_32() {
+    let first_row: [Value<Fr>; 9] = generate_row_8bits((1u64 << 32) - 1u64)[0..9]
+        .try_into()
+        .unwrap();
+    let second_row: [Value<Fr>; 9] = generate_row_8bits((1u128 << 64) - (1u128 << 32))[0..9]
+        .try_into()
+        .unwrap();
     let valid_rotation_32_trace = [first_row, second_row];
 
-    let circuit = Rotation32Circuit::<Fr>::new_for_trace(valid_rotation_32_trace);
+    let circuit = LimbRotationCircuit::<Fr, 32>::new_for_trace(valid_rotation_32_trace);
 
     let prover = MockProver::run(17, &circuit, vec![]).unwrap();
     prover.verify().unwrap();
@@ -113,17 +117,72 @@ fn test_positive_rotate_right_32(){
 
 #[test]
 #[should_panic]
-fn test_negative_rotate_right_32(){
-    let first_row: [Value<Fr>; 9] = generate_row_8bits((1u64 << 32) - 1u64)[0..9].try_into().unwrap();
-    let second_row: [Value<Fr>; 9] = generate_row_8bits((1u128 << 64) - 1)[0..9].try_into().unwrap();
+fn test_negative_rotate_right_32() {
+    let first_row: [Value<Fr>; 9] = generate_row_8bits((1u64 << 32) - 1u64)[0..9]
+        .try_into()
+        .unwrap();
+    let second_row: [Value<Fr>; 9] = generate_row_8bits((1u128 << 64) - 1)[0..9]
+        .try_into()
+        .unwrap();
     let invalid_rotation_32_trace = [first_row, second_row];
 
-    let circuit = Rotation32Circuit::<Fr>::new_for_trace(invalid_rotation_32_trace);
+    let circuit = LimbRotationCircuit::<Fr, 32>::new_for_trace(invalid_rotation_32_trace);
 
     let prover = MockProver::run(17, &circuit, vec![]).unwrap();
     prover.verify().unwrap();
 }
 
+// ------------ ROTATION 24 ------------ //
+#[test]
+fn test_positive_rotate_right_24_limbs() {
+    let first_row: [Value<Fr>; 9] = generate_row_8bits(1u128 << 24)[0..9].try_into().unwrap();
+    let second_row: [Value<Fr>; 9] = generate_row_8bits(1u128)[0..9].try_into().unwrap();
+    let valid_rotation_trace = [first_row, second_row];
+
+    let circuit = LimbRotationCircuit::<Fr, 24>::new_for_trace(valid_rotation_trace);
+
+    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+    prover.verify().unwrap();
+}
+
+#[test]
+#[should_panic]
+fn test_negative_rotate_right_24_limbs() {
+    let first_row: [Value<Fr>; 9] = generate_row_8bits(1u128 << 24)[0..9].try_into().unwrap();
+    let second_row: [Value<Fr>; 9] = generate_row_8bits(2u8)[0..9].try_into().unwrap();
+    let valid_rotation_trace = [first_row, second_row];
+
+    let circuit = LimbRotationCircuit::<Fr, 24>::new_for_trace(valid_rotation_trace);
+
+    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+    prover.verify().unwrap();
+}
+
+// ------------ ROTATION 16 ------------ //
+#[test]
+fn test_positive_rotate_right_16_limbs() {
+    let first_row: [Value<Fr>; 9] = generate_row_8bits(1u128 << 16)[0..9].try_into().unwrap();
+    let second_row: [Value<Fr>; 9] = generate_row_8bits(1u128)[0..9].try_into().unwrap();
+    let valid_rotation_trace = [first_row, second_row];
+
+    let circuit = LimbRotationCircuit::<Fr, 16>::new_for_trace(valid_rotation_trace);
+
+    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+    prover.verify().unwrap();
+}
+
+#[test]
+#[should_panic]
+fn test_negative_rotate_right_16_limbs() {
+    let first_row: [Value<Fr>; 9] = generate_row_8bits(1u128 << 16)[0..9].try_into().unwrap();
+    let second_row: [Value<Fr>; 9] = generate_row_8bits(2u8)[0..9].try_into().unwrap();
+    let valid_rotation_trace = [first_row, second_row];
+
+    let circuit = LimbRotationCircuit::<Fr, 16>::new_for_trace(valid_rotation_trace);
+
+    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+    prover.verify().unwrap();
+}
 
 // ------------ AUX ------------ //
 

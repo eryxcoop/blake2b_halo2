@@ -62,7 +62,8 @@ fn test_positive_without_carry() {
     let mut rng = rand::thread_rng();
     let mut n1: u64 = rng.gen();
     let mut n2: u64 = rng.gen();
-    if n2 < n1 { // We want n1 < n2
+    if n2 < n1 {
+        // We want n1 < n2
         std::mem::swap(&mut n1, &mut n2);
     }
     let trace = [

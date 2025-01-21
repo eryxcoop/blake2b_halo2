@@ -1,5 +1,5 @@
-use crate::chips::decompose_8_chip::Decompose8Chip;
 use super::*;
+use crate::chips::decompose_8_chip::Decompose8Chip;
 
 #[derive(Clone, Debug)]
 pub struct XorChip<F: Field> {
@@ -88,7 +88,7 @@ impl<F: Field + From<u64>> XorChip<F> {
         &mut self,
         layouter: &mut impl Layouter<F>,
         xor_trace: [[Value<F>; 9]; 3],
-        decompose_8_chip: &mut Decompose8Chip<F>
+        decompose_8_chip: &mut Decompose8Chip<F>,
     ) {
         let _ = layouter.assign_region(
             || "xor",

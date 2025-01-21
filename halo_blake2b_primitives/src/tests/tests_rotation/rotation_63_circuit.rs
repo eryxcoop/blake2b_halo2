@@ -1,8 +1,8 @@
 use super::*;
-use std::array;
-use std::marker::PhantomData;
 use crate::chips::decompose_16_chip::Decompose16Chip;
 use crate::chips::rotate_63_chip::Rotate63Chip;
+use std::array;
+use std::marker::PhantomData;
 
 #[derive(Clone)]
 pub struct Rotation63Config<F: Field> {

@@ -1,7 +1,7 @@
-use std::array;
+use super::*;
 use crate::chips::decompose_8_chip::Decompose8Chip;
 use crate::chips::sum_8bits_chip::Sum8BitsChip;
-use super::*;
+use std::array;
 
 pub struct Sum8BitsTestCircuit<F: Field> {
     _ph: PhantomData<F>,
@@ -35,8 +35,8 @@ impl<F: Field + From<u64>> Circuit<F> for Sum8BitsTestCircuit<F> {
         let t_range8 = meta.lookup_table_column();
         let decompose_8_chip = Decompose8Chip::configure(meta, full_number_u64, limbs, t_range8);
 
-        let sum_8bits_chip = Sum8BitsChip::configure(meta, decompose_8_chip.clone(),
-                                                     full_number_u64, carry);
+        let sum_8bits_chip =
+            Sum8BitsChip::configure(meta, decompose_8_chip.clone(), full_number_u64, carry);
 
         Self::Config {
             _ph: PhantomData,
@@ -54,9 +54,11 @@ impl<F: Field + From<u64>> Circuit<F> for Sum8BitsTestCircuit<F> {
         config
             .decompose_8_chip
             .populate_lookup_table8(&mut layouter)?;
-        config
-            .sum_8bits_chip
-            .assign_addition_rows(&mut layouter, self.trace, &mut config.decompose_8_chip);
+        config.sum_8bits_chip.assign_addition_rows(
+            &mut layouter,
+            self.trace,
+            &mut config.decompose_8_chip,
+        );
         Ok(())
     }
 }

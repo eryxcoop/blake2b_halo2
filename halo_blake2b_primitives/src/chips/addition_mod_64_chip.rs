@@ -1,5 +1,5 @@
-use crate::chips::decompose_16_chip::Decompose16Chip;
 use super::*;
+use crate::chips::decompose_16_chip::Decompose16Chip;
 
 #[derive(Clone, Debug)]
 pub struct AdditionMod64Chip<F: Field> {
@@ -46,16 +46,31 @@ impl<F: Field + From<u64>> AdditionMod64Chip<F> {
         &mut self,
         layouter: &mut impl Layouter<F>,
         addition_trace: [[Value<F>; 6]; 3],
-        decompose_16_chip: &mut Decompose16Chip<F>
+        decompose_16_chip: &mut Decompose16Chip<F>,
     ) {
         let _ = layouter.assign_region(
             || "decompose",
             |mut region| {
                 let _ = self.q_add.enable(&mut region, 0);
 
-                self.assign_row_from_values(&mut region, addition_trace[0].to_vec(), 0, decompose_16_chip);
-                self.assign_row_from_values(&mut region, addition_trace[1].to_vec(), 1, decompose_16_chip);
-                self.assign_row_from_values(&mut region, addition_trace[2].to_vec(), 2, decompose_16_chip);
+                self.assign_row_from_values(
+                    &mut region,
+                    addition_trace[0].to_vec(),
+                    0,
+                    decompose_16_chip,
+                );
+                self.assign_row_from_values(
+                    &mut region,
+                    addition_trace[1].to_vec(),
+                    1,
+                    decompose_16_chip,
+                );
+                self.assign_row_from_values(
+                    &mut region,
+                    addition_trace[2].to_vec(),
+                    2,
+                    decompose_16_chip,
+                );
                 Ok(())
             },
         );

@@ -35,28 +35,18 @@ impl<F: Field + From<u64>> Circuit<F> for Blake2bCircuit<F> {
 
     #[allow(unused_variables)]
     fn configure(meta: &mut ConstraintSystem<F>) -> Self::Config {
-
-        Blake2bConfig {
-            _ph: PhantomData,
-        }
+        Blake2bConfig { _ph: PhantomData }
     }
 
     #[allow(unused_variables)]
-    fn synthesize(
-        &self,
-        config: Self::Config,
-        layouter: impl Layouter<F>,
-    ) -> Result<(), Error> {
-
+    fn synthesize(&self, config: Self::Config, layouter: impl Layouter<F>) -> Result<(), Error> {
         Ok(())
     }
 }
 
 impl<F: Field + From<u64>> Blake2bCircuit<F> {
     fn new_for_unknown_values() -> Self {
-        Blake2bCircuit {
-            _ph: PhantomData,
-        }
+        Blake2bCircuit { _ph: PhantomData }
     }
 }
 

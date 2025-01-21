@@ -1,16 +1,16 @@
-use std::marker::PhantomData;
+use crate::chips::decompose_8_chip::Decompose8Chip;
 use ff::{Field, PrimeField};
 use halo2_proofs::circuit::{Layouter, Value};
-use crate::chips::decompose_8_chip::Decompose8Chip;
+use std::marker::PhantomData;
 
 #[derive(Clone, Debug)]
-pub struct Rotate32Chip<F: Field> {
+pub struct LimbRotationChip<F: Field> {
     _ph: PhantomData<F>,
 }
 
-impl<F: PrimeField> Rotate32Chip<F> {
+impl<F: PrimeField> LimbRotationChip<F> {
     pub fn new() -> Self {
-        Self {_ph: PhantomData}
+        Self { _ph: PhantomData }
     }
 
     pub fn unknown_trace() -> [[Value<F>; 9]; 2] {
@@ -22,17 +22,21 @@ impl<F: PrimeField> Rotate32Chip<F> {
         layouter: &mut impl Layouter<F>,
         decompose_chip: &mut Decompose8Chip<F>,
         trace: [[Value<F>; 9]; 2],
-    ){
+        limb_rotations_right: usize,
+    ) {
         let _ = layouter.assign_region(
-            || "rotate 32",
+            || format!("rotate {}", limb_rotations_right),
             |mut region| {
-
-                let first_row = decompose_chip.assign_8bit_row_from_values(&mut region, trace[0].to_vec(), 0).unwrap();
-                let second_row = decompose_chip.assign_8bit_row_from_values(&mut region, trace[1].to_vec(), 1).unwrap();
+                let first_row = decompose_chip
+                    .assign_8bit_row_from_values(&mut region, trace[0].to_vec(), 0)
+                    .unwrap();
+                let second_row = decompose_chip
+                    .assign_8bit_row_from_values(&mut region, trace[1].to_vec(), 1)
+                    .unwrap();
 
                 for i in 0..7 {
                     let top_cell = first_row[i].cell();
-                    let bottom_cell = second_row[(i + 4) % 8].cell();
+                    let bottom_cell = second_row[(i + limb_rotations_right) % 8].cell();
                     region.constrain_equal(top_cell, bottom_cell)?;
                 }
 

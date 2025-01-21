@@ -1,24 +1,23 @@
-use std::array;
-use ff::PrimeField;
-use crate::chips::decompose_8_chip::Decompose8Chip;
-use crate::chips::rotate_32_chip::Rotate32Chip;
 use super::*;
+use crate::chips::decompose_8_chip::Decompose8Chip;
+use crate::chips::generic_limb_rotation_chip::LimbRotationChip;
+use ff::PrimeField;
+use std::array;
 
 #[derive(Clone)]
-pub struct Rotation32Config<F: Field> {
+pub struct LimbRotationConfig<F: Field> {
     _ph: PhantomData<F>,
     decompose_8_chip: Decompose8Chip<F>,
-    rotation_32_chip: Rotate32Chip<F>
+    limb_rotation_chip: LimbRotationChip<F>,
 }
 
 #[derive(Clone)]
-pub struct Rotation32Circuit<F: Field> {
+pub struct LimbRotationCircuit<F: Field, const T: usize> {
     _ph: PhantomData<F>,
-    trace: [[Value<F>; 9]; 2]
+    trace: [[Value<F>; 9]; 2],
 }
 
-
-impl<F: Field> Rotation32Circuit<F> {
+impl<F: Field, const T: usize> LimbRotationCircuit<F, T> {
     pub fn new_for_trace(trace: [[Value<F>; 9]; 2]) -> Self {
         Self {
             _ph: PhantomData,
@@ -27,14 +26,14 @@ impl<F: Field> Rotation32Circuit<F> {
     }
 }
 
-impl<F: PrimeField> Circuit<F> for Rotation32Circuit<F> {
-    type Config = Rotation32Config<F>;
+impl<F: PrimeField, const T: usize> Circuit<F> for LimbRotationCircuit<F, T> {
+    type Config = LimbRotationConfig<F>;
     type FloorPlanner = SimpleFloorPlanner;
 
     fn without_witnesses(&self) -> Self {
         Self {
             _ph: PhantomData,
-            trace: Rotate32Chip::unknown_trace(),
+            trace: LimbRotationChip::unknown_trace(),
         }
     }
 
@@ -49,12 +48,12 @@ impl<F: PrimeField> Circuit<F> for Rotation32Circuit<F> {
         let t_range8 = meta.lookup_table_column();
         let decompose_8_chip = Decompose8Chip::configure(meta, full_number_u64, limbs, t_range8);
 
-        let rotation_32_chip = Rotate32Chip::new();
+        let limb_rotation_chip = LimbRotationChip::new();
 
         Self::Config {
             _ph: PhantomData,
             decompose_8_chip,
-            rotation_32_chip
+            limb_rotation_chip,
         }
     }
 
@@ -63,11 +62,21 @@ impl<F: PrimeField> Circuit<F> for Rotation32Circuit<F> {
         mut config: Self::Config,
         mut layouter: impl Layouter<F>,
     ) -> Result<(), Error> {
-        config.decompose_8_chip.populate_lookup_table8(&mut layouter)?;
-        config.rotation_32_chip.assign_rotation_rows(
+        let limbs_to_rotate_to_the_right = match T {
+            32 => 4,
+            24 => 5,
+            16 => 6,
+            _ => panic!("Unexpected Rotation"),
+        };
+
+        config
+            .decompose_8_chip
+            .populate_lookup_table8(&mut layouter)?;
+        config.limb_rotation_chip.assign_rotation_rows(
             &mut layouter,
             &mut config.decompose_8_chip,
             self.trace,
+            limbs_to_rotate_to_the_right,
         );
 
         Ok(())

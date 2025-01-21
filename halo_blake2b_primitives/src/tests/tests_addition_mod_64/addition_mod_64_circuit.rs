@@ -1,12 +1,12 @@
 use super::*;
-use std::array;
 use crate::chips::addition_mod_64_chip::AdditionMod64Chip;
 use crate::chips::decompose_16_chip::Decompose16Chip;
+use std::array;
 
 #[derive(Clone)]
 pub struct AdditionMod64Config<F: Field> {
     addition_mod_64_chip: AdditionMod64Chip<F>,
-    decompose_16_chip: Decompose16Chip<F>
+    decompose_16_chip: Decompose16Chip<F>,
 }
 
 pub struct AdditionMod64Circuit<F: Field> {
@@ -40,7 +40,8 @@ impl<F: Field + From<u64>> Circuit<F> for AdditionMod64Circuit<F> {
         let carry = meta.advice_column();
 
         let decompose_16_chip = Decompose16Chip::configure(meta, full_number_u64, limbs);
-        let addition_mod_64_chip = AdditionMod64Chip::configure(meta, decompose_16_chip.clone(), full_number_u64, carry);
+        let addition_mod_64_chip =
+            AdditionMod64Chip::configure(meta, decompose_16_chip.clone(), full_number_u64, carry);
 
         Self::Config {
             addition_mod_64_chip,
@@ -54,8 +55,14 @@ impl<F: Field + From<u64>> Circuit<F> for AdditionMod64Circuit<F> {
         mut config: Self::Config,
         mut layouter: impl Layouter<F>,
     ) -> Result<(), Error> {
-        config.decompose_16_chip.populate_lookup_table16(&mut layouter)?;
-        config.addition_mod_64_chip.assign_addition_rows(&mut layouter, self.trace, &mut config.decompose_16_chip);
+        config
+            .decompose_16_chip
+            .populate_lookup_table16(&mut layouter)?;
+        config.addition_mod_64_chip.assign_addition_rows(
+            &mut layouter,
+            self.trace,
+            &mut config.decompose_16_chip,
+        );
         Ok(())
     }
 }

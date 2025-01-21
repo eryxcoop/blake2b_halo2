@@ -1,9 +1,9 @@
 use super::*;
-use std::array;
-use std::marker::PhantomData;
 use crate::chips::decompose_16_chip::Decompose16Chip;
 use crate::chips::decompose_8_chip::Decompose8Chip;
 use crate::chips::rotate_24_chip::Rotate24Chip;
+use std::array;
+use std::marker::PhantomData;
 
 #[derive(Clone)]
 pub struct Rotation24Config<F: Field + From<u64>> {

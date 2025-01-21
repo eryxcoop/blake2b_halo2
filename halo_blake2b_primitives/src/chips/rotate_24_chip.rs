@@ -1,6 +1,5 @@
-use ff::PrimeField;
-use crate::chips::decompose_16_chip::Decompose16Chip;
 use super::*;
+use crate::chips::decompose_16_chip::Decompose16Chip;
 
 #[derive(Clone, Debug)]
 pub struct Rotate24Chip<F: Field + From<u64>> {

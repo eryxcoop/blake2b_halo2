@@ -1,5 +1,5 @@
-use crate::chips::decompose_16_chip::Decompose16Chip;
 use super::*;
+use crate::chips::decompose_16_chip::Decompose16Chip;
 
 #[derive(Clone, Debug)]
 pub struct Rotate63Chip<F: Field> {
