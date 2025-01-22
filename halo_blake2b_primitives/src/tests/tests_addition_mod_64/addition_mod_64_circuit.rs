@@ -23,7 +23,7 @@ impl<F: Field> AdditionMod64Circuit<F> {
     }
 }
 
-impl<F: Field + From<u64>> Circuit<F> for AdditionMod64Circuit<F> {
+impl<F: PrimeField> Circuit<F> for AdditionMod64Circuit<F> {
     type Config = AdditionMod64Config<F>;
     type FloorPlanner = SimpleFloorPlanner;
 

@@ -9,7 +9,7 @@ pub struct Decompose16Chip<F: Field> {
     _ph: PhantomData<F>,
 }
 
-impl<F: Field + From<u64>> Decompose16Chip<F> {
+impl<F: PrimeField> Decompose16Chip<F> {
     pub fn configure(
         meta: &mut ConstraintSystem<F>,
         full_number_u64: Column<Advice>,

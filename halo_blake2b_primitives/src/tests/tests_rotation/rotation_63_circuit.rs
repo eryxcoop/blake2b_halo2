@@ -25,7 +25,7 @@ impl<F: Field> Rotation63Circuit<F> {
     }
 }
 
-impl<F: Field + From<u64>> Circuit<F> for Rotation63Circuit<F> {
+impl<F: PrimeField> Circuit<F> for Rotation63Circuit<F> {
     type Config = Rotation63Config<F>;
     type FloorPlanner = SimpleFloorPlanner;
 

@@ -2,7 +2,7 @@ use super::*;
 use crate::chips::decompose_16_chip::Decompose16Chip;
 
 #[derive(Clone, Debug)]
-pub struct Rotate24Chip<F: Field + From<u64>> {
+pub struct Rotate24Chip<F: PrimeField> {
     q_rot24: Selector,
     _ph: PhantomData<F>,
 }

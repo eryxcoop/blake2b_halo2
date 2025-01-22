@@ -1,3 +1,4 @@
+use crate::auxiliar_functions::field_for;
 use super::*;
 use crate::chips::decompose_16_chip::Decompose16Chip;
 
@@ -8,7 +9,7 @@ pub struct AdditionMod64Chip<F: Field> {
     _ph: PhantomData<F>,
 }
 
-impl<F: Field + From<u64>> AdditionMod64Chip<F> {
+impl<F: PrimeField> AdditionMod64Chip<F> {
     pub fn configure(
         meta: &mut ConstraintSystem<F>,
         decompose_16_chip: Decompose16Chip<F>,
@@ -27,9 +28,7 @@ impl<F: Field + From<u64>> AdditionMod64Chip<F> {
             vec![
                 q_add
                     * (full_number_result - full_number_x - full_number_y
-                        + carry
-                            * (Expression::Constant(F::from(((1u128 << 64) - 1) as u64))
-                                + Expression::Constant(F::ONE))),
+                    + carry * (Expression::Constant(field_for(1u128 << 64)))),
             ]
         });
 
