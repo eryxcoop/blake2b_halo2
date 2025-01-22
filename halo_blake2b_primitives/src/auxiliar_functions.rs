@@ -51,7 +51,7 @@ pub fn spread(mut n: u16) -> u32 {
 pub fn value_for<T, F>(number: T) -> Value<F>
 where
     T: Into<u128>,
-    F: Field + From<u64>,
+    F: PrimeField,
 {
     Value::known(field_for(number))
 }
@@ -59,7 +59,7 @@ where
 pub fn field_for<T, F>(number: T) -> F
 where
     T: Into<u128>,
-    F: Field + From<u64>,
+    F: PrimeField,
 {
     let number: u128 = number.into();
     let lo: u64 = (number % (1u128 << 64)) as u64;
@@ -70,7 +70,7 @@ where
 
 pub fn generate_row_8bits<T, F>(number: T) -> [Value<F>; 10]
 where
-    F: Field + From<u64>,
+    F: PrimeField,
     T: Into<u128>,
 {
     let mut number: u128 = number.into();
