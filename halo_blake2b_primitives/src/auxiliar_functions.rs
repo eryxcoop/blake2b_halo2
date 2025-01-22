@@ -77,8 +77,8 @@ where
     let mut ans = [Value::unknown(); 10];
     ans[0] = value_for(number);
     ans[9] = value_for(0u8);
-    for i in 1..9 {
-        ans[i] = value_for(number % 256);
+    for ans_item in ans.iter_mut().take(9).skip(1) {
+        *ans_item = value_for(number % 256);
         number /= 256;
     }
     ans

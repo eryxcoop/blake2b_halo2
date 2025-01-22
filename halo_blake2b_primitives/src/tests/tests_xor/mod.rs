@@ -3,12 +3,15 @@ mod xor_circuit;
 use super::*;
 use crate::auxiliar_functions::value_for;
 use crate::tests::tests_xor::xor_circuit::XorCircuit;
+use rand::Rng;
 
 #[test]
-fn test_positive_xor() {
+fn test_positive_random_duplicate_xor() {
+    let mut rng = rand::thread_rng();
+    let n: u64 = rng.gen();
     let valid_xor_trace: [[Value<Fr>; 9]; 3] = [
-        row_decomposed_in_8_limbs_from_u64(((1u128 << 64) - 1) as u64), // a
-        row_decomposed_in_8_limbs_from_u64(((1u128 << 64) - 1) as u64), // b
+        row_decomposed_in_8_limbs_from_u64(n), // a
+        row_decomposed_in_8_limbs_from_u64(n), // b
         row_decomposed_in_8_limbs_from_u64(0),                          // a xor b
     ];
 
@@ -19,11 +22,59 @@ fn test_positive_xor() {
 }
 
 #[test]
+fn test_positive_random_xor_with_0() {
+    let mut rng = rand::thread_rng();
+    let n: u64 = rng.gen();
+    let valid_xor_trace: [[Value<Fr>; 9]; 3] = [
+        row_decomposed_in_8_limbs_from_u64(n),
+        row_decomposed_in_8_limbs_from_u64(0),
+        row_decomposed_in_8_limbs_from_u64(n),
+    ];
+
+    let circuit = XorCircuit::<Fr>::new_for_trace(valid_xor_trace);
+    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+
+    prover.verify().unwrap();
+}
+
+#[test]
+fn test_positive_random_xor() {
+    let mut rng = rand::thread_rng();
+    let n1: u64 = rng.gen();
+    let n2: u64 = rng.gen();
+    let valid_xor_trace: [[Value<Fr>; 9]; 3] = [
+        row_decomposed_in_8_limbs_from_u64(n1), // a
+        row_decomposed_in_8_limbs_from_u64(n2), // b
+        row_decomposed_in_8_limbs_from_u64(n1 ^ n2),                          // a xor b
+    ];
+
+    let circuit = XorCircuit::<Fr>::new_for_trace(valid_xor_trace);
+    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+
+    prover.verify().unwrap();
+}
+
+#[test]
 #[should_panic]
-fn test_xor_badly_done() {
+fn test_incorrect_xor() {
     let incorrect_xor_trace: [[Value<Fr>; 9]; 3] = [
         row_decomposed_in_8_limbs_from_u64(((1u128 << 64) - 1) as u64), // a
         row_decomposed_in_8_limbs_from_u64(((1u128 << 64) - 2) as u64), // b
+        row_decomposed_in_8_limbs_from_u64(0),                          // a xor b
+    ];
+
+    let circuit = XorCircuit::<Fr>::new_for_trace(incorrect_xor_trace);
+
+    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+    prover.verify().unwrap();
+}
+
+#[test]
+#[should_panic]
+fn test_incorrect_xor_in_fifth_limb() {
+    let incorrect_xor_trace: [[Value<Fr>; 9]; 3] = [
+        row_decomposed_in_8_limbs_from_u64(1u64 << 33), // a
+        row_decomposed_in_8_limbs_from_u64((1u64 << 33) + (1u64 << 34)), // b
         row_decomposed_in_8_limbs_from_u64(0),                          // a xor b
     ];
 
@@ -81,8 +132,8 @@ fn test_bad_range_check_limb_u8() {
 fn row_decomposed_in_8_limbs_from_u64(x: u64) -> [Value<Fr>; 9] {
     let mut x_aux = x;
     let mut limbs: [u64; 8] = [0; 8];
-    for i in 0..8 {
-        limbs[i] = x_aux % 256;
+    for limb in limbs.iter_mut() {
+        *limb = x_aux % 256;
         x_aux /= 256;
     }
 

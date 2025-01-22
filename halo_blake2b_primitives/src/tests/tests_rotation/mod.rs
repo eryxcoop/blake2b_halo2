@@ -160,6 +160,25 @@ fn test_negative_rotate_right_32() {
     prover.verify().unwrap();
 }
 
+#[test]
+#[should_panic]
+fn test_negative_correct_rotation32_wrong_decomposition() {
+    let mut first_row: [Value<Fr>; 9] = generate_row_8bits(1u64 << 32)[0..9]
+        .try_into()
+        .unwrap();
+    let second_row: [Value<Fr>; 9] = generate_row_8bits(1u64)[0..9]
+        .try_into()
+        .unwrap();
+    first_row[4] = value_for(0u8);
+    first_row[3] = value_for(1u16 << 8);
+    let invalid_rotation_32_trace = [first_row, second_row];
+
+    let circuit = LimbRotationCircuit::<Fr, 32>::new_for_trace(invalid_rotation_32_trace);
+
+    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+    prover.verify().unwrap();
+}
+
 // ------------ ROTATION 24 ------------ //
 #[test]
 fn test_positive_rotate_right_24_limbs() {
@@ -206,6 +225,25 @@ fn test_negative_rotate_right_24_limbs() {
     prover.verify().unwrap();
 }
 
+#[test]
+#[should_panic]
+fn test_negative_correct_rotation24_wrong_decomposition() {
+    let mut first_row: [Value<Fr>; 9] = generate_row_8bits(1u64 << 32)[0..9]
+        .try_into()
+        .unwrap();
+    let second_row: [Value<Fr>; 9] = generate_row_8bits(1u64 << 8)[0..9]
+        .try_into()
+        .unwrap();
+    first_row[4] = value_for(0u8);
+    first_row[3] = value_for(1u16 << 8);
+    let invalid_rotation_24_trace = [first_row, second_row];
+
+    let circuit = LimbRotationCircuit::<Fr, 24>::new_for_trace(invalid_rotation_24_trace);
+
+    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+    prover.verify().unwrap();
+}
+
 // ------------ ROTATION 16 ------------ //
 #[test]
 fn test_positive_rotate_right_16_limbs() {
@@ -247,6 +285,25 @@ fn test_negative_rotate_right_16_limbs() {
     let valid_rotation_trace = [first_row, second_row];
 
     let circuit = LimbRotationCircuit::<Fr, 16>::new_for_trace(valid_rotation_trace);
+
+    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+    prover.verify().unwrap();
+}
+
+#[test]
+#[should_panic]
+fn test_negative_correct_rotation16_wrong_decomposition() {
+    let mut first_row: [Value<Fr>; 9] = generate_row_8bits(1u64 << 32)[0..9]
+        .try_into()
+        .unwrap();
+    let second_row: [Value<Fr>; 9] = generate_row_8bits(1u64 << 16)[0..9]
+        .try_into()
+        .unwrap();
+    first_row[4] = value_for(0u8);
+    first_row[3] = value_for(1u16 << 8);
+    let invalid_rotation_16_trace = [first_row, second_row];
+
+    let circuit = LimbRotationCircuit::<Fr, 16>::new_for_trace(invalid_rotation_16_trace);
 
     let prover = MockProver::run(17, &circuit, vec![]).unwrap();
     prover.verify().unwrap();
