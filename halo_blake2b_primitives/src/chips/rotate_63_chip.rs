@@ -43,8 +43,8 @@ impl<F: PrimeField> Rotate63Chip<F> {
 
                 let first_row = trace[0].to_vec();
                 let second_row = trace[1].to_vec();
-                decompose_chip.assign_16bit_row_from_values(&mut region, first_row.clone(), 0);
-                decompose_chip.assign_16bit_row_from_values(&mut region, second_row.clone(), 1);
+                decompose_chip.populate_row_from_values(&mut region, first_row.clone(), 0);
+                decompose_chip.populate_row_from_values(&mut region, second_row.clone(), 1);
                 Ok(())
             },
         );

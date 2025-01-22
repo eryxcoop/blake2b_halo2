@@ -1,3 +1,4 @@
+use super::*;
 use crate::chips::decompose_8_chip::Decompose8Chip;
 use ff::{Field, PrimeField};
 use halo2_proofs::circuit::{Layouter, Value};
@@ -28,10 +29,10 @@ impl<F: PrimeField> LimbRotationChip<F> {
             || format!("rotate {}", limb_rotations_right),
             |mut region| {
                 let first_row = decompose_chip
-                    .assign_8bit_row_from_values(&mut region, trace[0].to_vec(), 0)
+                    .populate_row_from_values(&mut region, trace[0].to_vec(), 0)
                     .unwrap();
                 let second_row = decompose_chip
-                    .assign_8bit_row_from_values(&mut region, trace[1].to_vec(), 1)
+                    .populate_row_from_values(&mut region, trace[1].to_vec(), 1)
                     .unwrap();
 
                 for i in 0..7 {

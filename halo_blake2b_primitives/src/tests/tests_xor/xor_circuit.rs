@@ -32,10 +32,8 @@ impl<F: PrimeField> Circuit<F> for XorCircuit<F> {
     fn configure(meta: &mut ConstraintSystem<F>) -> Self::Config {
         let full_number_u64 = meta.advice_column();
         let limbs_8_bits: [Column<Advice>; 8] = array::from_fn(|_| meta.advice_column());
-        let t_range8 = meta.lookup_table_column();
 
-        let decompose_8_chip =
-            Decompose8Chip::configure(meta, full_number_u64, limbs_8_bits, t_range8);
+        let decompose_8_chip = Decompose8Chip::configure(meta, full_number_u64, limbs_8_bits);
         let xor_chip = XorChip::configure(meta, limbs_8_bits, decompose_8_chip.clone());
 
         Self::Config {
@@ -53,7 +51,7 @@ impl<F: PrimeField> Circuit<F> for XorCircuit<F> {
     ) -> Result<(), Error> {
         config
             .decompose_8_chip
-            .populate_lookup_table8(&mut layouter)?;
+            .populate_lookup_table(&mut layouter)?;
 
         config.xor_chip.populate_xor_lookup_table(&mut layouter)?;
         config.xor_chip.populate_xor_region(

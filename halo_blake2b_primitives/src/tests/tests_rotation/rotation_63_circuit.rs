@@ -41,7 +41,6 @@ impl<F: PrimeField> Circuit<F> for Rotation63Circuit<F> {
         let limbs_4_bits: [Column<Advice>; 4] = array::from_fn(|_| meta.advice_column());
 
         let decompose_16_chip = Decompose16Chip::configure(meta, full_number_u64, limbs_4_bits);
-        decompose_16_chip.range_check_for_limbs(meta);
 
         let rotation_63_chip = Rotate63Chip::configure(meta, full_number_u64);
 
@@ -60,7 +59,7 @@ impl<F: PrimeField> Circuit<F> for Rotation63Circuit<F> {
     ) -> Result<(), Error> {
         config
             .decompose_16_chip
-            .populate_lookup_table16(&mut layouter)?;
+            .populate_lookup_table(&mut layouter)?;
         config.rotation_63_chip.assign_rotation_rows(
             &mut layouter,
             &mut config.decompose_16_chip.clone(),

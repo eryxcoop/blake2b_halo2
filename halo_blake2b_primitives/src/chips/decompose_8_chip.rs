@@ -3,30 +3,31 @@ use halo2_proofs::circuit::AssignedCell;
 
 #[derive(Clone, Debug)]
 pub struct Decompose8Chip<F: PrimeField> {
-    pub full_number_u64: Column<Advice>,
+    full_number_u64: Column<Advice>,
     limbs: [Column<Advice>; 8],
     q_decompose: Selector,
-    pub t_range8: TableColumn,
+    t_range: TableColumn,
     _ph: PhantomData<F>,
 }
 
-impl<F: PrimeField> Decompose8Chip<F> {
-    pub fn configure(
+impl<F: PrimeField> Decomposition<F, 8> for  Decompose8Chip<F> {
+    fn configure(
         meta: &mut ConstraintSystem<F>,
         full_number_u64: Column<Advice>,
-        limbs_8_bits: [Column<Advice>; 8],
-        t_range8: TableColumn,
+        limbs: [Column<Advice>; 8],
     ) -> Self {
-        let q_decompose_8 = meta.complex_selector();
+        let t_range = meta.lookup_table_column();
+
+        let q_decompose = meta.complex_selector();
         meta.create_gate("decompose in 8 bit words", |meta| {
-            let q_decompose_8 = meta.query_selector(q_decompose_8);
+            let q_decompose = meta.query_selector(q_decompose);
             let full_number = meta.query_advice(full_number_u64, Rotation::cur());
-            let limbs: Vec<Expression<F>> = limbs_8_bits
+            let limbs: Vec<Expression<F>> = limbs
                 .iter()
                 .map(|column| meta.query_advice(*column, Rotation::cur()))
                 .collect();
             vec![
-                q_decompose_8
+                q_decompose
                     * (full_number
                         - limbs[0].clone()
                         - limbs[1].clone() * Expression::Constant(F::from(1 << 8))
@@ -39,41 +40,20 @@ impl<F: PrimeField> Decompose8Chip<F> {
             ]
         });
 
-        for limb in limbs_8_bits {
-            Self::_range_check_for_limb_8_bits(meta, &limb, &q_decompose_8, &t_range8);
+        for limb in limbs {
+            Self::_range_check_for_limb(meta, &limb, &q_decompose, &t_range);
         }
 
         Self {
             full_number_u64,
-            limbs: limbs_8_bits,
-            q_decompose: q_decompose_8,
-            t_range8,
+            limbs,
+            q_decompose,
+            t_range,
             _ph: PhantomData,
         }
     }
 
-    fn _range_check_for_limb_8_bits(
-        meta: &mut ConstraintSystem<F>,
-        limb: &Column<Advice>,
-        q_decompose_8: &Selector,
-        t_range8: &TableColumn,
-    ) {
-        meta.lookup(format!("lookup limb {:?}", limb), |meta| {
-            let limb: Expression<F> = meta.query_advice(*limb, Rotation::cur());
-            let q_decompose_8 = meta.query_selector(*q_decompose_8);
-            vec![(q_decompose_8 * limb, *t_range8)]
-        });
-    }
-
-    pub fn range_check_for_limb_8_bits(
-        &mut self,
-        meta: &mut ConstraintSystem<F>,
-        limb: &Column<Advice>,
-    ) {
-        Self::_range_check_for_limb_8_bits(meta, limb, &self.q_decompose, &self.t_range8);
-    }
-
-    pub fn assign_8bit_row_from_values(
+    fn populate_row_from_values(
         &mut self,
         region: &mut Region<F>,
         row: Vec<Value<F>>,
@@ -97,12 +77,12 @@ impl<F: PrimeField> Decompose8Chip<F> {
             .ok()
     }
 
-    pub fn populate_lookup_table8(&self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
-        let lookup_column = self.t_range8;
-        Self::populate_lookup_table8_outside(layouter, lookup_column)
+    fn populate_lookup_table(&self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
+        let lookup_column = self.t_range;
+        Self::_populate_lookup_table(layouter, lookup_column)
     }
 
-    pub fn populate_lookup_table8_outside(
+    fn _populate_lookup_table(
         layouter: &mut impl Layouter<F>,
         lookup_column: TableColumn,
     ) -> Result<(), Error> {
@@ -123,6 +103,21 @@ impl<F: PrimeField> Decompose8Chip<F> {
         )
     }
 
+    fn _range_check_for_limb(
+        meta: &mut ConstraintSystem<F>,
+        limb: &Column<Advice>,
+        q_decompose: &Selector,
+        t_range: &TableColumn,
+    ) {
+        meta.lookup(format!("lookup limb {:?}", limb), |meta| {
+            let limb: Expression<F> = meta.query_advice(*limb, Rotation::cur());
+            let q_decompose_8 = meta.query_selector(*q_decompose);
+            vec![(q_decompose_8 * limb, *t_range)]
+        });
+    }
+}
+
+impl<F: PrimeField> Decompose8Chip<F> {
     pub fn generate_8bit_row_from_value(
         &mut self,
         region: &mut Region<F>,

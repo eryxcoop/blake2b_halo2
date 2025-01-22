@@ -1,6 +1,5 @@
 use super::*;
 use crate::chips::decompose_16_chip::Decompose16Chip;
-use crate::chips::decompose_8_chip::Decompose8Chip;
 use crate::chips::rotate_24_chip::Rotate24Chip;
 use std::array;
 use std::marker::PhantomData;
@@ -10,7 +9,6 @@ pub struct Rotation24Config<F: PrimeField> {
     _ph: PhantomData<F>,
     rotation_24_chip: Rotate24Chip<F>,
     decompose_16_chip: Decompose16Chip<F>,
-    t_range8: TableColumn,
 }
 
 pub struct Rotation24Circuit<F: PrimeField> {
@@ -43,17 +41,13 @@ impl<F: PrimeField> Circuit<F> for Rotation24Circuit<F> {
         let limbs_4_bits: [Column<Advice>; 4] = array::from_fn(|_| meta.advice_column());
 
         let decompose_16_chip = Decompose16Chip::configure(meta, full_number_u64, limbs_4_bits);
-        decompose_16_chip.range_check_for_limbs(meta);
 
-        let t_range8 = meta.lookup_table_column();
-        let rotation_24_chip =
-            Rotate24Chip::configure(meta, full_number_u64, limbs_4_bits, t_range8);
+        let rotation_24_chip = Rotate24Chip::configure(meta, full_number_u64, limbs_4_bits);
 
         Self::Config {
             _ph: PhantomData,
             rotation_24_chip,
             decompose_16_chip,
-            t_range8,
         }
     }
 
@@ -63,10 +57,13 @@ impl<F: PrimeField> Circuit<F> for Rotation24Circuit<F> {
         mut config: Self::Config,
         mut layouter: impl Layouter<F>,
     ) -> Result<(), Error> {
-        Decompose8Chip::populate_lookup_table8_outside(&mut layouter, config.t_range8)?;
         config
             .decompose_16_chip
-            .populate_lookup_table16(&mut layouter)?;
+            .populate_lookup_table(&mut layouter)?;
+
+        config
+            .rotation_24_chip
+            .populate_lookup_table8(&mut layouter);
 
         config.rotation_24_chip.assign_rotation_rows(
             &mut layouter,

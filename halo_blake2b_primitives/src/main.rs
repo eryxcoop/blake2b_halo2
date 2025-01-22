@@ -10,9 +10,12 @@ use ff::{Field, PrimeField};
 use halo2_proofs::circuit::{Region, Value};
 use halo2_proofs::plonk::{Advice, Column, Error, Expression, Selector, TableColumn};
 use halo2_proofs::poly::Rotation;
+use crate::chips::decomposition_trait::Decomposition;
 
 pub mod auxiliar_functions;
 pub mod chips;
+
+
 #[cfg(test)]
 pub mod tests;
 

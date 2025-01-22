@@ -45,8 +45,7 @@ impl<F: PrimeField, const T: usize> Circuit<F> for LimbRotationCircuit<F, T> {
             column
         });
 
-        let t_range8 = meta.lookup_table_column();
-        let decompose_8_chip = Decompose8Chip::configure(meta, full_number_u64, limbs, t_range8);
+        let decompose_8_chip = Decompose8Chip::configure(meta, full_number_u64, limbs);
 
         let limb_rotation_chip = LimbRotationChip::new();
 
@@ -71,7 +70,7 @@ impl<F: PrimeField, const T: usize> Circuit<F> for LimbRotationCircuit<F, T> {
 
         config
             .decompose_8_chip
-            .populate_lookup_table8(&mut layouter)?;
+            .populate_lookup_table(&mut layouter)?;
         config.limb_rotation_chip.assign_rotation_rows(
             &mut layouter,
             &mut config.decompose_8_chip,

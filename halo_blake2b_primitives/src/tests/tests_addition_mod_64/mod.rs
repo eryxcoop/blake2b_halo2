@@ -1,11 +1,11 @@
-mod addition_mod_64_circuit;
+mod addition_mod_64_circuit_16bits;
 
 use super::*;
-use crate::tests::tests_addition_mod_64::addition_mod_64_circuit::AdditionMod64Circuit;
+use crate::tests::tests_addition_mod_64::addition_mod_64_circuit_16bits::AdditionMod64Circuit16Bits;
 
 #[test]
 fn test_positive_addition() {
-    let circuit = AdditionMod64Circuit::<Fr>::new_for_trace(_valid_addition_trace());
+    let circuit = AdditionMod64Circuit16Bits::<Fr>::new_for_trace(_valid_addition_trace());
     let prover = MockProver::run(17, &circuit, vec![]).unwrap();
     prover.verify().unwrap();
 }
@@ -26,7 +26,7 @@ fn test_wrong_sum_with_overflow() {
         [one(), one(), zero(), zero(), zero(), one()],
     ];
 
-    let circuit = AdditionMod64Circuit::<Fr>::new_for_trace(trace);
+    let circuit = AdditionMod64Circuit16Bits::<Fr>::new_for_trace(trace);
     let prover = MockProver::run(17, &circuit, vec![]).unwrap();
     prover.verify().unwrap();
 }
@@ -47,7 +47,7 @@ fn test_negative_wrong_decomposition() {
         [max_u64(), max_u16(), max_u16(), one(), max_u16(), zero()],
     ];
 
-    let circuit = AdditionMod64Circuit::<Fr>::new_for_trace(trace);
+    let circuit = AdditionMod64Circuit16Bits::<Fr>::new_for_trace(trace);
     let prover = MockProver::run(17, &circuit, vec![]).unwrap();
     prover.verify().unwrap();
 }
@@ -68,7 +68,7 @@ fn test_negative_wrong_carry() {
         [zero(), zero(), zero(), zero(), zero(), one() + one()],
     ];
 
-    let circuit = AdditionMod64Circuit::<Fr>::new_for_trace(trace);
+    let circuit = AdditionMod64Circuit16Bits::<Fr>::new_for_trace(trace);
     let prover = MockProver::run(17, &circuit, vec![]).unwrap();
     prover.verify().unwrap();
 }
@@ -89,7 +89,7 @@ fn test_negative_wrong_rangecheck() {
         [max_u16() + one(), zero(), one(), zero(), zero(), zero()],
     ];
 
-    let circuit = AdditionMod64Circuit::<Fr>::new_for_trace(trace);
+    let circuit = AdditionMod64Circuit16Bits::<Fr>::new_for_trace(trace);
     let prover = MockProver::run(17, &circuit, vec![]).unwrap();
     prover.verify().unwrap();
 }

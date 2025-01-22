@@ -1,9 +1,11 @@
 use super::*;
 use crate::chips::decompose_16_chip::Decompose16Chip;
+use crate::chips::decompose_8_chip::Decompose8Chip;
 
 #[derive(Clone, Debug)]
 pub struct Rotate24Chip<F: PrimeField> {
     q_rot24: Selector,
+    t_range8: TableColumn,
     _ph: PhantomData<F>,
 }
 
@@ -12,8 +14,9 @@ impl<F: PrimeField> Rotate24Chip<F> {
         meta: &mut ConstraintSystem<F>,
         full_number_u64: Column<Advice>,
         limbs: [Column<Advice>; 4],
-        t_range8: TableColumn,
     ) -> Self {
+        let t_range8 = meta.lookup_table_column();
+
         let q_rot24 = meta.complex_selector();
         // 0 = (x*2^40 + z) - z*2^64 - y
         meta.create_gate("rotate right 24", |meta| {
@@ -39,9 +42,13 @@ impl<F: PrimeField> Rotate24Chip<F> {
         });
 
         Self {
-            q_rot24,
             _ph: PhantomData,
+            q_rot24,
+            t_range8,
         }
+    }
+    pub fn populate_lookup_table8(&self, layouter: &mut impl Layouter<F>) {
+        let _ = Decompose8Chip::_populate_lookup_table(layouter, self.t_range8);
     }
     pub fn assign_rotation_rows(
         &self,
@@ -57,9 +64,9 @@ impl<F: PrimeField> Rotate24Chip<F> {
                 let first_row = trace[0].to_vec();
                 let second_row = trace[1].to_vec();
                 let third_row = trace[2].to_vec();
-                decompose_chip.assign_16bit_row_from_values(&mut region, first_row.clone(), 0);
-                decompose_chip.assign_16bit_row_from_values(&mut region, second_row.clone(), 1);
-                decompose_chip.assign_16bit_row_from_values(&mut region, third_row.clone(), 2);
+                decompose_chip.populate_row_from_values(&mut region, first_row.clone(), 0);
+                decompose_chip.populate_row_from_values(&mut region, second_row.clone(), 1);
+                decompose_chip.populate_row_from_values(&mut region, third_row.clone(), 2);
 
                 Ok(())
             },

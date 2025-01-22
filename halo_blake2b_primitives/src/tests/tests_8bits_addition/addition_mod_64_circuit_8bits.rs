@@ -1,22 +1,22 @@
 use super::*;
 use crate::chips::decompose_8_chip::Decompose8Chip;
-use crate::chips::sum_8bits_chip::Sum8BitsChip;
 use std::array;
+use crate::chips::addition_mod_64_chip::AdditionMod64Chip;
 
-pub struct Sum8BitsTestCircuit<F: Field> {
+pub struct AdditionMod64Circuit8Bits<F: Field> {
     _ph: PhantomData<F>,
     trace: [[Value<F>; 10]; 3],
 }
 
 #[derive(Clone, Debug)]
-pub struct Sum8BitsTestConfig<F: PrimeField + Clone> {
-    sum_8bits_chip: Sum8BitsChip<F>,
+pub struct AdditionMod64Config8Bits<F: PrimeField + Clone> {
+    sum_8bits_chip: AdditionMod64Chip<F, 8, 10>,
     decompose_8_chip: Decompose8Chip<F>,
     _ph: PhantomData<F>,
 }
 
-impl<F: PrimeField> Circuit<F> for Sum8BitsTestCircuit<F> {
-    type Config = Sum8BitsTestConfig<F>;
+impl<F: PrimeField> Circuit<F> for AdditionMod64Circuit8Bits<F> {
+    type Config = AdditionMod64Config8Bits<F>;
     type FloorPlanner = SimpleFloorPlanner;
 
     fn without_witnesses(&self) -> Self {
@@ -32,10 +32,9 @@ impl<F: PrimeField> Circuit<F> for Sum8BitsTestCircuit<F> {
         let limbs: [Column<Advice>; 8] = array::from_fn(|_| meta.advice_column());
         let carry = meta.advice_column();
 
-        let t_range8 = meta.lookup_table_column();
-        let decompose_8_chip = Decompose8Chip::configure(meta, full_number_u64, limbs, t_range8);
+        let decompose_8_chip = Decompose8Chip::configure(meta, full_number_u64, limbs);
 
-        let sum_8bits_chip = Sum8BitsChip::configure(meta, full_number_u64, carry);
+        let sum_8bits_chip = AdditionMod64Chip::<F, 8, 10>::configure(meta, full_number_u64, carry);
 
         Self::Config {
             _ph: PhantomData,
@@ -52,7 +51,7 @@ impl<F: PrimeField> Circuit<F> for Sum8BitsTestCircuit<F> {
     ) -> Result<(), Error> {
         config
             .decompose_8_chip
-            .populate_lookup_table8(&mut layouter)?;
+            .populate_lookup_table(&mut layouter)?;
         config.sum_8bits_chip.assign_addition_rows(
             &mut layouter,
             self.trace,
@@ -62,7 +61,7 @@ impl<F: PrimeField> Circuit<F> for Sum8BitsTestCircuit<F> {
     }
 }
 
-impl<F: Field> Sum8BitsTestCircuit<F> {
+impl<F: Field> AdditionMod64Circuit8Bits<F> {
     pub fn new_for_trace(trace: [[Value<F>; 10]; 3]) -> Self {
         Self {
             _ph: PhantomData,
