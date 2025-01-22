@@ -36,7 +36,7 @@ impl<F: Field + From<u64>> Circuit<F> for Sum8BitsTestCircuit<F> {
         let decompose_8_chip = Decompose8Chip::configure(meta, full_number_u64, limbs, t_range8);
 
         let sum_8bits_chip =
-            Sum8BitsChip::configure(meta, decompose_8_chip.clone(), full_number_u64, carry);
+            Sum8BitsChip::configure(meta, full_number_u64, carry);
 
         Self::Config {
             _ph: PhantomData,

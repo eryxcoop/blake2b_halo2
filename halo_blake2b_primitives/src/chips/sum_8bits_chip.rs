@@ -12,7 +12,6 @@ pub struct Sum8BitsChip<F: Field> {
 impl<F: Field + From<u64>> Sum8BitsChip<F> {
     pub fn configure(
         meta: &mut ConstraintSystem<F>,
-        decompose_8_chip: Decompose8Chip<F>,
         full_number_u64: Column<Advice>,
         carry: Column<Advice>,
     ) -> Self {

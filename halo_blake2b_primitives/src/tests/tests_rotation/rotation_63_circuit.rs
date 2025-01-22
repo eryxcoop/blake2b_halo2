@@ -55,7 +55,7 @@ impl<F: Field + From<u64>> Circuit<F> for Rotation63Circuit<F> {
     #[allow(unused_variables)]
     fn synthesize(
         &self,
-        mut config: Self::Config,
+        config: Self::Config,
         mut layouter: impl Layouter<F>,
     ) -> Result<(), Error> {
         config
