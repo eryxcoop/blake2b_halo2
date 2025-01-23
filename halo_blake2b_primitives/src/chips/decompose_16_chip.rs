@@ -118,9 +118,9 @@ impl<F: PrimeField> Decomposition<F, 4> for Decompose16Chip<F> {
 
     fn generate_row_from_value(
         &mut self,
-        region: &mut Region<F>,
-        value: Value<F>,
-        offset: usize,
+        _region: &mut Region<F>,
+        _value: Value<F>,
+        _offset: usize,
     ) -> Result<AssignedCell<F, F>, Error> {
         panic!("Not implemented");
     }

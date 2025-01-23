@@ -52,7 +52,7 @@ impl<F: PrimeField> Circuit<F> for AdditionMod64Circuit8Bits<F> {
         config
             .decompose_8_chip
             .populate_lookup_table(&mut layouter)?;
-        config.sum_8bits_chip.assign_addition_rows(
+        config.sum_8bits_chip.populate_addition_rows(
             &mut layouter,
             self.trace,
             &mut config.decompose_8_chip,

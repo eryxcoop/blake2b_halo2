@@ -1,4 +1,5 @@
 use super::*;
+use halo2_proofs::circuit::AssignedCell;
 use auxiliar_functions::field_for;
 
 #[derive(Clone, Debug)]
@@ -37,7 +38,7 @@ impl<F: PrimeField, const T: usize, const R: usize> AdditionMod64Chip<F, T, R> {
         }
     }
 
-    pub fn assign_addition_rows(
+    pub fn populate_addition_rows(
         &mut self,
         layouter: &mut impl Layouter<F>,
         addition_trace: [[Value<F>; R]; 3],
@@ -80,5 +81,40 @@ impl<F: PrimeField, const T: usize, const R: usize> AdditionMod64Chip<F, T, R> {
     ) {
         decompose_chip.populate_row_from_values(region, row.clone(), offset);
         let _ = region.assign_advice(|| "carry", self.carry, offset, || row[R - 1]);
+    }
+
+    pub fn generate_addition_rows(
+        &mut self,
+        layouter: &mut impl Layouter<F>,
+        value_a: Value<F>,
+        value_b: Value<F>,
+        decompose_chip: &mut impl Decomposition<F, T>,
+    ) -> Result<[AssignedCell<F, F>;2], Error> {
+        let result = layouter.assign_region(
+            || "sum",
+            |mut region| {
+                let result_value = value_a.and_then(|v0| {
+                    value_b
+                        .and_then(|v1| Value::known(auxiliar_functions::sum_mod_64(v0, v1)))
+                });
+
+                let carry_value = value_a.and_then(|v0| {
+                    value_b
+                        .and_then(|v1| Value::known(auxiliar_functions::carry_mod_64(v0, v1)))
+                });
+                decompose_chip.generate_row_from_value(&mut region, value_a, 0)?;
+                decompose_chip.generate_row_from_value(&mut region, value_b, 1)?;
+                let result_cell = decompose_chip.generate_row_from_value(&mut region, result_value, 2)?;
+                let carry_cell = region.assign_advice(
+                    || "carry",
+                    self.carry,
+                    2,
+                    || carry_value
+                )?;
+                Ok([result_cell, carry_cell])
+            }
+        );
+
+        result
     }
 }

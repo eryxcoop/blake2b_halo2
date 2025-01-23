@@ -84,6 +84,24 @@ where
     ans
 }
 
+pub fn sum_mod_64<F: PrimeField>(a: F, b: F) -> F {
+    let a_value = convert_to_u64(a) as u128;
+    let b_value = convert_to_u64(b) as u128;
+
+    println!("a+b_value: {}", a_value + b_value);
+    println!("a+b_value mod 64: {}", (a_value + b_value) % (1u128 << 64));
+    F::from(((a_value + b_value) % (1u128 << 64)) as u64)
+}
+
+pub fn carry_mod_64<F: PrimeField>(a: F, b: F) -> F {
+    let a_value = convert_to_u64(a) as u128;
+    let b_value = convert_to_u64(b) as u128;
+
+    println!("a+b_value: {}", a_value + b_value);
+    println!("carry: {}", (a_value + b_value) / (1u128 << 64));
+    F::from(((a_value + b_value) / (1u128 << 64)) as u64)
+}
+
 pub fn convert_to_u64<F: PrimeField>(a: F) -> u64 {
     let binding = a.to_repr();
     let a_bytes = binding.as_ref();
