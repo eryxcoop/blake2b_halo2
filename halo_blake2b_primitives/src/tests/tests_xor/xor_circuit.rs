@@ -34,7 +34,7 @@ impl<F: PrimeField> Circuit<F> for XorCircuit<F> {
         let limbs_8_bits: [Column<Advice>; 8] = array::from_fn(|_| meta.advice_column());
 
         let decompose_8_chip = Decompose8Chip::configure(meta, full_number_u64, limbs_8_bits);
-        let xor_chip = XorChip::configure(meta, limbs_8_bits, decompose_8_chip.clone());
+        let xor_chip = XorChip::configure(meta, limbs_8_bits);
 
         Self::Config {
             _ph: PhantomData,

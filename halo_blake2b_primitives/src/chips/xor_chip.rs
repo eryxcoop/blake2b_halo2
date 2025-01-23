@@ -15,7 +15,6 @@ impl<F: PrimeField> XorChip<F> {
     pub fn configure(
         meta: &mut ConstraintSystem<F>,
         limbs_8_bits: [Column<Advice>; 8],
-        mut decompose_8_chip: Decompose8Chip<F>,
     ) -> Self {
         let q_xor = meta.complex_selector();
         let t_xor_left = meta.lookup_table_column();
