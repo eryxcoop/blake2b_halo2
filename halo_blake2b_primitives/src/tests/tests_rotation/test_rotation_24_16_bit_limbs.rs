@@ -1,3 +1,4 @@
+use crate::tests::tests_rotation::rotation_24_ciruit::Rotation24Circuit;
 use super::*;
 
 #[test]

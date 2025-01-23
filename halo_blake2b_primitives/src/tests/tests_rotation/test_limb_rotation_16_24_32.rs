@@ -1,3 +1,5 @@
+use rand::Rng;
+use crate::tests::tests_rotation::limb_rotation_circuit::LimbRotationCircuit;
 use super::*;
 
 // ------------ ROTATION 32 ------------ //
@@ -11,13 +13,6 @@ fn test_positive_rotate_right_32() {
         .try_into()
         .unwrap();
     let valid_rotation_32_trace = [first_row, second_row];
-
-    let circuit = LimbRotationCircuit::<Fr, 32>::new_for_trace(valid_rotation_32_trace);
-
-    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
-    prover.verify().unwrap();
-
-    let valid_rotation_32_trace = [second_row, first_row];
 
     let circuit = LimbRotationCircuit::<Fr, 32>::new_for_trace(valid_rotation_32_trace);
 

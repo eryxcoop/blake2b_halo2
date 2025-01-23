@@ -5,13 +5,6 @@ use ff::PrimeField;
 use std::array;
 
 #[derive(Clone)]
-pub struct LimbRotationConfig<F: PrimeField> {
-    _ph: PhantomData<F>,
-    decompose_8_chip: Decompose8Chip<F>,
-    limb_rotation_chip: LimbRotationChip<F>,
-}
-
-#[derive(Clone)]
 pub struct LimbRotationCircuit<F: PrimeField, const T: usize> {
     _ph: PhantomData<F>,
     trace: [[Value<F>; 9]; 2],
