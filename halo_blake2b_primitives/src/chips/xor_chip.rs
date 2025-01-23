@@ -108,7 +108,7 @@ impl<F: PrimeField> XorChip<F> {
         );
     }
 
-    pub fn generate_xor_region(
+    pub fn generate_xor_rows(
         &mut self,
         layouter: &mut impl Layouter<F>,
         value_a: Value<F>,
