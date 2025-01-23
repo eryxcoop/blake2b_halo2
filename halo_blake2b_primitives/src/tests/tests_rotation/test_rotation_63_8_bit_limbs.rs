@@ -1,4 +1,4 @@
-use crate::tests::tests_rotation::rotation_63_circuit_8bit_limbs::{Rotation63Circuit8bitLimbs, Rotation63Config8bitLimbs};
+use crate::tests::tests_rotation::rotation_63_circuit_8bit_limbs::{Rotation63Circuit8bitLimbs};
 use super::*;
 
 #[test]

@@ -7,7 +7,7 @@ use crate::chips::decompose_8_chip::Decompose8Chip;
 #[derive(Clone)]
 pub struct Rotation63Config8bitLimbs<F: PrimeField> {
     _ph: PhantomData<F>,
-    rotation_63_chip: Rotate63Chip<F>,
+    rotation_63_chip: Rotate63Chip<F, 8, 9>,
     decompose_8_chip: Decompose8Chip<F>,
 }
 
@@ -32,7 +32,7 @@ impl<F: PrimeField> Circuit<F> for Rotation63Circuit8bitLimbs<F> {
     fn without_witnesses(&self) -> Self {
         Self {
             _ph: PhantomData,
-            trace: [[Value::unknown(); 9]; 2],
+            trace: Rotate63Chip::<F,8,9>::unknown_trace(),
         }
     }
 

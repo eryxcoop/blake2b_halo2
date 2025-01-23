@@ -2,12 +2,12 @@ use super::*;
 use crate::chips::decompose_16_chip::Decompose16Chip;
 
 #[derive(Clone, Debug)]
-pub struct Rotate63Chip<F: Field> {
+pub struct Rotate63Chip<F: Field, const T: usize, const R: usize> {
     q_rot63: Selector,
     _ph: PhantomData<F>,
 }
 
-impl<F: PrimeField> Rotate63Chip<F> {
+impl<F: PrimeField, const T: usize, const R: usize> Rotate63Chip<F, T, R> {
     pub fn configure(meta: &mut ConstraintSystem<F>, full_number_u64: Column<Advice>) -> Self {
         let q_rot63 = meta.complex_selector();
         meta.create_gate("rotate right 63", |meta| {
@@ -33,8 +33,8 @@ impl<F: PrimeField> Rotate63Chip<F> {
     pub fn assign_rotation_rows(
         &self,
         layouter: &mut impl Layouter<F>,
-        decompose_chip: &mut Decompose16Chip<F>,
-        trace: [[Value<F>; 5]; 2],
+        decompose_chip: &mut impl Decomposition<F, T>,
+        trace: [[Value<F>; R]; 2],
     ) {
         let _ = layouter.assign_region(
             || "rotate 63",
@@ -50,7 +50,7 @@ impl<F: PrimeField> Rotate63Chip<F> {
         );
     }
 
-    pub fn unknown_trace() -> [[Value<F>; 5]; 2] {
-        [[Value::unknown(); 5]; 2]
+    pub fn unknown_trace() -> [[Value<F>; R]; 2] {
+        [[Value::unknown(); R]; 2]
     }
 }

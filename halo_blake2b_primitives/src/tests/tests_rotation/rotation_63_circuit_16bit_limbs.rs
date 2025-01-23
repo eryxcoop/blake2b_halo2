@@ -7,7 +7,7 @@ use std::marker::PhantomData;
 #[derive(Clone)]
 pub struct Rotation63Config16bitLimbs<F: Field> {
     _ph: PhantomData<F>,
-    rotation_63_chip: Rotate63Chip<F>,
+    rotation_63_chip: Rotate63Chip<F, 4, 5>,
     decompose_16_chip: Decompose16Chip<F>,
 }
 
@@ -32,7 +32,7 @@ impl<F: PrimeField> Circuit<F> for Rotation63Circuit16bitLimbs<F> {
     fn without_witnesses(&self) -> Self {
         Self {
             _ph: PhantomData,
-            trace: Rotate63Chip::unknown_trace(),
+            trace: Rotate63Chip::<F,4,5>::unknown_trace(),
         }
     }
 
