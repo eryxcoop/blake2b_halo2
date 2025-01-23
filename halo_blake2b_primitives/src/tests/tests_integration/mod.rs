@@ -26,6 +26,17 @@ fn test_negative_chained_operations(){
     _test_many_operations(a, b, c, expected_result_wrong);
 }
 
+#[test]
+fn test_positive_chained_operations_2(){
+    // ((A + B) xor C) rot63 rot16 rot24 rot32 = D
+    let a = max_u32();
+    let b = max_u64() - max_u32();
+    let c = max_u64() - one(); // 1
+    let expected_result = value_for(1u128 << 57);
+
+    _test_many_operations(a, b, c, expected_result);
+}
+
 fn _test_many_operations(a: Value<Fr>, b: Value<Fr>, c: Value<Fr>, expected_result: Value<Fr>) {
     let circuit = ManyOperationsCircuit::<Fr>::new_for(a, b, c, expected_result);
     let prover = MockProver::run(17, &circuit, vec![]).unwrap();

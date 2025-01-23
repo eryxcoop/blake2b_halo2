@@ -8,6 +8,10 @@ pub fn trash() -> Value<Fr> {
 pub fn max_u64() -> Value<Fr> {
     value_for((1u128 << 64) - 1)
 }
+
+pub fn max_u32() -> Value<Fr> {
+    value_for((1u128 << 32) - 1)
+}
 pub fn max_u16() -> Value<Fr> {
     let number = (1u64 << 16) - 1;
     value_for(number)
@@ -88,8 +92,6 @@ pub fn sum_mod_64<F: PrimeField>(a: F, b: F) -> F {
     let a_value = convert_to_u64(a) as u128;
     let b_value = convert_to_u64(b) as u128;
 
-    println!("a+b_value: {}", a_value + b_value);
-    println!("a+b_value mod 64: {}", (a_value + b_value) % (1u128 << 64));
     F::from(((a_value + b_value) % (1u128 << 64)) as u64)
 }
 
@@ -97,8 +99,6 @@ pub fn carry_mod_64<F: PrimeField>(a: F, b: F) -> F {
     let a_value = convert_to_u64(a) as u128;
     let b_value = convert_to_u64(b) as u128;
 
-    println!("a+b_value: {}", a_value + b_value);
-    println!("carry: {}", (a_value + b_value) / (1u128 << 64));
     F::from(((a_value + b_value) / (1u128 << 64)) as u64)
 }
 
@@ -122,7 +122,9 @@ pub fn xor_field_elements<F: PrimeField>(a: F, b: F) -> F {
 
 pub(crate) fn rotate_right_field_element<F: PrimeField>(value_to_rotate: F, rotation_degree: usize) -> F {
     let value_to_rotate = convert_to_u64(value_to_rotate);
+    // println!("before rotation of {}: {}", rotation_degree, value_to_rotate);
     let rotation_degree = rotation_degree % 64;
     let rotated_value = ((value_to_rotate as u128) >> rotation_degree) | ((value_to_rotate as u128) << (64 - rotation_degree));
+    // println!("after rotation of {}: {}", rotation_degree, rotated_value as u64);
     F::from(rotated_value as u64)
 }
