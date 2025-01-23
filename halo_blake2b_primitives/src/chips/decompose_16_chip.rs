@@ -115,4 +115,13 @@ impl<F: PrimeField> Decomposition<F, 4> for Decompose16Chip<F> {
             vec![(q_decompose * limb, *t_range)]
         });
     }
+
+    fn generate_row_from_value(
+        &mut self,
+        region: &mut Region<F>,
+        value: Value<F>,
+        offset: usize,
+    ) -> Result<AssignedCell<F, F>, Error> {
+        panic!("Not implemented");
+    }
 }

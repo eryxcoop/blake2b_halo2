@@ -4,13 +4,6 @@ use std::array;
 use std::marker::PhantomData;
 use crate::chips::decompose_8_chip::Decompose8Chip;
 
-#[derive(Clone)]
-pub struct Rotation63Config8bitLimbs<F: PrimeField> {
-    _ph: PhantomData<F>,
-    rotation_63_chip: Rotate63Chip<F, 8, 9>,
-    decompose_8_chip: Decompose8Chip<F>,
-}
-
 pub struct Rotation63Circuit8bitLimbs<F: PrimeField> {
     _ph: PhantomData<F>,
     trace: [[Value<F>; 9]; 2],

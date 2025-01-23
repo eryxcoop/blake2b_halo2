@@ -29,4 +29,11 @@ pub trait Decomposition<F: PrimeField, const T: usize> {
         q_decompose: &Selector,
         t_range: &TableColumn,
     );
+
+    fn generate_row_from_value(
+        &mut self,
+        region: &mut Region<F>,
+        value: Value<F>,
+        offset: usize,
+    ) -> Result<AssignedCell<F, F>, Error>;
 }

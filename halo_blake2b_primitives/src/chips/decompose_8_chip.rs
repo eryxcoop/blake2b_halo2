@@ -111,14 +111,12 @@ impl<F: PrimeField> Decomposition<F, 8> for  Decompose8Chip<F> {
     ) {
         meta.lookup(format!("lookup limb {:?}", limb), |meta| {
             let limb: Expression<F> = meta.query_advice(*limb, Rotation::cur());
-            let q_decompose_8 = meta.query_selector(*q_decompose);
-            vec![(q_decompose_8 * limb, *t_range)]
+            let q_decompose = meta.query_selector(*q_decompose);
+            vec![(q_decompose * limb, *t_range)]
         });
     }
-}
 
-impl<F: PrimeField> Decompose8Chip<F> {
-    pub fn generate_8bit_row_from_value(
+    fn generate_row_from_value(
         &mut self,
         region: &mut Region<F>,
         value: Value<F>,
@@ -145,7 +143,9 @@ impl<F: PrimeField> Decompose8Chip<F> {
         }
         result
     }
+}
 
+impl<F: PrimeField> Decompose8Chip<F> {
     fn get_limb_from(value: Value<F>, limb_number: usize) -> Value<F> {
         value.and_then(|v| {
             let binding = v.to_repr();

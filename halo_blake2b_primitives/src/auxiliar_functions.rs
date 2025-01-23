@@ -101,3 +101,10 @@ pub fn xor_field_elements<F: PrimeField>(a: F, b: F) -> F {
 
     F::from(a_value ^ b_value)
 }
+
+pub(crate) fn rotate_right_field_element<F: PrimeField>(value_to_rotate: F, rotation_degree: usize) -> F {
+    let value_to_rotate = convert_to_u64(value_to_rotate);
+    let rotation_degree = rotation_degree % 64;
+    let rotated_value = (value_to_rotate >> rotation_degree) | (value_to_rotate << (64 - rotation_degree));
+    F::from(rotated_value)
+}

@@ -127,10 +127,10 @@ impl<F: PrimeField> XorChip<F> {
                         .and_then(|v1| Value::known(auxiliar_functions::xor_field_elements(v0, v1)))
                 });
 
-                decompose_8_chip.generate_8bit_row_from_value(&mut region, value_a, 0)?;
-                decompose_8_chip.generate_8bit_row_from_value(&mut region, value_b, 1)?;
+                decompose_8_chip.generate_row_from_value(&mut region, value_a, 0)?;
+                decompose_8_chip.generate_row_from_value(&mut region, value_b, 1)?;
                 let result_cell =
-                    decompose_8_chip.generate_8bit_row_from_value(&mut region, result_value, 2)?;
+                    decompose_8_chip.generate_row_from_value(&mut region, result_value, 2)?;
 
                 Ok(result_cell)
             },
