@@ -8,7 +8,7 @@ use crate::chips::generic_limb_rotation_chip::LimbRotationChip;
 use crate::chips::rotate_63_chip::Rotate63Chip;
 use crate::chips::xor_chip::XorChip;
 
-pub struct XXXCircuit<F: Field> {
+pub struct ManyOperationsCircuit<F: Field> {
     _ph: PhantomData<F>,
     a: Value<F>,
     b: Value<F>,
@@ -28,7 +28,7 @@ pub struct XXXCircuitConfig<F: PrimeField> {
 }
 
 
-impl<F: PrimeField> XXXCircuit<F> {
+impl<F: PrimeField> ManyOperationsCircuit<F> {
     pub fn new_for(a: Value<F>, b: Value<F>, c: Value<F>, expected_result: Value<F>) -> Self {
         Self {
             _ph: PhantomData,
@@ -37,7 +37,7 @@ impl<F: PrimeField> XXXCircuit<F> {
     }
 }
 
-impl<F: PrimeField> Circuit<F> for XXXCircuit<F> {
+impl<F: PrimeField> Circuit<F> for ManyOperationsCircuit<F> {
     type Config = XXXCircuitConfig<F>;
     type FloorPlanner = SimpleFloorPlanner;
 
@@ -112,7 +112,7 @@ impl<F: PrimeField> Circuit<F> for XXXCircuit<F> {
 }
 
 
-impl<F: PrimeField> XXXCircuit<F> {
+impl<F: PrimeField> ManyOperationsCircuit<F> {
     fn assert_cell_value(layouter: &mut impl Layouter<F>, cell: &AssignedCell<F, F>, fixed_column: Column<Fixed>, expected_value: Value<F>) -> Result<(), Error> {
         layouter.assign_region(
             || "fixed",
