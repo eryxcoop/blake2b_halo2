@@ -1,23 +1,23 @@
 use super::*;
-use crate::chips::decompose_16_chip::Decompose16Chip;
 use crate::chips::rotate_63_chip::Rotate63Chip;
 use std::array;
 use std::marker::PhantomData;
+use crate::chips::decompose_8_chip::Decompose8Chip;
 
 #[derive(Clone)]
-pub struct Rotation63Config16bitLimbs<F: Field> {
+pub struct Rotation63Config8bitLimbs<F: PrimeField> {
     _ph: PhantomData<F>,
     rotation_63_chip: Rotate63Chip<F>,
-    decompose_16_chip: Decompose16Chip<F>,
+    decompose_8_chip: Decompose8Chip<F>,
 }
 
-pub struct Rotation63Circuit16bitLimbs<F: Field> {
+pub struct Rotation63Circuit8bitLimbs<F: PrimeField> {
     _ph: PhantomData<F>,
-    trace: [[Value<F>; 5]; 2],
+    trace: [[Value<F>; 9]; 2],
 }
 
-impl<F: Field> Rotation63Circuit16bitLimbs<F> {
-    pub fn new_for_trace(trace: [[Value<F>; 5]; 2]) -> Self {
+impl<F: PrimeField> Rotation63Circuit8bitLimbs<F> {
+    pub fn new_for_trace(trace: [[Value<F>; 9]; 2]) -> Self {
         Self {
             _ph: PhantomData,
             trace,
@@ -25,28 +25,28 @@ impl<F: Field> Rotation63Circuit16bitLimbs<F> {
     }
 }
 
-impl<F: PrimeField> Circuit<F> for Rotation63Circuit16bitLimbs<F> {
-    type Config = Rotation63Config16bitLimbs<F>;
+impl<F: PrimeField> Circuit<F> for Rotation63Circuit8bitLimbs<F> {
+    type Config = Rotation63Config8bitLimbs<F>;
     type FloorPlanner = SimpleFloorPlanner;
 
     fn without_witnesses(&self) -> Self {
         Self {
             _ph: PhantomData,
-            trace: Rotate63Chip::unknown_trace(),
+            trace: [[Value::unknown(); 9]; 2],
         }
     }
 
     fn configure(meta: &mut ConstraintSystem<F>) -> Self::Config {
         let full_number_u64 = meta.advice_column();
-        let limbs_4_bits: [Column<Advice>; 4] = array::from_fn(|_| meta.advice_column());
+        let limbs_8_bits: [Column<Advice>; 8] = array::from_fn(|_| meta.advice_column());
 
-        let decompose_16_chip = Decompose16Chip::configure(meta, full_number_u64, limbs_4_bits);
+        let decompose_8_chip = Decompose8Chip::configure(meta, full_number_u64, limbs_8_bits);
 
         let rotation_63_chip = Rotate63Chip::configure(meta, full_number_u64);
 
         Self::Config {
             _ph: PhantomData,
-            decompose_16_chip,
+            decompose_8_chip,
             rotation_63_chip,
         }
     }
@@ -58,11 +58,11 @@ impl<F: PrimeField> Circuit<F> for Rotation63Circuit16bitLimbs<F> {
         mut layouter: impl Layouter<F>,
     ) -> Result<(), Error> {
         config
-            .decompose_16_chip
+            .decompose_8_chip
             .populate_lookup_table(&mut layouter)?;
         config.rotation_63_chip.assign_rotation_rows(
             &mut layouter,
-            &mut config.decompose_16_chip.clone(),
+            &mut config.decompose_8_chip.clone(),
             self.trace,
         );
 
