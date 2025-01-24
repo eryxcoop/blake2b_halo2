@@ -5,8 +5,6 @@ use crate::chips::decompose_8_chip::Decompose8Chip;
 use crate::chips::generic_limb_rotation_chip::LimbRotationChip;
 use crate::chips::rotate_63_chip::Rotate63Chip;
 use crate::chips::xor_chip::XorChip;
-use halo2_proofs::circuit::{AssignedCell, Cell};
-use halo2_proofs::plonk::Fixed;
 use std::array;
 
 pub struct ManyOperationsCircuit<F: PrimeField> {
@@ -21,7 +19,6 @@ pub struct ManyOperationsCircuit<F: PrimeField> {
 pub struct ManyOperationsCircuitConfig<F: PrimeField> {
     _ph: PhantomData<F>,
     blake2b_chip: Blake2bTable16Chip<F>,
-    fixed: Column<Fixed>,
 }
 
 impl<F: PrimeField> ManyOperationsCircuit<F> {
@@ -60,9 +57,6 @@ impl<F: PrimeField> Circuit<F> for ManyOperationsCircuit<F> {
             meta.enable_equality(limb);
         }
 
-        let fixed = meta.fixed_column();
-        meta.enable_equality(fixed);
-
         let carry = meta.advice_column();
 
         let decompose_8_chip = Decompose8Chip::configure(meta, full_number_u64, limbs);
@@ -82,7 +76,6 @@ impl<F: PrimeField> Circuit<F> for ManyOperationsCircuit<F> {
         Self::Config {
             _ph: PhantomData,
             blake2b_chip,
-            fixed,
         }
     }
 
