@@ -78,4 +78,3 @@ impl<F: PrimeField> Default for LimbRotationChip<F> {
         Self::new()
     }
 }
-
