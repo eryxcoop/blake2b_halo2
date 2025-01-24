@@ -7,3 +7,4 @@ mod tests_addition_mod_64;
 mod tests_integration;
 mod tests_rotation;
 mod tests_xor;
+mod test_blake2b_mixing;

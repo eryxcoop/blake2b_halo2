@@ -113,7 +113,7 @@ fn blake2b_update(ctx: &mut Blake2bCtx, input: &mut Vec<u8>) {
         if ctx.buffer_pointer == BUFFER_SIZE as usize {
             ctx.processed_bytes_count[0] += BUFFER_SIZE;
             if ctx.processed_bytes_count[0] < BUFFER_SIZE {
-                ctx.processed_bytes_count[1] += 1;
+                ctx.processed_bytes_count[1] += 1; // Increments the higher part when overflows the lower
             }
             blake2b_compress(ctx, false);
             ctx.buffer_pointer = 0;
@@ -127,18 +127,28 @@ fn blake2b_compress(ctx: &mut Blake2bCtx, last: bool) {
     let mut v: [u64; 16] = [0; 16];
     let mut m: [u64; 16] = [0; 16];
 
-    v[..8].copy_from_slice(&ctx.state[..8]);
-    v[8..16].copy_from_slice(&BLAKE2B_IV[..8]);
+    v[..8].copy_from_slice(&ctx.state);
+    v[8..16].copy_from_slice(&BLAKE2B_IV);
+    // Primero, el array v se llena:
+    // - las primeras 8 posiciones con el estado actual
+    // - las siguientes 8 posiciones con los valores iniciales de la función de compresión
+    //   que van a ser siempre las mismas
+    // Esto lo podemos poner así como viene en la traza, o ir poniendo los valores cuando los necesitemos
 
-    v[12] ^= ctx.processed_bytes_count[0];
-    v[13] ^= ctx.processed_bytes_count[1];
+    v[12] ^= ctx.processed_bytes_count[0]; // Esta es la parte baja del numero de bytes que se
+                                           // llevan procesados. Si tenemos un solo bloque esto
+                                           // va a ser siempre 128 (por ahora)
+    v[13] ^= ctx.processed_bytes_count[1]; // Si tenemos un solo bloque esto va a ser siempre 0
+                                           // o sea que un xor con eso no hace nada (por ahora)
 
     if last {
-        v[14] = !v[14]
+        v[14] = !v[14] // Por ahora esto nos va a pasar siempre, en nuestra primera implementación
     }
 
     for i in 0..16 {
         m[i] = b2b_get64(&ctx.iteration_buffer[8 * i..8 * i + 8]);
+        // Simplemente reordena los 128 bytes del buffer en 16 u64, en Halo2 ya los podemos poner
+        // directamente en u64
     }
 
     for i in 0..12 {
@@ -161,7 +171,7 @@ fn blake2b_final(ctx: &mut Blake2bCtx, out: &mut Vec<u8>) {
     ctx.processed_bytes_count[0] += ctx.buffer_pointer as u64;
 
     if ctx.processed_bytes_count[0] < ctx.buffer_pointer as u64 {
-        ctx.processed_bytes_count[1] += 1;
+        ctx.processed_bytes_count[1] += 1; // Increments the higher part when overflows the lower
     }
 
     while ctx.buffer_pointer < 128 {
