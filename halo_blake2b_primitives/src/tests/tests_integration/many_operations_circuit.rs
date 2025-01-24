@@ -101,33 +101,12 @@ impl<F: PrimeField> Circuit<F> for ManyOperationsCircuit<F> {
         let rotate24_result = config.blake2b_chip.rotate_right_24(rotate16_result, &mut layouter);
         let rotate32_result = config.blake2b_chip.rotate_right_32(rotate24_result, &mut layouter);
 
-        // Self::assert_cell_value(&mut layouter, &rotate32_result, config.fixed, self.expected_result)?;
+        // Check the result equals the expected one
+        rotate32_result.and_then(|x| self.expected_result.and_then(|y| {
+            assert_eq!(x, y);
+            Value::<F>::unknown()
+        }));
 
-        Ok(())
-    }
-}
-
-
-impl<F: PrimeField> ManyOperationsCircuit<F> {
-    fn assert_cell_value(layouter: &mut impl Layouter<F>, cell: &AssignedCell<F, F>, fixed_column: Column<Fixed>, expected_value: Value<F>) -> Result<(), Error> {
-        layouter.assign_region(
-            || "fixed",
-            |mut region| {
-                // add the value to the fixed column
-                // if the same constant is used multiple times,
-                // we could optimize this by caching the cell
-                let fixed_cell = region.assign_fixed(
-                    || "assign fixed",
-                    fixed_column,
-                    0,
-                    || {
-                        expected_value
-                    },
-                )?;
-                region.constrain_equal(cell.cell(), fixed_cell.cell())?;
-                Ok(())
-            },
-        )?;
         Ok(())
     }
 }

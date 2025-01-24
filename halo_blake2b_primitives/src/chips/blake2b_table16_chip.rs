@@ -1,12 +1,17 @@
 use crate::chips::decompose_8_chip::Decompose8Chip;
 use ff::PrimeField;
-use halo2_proofs::circuit::{Layouter, Value};
+use halo2_proofs::circuit::{AssignedCell, Layouter, Value};
 use crate::chips::addition_mod_64_chip::AdditionMod64Chip;
 use crate::chips::generic_limb_rotation_chip::LimbRotationChip;
 use crate::chips::rotate_63_chip::Rotate63Chip;
 use crate::chips::xor_chip::XorChip;
 
 use crate::chips::decomposition_trait::Decomposition;
+
+enum Blake2bChipValue<F: PrimeField> {
+    Value(Value<F>),
+    Cell(AssignedCell<F, F>),
+}
 
 #[derive(Clone, Debug)]
 pub struct Blake2bTable16Chip<F: PrimeField> {
