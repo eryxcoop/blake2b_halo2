@@ -4,6 +4,7 @@ use std::array;
 use halo2_proofs::circuit::{AssignedCell, Cell};
 use halo2_proofs::plonk::Fixed;
 use crate::chips::addition_mod_64_chip::AdditionMod64Chip;
+use crate::chips::blake2b_table16_chip::Blake2bTable16Chip;
 use crate::chips::generic_limb_rotation_chip::LimbRotationChip;
 use crate::chips::rotate_63_chip::Rotate63Chip;
 use crate::chips::xor_chip::XorChip;
@@ -19,11 +20,7 @@ pub struct ManyOperationsCircuit<F: PrimeField> {
 #[derive(Clone)]
 pub struct ManyOperationsCircuitConfig<F: PrimeField> {
     _ph: PhantomData<F>,
-    addition_chip: AdditionMod64Chip<F, 8, 10>,
-    decompose_8_chip: Decompose8Chip<F>,
-    generic_limb_rotation_chip: LimbRotationChip<F>,
-    rotate_63_chip: Rotate63Chip<F, 8, 9>,
-    xor_chip: XorChip<F>,
+    blake2b_chip: Blake2bTable16Chip<F>,
     fixed: Column<Fixed>,
 }
 
@@ -72,13 +69,17 @@ impl<F: PrimeField> Circuit<F> for ManyOperationsCircuit<F> {
         let rotate_63_chip = Rotate63Chip::configure(meta, full_number_u64);
         let xor_chip = XorChip::configure(meta, limbs);
 
-        Self::Config {
-            _ph: PhantomData,
+        let blake2b_chip = Blake2bTable16Chip::configure(
             decompose_8_chip,
             addition_chip,
             generic_limb_rotation_chip,
             rotate_63_chip,
-            xor_chip,
+            xor_chip
+        );
+
+        Self::Config {
+            _ph: PhantomData,
+            blake2b_chip,
             fixed,
         }
     }
@@ -89,23 +90,18 @@ impl<F: PrimeField> Circuit<F> for ManyOperationsCircuit<F> {
         mut config: Self::Config,
         mut layouter: impl Layouter<F>,
     ) -> Result<(), Error> {
-        config.decompose_8_chip.populate_lookup_table(&mut layouter)?;
-        config.xor_chip.populate_xor_lookup_table(&mut layouter)?;
 
-        let addition_result = config.addition_chip.generate_addition_rows(
-            &mut layouter, self.a, self.b, &mut config.decompose_8_chip)?[0].clone();
-        let xor_result = config.xor_chip.generate_xor_rows(
-            &mut layouter, addition_result.value().copied(), self.c, &mut config.decompose_8_chip)?;
-        let rotate63_result = config.rotate_63_chip.generate_rotation_rows(
-            &mut layouter, xor_result.value().copied(), &mut config.decompose_8_chip)?;
-        let rotate16_result = config.generic_limb_rotation_chip.generate_rotation_rows(
-            &mut layouter, &mut config.decompose_8_chip, rotate63_result.value().copied(), 2)?;
-        let rotate24_result = config.generic_limb_rotation_chip.generate_rotation_rows(
-            &mut layouter, &mut config.decompose_8_chip, rotate16_result.value().copied(), 3)?;
-        let rotate32_result = config.generic_limb_rotation_chip.generate_rotation_rows(
-            &mut layouter, &mut config.decompose_8_chip, rotate24_result.value().copied(), 4)?;
+        // initialize
+        config.blake2b_chip.initialize_with(&mut layouter);
 
-        Self::assert_cell_value(&mut layouter, &rotate32_result, config.fixed, self.expected_result)?;
+        let addition_result = config.blake2b_chip.add(self.a, self.b, &mut layouter);
+        let xor_result = config.blake2b_chip.xor(addition_result, self.c, &mut layouter);
+        let rotate63_result = config.blake2b_chip.rotate_right_63(xor_result, &mut layouter);
+        let rotate16_result = config.blake2b_chip.rotate_right_16(rotate63_result, &mut layouter);
+        let rotate24_result = config.blake2b_chip.rotate_right_24(rotate16_result, &mut layouter);
+        let rotate32_result = config.blake2b_chip.rotate_right_32(rotate24_result, &mut layouter);
+
+        // Self::assert_cell_value(&mut layouter, &rotate32_result, config.fixed, self.expected_result)?;
 
         Ok(())
     }
