@@ -8,11 +8,6 @@ use crate::chips::xor_chip::XorChip;
 
 use crate::chips::decomposition_trait::Decomposition;
 
-enum Blake2bChipValue<F: PrimeField> {
-    Value(Value<F>),
-    Cell(AssignedCell<F, F>),
-}
-
 #[derive(Clone, Debug)]
 pub struct Blake2bTable16Chip<F: PrimeField> {
     addition_chip: AdditionMod64Chip<F, 8, 10>,
