@@ -1,8 +1,8 @@
 use super::*;
+use crate::chips::decompose_8_chip::Decompose8Chip;
 use crate::chips::rotate_63_chip::Rotate63Chip;
 use std::array;
 use std::marker::PhantomData;
-use crate::chips::decompose_8_chip::Decompose8Chip;
 
 pub struct Rotation63Circuit8bitLimbs<F: PrimeField> {
     _ph: PhantomData<F>,
@@ -25,7 +25,7 @@ impl<F: PrimeField> Circuit<F> for Rotation63Circuit8bitLimbs<F> {
     fn without_witnesses(&self) -> Self {
         Self {
             _ph: PhantomData,
-            trace: Rotate63Chip::<F,8,9>::unknown_trace(),
+            trace: Rotate63Chip::<F, 8, 9>::unknown_trace(),
         }
     }
 

@@ -1,5 +1,5 @@
-use crate::tests::tests_rotation::rotation_63_circuit_8bit_limbs::{Rotation63Circuit8bitLimbs};
 use super::*;
+use crate::tests::tests_rotation::rotation_63_circuit_8bit_limbs::Rotation63Circuit8bitLimbs;
 
 #[test]
 fn test_positive_rotate_right_63() {
@@ -33,7 +33,27 @@ fn test_badly_decomposed_rotate_right_63() {
 
 fn _valid_rotation_63_trace_8bit() -> [[Value<Fr>; 9]; 2] {
     [
-        [one(), one(), zero(), zero(), zero(), zero(), zero(), zero(), zero()],
-        [one() + one(), one() + one(), zero(), zero(), zero(), zero(), zero(), zero(), zero()],
+        [
+            one(),
+            one(),
+            zero(),
+            zero(),
+            zero(),
+            zero(),
+            zero(),
+            zero(),
+            zero(),
+        ],
+        [
+            one() + one(),
+            one() + one(),
+            zero(),
+            zero(),
+            zero(),
+            zero(),
+            zero(),
+            zero(),
+            zero(),
+        ],
     ]
 }

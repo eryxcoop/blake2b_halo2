@@ -1,6 +1,6 @@
-use rand::Rng;
-use crate::tests::tests_rotation::limb_rotation_circuit::LimbRotationCircuit;
 use super::*;
+use crate::tests::tests_rotation::limb_rotation_circuit::LimbRotationCircuit;
+use rand::Rng;
 
 // ------------ ROTATION 32 ------------ //
 
@@ -187,4 +187,3 @@ fn test_negative_correct_rotation16_wrong_decomposition() {
     let prover = MockProver::run(17, &circuit, vec![]).unwrap();
     prover.verify().unwrap();
 }
-

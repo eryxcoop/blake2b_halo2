@@ -1,6 +1,6 @@
 use super::*;
-use halo2_proofs::circuit::AssignedCell;
 use crate::chips::decomposition_trait::Decomposition;
+use halo2_proofs::circuit::AssignedCell;
 
 #[derive(Clone, Debug)]
 pub struct Decompose16Chip<F: Field> {

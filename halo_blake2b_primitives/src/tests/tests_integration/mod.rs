@@ -1,10 +1,10 @@
 mod many_operations_circuit;
 
-use crate::tests::tests_integration::many_operations_circuit::ManyOperationsCircuit;
 use super::*;
+use crate::tests::tests_integration::many_operations_circuit::ManyOperationsCircuit;
 
 #[test]
-fn test_positive_chained_operations(){
+fn test_positive_chained_operations() {
     // ((A + B) xor C) rot63 rot16 rot24 rot32 = D
     let a = zero();
     let b = max_u64();
@@ -16,7 +16,7 @@ fn test_positive_chained_operations(){
 
 #[test]
 #[should_panic]
-fn test_negative_chained_operations(){
+fn test_negative_chained_operations() {
     // ((A + B) xor C) rot63 rot16 rot24 rot32 = D
     let a = zero();
     let b = max_u64();
@@ -27,7 +27,7 @@ fn test_negative_chained_operations(){
 }
 
 #[test]
-fn test_positive_chained_operations_2(){
+fn test_positive_chained_operations_2() {
     // ((A + B) xor C) rot63 rot16 rot24 rot32 = D
     let a = max_u32();
     let b = max_u64() - max_u32();

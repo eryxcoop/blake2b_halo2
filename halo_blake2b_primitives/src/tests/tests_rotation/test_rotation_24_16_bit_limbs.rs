@@ -1,5 +1,5 @@
-use crate::tests::tests_rotation::rotation_24_ciruit::Rotation24Circuit;
 use super::*;
+use crate::tests::tests_rotation::rotation_24_ciruit::Rotation24Circuit;
 
 #[test]
 fn test_positive_rotate_right_24() {

@@ -48,24 +48,34 @@ impl<F: PrimeField> LimbRotationChip<F> {
 
     pub fn generate_rotation_rows(
         &self,
-        mut layouter: &mut impl Layouter<F>,
-        mut decompose_chip: &mut impl Decomposition<F, 8>,
+        layouter: &mut impl Layouter<F>,
+        decompose_chip: &mut impl Decomposition<F, 8>,
         input: Value<F>,
-        limbs_to_rotate_to_the_right: usize
+        limbs_to_rotate_to_the_right: usize,
     ) -> Result<AssignedCell<F, F>, Error> {
         layouter.assign_region(
             || format!("Rotate {} limbs", limbs_to_rotate_to_the_right),
             |mut region| {
-
                 let result_value = input.and_then(|input| {
-                    Value::known(auxiliar_functions::rotate_right_field_element(input, limbs_to_rotate_to_the_right * 8))
+                    Value::known(auxiliar_functions::rotate_right_field_element(
+                        input,
+                        limbs_to_rotate_to_the_right * 8,
+                    ))
                 });
 
                 decompose_chip.generate_row_from_value(&mut region, input, 0)?;
-                let result_cell = decompose_chip.generate_row_from_value(&mut region, result_value, 1)?;
+                let result_cell =
+                    decompose_chip.generate_row_from_value(&mut region, result_value, 1)?;
 
                 Ok(result_cell)
             },
         )
     }
 }
+
+impl<F: PrimeField> Default for LimbRotationChip<F> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+

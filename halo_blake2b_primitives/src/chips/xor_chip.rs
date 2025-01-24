@@ -12,10 +12,7 @@ pub struct XorChip<F: PrimeField> {
 }
 
 impl<F: PrimeField> XorChip<F> {
-    pub fn configure(
-        meta: &mut ConstraintSystem<F>,
-        limbs_8_bits: [Column<Advice>; 8],
-    ) -> Self {
+    pub fn configure(meta: &mut ConstraintSystem<F>, limbs_8_bits: [Column<Advice>; 8]) -> Self {
         let q_xor = meta.complex_selector();
         let t_xor_left = meta.lookup_table_column();
         let t_xor_right = meta.lookup_table_column();
@@ -117,7 +114,7 @@ impl<F: PrimeField> XorChip<F> {
     ) -> Result<AssignedCell<F, F>, Error> {
         // This method receives two values and generates the xor operation. It generates the trace
         // instead of receiving it and just filling the cells
-        let result = layouter.assign_region(
+        layouter.assign_region(
             || "xor",
             |mut region| {
                 let _ = self.q_xor.enable(&mut region, 0);
@@ -134,8 +131,7 @@ impl<F: PrimeField> XorChip<F> {
 
                 Ok(result_cell)
             },
-        );
-        result
+        )
     }
 
     pub fn unknown_trace() -> [[Value<F>; 9]; 3] {

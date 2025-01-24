@@ -1,6 +1,6 @@
 use super::*;
-use halo2_proofs::circuit::AssignedCell;
 use auxiliar_functions::field_for;
+use halo2_proofs::circuit::AssignedCell;
 
 #[derive(Clone, Debug)]
 pub struct AdditionMod64Chip<F: Field, const T: usize, const R: usize> {
@@ -89,32 +89,24 @@ impl<F: PrimeField, const T: usize, const R: usize> AdditionMod64Chip<F, T, R> {
         value_a: Value<F>,
         value_b: Value<F>,
         decompose_chip: &mut impl Decomposition<F, T>,
-    ) -> Result<[AssignedCell<F, F>;2], Error> {
-        let result = layouter.assign_region(
+    ) -> Result<[AssignedCell<F, F>; 2], Error> {
+        layouter.assign_region(
             || "sum",
             |mut region| {
                 let result_value = value_a.and_then(|v0| {
-                    value_b
-                        .and_then(|v1| Value::known(auxiliar_functions::sum_mod_64(v0, v1)))
+                    value_b.and_then(|v1| Value::known(auxiliar_functions::sum_mod_64(v0, v1)))
                 });
 
                 let carry_value = value_a.and_then(|v0| {
-                    value_b
-                        .and_then(|v1| Value::known(auxiliar_functions::carry_mod_64(v0, v1)))
+                    value_b.and_then(|v1| Value::known(auxiliar_functions::carry_mod_64(v0, v1)))
                 });
                 decompose_chip.generate_row_from_value(&mut region, value_a, 0)?;
                 decompose_chip.generate_row_from_value(&mut region, value_b, 1)?;
-                let result_cell = decompose_chip.generate_row_from_value(&mut region, result_value, 2)?;
-                let carry_cell = region.assign_advice(
-                    || "carry",
-                    self.carry,
-                    2,
-                    || carry_value
-                )?;
+                let result_cell =
+                    decompose_chip.generate_row_from_value(&mut region, result_value, 2)?;
+                let carry_cell = region.assign_advice(|| "carry", self.carry, 2, || carry_value)?;
                 Ok([result_cell, carry_cell])
-            }
-        );
-
-        result
+            },
+        )
     }
 }

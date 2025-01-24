@@ -1,7 +1,7 @@
 use super::*;
+use crate::chips::addition_mod_64_chip::AdditionMod64Chip;
 use crate::chips::decompose_16_chip::Decompose16Chip;
 use std::array;
-use crate::chips::addition_mod_64_chip::AdditionMod64Chip;
 
 #[derive(Clone)]
 pub struct AdditionMod64Config16Bits<F: Field> {
@@ -40,7 +40,8 @@ impl<F: PrimeField> Circuit<F> for AdditionMod64Circuit16Bits<F> {
         let carry = meta.advice_column();
 
         let decompose_16_chip = Decompose16Chip::configure(meta, full_number_u64, limbs);
-        let addition_mod_64_chip = AdditionMod64Chip::<F, 4, 6>::configure(meta, full_number_u64, carry);
+        let addition_mod_64_chip =
+            AdditionMod64Chip::<F, 4, 6>::configure(meta, full_number_u64, carry);
 
         Self::Config {
             addition_mod_64_chip,

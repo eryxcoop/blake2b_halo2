@@ -10,7 +10,7 @@ pub struct Decompose8Chip<F: PrimeField> {
     _ph: PhantomData<F>,
 }
 
-impl<F: PrimeField> Decomposition<F, 8> for  Decompose8Chip<F> {
+impl<F: PrimeField> Decomposition<F, 8> for Decompose8Chip<F> {
     fn configure(
         meta: &mut ConstraintSystem<F>,
         full_number_u64: Column<Advice>,

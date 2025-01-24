@@ -1,5 +1,5 @@
-use halo2_proofs::circuit::AssignedCell;
 use super::*;
+use halo2_proofs::circuit::AssignedCell;
 
 #[derive(Clone, Debug)]
 pub struct Rotate63Chip<F: Field, const T: usize, const R: usize> {
@@ -17,10 +17,10 @@ impl<F: PrimeField, const T: usize, const R: usize> Rotate63Chip<F, T, R> {
             vec![
                 q_rot63
                     * (Expression::Constant(F::from(2)) * input_full_number.clone()
-                    - output_full_number.clone())
+                        - output_full_number.clone())
                     * (Expression::Constant(F::from(2)) * input_full_number
-                    - output_full_number
-                    - Expression::Constant(F::from(((1u128 << 64) - 1) as u64))),
+                        - output_full_number
+                        - Expression::Constant(F::from(((1u128 << 64) - 1) as u64))),
             ]
         });
 
@@ -54,8 +54,8 @@ impl<F: PrimeField, const T: usize, const R: usize> Rotate63Chip<F, T, R> {
         &mut self,
         layouter: &mut impl Layouter<F>,
         input: Value<F>,
-        decompose_chip: &mut impl Decomposition<F, T>)
-        -> Result<AssignedCell<F, F>, Error> {
+        decompose_chip: &mut impl Decomposition<F, T>,
+    ) -> Result<AssignedCell<F, F>, Error> {
         layouter.assign_region(
             || "generate rotate 63",
             |mut region| {
@@ -66,7 +66,8 @@ impl<F: PrimeField, const T: usize, const R: usize> Rotate63Chip<F, T, R> {
                 });
 
                 decompose_chip.generate_row_from_value(&mut region, input, 0)?;
-                let result_cell = decompose_chip.generate_row_from_value(&mut region, result_value, 1)?;
+                let result_cell =
+                    decompose_chip.generate_row_from_value(&mut region, result_value, 1)?;
 
                 Ok(result_cell)
             },
