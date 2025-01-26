@@ -8,3 +8,4 @@ mod tests_integration;
 mod tests_rotation;
 mod tests_xor;
 mod test_blake2b_mixing;
+mod test_negate;
