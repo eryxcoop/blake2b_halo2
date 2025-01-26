@@ -5,7 +5,7 @@ use crate::chips::rotate_63_chip::Rotate63Chip;
 use crate::chips::xor_chip::XorChip;
 use ff::PrimeField;
 use halo2_proofs::circuit::{Layouter, Value};
-
+use halo2_proofs::plonk::{Advice, Column, ConstraintSystem};
 use crate::chips::decomposition_trait::Decomposition;
 
 #[derive(Clone, Debug)]
@@ -19,12 +19,15 @@ pub struct Blake2bTable16Chip<F: PrimeField> {
 
 impl<F: PrimeField> Blake2bTable16Chip<F> {
     pub fn configure(
-        decompose_8_chip: Decompose8Chip<F>,
-        addition_chip: AdditionMod64Chip<F, 8, 10>,
-        generic_limb_rotation_chip: LimbRotationChip<F>,
-        rotate_63_chip: Rotate63Chip<F, 8, 9>,
-        xor_chip: XorChip<F>,
+        meta: &mut ConstraintSystem<F>, full_number_u64: Column<Advice>, limbs: [Column<Advice>; 8],
+        carry: Column<Advice>,
     ) -> Self {
+        let decompose_8_chip = Decompose8Chip::configure(meta, full_number_u64, limbs);
+        let addition_chip = AdditionMod64Chip::<F, 8, 10>::configure(meta, full_number_u64, carry);
+        let generic_limb_rotation_chip = LimbRotationChip::new();
+        let rotate_63_chip = Rotate63Chip::configure(meta, full_number_u64);
+        let xor_chip = XorChip::configure(meta, limbs);
+
         Self {
             addition_chip,
             decompose_8_chip,

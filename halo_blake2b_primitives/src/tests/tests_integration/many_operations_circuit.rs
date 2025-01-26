@@ -1,10 +1,5 @@
 use super::*;
-use crate::chips::addition_mod_64_chip::AdditionMod64Chip;
 use crate::chips::blake2b_table16_chip::Blake2bTable16Chip;
-use crate::chips::decompose_8_chip::Decompose8Chip;
-use crate::chips::generic_limb_rotation_chip::LimbRotationChip;
-use crate::chips::rotate_63_chip::Rotate63Chip;
-use crate::chips::xor_chip::XorChip;
 use std::array;
 use halo2_proofs::circuit::SimpleFloorPlanner;
 use halo2_proofs::plonk::Circuit;
@@ -61,18 +56,8 @@ impl<F: PrimeField> Circuit<F> for ManyOperationsCircuit<F> {
 
         let carry = meta.advice_column();
 
-        let decompose_8_chip = Decompose8Chip::configure(meta, full_number_u64, limbs);
-        let addition_chip = AdditionMod64Chip::<F, 8, 10>::configure(meta, full_number_u64, carry);
-        let generic_limb_rotation_chip = LimbRotationChip::new();
-        let rotate_63_chip = Rotate63Chip::configure(meta, full_number_u64);
-        let xor_chip = XorChip::configure(meta, limbs);
-
         let blake2b_chip = Blake2bTable16Chip::configure(
-            decompose_8_chip,
-            addition_chip,
-            generic_limb_rotation_chip,
-            rotate_63_chip,
-            xor_chip,
+            meta, full_number_u64, limbs, carry
         );
 
         Self::Config {
