@@ -3,6 +3,8 @@ use crate::chips::decompose_8_chip::Decompose8Chip;
 use crate::chips::xor_chip::XorChip;
 use std::array;
 use std::marker::PhantomData;
+use halo2_proofs::circuit::SimpleFloorPlanner;
+use halo2_proofs::plonk::Circuit;
 
 pub struct XorCircuit<F: PrimeField> {
     _ph: PhantomData<F>,

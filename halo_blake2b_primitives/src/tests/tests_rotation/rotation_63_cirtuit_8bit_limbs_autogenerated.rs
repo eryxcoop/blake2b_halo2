@@ -1,9 +1,10 @@
 use super::*;
 use crate::chips::decompose_8_chip::Decompose8Chip;
 use crate::chips::rotate_63_chip::Rotate63Chip;
-use halo2_proofs::plonk::Fixed;
+use halo2_proofs::plonk::{Circuit, Fixed};
 use std::array;
 use std::marker::PhantomData;
+use halo2_proofs::circuit::SimpleFloorPlanner;
 
 #[derive(Clone)]
 pub struct Rotation63Config8bitWithResultValidation<F: PrimeField> {

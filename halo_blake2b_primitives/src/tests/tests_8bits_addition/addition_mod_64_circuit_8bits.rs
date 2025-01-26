@@ -2,6 +2,8 @@ use super::*;
 use crate::chips::addition_mod_64_chip::AdditionMod64Chip;
 use crate::chips::decompose_8_chip::Decompose8Chip;
 use std::array;
+use halo2_proofs::circuit::SimpleFloorPlanner;
+use halo2_proofs::plonk::Circuit;
 
 pub struct AdditionMod64Circuit8Bits<F: Field> {
     _ph: PhantomData<F>,

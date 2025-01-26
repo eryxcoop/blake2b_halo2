@@ -1,4 +1,6 @@
 use std::array;
+use halo2_proofs::circuit::SimpleFloorPlanner;
+use halo2_proofs::plonk::Circuit;
 use crate::chips::addition_mod_64_chip::AdditionMod64Chip;
 use crate::chips::blake2b_table16_chip::Blake2bTable16Chip;
 use crate::chips::decompose_8_chip::Decompose8Chip;

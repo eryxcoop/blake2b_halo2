@@ -3,6 +3,8 @@ use crate::chips::decompose_8_chip::Decompose8Chip;
 use crate::chips::rotate_63_chip::Rotate63Chip;
 use std::array;
 use std::marker::PhantomData;
+use halo2_proofs::circuit::SimpleFloorPlanner;
+use halo2_proofs::plonk::Circuit;
 
 pub struct Rotation63Circuit8bitLimbs<F: PrimeField> {
     _ph: PhantomData<F>,

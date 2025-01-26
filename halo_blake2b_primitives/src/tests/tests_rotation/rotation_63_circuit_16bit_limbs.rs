@@ -3,6 +3,8 @@ use crate::chips::decompose_16_chip::Decompose16Chip;
 use crate::chips::rotate_63_chip::Rotate63Chip;
 use std::array;
 use std::marker::PhantomData;
+use halo2_proofs::circuit::SimpleFloorPlanner;
+use halo2_proofs::plonk::Circuit;
 
 #[derive(Clone)]
 pub struct Rotation63Config16bitLimbs<F: Field> {

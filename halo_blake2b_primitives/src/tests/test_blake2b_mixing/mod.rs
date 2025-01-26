@@ -1,5 +1,6 @@
 mod blake2b_circuit_mixing;
 
+use halo2_proofs::dev::MockProver;
 use crate::tests::test_blake2b_mixing::blake2b_circuit_mixing::Blake2bMixingCircuit;
 use super::*;
 

@@ -2,6 +2,8 @@ use super::*;
 use crate::chips::addition_mod_64_chip::AdditionMod64Chip;
 use crate::chips::decompose_16_chip::Decompose16Chip;
 use std::array;
+use halo2_proofs::circuit::SimpleFloorPlanner;
+use halo2_proofs::plonk::Circuit;
 
 #[derive(Clone)]
 pub struct AdditionMod64Config16Bits<F: Field> {

@@ -6,6 +6,8 @@ use crate::chips::generic_limb_rotation_chip::LimbRotationChip;
 use crate::chips::rotate_63_chip::Rotate63Chip;
 use crate::chips::xor_chip::XorChip;
 use std::array;
+use halo2_proofs::circuit::SimpleFloorPlanner;
+use halo2_proofs::plonk::Circuit;
 
 pub struct ManyOperationsCircuit<F: PrimeField> {
     _ph: PhantomData<F>,
