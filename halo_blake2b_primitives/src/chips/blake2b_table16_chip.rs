@@ -65,7 +65,7 @@ impl<F: PrimeField> Blake2bTable16Chip<F> {
         operand_b: Operand<F>,
         layouter: &mut impl Layouter<F>,
     ) -> Operand<F> {
-
+        /// TODO: La copy constraint podría (y creo que debería) estar en la operación
         let value_a: Value<F> = Self::_obtain_value_from_operand(operand_a);
         let value_b: Value<F> = Self::_obtain_value_from_operand(operand_b);
 
