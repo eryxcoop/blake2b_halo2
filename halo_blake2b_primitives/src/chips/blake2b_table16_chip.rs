@@ -4,9 +4,15 @@ use crate::chips::generic_limb_rotation_chip::LimbRotationChip;
 use crate::chips::rotate_63_chip::Rotate63Chip;
 use crate::chips::xor_chip::XorChip;
 use ff::PrimeField;
-use halo2_proofs::circuit::{Layouter, Value};
+use halo2_proofs::circuit::{AssignedCell, Layouter, Value};
 use halo2_proofs::plonk::{Advice, Column, ConstraintSystem};
 use crate::chips::decomposition_trait::Decomposition;
+
+#[derive(Clone, Debug)]
+pub enum Operand<F: PrimeField> {
+    Cell(AssignedCell<F,F>),
+    Value(Value<F>)
+}
 
 #[derive(Clone, Debug)]
 pub struct Blake2bTable16Chip<F: PrimeField> {
@@ -42,85 +48,114 @@ impl<F: PrimeField> Blake2bTable16Chip<F> {
         self._populate_xor_lookup_table(layouter);
     }
 
+    fn _obtain_value_from_operand(operand_a: Operand<F>) -> Value<F> {
+        match operand_a {
+            Operand::Cell(operand_a) => {
+                operand_a.value().copied()
+            },
+            Operand::Value(operand_a) => {
+                operand_a
+            }
+        }
+    }
+
     pub fn add(
         &mut self,
-        value_a: Value<F>,
-        value_b: Value<F>,
+        operand_a: Operand<F>,
+        operand_b: Operand<F>,
         layouter: &mut impl Layouter<F>,
-    ) -> Value<F> {
+    ) -> Operand<F> {
+
+        let value_a: Value<F> = Self::_obtain_value_from_operand(operand_a);
+        let value_b: Value<F> = Self::_obtain_value_from_operand(operand_b);
+
         let addition_result = self
             .addition_chip
             .generate_addition_rows(layouter, value_a, value_b, &mut self.decompose_8_chip)
             .unwrap()[0]
             .clone();
 
-        addition_result.value().copied()
+        Self::operand_from(addition_result)
+    }
+
+    fn operand_from(cell: AssignedCell<F, F>) -> Operand<F> {
+        Operand::Cell(cell)
     }
 
     pub fn xor(
         &mut self,
-        value: Value<F>,
-        b: Value<F>,
+        operand_a: Operand<F>,
+        operand_b: Operand<F>,
         layouter: &mut impl Layouter<F>,
-    ) -> Value<F> {
+    ) -> Operand<F> {
+
+        let value_a: Value<F> = Self::_obtain_value_from_operand(operand_a);
+        let value_b: Value<F> = Self::_obtain_value_from_operand(operand_b);
         let xor_result = self
             .xor_chip
-            .generate_xor_rows(layouter, value, b, &mut self.decompose_8_chip)
+            .generate_xor_rows(layouter, value_a, value_b, &mut self.decompose_8_chip)
             .unwrap();
 
-        xor_result.value().copied()
+        Self::operand_from(xor_result)
     }
 
     pub fn rotate_right_63(
         &mut self,
-        value: Value<F>,
+        operand: Operand<F>,
         layouter: &mut impl Layouter<F>,
-    ) -> Value<F> {
+    ) -> Operand<F> {
+
+        let value: Value<F> = Self::_obtain_value_from_operand(operand);
+
         let rotate_result = self
             .rotate_63_chip
             .generate_rotation_rows(layouter, value, &mut self.decompose_8_chip)
             .unwrap();
 
-        rotate_result.value().copied()
+        Self::operand_from(rotate_result)
     }
 
     pub fn rotate_right_16(
         &mut self,
-        value: Value<F>,
+        operand: Operand<F>,
         layouter: &mut impl Layouter<F>,
-    ) -> Value<F> {
+    ) -> Operand<F> {
+        let value = Self::_obtain_value_from_operand(operand);
+
         let rotate_result = self
             .generic_limb_rotation_chip
             .generate_rotation_rows(layouter, &mut self.decompose_8_chip, value, 2)
             .unwrap();
 
-        rotate_result.value().copied()
+        Self::operand_from(rotate_result)
     }
 
     pub fn rotate_right_24(
         &mut self,
-        value: Value<F>,
+        operand: Operand<F>,
         layouter: &mut impl Layouter<F>,
-    ) -> Value<F> {
+    ) -> Operand<F> {
+        let value = Self::_obtain_value_from_operand(operand);
         let rotate_result = self
             .generic_limb_rotation_chip
             .generate_rotation_rows(layouter, &mut self.decompose_8_chip, value, 3)
             .unwrap();
 
-        rotate_result.value().copied()
+        Self::operand_from(rotate_result)
     }
 
     pub fn rotate_right_32(
         &mut self,
-        value: Value<F>,
+        operand: Operand<F>,
         layouter: &mut impl Layouter<F>,
-    ) -> Value<F> {
+    ) -> Operand<F> {
+        let value = Self::_obtain_value_from_operand(operand);
         let rotate_result = self
             .generic_limb_rotation_chip
             .generate_rotation_rows(layouter, &mut self.decompose_8_chip, value, 4)
             .unwrap();
 
-        rotate_result.value().copied()
+        Self::operand_from(rotate_result)
     }
 
     fn _populate_lookup_table(&mut self, layouter: &mut impl Layouter<F>) {

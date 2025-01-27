@@ -1,5 +1,5 @@
 use super::*;
-use crate::chips::blake2b_table16_chip::Blake2bTable16Chip;
+use crate::chips::blake2b_table16_chip::{Blake2bTable16Chip, Operand};
 use std::array;
 use halo2_proofs::circuit::SimpleFloorPlanner;
 use halo2_proofs::plonk::Circuit;
@@ -75,10 +75,10 @@ impl<F: PrimeField> Circuit<F> for ManyOperationsCircuit<F> {
         // initialize
         config.blake2b_chip.initialize_with(&mut layouter);
 
-        let addition_result = config.blake2b_chip.add(self.a, self.b, &mut layouter);
+        let addition_result = config.blake2b_chip.add(Operand::Value(self.a), Operand::Value(self.b), &mut layouter);
         let xor_result = config
             .blake2b_chip
-            .xor(addition_result, self.c, &mut layouter);
+            .xor(addition_result, Operand::Value(self.c), &mut layouter);
         let rotate63_result = config
             .blake2b_chip
             .rotate_right_63(xor_result, &mut layouter);
@@ -93,12 +93,23 @@ impl<F: PrimeField> Circuit<F> for ManyOperationsCircuit<F> {
             .rotate_right_32(rotate24_result, &mut layouter);
 
         // Check the result equals the expected one
-        rotate32_result.and_then(|x| {
-            self.expected_result.and_then(|y| {
-                assert_eq!(x, y);
-                Value::<F>::unknown()
-            })
-        });
+        match rotate32_result {
+            Operand::Cell(cell) => {
+                cell.value().cloned().and_then(|x| {
+                    self.expected_result.and_then(|y| {
+                        assert_eq!(x, y);
+                        Value::<F>::unknown()
+                    })
+                });
+            },
+            _ => {}
+        }
+        // rotate32_result.and_then(|x| {
+        //     self.expected_result.and_then(|y| {
+        //         assert_eq!(x, y);
+        //         Value::<F>::unknown()
+        //     })
+        // });
 
         Ok(())
     }
