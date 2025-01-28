@@ -124,46 +124,46 @@ fn blake2b_update(ctx: &mut Blake2bCtx, input: &mut Vec<u8>) {
 }
 
 fn blake2b_compress(ctx: &mut Blake2bCtx, last: bool) {
-    let mut v: [u64; 16] = [0; 16];
-    let mut m: [u64; 16] = [0; 16];
+    let mut accumulative_state: [u64; 16] = [0; 16];
+    let mut current_block_words: [u64; 16] = [0; 16];
 
-    v[..8].copy_from_slice(&ctx.state);
-    v[8..16].copy_from_slice(&BLAKE2B_IV);
+    accumulative_state[..8].copy_from_slice(&ctx.state);
+    accumulative_state[8..16].copy_from_slice(&BLAKE2B_IV);
     // Primero, el array v se llena:
     // - las primeras 8 posiciones con el estado actual
     // - las siguientes 8 posiciones con los valores iniciales de la función de compresión
     //   que van a ser siempre las mismas
     // Esto lo podemos poner así como viene en la traza, o ir poniendo los valores cuando los necesitemos
 
-    v[12] ^= ctx.processed_bytes_count[0]; // Esta es la parte baja del numero de bytes que se
+    accumulative_state[12] ^= ctx.processed_bytes_count[0]; // Esta es la parte baja del numero de bytes que se
                                            // llevan procesados. Si tenemos un solo bloque esto
                                            // va a ser siempre 128 (por ahora)
-    v[13] ^= ctx.processed_bytes_count[1]; // Si tenemos un solo bloque esto va a ser siempre 0
+    accumulative_state[13] ^= ctx.processed_bytes_count[1]; // Si tenemos un solo bloque esto va a ser siempre 0
                                            // o sea que un xor con eso no hace nada (por ahora)
 
     if last {
-        v[14] = !v[14] // Por ahora esto nos va a pasar siempre, en nuestra primera implementación
+        accumulative_state[14] = !accumulative_state[14] // Por ahora esto nos va a pasar siempre, en nuestra primera implementación
     }
 
     for i in 0..16 {
-        m[i] = b2b_get64(&ctx.iteration_buffer[8 * i..8 * i + 8]);
+        current_block_words[i] = b2b_get64(&ctx.iteration_buffer[8 * i..8 * i + 8]);
         // Simplemente reordena los 128 bytes del buffer en 16 u64, en Halo2 ya los podemos poner
         // directamente en u64
     }
 
     for i in 0..12 {
-        b2b_g(0, 4, 8, 12, m[SIGMA[i][0]], m[SIGMA[i][1]], &mut v);
-        b2b_g(1, 5, 9, 13, m[SIGMA[i][2]], m[SIGMA[i][3]], &mut v);
-        b2b_g(2, 6, 10, 14, m[SIGMA[i][4]], m[SIGMA[i][5]], &mut v);
-        b2b_g(3, 7, 11, 15, m[SIGMA[i][6]], m[SIGMA[i][7]], &mut v);
-        b2b_g(0, 5, 10, 15, m[SIGMA[i][8]], m[SIGMA[i][9]], &mut v);
-        b2b_g(1, 6, 11, 12, m[SIGMA[i][10]], m[SIGMA[i][11]], &mut v);
-        b2b_g(2, 7, 8, 13, m[SIGMA[i][12]], m[SIGMA[i][13]], &mut v);
-        b2b_g(3, 4, 9, 14, m[SIGMA[i][14]], m[SIGMA[i][15]], &mut v);
+        b2b_g(0, 4, 8, 12, current_block_words[SIGMA[i][0]], current_block_words[SIGMA[i][1]], &mut accumulative_state);
+        b2b_g(1, 5, 9, 13, current_block_words[SIGMA[i][2]], current_block_words[SIGMA[i][3]], &mut accumulative_state);
+        b2b_g(2, 6, 10, 14, current_block_words[SIGMA[i][4]], current_block_words[SIGMA[i][5]], &mut accumulative_state);
+        b2b_g(3, 7, 11, 15, current_block_words[SIGMA[i][6]], current_block_words[SIGMA[i][7]], &mut accumulative_state);
+        b2b_g(0, 5, 10, 15, current_block_words[SIGMA[i][8]], current_block_words[SIGMA[i][9]], &mut accumulative_state);
+        b2b_g(1, 6, 11, 12, current_block_words[SIGMA[i][10]], current_block_words[SIGMA[i][11]], &mut accumulative_state);
+        b2b_g(2, 7, 8, 13, current_block_words[SIGMA[i][12]], current_block_words[SIGMA[i][13]], &mut accumulative_state);
+        b2b_g(3, 4, 9, 14, current_block_words[SIGMA[i][14]], current_block_words[SIGMA[i][15]], &mut accumulative_state);
     }
 
     for i in 0..8 {
-        ctx.state[i] ^= v[i] ^ v[i + 8];
+        ctx.state[i] ^= accumulative_state[i] ^ accumulative_state[i + 8];
     }
 }
 
