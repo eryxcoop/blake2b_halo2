@@ -48,17 +48,6 @@ impl<F: PrimeField> Blake2bTable16Chip<F> {
         self._populate_xor_lookup_table(layouter);
     }
 
-    fn _obtain_value_from_operand(operand_a: Operand<F>) -> Value<F> {
-        match operand_a {
-            Operand::Cell(operand_a) => {
-                operand_a.value().copied()
-            },
-            Operand::Value(operand_a) => {
-                operand_a
-            }
-        }
-    }
-
     pub fn add(
         &mut self,
         operand_a: Operand<F>,
@@ -164,5 +153,16 @@ impl<F: PrimeField> Blake2bTable16Chip<F> {
 
     fn _populate_xor_lookup_table(&mut self, layouter: &mut impl Layouter<F>) {
         let _ = self.xor_chip.populate_xor_lookup_table(layouter);
+    }
+
+    fn _obtain_value_from_operand(operand_a: Operand<F>) -> Value<F> {
+        match operand_a {
+            Operand::Cell(operand_a) => {
+                operand_a.value().copied()
+            },
+            Operand::Value(operand_a) => {
+                operand_a
+            }
+        }
     }
 }
