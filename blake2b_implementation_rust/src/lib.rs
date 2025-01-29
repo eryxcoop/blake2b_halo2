@@ -51,12 +51,12 @@ struct Blake2bCtx {
 
 impl Blake2bCtx {
     fn new(key: &mut Vec<u8>, outlen: usize) -> Self {
-        let mut h: [u64; 8] = BLAKE2B_IV;
-        h[0] = h[0] ^ 0x01010000 ^ (key.len() << 8) as u64 ^ outlen as u64;
+        let mut state: [u64; 8] = BLAKE2B_IV;
+        state[0] = state[0] ^ 0x01010000 ^ (key.len() << 8) as u64 ^ outlen as u64;
 
         Self {
             iteration_buffer: [0; 128],
-            state: h,
+            state,
             processed_bytes_count: [0; 2],
             buffer_pointer: 0,
         }
@@ -96,15 +96,15 @@ fn b2b_get64(p: &[u8]) -> u64 {
         ^ (p[7] as u64) << 56
 }
 
-fn b2b_g(a: usize, b: usize, c: usize, d: usize, x: u64, y: u64, v: &mut [u64; 16]) {
-    v[a] = ((v[a] as u128 + v[b] as u128 + x as u128) % (1 << 64)) as u64;
-    v[d] = rotr_64(v[d] ^ v[a], 32);
-    v[c] = ((v[c] as u128 + v[d] as u128) % (1 << 64)) as u64;
-    v[b] = rotr_64(v[b] ^ v[c], 24);
-    v[a] = ((v[a] as u128 + v[b] as u128 + y as u128) % (1 << 64)) as u64;
-    v[d] = rotr_64(v[d] ^ v[a], 16);
-    v[c] = ((v[c] as u128 + v[d] as u128) % (1 << 64)) as u64;
-    v[b] = rotr_64(v[b] ^ v[c], 63);
+fn b2b_g(a: usize, b: usize, c: usize, d: usize, x: u64, y: u64, state: &mut [u64; 16]) {
+    state[a] = ((state[a] as u128 + state[b] as u128 + x as u128) % (1 << 64)) as u64;
+    state[d] = rotr_64(state[d] ^ state[a], 32);
+    state[c] = ((state[c] as u128 + state[d] as u128) % (1 << 64)) as u64;
+    state[b] = rotr_64(state[b] ^ state[c], 24);
+    state[a] = ((state[a] as u128 + state[b] as u128 + y as u128) % (1 << 64)) as u64;
+    state[d] = rotr_64(state[d] ^ state[a], 16);
+    state[c] = ((state[c] as u128 + state[d] as u128) % (1 << 64)) as u64;
+    state[b] = rotr_64(state[b] ^ state[c], 63);
 }
 
 fn blake2b_update(ctx: &mut Blake2bCtx, input: &mut Vec<u8>) {
