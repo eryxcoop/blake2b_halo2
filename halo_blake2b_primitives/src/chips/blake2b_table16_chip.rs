@@ -8,6 +8,7 @@ use ff::PrimeField;
 use halo2_proofs::circuit::{AssignedCell, Layouter, Value};
 use halo2_proofs::plonk::{Advice, Column, ConstraintSystem};
 use crate::chips::decomposition_trait::Decomposition;
+use crate::chips::negate_chip::NegateChip;
 
 #[derive(Clone, Debug)]
 pub enum Operand<F: PrimeField> {
@@ -22,6 +23,7 @@ pub struct Blake2bTable16Chip<F: PrimeField> {
     generic_limb_rotation_chip: LimbRotationChip<F>,
     rotate_63_chip: Rotate63Chip<F, 8, 9>,
     xor_chip: XorChip<F>,
+    negate_chip: NegateChip<F>,
 }
 
 impl<F: PrimeField> Blake2bTable16Chip<F> {
@@ -34,6 +36,7 @@ impl<F: PrimeField> Blake2bTable16Chip<F> {
         let generic_limb_rotation_chip = LimbRotationChip::new();
         let rotate_63_chip = Rotate63Chip::configure(meta, full_number_u64);
         let xor_chip = XorChip::configure(meta, limbs);
+        let negate_chip = NegateChip::configure(meta, full_number_u64);
 
         Self {
             addition_chip,
@@ -41,6 +44,7 @@ impl<F: PrimeField> Blake2bTable16Chip<F> {
             generic_limb_rotation_chip,
             rotate_63_chip,
             xor_chip,
+            negate_chip,
         }
     }
 
@@ -70,6 +74,20 @@ impl<F: PrimeField> Blake2bTable16Chip<F> {
 
     fn operand_from(cell: AssignedCell<F, F>) -> Operand<F> {
         Operand::Cell(cell)
+    }
+
+    pub fn not(
+        &mut self,
+        operand_a: Operand<F>,
+        layouter: &mut impl Layouter<F>,
+    ) -> Operand<F> {
+        let value_a: Value<F> = Self::_obtain_value_from_operand(operand_a);
+        let negate_result = self
+            .negate_chip
+            .generate_rows(layouter, value_a, &mut self.decompose_8_chip)
+            .unwrap();
+
+        Self::operand_from(negate_result)
     }
 
     pub fn xor(
