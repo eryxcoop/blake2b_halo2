@@ -11,12 +11,6 @@ use crate::chips::decomposition_trait::Decomposition;
 use crate::chips::negate_chip::NegateChip;
 
 #[derive(Clone, Debug)]
-pub enum Operand<F: PrimeField> {
-    Cell(AssignedCell<F,F>),
-    Value(Value<F>)
-}
-
-#[derive(Clone, Debug)]
 pub struct Blake2bTable16Chip<F: PrimeField> {
     addition_chip: AdditionMod64Chip<F, 8, 10>,
     decompose_8_chip: Decompose8Chip<F>,
@@ -55,115 +49,104 @@ impl<F: PrimeField> Blake2bTable16Chip<F> {
 
     pub fn add(
         &mut self,
-        operand_a: Operand<F>,
-        operand_b: Operand<F>,
+        lhs: AssignedCell<F, F>,
+        rhs: AssignedCell<F, F>,
         layouter: &mut impl Layouter<F>,
-    ) -> Operand<F> {
+    ) -> AssignedCell<F, F> {
         /// TODO: La copy constraint podría (y creo que debería) estar en la operación
-        let value_a: Value<F> = Self::_obtain_value_from_operand(operand_a);
-        let value_b: Value<F> = Self::_obtain_value_from_operand(operand_b);
-
-        let addition_result = self
+        let value_a: Value<F> = lhs.value().copied();
+        let value_b: Value<F> = rhs.value().copied(); 
+        self
             .addition_chip
             .generate_addition_rows(layouter, value_a, value_b, &mut self.decompose_8_chip)
             .unwrap()[0]
-            .clone();
+            .clone()
 
-        Self::operand_from(addition_result)
-    }
-
-    fn operand_from(cell: AssignedCell<F, F>) -> Operand<F> {
-        Operand::Cell(cell)
     }
 
     pub fn not(
         &mut self,
-        operand_a: Operand<F>,
+        input_cell: AssignedCell<F, F>,
         layouter: &mut impl Layouter<F>,
-    ) -> Operand<F> {
-        let value_a: Value<F> = Self::_obtain_value_from_operand(operand_a);
-        let negate_result = self
+    ) -> AssignedCell<F, F> {
+        let value_a: Value<F> = input_cell.value().copied();
+        self
             .negate_chip
             .generate_rows(layouter, value_a, &mut self.decompose_8_chip)
-            .unwrap();
+            .unwrap()
 
-        Self::operand_from(negate_result)
     }
 
     pub fn xor(
         &mut self,
-        operand_a: Operand<F>,
-        operand_b: Operand<F>,
+        lhs: AssignedCell<F, F>,
+        rhs: AssignedCell<F, F>,
         layouter: &mut impl Layouter<F>,
-    ) -> Operand<F> {
+    ) -> AssignedCell<F, F> {
 
-        let value_a: Value<F> = Self::_obtain_value_from_operand(operand_a);
-        let value_b: Value<F> = Self::_obtain_value_from_operand(operand_b);
-        let xor_result = self
+        // TODO hacer copy constraints con las nuevas filas generadas
+        let value_a: Value<F> = lhs.value().copied();
+        let value_b: Value<F> = rhs.value().copied();
+        self
             .xor_chip
             .generate_xor_rows(layouter, value_a, value_b, &mut self.decompose_8_chip)
-            .unwrap();
+            .unwrap()
 
-        Self::operand_from(xor_result)
     }
 
     pub fn rotate_right_63(
         &mut self,
-        operand: Operand<F>,
+        input_cell: AssignedCell<F, F>,
         layouter: &mut impl Layouter<F>,
-    ) -> Operand<F> {
+    ) -> AssignedCell<F, F> {
 
-        let value: Value<F> = Self::_obtain_value_from_operand(operand);
+        let value: Value<F> = input_cell.value().copied();
 
-        let rotate_result = self
+        self
             .rotate_63_chip
             .generate_rotation_rows(layouter, value, &mut self.decompose_8_chip)
-            .unwrap();
+            .unwrap()
 
-        Self::operand_from(rotate_result)
     }
 
     pub fn rotate_right_16(
         &mut self,
-        operand: Operand<F>,
+        input_cell: AssignedCell<F, F>,
         layouter: &mut impl Layouter<F>,
-    ) -> Operand<F> {
-        let value = Self::_obtain_value_from_operand(operand);
+    ) -> AssignedCell<F, F> {
+        let value = input_cell.value().copied();
 
-        let rotate_result = self
+        self
             .generic_limb_rotation_chip
             .generate_rotation_rows(layouter, &mut self.decompose_8_chip, value, 2)
-            .unwrap();
+            .unwrap()
 
-        Self::operand_from(rotate_result)
     }
 
     pub fn rotate_right_24(
         &mut self,
-        operand: Operand<F>,
+        input_cell: AssignedCell<F, F>,
         layouter: &mut impl Layouter<F>,
-    ) -> Operand<F> {
-        let value = Self::_obtain_value_from_operand(operand);
-        let rotate_result = self
+    ) -> AssignedCell<F, F> {
+        let value = input_cell.value().copied();
+        self
             .generic_limb_rotation_chip
             .generate_rotation_rows(layouter, &mut self.decompose_8_chip, value, 3)
-            .unwrap();
+            .unwrap()
 
-        Self::operand_from(rotate_result)
     }
 
     pub fn rotate_right_32(
         &mut self,
-        operand: Operand<F>,
+        input_cell: AssignedCell<F, F>,
         layouter: &mut impl Layouter<F>,
-    ) -> Operand<F> {
-        let value = Self::_obtain_value_from_operand(operand);
-        let rotate_result = self
+    ) -> AssignedCell<F, F> {
+        let value = input_cell.value().copied();
+        self
             .generic_limb_rotation_chip
             .generate_rotation_rows(layouter, &mut self.decompose_8_chip, value, 4)
-            .unwrap();
+            .unwrap()
 
-        Self::operand_from(rotate_result)
     }
 
     pub fn new_row_for(
@@ -185,16 +168,5 @@ impl<F: PrimeField> Blake2bTable16Chip<F> {
 
     fn _populate_xor_lookup_table(&mut self, layouter: &mut impl Layouter<F>) {
         let _ = self.xor_chip.populate_xor_lookup_table(layouter);
-    }
-
-    fn _obtain_value_from_operand(operand_a: Operand<F>) -> Value<F> {
-        match operand_a {
-            Operand::Cell(operand_a) => {
-                operand_a.value().copied()
-            },
-            Operand::Value(operand_a) => {
-                operand_a
-            }
-        }
     }
 }
