@@ -8,6 +8,7 @@ pub struct Blake2bCircuitShort<F: Field> {
     _ph: PhantomData<F>,
     output_size: Value<F>,
     input: [Value<F>; 16],
+    input_size: Value<F>,
 }
 
 #[derive(Clone)]
@@ -26,6 +27,7 @@ impl<F: PrimeField> Circuit<F> for Blake2bCircuitShort<F> {
             _ph: PhantomData,
             output_size: Value::unknown(),
             input: [Value::unknown(); 16],
+            input_size: Value::unknown(),
         }
     }
 
@@ -147,7 +149,7 @@ impl<F: PrimeField> Circuit<F> for Blake2bCircuitShort<F> {
         // accumulative_state[12] ^= 128; We put it in the trace
         let mut processed_bytes_count = config
             .blake2b_table16_chip
-            .new_row_for(Value::known(F::from(128u64)), &mut layouter)?;
+            .new_row_for(self.input_size, &mut layouter)?;
         state[12] = config.blake2b_table16_chip.xor(
             state[12].clone(),
             processed_bytes_count.clone(),
@@ -215,11 +217,12 @@ impl<F: PrimeField> Blake2bCircuitShort<F> {
         });
     }
 
-    pub fn new_for(output_size: Value<F>, input: [Value<F>; 16]) -> Self {
+    pub fn new_for(output_size: Value<F>, input: [Value<F>; 16], input_size: Value<F>) -> Self {
         Self {
             _ph: PhantomData,
             output_size,
             input,
+            input_size,
         }
     }
 }
