@@ -145,7 +145,16 @@ impl<F: PrimeField> Circuit<F> for Blake2bCircuitShort<F> {
             &mut layouter,
         );
 
-        let mut global_state: [AssignedCell<F,F>; 8] = state[0..8].clone();
+        let mut global_state: [AssignedCell<F,F>; 8] = [
+            state[0].clone(),
+            state[1].clone(),
+            state[2].clone(),
+            state[3].clone(),
+            state[4].clone(),
+            state[5].clone(),
+            state[6].clone(),
+            state[7].clone(),
+        ];
 
         // This implementation is for single block input+key, so some values can be hardcoded
 
@@ -165,7 +174,7 @@ impl<F: PrimeField> Circuit<F> for Blake2bCircuitShort<F> {
             .blake2b_table16_chip
             .not(state[14].clone(), &mut layouter);
 
-        Self::_assert_state_is_correct_before_mixing(state);
+        Self::_assert_state_is_correct_before_mixing(&state);
 
         for i in 0..12 {
             for j in 0..8 {
@@ -176,6 +185,27 @@ impl<F: PrimeField> Circuit<F> for Blake2bCircuitShort<F> {
                     &mut state, &current_block_words, &mut layouter)?;
             }
         }
+
+
+        let expected_state = [
+            value_for(0xf073bffaf051091cu128),
+            value_for(0x2aae4f5841e01ac0u128),
+            value_for(0xd27ff3884b83021cu128),
+            value_for(0xce5f22010215aa1eu128),
+            value_for(0x7c8eb0f00adc62bu128),
+            value_for(0xfc64ba212c28bea0u128),
+            value_for(0x405e700d2c635d3cu128),
+            value_for(0xee9b2389c76da0d2u128),
+            value_for(0x992358dff5eeaa2cu128),
+            value_for(0xe31bb3f840d77b3du128),
+            value_for(0x8f56581bf550d5a6u128),
+            value_for(0x7244c8cc4aea1a65u128),
+            value_for(0x59e57df9c5b1a28u128),
+            value_for(0x2cd19c3e43725bacu128),
+            value_for(0xa6ae1b28c4adac7u128),
+            value_for(0x7b99756ece63ee7eu128),
+        ];
+        Self::_assert_state_is_correct(&state, expected_state);
 
         for i in 0..8 {
             global_state[i] = config.blake2b_table16_chip.xor(global_state[i].clone(), state[i].clone(), &mut layouter);
@@ -213,8 +243,12 @@ impl<F: PrimeField> Blake2bCircuitShort<F> {
         [14, 10, 4, 8, 9, 15, 13, 6, 1, 12, 0, 2, 11, 7, 5, 3],
     ];
 
-    fn _assert_state_is_correct_before_mixing(mut state: [AssignedCell<F, F>; 16]) {
+    fn _assert_state_is_correct_before_mixing(state: &[AssignedCell<F, F>; 16]) {
         let desired_state = Self::desired_state_before_mixing();
+        Self::_assert_state_is_correct(state, desired_state);
+    }
+
+    fn _assert_state_is_correct(state: &[AssignedCell<F, F>; 16], desired_state: [Value<F>; 16]) {
         for i in 0..16 {
             Self::assert_cell_has_value(state[i].clone(), desired_state[i]);
         }

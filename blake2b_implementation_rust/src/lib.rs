@@ -162,6 +162,9 @@ fn blake2b_compress(ctx: &mut Blake2bCtx, last: bool) {
         b2b_g(3, 4, 9, 14, current_block_words[SIGMA[i][14]], current_block_words[SIGMA[i][15]], &mut accumulative_state);
     }
 
+    for i in 0..16 {
+        println!("accumulative_state[{}]: {:x}", i, accumulative_state[i]);
+    }
     for i in 0..8 {
         ctx.state[i] ^= accumulative_state[i] ^ accumulative_state[i + 8];
     }
