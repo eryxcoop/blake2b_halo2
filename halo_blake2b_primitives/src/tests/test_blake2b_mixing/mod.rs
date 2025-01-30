@@ -25,7 +25,6 @@ fn test_b2b_g_positive() {
                                                 v_a_final, v_b_final, v_c_final, v_d_final);
     let prover = MockProver::run(17, &circuit, vec![]).unwrap();
     prover.verify().unwrap();
-
 }
 
 #[test]

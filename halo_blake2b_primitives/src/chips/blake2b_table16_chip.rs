@@ -1,3 +1,4 @@
+use super::*;
 use crate::chips::addition_mod_64_chip::AdditionMod64Chip;
 use crate::chips::decompose_8_chip::Decompose8Chip;
 use crate::chips::generic_limb_rotation_chip::LimbRotationChip;
@@ -145,6 +146,19 @@ impl<F: PrimeField> Blake2bTable16Chip<F> {
             .unwrap();
 
         Self::operand_from(rotate_result)
+    }
+
+    pub fn new_row_for(
+        &mut self,
+        value: Value<F>,
+        layouter: &mut impl Layouter<F>,
+    ) -> Result<AssignedCell<F, F>, Error> {
+        layouter.assign_region(
+            || "row",
+            |mut region| {
+                self.decompose_8_chip.generate_row_from_value(&mut region, value, 0)
+            }
+        )
     }
 
     fn _populate_lookup_table(&mut self, layouter: &mut impl Layouter<F>) {
