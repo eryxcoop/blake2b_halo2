@@ -64,7 +64,7 @@ impl<F: PrimeField> Circuit<F> for Blake2bCircuitShort<F> {
     ) -> Result<(), Error> {
         config.blake2b_table16_chip.initialize_with(&mut layouter);
 
-        let input_cells = self.input.map(|input| {
+        let current_block_words = self.input.map(|input| {
             config
                 .blake2b_table16_chip
                 .new_row_for(input, &mut layouter)
@@ -101,7 +101,7 @@ impl<F: PrimeField> Circuit<F> for Blake2bCircuitShort<F> {
             },
         )?;
 
-        let output_size_constant= layouter.assign_region(
+        let output_size_constant = layouter.assign_region(
             || "output size",
             |mut region| {
                 region.assign_fixed(
@@ -128,7 +128,7 @@ impl<F: PrimeField> Circuit<F> for Blake2bCircuitShort<F> {
         layouter.assign_region(|| "iv copy constraints", |mut region| {
             for i in 0..8 {
                 region.constrain_equal(iv_constants[i].cell(), state[i].cell())?;
-                region.constrain_equal(iv_constants[i].cell(), state[i+8].cell())?;
+                region.constrain_equal(iv_constants[i].cell(), state[i + 8].cell())?;
             }
             Ok(())
         })?;
@@ -145,8 +145,11 @@ impl<F: PrimeField> Circuit<F> for Blake2bCircuitShort<F> {
             &mut layouter,
         );
 
+        let mut global_state: [AssignedCell<F,F>; 8] = state[0..8].clone();
+
         // This implementation is for single block input+key, so some values can be hardcoded
-        // accumulative_state[12] ^= 128; We put it in the trace
+
+        // accumulative_state[12] ^= processed_bytes_count
         let mut processed_bytes_count = config
             .blake2b_table16_chip
             .new_row_for(self.input_size, &mut layouter)?;
@@ -162,9 +165,21 @@ impl<F: PrimeField> Circuit<F> for Blake2bCircuitShort<F> {
             .blake2b_table16_chip
             .not(state[14].clone(), &mut layouter);
 
-        let DESIRED_STATE = Self::desired_state();
-        for i in 0..16 {
-            Self::assert_cell_has_value(state[i].clone(), DESIRED_STATE[i]);
+        Self::_assert_state_is_correct_before_mixing(state);
+
+        for i in 0..12 {
+            for j in 0..8 {
+                config.blake2b_table16_chip.mix(
+                    Self::ABCD[j][0], Self::ABCD[j][1],
+                    Self::ABCD[j][2], Self::ABCD[j][3],
+                    Self::SIGMA[i][2 * j], Self::SIGMA[i][2 * j + 1],
+                    &mut state, &current_block_words, &mut layouter)?;
+            }
+        }
+
+        for i in 0..8 {
+            global_state[i] = config.blake2b_table16_chip.xor(global_state[i].clone(), state[i].clone(), &mut layouter);
+            global_state[i] = config.blake2b_table16_chip.xor(global_state[i].clone(), state[i+8].clone(), &mut layouter);
         }
 
         Ok(())
@@ -172,6 +187,39 @@ impl<F: PrimeField> Circuit<F> for Blake2bCircuitShort<F> {
 }
 
 impl<F: PrimeField> Blake2bCircuitShort<F> {
+    const ABCD: [[usize; 4]; 8] = [
+        [0, 4, 8, 12],
+        [1, 5, 9, 13],
+        [2, 6, 10, 14],
+        [3, 7, 11, 15],
+        [0, 5, 10, 15],
+        [1, 6, 11, 12],
+        [2, 7, 8, 13],
+        [3, 4, 9, 14],
+    ];
+
+    const SIGMA: [[usize; 16]; 12] = [
+        [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+        [14, 10, 4, 8, 9, 15, 13, 6, 1, 12, 0, 2, 11, 7, 5, 3],
+        [11, 8, 12, 0, 5, 2, 15, 13, 10, 14, 3, 6, 7, 1, 9, 4],
+        [7, 9, 3, 1, 13, 12, 11, 14, 2, 6, 5, 10, 4, 0, 15, 8],
+        [9, 0, 5, 7, 2, 4, 10, 15, 14, 1, 11, 12, 6, 8, 3, 13],
+        [2, 12, 6, 10, 0, 11, 8, 3, 4, 13, 7, 5, 15, 14, 1, 9],
+        [12, 5, 1, 15, 14, 13, 4, 10, 0, 7, 6, 3, 9, 2, 8, 11],
+        [13, 11, 7, 14, 12, 1, 3, 9, 5, 0, 15, 4, 8, 6, 2, 10],
+        [6, 15, 14, 9, 11, 3, 0, 8, 12, 2, 13, 7, 1, 4, 10, 5],
+        [10, 2, 8, 4, 7, 6, 1, 5, 15, 11, 9, 14, 3, 12, 13, 0],
+        [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+        [14, 10, 4, 8, 9, 15, 13, 6, 1, 12, 0, 2, 11, 7, 5, 3],
+    ];
+
+    fn _assert_state_is_correct_before_mixing(mut state: [AssignedCell<F, F>; 16]) {
+        let desired_state = Self::desired_state_before_mixing();
+        for i in 0..16 {
+            Self::assert_cell_has_value(state[i].clone(), desired_state[i]);
+        }
+    }
+
     fn IV_CONSTANTS() -> [Value<F>; 8] {
         [
             value_for(0x6A09E667F3BCC908u128),
@@ -187,24 +235,24 @@ impl<F: PrimeField> Blake2bCircuitShort<F> {
 }
 
 impl<F: PrimeField> Blake2bCircuitShort<F> {
-    fn desired_state() -> [Value<F>; 16] {
+    fn desired_state_before_mixing() -> [Value<F>; 16] {
         [
-        value_for(7640891576939301192u64),
-        value_for(13503953896175478587u64),
-        value_for(4354685564936845355u64),
-        value_for(11912009170470909681u64),
-        value_for(5840696475078001361u64),
-        value_for(11170449401992604703u64),
-        value_for(2270897969802886507u64),
-        value_for(6620516959819538809u64),
-        value_for(7640891576956012808u64),
-        value_for(13503953896175478587u64),
-        value_for(4354685564936845355u64),
-        value_for(11912009170470909681u64),
-        value_for(5840696475078001361u64),
-        value_for(11170449401992604703u64),
-        value_for(16175846103906665108u64),
-        value_for(6620516959819538809u64)
+            value_for(7640891576939301192u64),
+            value_for(13503953896175478587u64),
+            value_for(4354685564936845355u64),
+            value_for(11912009170470909681u64),
+            value_for(5840696475078001361u64),
+            value_for(11170449401992604703u64),
+            value_for(2270897969802886507u64),
+            value_for(6620516959819538809u64),
+            value_for(7640891576956012808u64),
+            value_for(13503953896175478587u64),
+            value_for(4354685564936845355u64),
+            value_for(11912009170470909681u64),
+            value_for(5840696475078001361u64),
+            value_for(11170449401992604703u64),
+            value_for(16175846103906665108u64),
+            value_for(6620516959819538809u64)
         ]
     }
 
