@@ -76,7 +76,7 @@ impl<F: PrimeField> Circuit<F> for Blake2bCircuitShort<F> {
                 .unwrap()
         });
 
-        let constants = Self::IV_CONSTANTS();
+        let constants = Self::iv_constants();
         let iv_constants: [AssignedCell<F, F>; 8] = constants
             .iter()
             .enumerate()
@@ -244,7 +244,7 @@ impl<F: PrimeField> Blake2bCircuitShort<F> {
         }
     }
 
-    fn IV_CONSTANTS() -> [Value<F>; 8] {
+    fn iv_constants() -> [Value<F>; 8] {
         [
             value_for(0x6A09E667F3BCC908u128),
             value_for(0xBB67AE8584CAA73Bu128),

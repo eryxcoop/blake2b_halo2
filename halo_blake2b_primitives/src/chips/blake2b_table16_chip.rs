@@ -135,6 +135,7 @@ impl<F: PrimeField> Blake2bTable16Chip<F> {
         )
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn mix(
         &mut self,
         a_: usize,
