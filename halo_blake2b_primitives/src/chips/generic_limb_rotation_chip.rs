@@ -65,7 +65,8 @@ impl<F: PrimeField> LimbRotationChip<F> {
                 });
 
                 decompose_chip.generate_row_from_cell(&mut region, cell.clone(), 0)?;
-                let result_cell = decompose_chip.generate_row_from_value(&mut region, result_value, 1)?;
+                let result_cell =
+                    decompose_chip.generate_row_from_value(&mut region, result_value, 1)?;
 
                 Ok(result_cell)
             },

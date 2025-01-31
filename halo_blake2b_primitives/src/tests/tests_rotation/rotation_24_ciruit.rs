@@ -1,10 +1,10 @@
 use super::*;
 use crate::chips::decompose_16_chip::Decompose16Chip;
 use crate::chips::rotate_24_chip::Rotate24Chip;
-use std::array;
-use std::marker::PhantomData;
 use halo2_proofs::circuit::SimpleFloorPlanner;
 use halo2_proofs::plonk::Circuit;
+use std::array;
+use std::marker::PhantomData;
 
 #[derive(Clone)]
 pub struct Rotation24Config<F: PrimeField> {

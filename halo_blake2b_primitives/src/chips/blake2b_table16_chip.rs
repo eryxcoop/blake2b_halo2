@@ -1,14 +1,14 @@
 use super::*;
 use crate::chips::addition_mod_64_chip::AdditionMod64Chip;
 use crate::chips::decompose_8_chip::Decompose8Chip;
+use crate::chips::decomposition_trait::Decomposition;
 use crate::chips::generic_limb_rotation_chip::LimbRotationChip;
+use crate::chips::negate_chip::NegateChip;
 use crate::chips::rotate_63_chip::Rotate63Chip;
 use crate::chips::xor_chip::XorChip;
 use ff::PrimeField;
 use halo2_proofs::circuit::{AssignedCell, Layouter, Value};
 use halo2_proofs::plonk::{Advice, Column, ConstraintSystem};
-use crate::chips::decomposition_trait::Decomposition;
-use crate::chips::negate_chip::NegateChip;
 
 #[derive(Clone, Debug)]
 pub struct Blake2bTable16Chip<F: PrimeField> {
@@ -22,7 +22,9 @@ pub struct Blake2bTable16Chip<F: PrimeField> {
 
 impl<F: PrimeField> Blake2bTable16Chip<F> {
     pub fn configure(
-        meta: &mut ConstraintSystem<F>, full_number_u64: Column<Advice>, limbs: [Column<Advice>; 8],
+        meta: &mut ConstraintSystem<F>,
+        full_number_u64: Column<Advice>,
+        limbs: [Column<Advice>; 8],
         carry: Column<Advice>,
     ) -> Self {
         let decompose_8_chip = Decompose8Chip::configure(meta, full_number_u64, limbs);
@@ -53,11 +55,9 @@ impl<F: PrimeField> Blake2bTable16Chip<F> {
         rhs: AssignedCell<F, F>,
         layouter: &mut impl Layouter<F>,
     ) -> AssignedCell<F, F> {
-        self
-            .addition_chip
+        self.addition_chip
             .generate_addition_rows_from_cells(layouter, lhs, rhs, &mut self.decompose_8_chip)
             .unwrap()
-
     }
 
     pub fn not(
@@ -68,7 +68,6 @@ impl<F: PrimeField> Blake2bTable16Chip<F> {
         self.negate_chip
             .generate_rows_from_cell(layouter, input_cell, &mut self.decompose_8_chip)
             .unwrap()
-
     }
 
     pub fn xor(
@@ -77,11 +76,9 @@ impl<F: PrimeField> Blake2bTable16Chip<F> {
         rhs: AssignedCell<F, F>,
         layouter: &mut impl Layouter<F>,
     ) -> AssignedCell<F, F> {
-
         self.xor_chip
             .generate_xor_rows_from_cells(layouter, lhs, rhs, &mut self.decompose_8_chip)
             .unwrap()
-
     }
 
     pub fn rotate_right_63(
@@ -89,8 +86,9 @@ impl<F: PrimeField> Blake2bTable16Chip<F> {
         input_cell: AssignedCell<F, F>,
         layouter: &mut impl Layouter<F>,
     ) -> AssignedCell<F, F> {
-        self.rotate_63_chip.generate_rotation_rows_from_cells(
-            layouter, input_cell, &mut self.decompose_8_chip).unwrap()
+        self.rotate_63_chip
+            .generate_rotation_rows_from_cells(layouter, input_cell, &mut self.decompose_8_chip)
+            .unwrap()
     }
 
     pub fn rotate_right_16(
@@ -98,11 +96,9 @@ impl<F: PrimeField> Blake2bTable16Chip<F> {
         input_cell: AssignedCell<F, F>,
         layouter: &mut impl Layouter<F>,
     ) -> AssignedCell<F, F> {
-        self
-            .generic_limb_rotation_chip
+        self.generic_limb_rotation_chip
             .generate_rotation_rows_from_cell(layouter, &mut self.decompose_8_chip, input_cell, 2)
             .unwrap()
-
     }
 
     pub fn rotate_right_24(
@@ -110,11 +106,9 @@ impl<F: PrimeField> Blake2bTable16Chip<F> {
         input_cell: AssignedCell<F, F>,
         layouter: &mut impl Layouter<F>,
     ) -> AssignedCell<F, F> {
-        self
-            .generic_limb_rotation_chip
+        self.generic_limb_rotation_chip
             .generate_rotation_rows_from_cell(layouter, &mut self.decompose_8_chip, input_cell, 3)
             .unwrap()
-
     }
 
     pub fn rotate_right_32(
@@ -122,8 +116,7 @@ impl<F: PrimeField> Blake2bTable16Chip<F> {
         input_cell: AssignedCell<F, F>,
         layouter: &mut impl Layouter<F>,
     ) -> AssignedCell<F, F> {
-        self
-            .generic_limb_rotation_chip
+        self.generic_limb_rotation_chip
             .generate_rotation_rows_from_cell(layouter, &mut self.decompose_8_chip, input_cell, 4)
             .unwrap()
     }
@@ -136,15 +129,24 @@ impl<F: PrimeField> Blake2bTable16Chip<F> {
         layouter.assign_region(
             || "row",
             |mut region| {
-                self.decompose_8_chip.generate_row_from_value(&mut region, value, 0)
-            }
+                self.decompose_8_chip
+                    .generate_row_from_value(&mut region, value, 0)
+            },
         )
     }
 
     pub fn mix(
-        &mut self, a_: usize, b_: usize, c_: usize, d_: usize, sigma_even: usize, sigma_odd: usize,
-        state: &mut [AssignedCell<F, F>; 16], current_block_words: &[AssignedCell<F, F>; 16],
-        layouter: &mut impl Layouter<F>) -> Result<(), Error> {
+        &mut self,
+        a_: usize,
+        b_: usize,
+        c_: usize,
+        d_: usize,
+        sigma_even: usize,
+        sigma_odd: usize,
+        state: &mut [AssignedCell<F, F>; 16],
+        current_block_words: &[AssignedCell<F, F>; 16],
+        layouter: &mut impl Layouter<F>,
+    ) -> Result<(), Error> {
         let v_a = state[a_].clone();
         let v_b = state[b_].clone();
         let v_c = state[c_].clone();

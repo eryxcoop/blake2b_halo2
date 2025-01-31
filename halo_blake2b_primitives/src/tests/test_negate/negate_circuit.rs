@@ -1,11 +1,11 @@
 use super::*;
-use std::array;
-use std::marker::PhantomData;
+use crate::chips::decompose_8_chip::Decompose8Chip;
+use crate::chips::negate_chip::NegateChip;
 use ff::PrimeField;
 use halo2_proofs::circuit::{AssignedCell, Layouter, SimpleFloorPlanner, Value};
 use halo2_proofs::plonk::{Advice, Circuit, Column, ConstraintSystem, Error, Fixed};
-use crate::chips::decompose_8_chip::Decompose8Chip;
-use crate::chips::negate_chip::NegateChip;
+use std::array;
+use std::marker::PhantomData;
 
 pub struct NegateCircuit<F: PrimeField> {
     _ph: PhantomData<F>,
@@ -77,7 +77,6 @@ impl<F: PrimeField> Circuit<F> for NegateCircuit<F> {
         )?;
         Ok(())
     }
-
 }
 
 impl<F: PrimeField> NegateCircuit<F> {
@@ -102,10 +101,7 @@ impl<F: PrimeField> NegateCircuit<F> {
         Ok(())
     }
 
-    pub fn new_for(
-        value: Value<F>,
-        expected_result: Value<F>,
-    ) -> Self {
+    pub fn new_for(value: Value<F>, expected_result: Value<F>) -> Self {
         Self {
             _ph: PhantomData,
             value,

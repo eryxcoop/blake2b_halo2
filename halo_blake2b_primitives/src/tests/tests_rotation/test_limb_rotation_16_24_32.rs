@@ -1,6 +1,6 @@
-use halo2_proofs::dev::MockProver;
 use super::*;
 use crate::tests::tests_rotation::limb_rotation_circuit::LimbRotationCircuit;
+use halo2_proofs::dev::MockProver;
 use rand::Rng;
 
 // ------------ ROTATION 32 ------------ //

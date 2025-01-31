@@ -1,8 +1,8 @@
 mod many_operations_circuit;
 
-use halo2_proofs::dev::MockProver;
 use super::*;
 use crate::tests::tests_integration::many_operations_circuit::ManyOperationsCircuit;
+use halo2_proofs::dev::MockProver;
 
 #[test]
 fn test_positive_chained_operations() {

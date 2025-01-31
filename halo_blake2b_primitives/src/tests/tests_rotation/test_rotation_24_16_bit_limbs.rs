@@ -1,6 +1,6 @@
-use halo2_proofs::dev::MockProver;
 use super::*;
 use crate::tests::tests_rotation::rotation_24_ciruit::Rotation24Circuit;
+use halo2_proofs::dev::MockProver;
 
 #[test]
 fn test_positive_rotate_right_24() {

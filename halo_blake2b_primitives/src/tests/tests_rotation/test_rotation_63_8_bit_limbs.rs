@@ -1,6 +1,6 @@
-use halo2_proofs::dev::MockProver;
 use super::*;
 use crate::tests::tests_rotation::rotation_63_circuit_8bit_limbs::Rotation63Circuit8bitLimbs;
+use halo2_proofs::dev::MockProver;
 
 #[test]
 fn test_positive_rotate_right_63() {

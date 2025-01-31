@@ -144,7 +144,6 @@ impl<F: PrimeField> XorChip<F> {
         let value_a = cell_a.value().copied();
         let value_b = cell_b.value().copied();
 
-
         layouter.assign_region(
             || "xor",
             |mut region| {
@@ -160,7 +159,6 @@ impl<F: PrimeField> XorChip<F> {
 
                 let result_cell =
                     decompose_8_chip.generate_row_from_value(&mut region, result_value, 2)?;
-
 
                 Ok(result_cell)
             },

@@ -16,7 +16,7 @@ pub struct Blake2bShortConfig<F: PrimeField> {
     _ph: PhantomData<F>,
     blake2b_table16_chip: Blake2bTable16Chip<F>,
     constants: Column<Fixed>,
-    expected_final_state: Column<Instance>
+    expected_final_state: Column<Instance>,
 }
 
 impl<F: PrimeField> Circuit<F> for Blake2bCircuitShort<F> {
@@ -109,12 +109,7 @@ impl<F: PrimeField> Circuit<F> for Blake2bCircuitShort<F> {
         let output_size_constant = layouter.assign_region(
             || "output size",
             |mut region| {
-                region.assign_fixed(
-                    || "output size",
-                    config.constants,
-                    9,
-                    || self.output_size,
-                )
+                region.assign_fixed(|| "output size", config.constants, 9, || self.output_size)
             },
         )?;
 
@@ -129,14 +124,17 @@ impl<F: PrimeField> Circuit<F> for Blake2bCircuitShort<F> {
                 .unwrap()
         });
 
-        // Set copy constraints to recently initialized state 
-        layouter.assign_region(|| "iv copy constraints", |mut region| {
-            for i in 0..8 {
-                region.constrain_equal(iv_constants[i].cell(), state[i].cell())?;
-                region.constrain_equal(iv_constants[i].cell(), state[i + 8].cell())?;
-            }
-            Ok(())
-        })?;
+        // Set copy constraints to recently initialized state
+        layouter.assign_region(
+            || "iv copy constraints",
+            |mut region| {
+                for i in 0..8 {
+                    region.constrain_equal(iv_constants[i].cell(), state[i].cell())?;
+                    region.constrain_equal(iv_constants[i].cell(), state[i + 8].cell())?;
+                }
+                Ok(())
+            },
+        )?;
 
         // state[0] = state[0] ^ 0x01010000 ^ (key.len() << 8) as u64 ^ outlen as u64;
         state[0] = config.blake2b_table16_chip.xor(
@@ -144,13 +142,12 @@ impl<F: PrimeField> Circuit<F> for Blake2bCircuitShort<F> {
             init_const_state_0.clone(),
             &mut layouter,
         );
-        state[0] = config.blake2b_table16_chip.xor(
-            state[0].clone(),
-            output_size_constant,
-            &mut layouter,
-        );
+        state[0] =
+            config
+                .blake2b_table16_chip
+                .xor(state[0].clone(), output_size_constant, &mut layouter);
 
-        let mut global_state: [AssignedCell<F,F>; 8] = array::from_fn(|i| state[i].clone());
+        let mut global_state: [AssignedCell<F, F>; 8] = array::from_fn(|i| state[i].clone());
 
         // This implementation is for single block input+key, so some values can be hardcoded
 
@@ -175,20 +172,34 @@ impl<F: PrimeField> Circuit<F> for Blake2bCircuitShort<F> {
         for i in 0..12 {
             for j in 0..8 {
                 config.blake2b_table16_chip.mix(
-                    Self::ABCD[j][0], Self::ABCD[j][1],
-                    Self::ABCD[j][2], Self::ABCD[j][3],
-                    Self::SIGMA[i][2 * j], Self::SIGMA[i][2 * j + 1],
-                    &mut state, &current_block_words, &mut layouter)?;
+                    Self::ABCD[j][0],
+                    Self::ABCD[j][1],
+                    Self::ABCD[j][2],
+                    Self::ABCD[j][3],
+                    Self::SIGMA[i][2 * j],
+                    Self::SIGMA[i][2 * j + 1],
+                    &mut state,
+                    &current_block_words,
+                    &mut layouter,
+                )?;
             }
         }
 
         for i in 0..8 {
-            global_state[i] = config.blake2b_table16_chip.xor(global_state[i].clone(), state[i].clone(), &mut layouter);
-            global_state[i] = config.blake2b_table16_chip.xor(global_state[i].clone(), state[i + 8].clone(), &mut layouter);
+            global_state[i] = config.blake2b_table16_chip.xor(
+                global_state[i].clone(),
+                state[i].clone(),
+                &mut layouter,
+            );
+            global_state[i] = config.blake2b_table16_chip.xor(
+                global_state[i].clone(),
+                state[i + 8].clone(),
+                &mut layouter,
+            );
         }
 
         for i in 0..8 {
-           layouter.constrain_instance(global_state[i].cell(), config.expected_final_state, i)?;
+            layouter.constrain_instance(global_state[i].cell(), config.expected_final_state, i)?;
         }
 
         Ok(())
@@ -265,7 +276,7 @@ impl<F: PrimeField> Blake2bCircuitShort<F> {
             value_for(5840696475078001361u64),
             value_for(11170449401992604703u64),
             value_for(16175846103906665108u64),
-            value_for(6620516959819538809u64)
+            value_for(6620516959819538809u64),
         ]
     }
 

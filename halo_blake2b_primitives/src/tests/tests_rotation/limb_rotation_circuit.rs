@@ -2,9 +2,9 @@ use super::*;
 use crate::chips::decompose_8_chip::Decompose8Chip;
 use crate::chips::generic_limb_rotation_chip::LimbRotationChip;
 use ff::PrimeField;
-use std::array;
 use halo2_proofs::circuit::SimpleFloorPlanner;
 use halo2_proofs::plonk::Circuit;
+use std::array;
 
 #[derive(Clone)]
 pub struct LimbRotationCircuit<F: PrimeField, const T: usize> {
