@@ -53,14 +53,10 @@ impl<F: PrimeField> Blake2bTable16Chip<F> {
         rhs: AssignedCell<F, F>,
         layouter: &mut impl Layouter<F>,
     ) -> AssignedCell<F, F> {
-        /// TODO: La copy constraint podría (y creo que debería) estar en la operación
-        let value_a: Value<F> = lhs.value().copied();
-        let value_b: Value<F> = rhs.value().copied(); 
         self
             .addition_chip
-            .generate_addition_rows(layouter, value_a, value_b, &mut self.decompose_8_chip)
-            .unwrap()[0]
-            .clone()
+            .generate_addition_rows_from_cells(layouter, lhs, rhs, &mut self.decompose_8_chip)
+            .unwrap()
 
     }
 
