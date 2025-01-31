@@ -132,6 +132,19 @@ impl<F: PrimeField> Decomposition<F, 8> for Decompose8Chip<F> {
         }
         result
     }
+
+    fn generate_row_from_cell(
+        &mut self,
+        region: &mut Region<F>,
+        cell: AssignedCell<F, F>,
+        offset: usize,
+    ) -> Result<AssignedCell<F, F>, Error> {
+        let value = cell.value().copied();
+
+        let new_cell = self.generate_row_from_value(region, value, offset)?;
+        region.constrain_equal(cell.cell(), new_cell.cell())?;
+        Ok(new_cell)
+    }
 }
 
 impl<F: PrimeField> Decompose8Chip<F> {
