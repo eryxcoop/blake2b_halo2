@@ -69,10 +69,8 @@ impl<F: PrimeField> Blake2bTable16Chip<F> {
         input_cell: AssignedCell<F, F>,
         layouter: &mut impl Layouter<F>,
     ) -> AssignedCell<F, F> {
-        let value_a: Value<F> = input_cell.value().copied();
-        self
-            .negate_chip
-            .generate_rows(layouter, value_a, &mut self.decompose_8_chip)
+        self.negate_chip
+            .generate_rows_from_cell(layouter, input_cell, &mut self.decompose_8_chip)
             .unwrap()
 
     }
@@ -84,8 +82,7 @@ impl<F: PrimeField> Blake2bTable16Chip<F> {
         layouter: &mut impl Layouter<F>,
     ) -> AssignedCell<F, F> {
 
-        self
-            .xor_chip
+        self.xor_chip
             .generate_xor_rows_from_cells(layouter, lhs, rhs, &mut self.decompose_8_chip)
             .unwrap()
 

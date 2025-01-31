@@ -52,4 +52,27 @@ impl<F: PrimeField> NegateChip<F> {
             },
         )
     }
+
+    pub fn generate_rows_from_cell(
+        &mut self,
+        layouter: &mut impl Layouter<F>,
+        input: AssignedCell<F, F>,
+        decompose_chip: &mut Decompose8Chip<F>
+    ) -> Result<AssignedCell<F, F>, Error> {
+        layouter.assign_region(
+            || "sum",
+            |mut region| {
+                let _ = self.q_negate.enable(&mut region, 0);
+
+                let value = input.value().copied();
+                let result_value = value.and_then(|v0| {
+                    Value::known(F::from(((1u128 << 64) - 1) as u64) - v0)
+                });
+                let input_copied = decompose_chip.generate_row_from_value(&mut region, value, 0)?;
+                region.constrain_equal(input.cell(), input_copied.cell())?;
+                let result_cell = decompose_chip.generate_row_from_value(&mut region, result_value, 1)?;
+                Ok(result_cell)
+            },
+        )
+    }
 }
