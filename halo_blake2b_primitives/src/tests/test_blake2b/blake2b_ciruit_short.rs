@@ -150,16 +150,7 @@ impl<F: PrimeField> Circuit<F> for Blake2bCircuitShort<F> {
             &mut layouter,
         );
 
-        let mut global_state: [AssignedCell<F,F>; 8] = [
-            state[0].clone(),
-            state[1].clone(),
-            state[2].clone(),
-            state[3].clone(),
-            state[4].clone(),
-            state[5].clone(),
-            state[6].clone(),
-            state[7].clone(),
-        ];
+        let mut global_state: [AssignedCell<F,F>; 8] = array::from_fn(|i| state[i].clone());
 
         // This implementation is for single block input+key, so some values can be hardcoded
 
