@@ -105,6 +105,7 @@ impl<F: PrimeField, const T: usize, const R: usize> AdditionMod64Chip<F, T, R> {
                 let result_cell =
                     decompose_chip.generate_row_from_value(&mut region, result_value, 2)?;
                 let carry_cell = region.assign_advice(|| "carry", self.carry, 2, || carry_value)?;
+                let _ = self.q_add.enable(&mut region, 0);
                 Ok([result_cell, carry_cell])
             },
         )
