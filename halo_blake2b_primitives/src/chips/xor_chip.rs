@@ -134,6 +134,41 @@ impl<F: PrimeField> XorChip<F> {
         )
     }
 
+    pub fn generate_xor_rows_from_cells(
+        &mut self,
+        layouter: &mut impl Layouter<F>,
+        cell_a: AssignedCell<F, F>,
+        cell_b: AssignedCell<F, F>,
+        decompose_8_chip: &mut Decompose8Chip<F>,
+    ) -> Result<AssignedCell<F, F>, Error> {
+        let value_a = cell_a.value().copied();
+        let value_b = cell_b.value().copied();
+
+
+        layouter.assign_region(
+            || "xor",
+            |mut region| {
+                let _ = self.q_xor.enable(&mut region, 0);
+
+                let result_value = value_a.and_then(|v0| {
+                    value_b
+                        .and_then(|v1| Value::known(auxiliar_functions::xor_field_elements(v0, v1)))
+                });
+
+                let cell_a_copy = decompose_8_chip.generate_row_from_value(&mut region, value_a, 0)?;
+                region.constrain_equal(cell_a.cell(), cell_a_copy.cell())?;
+                let cell_b_copy = decompose_8_chip.generate_row_from_value(&mut region, value_b, 1)?;
+                region.constrain_equal(cell_b.cell(), cell_b_copy.cell())?;
+
+                let result_cell =
+                    decompose_8_chip.generate_row_from_value(&mut region, result_value, 2)?;
+
+
+                Ok(result_cell)
+            },
+        )
+    }
+
     pub fn unknown_trace() -> [[Value<F>; 9]; 3] {
         [[Value::unknown(); 9]; 3]
     }

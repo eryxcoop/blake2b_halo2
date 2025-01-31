@@ -69,10 +69,8 @@ impl<F: PrimeField> Blake2bTable16Chip<F> {
         input_cell: AssignedCell<F, F>,
         layouter: &mut impl Layouter<F>,
     ) -> AssignedCell<F, F> {
-        let value_a: Value<F> = input_cell.value().copied();
-        self
-            .negate_chip
-            .generate_rows(layouter, value_a, &mut self.decompose_8_chip)
+        self.negate_chip
+            .generate_rows_from_cell(layouter, input_cell, &mut self.decompose_8_chip)
             .unwrap()
 
     }
@@ -84,12 +82,8 @@ impl<F: PrimeField> Blake2bTable16Chip<F> {
         layouter: &mut impl Layouter<F>,
     ) -> AssignedCell<F, F> {
 
-        // TODO hacer copy constraints con las nuevas filas generadas
-        let value_a: Value<F> = lhs.value().copied();
-        let value_b: Value<F> = rhs.value().copied();
-        self
-            .xor_chip
-            .generate_xor_rows(layouter, value_a, value_b, &mut self.decompose_8_chip)
+        self.xor_chip
+            .generate_xor_rows_from_cells(layouter, lhs, rhs, &mut self.decompose_8_chip)
             .unwrap()
 
     }
@@ -99,14 +93,8 @@ impl<F: PrimeField> Blake2bTable16Chip<F> {
         input_cell: AssignedCell<F, F>,
         layouter: &mut impl Layouter<F>,
     ) -> AssignedCell<F, F> {
-
-        let value: Value<F> = input_cell.value().copied();
-
-        self
-            .rotate_63_chip
-            .generate_rotation_rows(layouter, value, &mut self.decompose_8_chip)
-            .unwrap()
-
+        self.rotate_63_chip.generate_rotation_rows_from_cells(
+            layouter, input_cell, &mut self.decompose_8_chip).unwrap()
     }
 
     pub fn rotate_right_16(
