@@ -84,12 +84,9 @@ impl<F: PrimeField> Blake2bTable16Chip<F> {
         layouter: &mut impl Layouter<F>,
     ) -> AssignedCell<F, F> {
 
-        // TODO hacer copy constraints con las nuevas filas generadas
-        let value_a: Value<F> = lhs.value().copied();
-        let value_b: Value<F> = rhs.value().copied();
         self
             .xor_chip
-            .generate_xor_rows(layouter, value_a, value_b, &mut self.decompose_8_chip)
+            .generate_xor_rows_from_cells(layouter, lhs, rhs, &mut self.decompose_8_chip)
             .unwrap()
 
     }
