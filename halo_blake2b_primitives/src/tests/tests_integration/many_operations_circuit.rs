@@ -74,9 +74,9 @@ impl<F: PrimeField> Circuit<F> for ManyOperationsCircuit<F> {
         // TODO ver que hacemos con esto
         config.blake2b_chip.initialize_with(&mut layouter);
 
-        let a = config.blake2b_chip.new_row_for(self.a, &mut layouter)?;
-        let b = config.blake2b_chip.new_row_for(self.b, &mut layouter)?;
-        let c = config.blake2b_chip.new_row_for(self.c, &mut layouter)?;
+        let a = config.blake2b_chip.new_row_from_value(self.a, &mut layouter)?;
+        let b = config.blake2b_chip.new_row_from_value(self.b, &mut layouter)?;
+        let c = config.blake2b_chip.new_row_from_value(self.c, &mut layouter)?;
 
         let addition_result = config.blake2b_chip.add(a, b, &mut layouter);
         let xor_result = config.blake2b_chip.xor(

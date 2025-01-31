@@ -72,7 +72,7 @@ impl<F: PrimeField> Circuit<F> for Blake2bCircuitShort<F> {
         let current_block_words = self.input.map(|input| {
             config
                 .blake2b_table16_chip
-                .new_row_for(input, &mut layouter)
+                .new_row_from_value(input, &mut layouter)
                 .unwrap()
         });
 
@@ -125,7 +125,7 @@ impl<F: PrimeField> Circuit<F> for Blake2bCircuitShort<F> {
         let mut state = iv_constants_doubled.map(|constant| {
             config
                 .blake2b_table16_chip
-                .new_row_for(constant, &mut layouter)
+                .new_row_from_value(constant, &mut layouter)
                 .unwrap()
         });
 
@@ -157,7 +157,7 @@ impl<F: PrimeField> Circuit<F> for Blake2bCircuitShort<F> {
         // accumulative_state[12] ^= processed_bytes_count
         let processed_bytes_count = config
             .blake2b_table16_chip
-            .new_row_for(self.input_size, &mut layouter)?;
+            .new_row_from_value(self.input_size, &mut layouter)?;
         state[12] = config.blake2b_table16_chip.xor(
             state[12].clone(),
             processed_bytes_count.clone(),

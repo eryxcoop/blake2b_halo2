@@ -74,12 +74,12 @@ impl<F: PrimeField> Circuit<F> for Blake2bMixingCircuit<F> {
         config.blake2b_table16_chip.initialize_with(&mut layouter);
 
 
-        let a = config.blake2b_table16_chip.new_row_for(self.v_a_initial, &mut layouter)?;
-        let b = config.blake2b_table16_chip.new_row_for(self.v_b_initial, &mut layouter)?;
-        let c = config.blake2b_table16_chip.new_row_for(self.v_c_initial, &mut layouter)?;
-        let d = config.blake2b_table16_chip.new_row_for(self.v_d_initial, &mut layouter)?;
-        let x = config.blake2b_table16_chip.new_row_for(self.x, &mut layouter)?;
-        let y = config.blake2b_table16_chip.new_row_for(self.y, &mut layouter)?;
+        let a = config.blake2b_table16_chip.new_row_from_value(self.v_a_initial, &mut layouter)?;
+        let b = config.blake2b_table16_chip.new_row_from_value(self.v_b_initial, &mut layouter)?;
+        let c = config.blake2b_table16_chip.new_row_from_value(self.v_c_initial, &mut layouter)?;
+        let d = config.blake2b_table16_chip.new_row_from_value(self.v_d_initial, &mut layouter)?;
+        let x = config.blake2b_table16_chip.new_row_from_value(self.x, &mut layouter)?;
+        let y = config.blake2b_table16_chip.new_row_from_value(self.y, &mut layouter)?;
 
         // v[a] = ((v[a] as u128 + v[b] as u128 + x as u128) % (1 << 64)) as u64;
         let a_plus_b = config.blake2b_table16_chip.add(a, b.clone(), &mut layouter);

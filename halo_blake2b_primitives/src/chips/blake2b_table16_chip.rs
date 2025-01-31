@@ -128,7 +128,7 @@ impl<F: PrimeField> Blake2bTable16Chip<F> {
             .unwrap()
     }
 
-    pub fn new_row_for(
+    pub fn new_row_from_value(
         &mut self,
         value: Value<F>,
         layouter: &mut impl Layouter<F>,
