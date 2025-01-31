@@ -96,14 +96,8 @@ impl<F: PrimeField> Blake2bTable16Chip<F> {
         input_cell: AssignedCell<F, F>,
         layouter: &mut impl Layouter<F>,
     ) -> AssignedCell<F, F> {
-
-        let value: Value<F> = input_cell.value().copied();
-
-        self
-            .rotate_63_chip
-            .generate_rotation_rows(layouter, value, &mut self.decompose_8_chip)
-            .unwrap()
-
+        self.rotate_63_chip.generate_rotation_rows_from_cells(
+            layouter, input_cell, &mut self.decompose_8_chip).unwrap()
     }
 
     pub fn rotate_right_16(
@@ -113,11 +107,9 @@ impl<F: PrimeField> Blake2bTable16Chip<F> {
     ) -> AssignedCell<F, F> {
         let value = input_cell.value().copied();
 
-        self
-            .generic_limb_rotation_chip
+        self.generic_limb_rotation_chip
             .generate_rotation_rows(layouter, &mut self.decompose_8_chip, value, 2)
             .unwrap()
-
     }
 
     pub fn rotate_right_24(
