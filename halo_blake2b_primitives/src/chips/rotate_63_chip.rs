@@ -90,8 +90,7 @@ impl<F: PrimeField, const T: usize, const R: usize> Rotate63Chip<F, T, R> {
                     Value::known(auxiliar_functions::rotate_right_field_element(input, 63))
                 });
 
-                let input_copied = decompose_chip.generate_row_from_value(&mut region, input_value, 0)?;
-                region.constrain_equal(input.cell(), input_copied.cell())?;
+                decompose_chip.generate_row_from_cell(&mut region, input.clone(), 0)?;
 
                 let result_cell =
                     decompose_chip.generate_row_from_value(&mut region, result_value, 1)?;

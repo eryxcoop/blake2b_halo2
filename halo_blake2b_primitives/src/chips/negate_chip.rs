@@ -68,8 +68,7 @@ impl<F: PrimeField> NegateChip<F> {
                 let result_value = value.and_then(|v0| {
                     Value::known(F::from(((1u128 << 64) - 1) as u64) - v0)
                 });
-                let input_copied = decompose_chip.generate_row_from_value(&mut region, value, 0)?;
-                region.constrain_equal(input.cell(), input_copied.cell())?;
+                decompose_chip.generate_row_from_cell(&mut region, input.clone(), 0)?;
                 let result_cell = decompose_chip.generate_row_from_value(&mut region, result_value, 1)?;
                 Ok(result_cell)
             },

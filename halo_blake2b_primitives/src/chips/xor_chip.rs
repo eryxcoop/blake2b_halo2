@@ -155,10 +155,8 @@ impl<F: PrimeField> XorChip<F> {
                         .and_then(|v1| Value::known(auxiliar_functions::xor_field_elements(v0, v1)))
                 });
 
-                let cell_a_copy = decompose_8_chip.generate_row_from_value(&mut region, value_a, 0)?;
-                region.constrain_equal(cell_a.cell(), cell_a_copy.cell())?;
-                let cell_b_copy = decompose_8_chip.generate_row_from_value(&mut region, value_b, 1)?;
-                region.constrain_equal(cell_b.cell(), cell_b_copy.cell())?;
+                decompose_8_chip.generate_row_from_cell(&mut region, cell_a.clone(), 0)?;
+                decompose_8_chip.generate_row_from_cell(&mut region, cell_b.clone(), 1)?;
 
                 let result_cell =
                     decompose_8_chip.generate_row_from_value(&mut region, result_value, 2)?;
