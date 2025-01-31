@@ -1,7 +1,7 @@
 use super::*;
 use crate::chips::blake2b_table16_chip::Blake2bTable16Chip;
 use halo2_proofs::circuit::{AssignedCell, SimpleFloorPlanner};
-use halo2_proofs::plonk::{Circuit, Fixed};
+use halo2_proofs::plonk::{Circuit, Fixed, Instance};
 use std::array;
 
 pub struct Blake2bCircuitShort<F: Field> {
@@ -16,6 +16,7 @@ pub struct Blake2bShortConfig<F: PrimeField> {
     _ph: PhantomData<F>,
     blake2b_table16_chip: Blake2bTable16Chip<F>,
     constants: Column<Fixed>,
+    expected_final_state: Column<Instance>
 }
 
 impl<F: PrimeField> Circuit<F> for Blake2bCircuitShort<F> {
@@ -49,10 +50,14 @@ impl<F: PrimeField> Circuit<F> for Blake2bCircuitShort<F> {
         let constants = meta.fixed_column();
         meta.enable_equality(constants);
 
+        let expected_final_state = meta.instance_column();
+        meta.enable_equality(expected_final_state);
+
         Self::Config {
             _ph: PhantomData,
             blake2b_table16_chip,
             constants,
+            expected_final_state,
         }
     }
 
@@ -186,54 +191,13 @@ impl<F: PrimeField> Circuit<F> for Blake2bCircuitShort<F> {
             }
         }
 
-        let expected_state = [
-            value_for(0xf073bffaf051091cu128),
-            value_for(0x2aae4f5841e01ac0u128),
-            value_for(0xd27ff3884b83021cu128),
-            value_for(0xce5f22010215aa1eu128),
-            value_for(0x7c8eb0f00adc62bu128),
-            value_for(0xfc64ba212c28bea0u128),
-            value_for(0x405e700d2c635d3cu128),
-            value_for(0xee9b2389c76da0d2u128),
-            value_for(0x992358dff5eeaa2cu128),
-            value_for(0xe31bb3f840d77b3du128),
-            value_for(0x8f56581bf550d5a6u128),
-            value_for(0x7244c8cc4aea1a65u128),
-            value_for(0x59e57df9c5b1a28u128),
-            value_for(0x2cd19c3e43725bacu128),
-            value_for(0xa6ae1b28c4adac7u128),
-            value_for(0x7b99756ece63ee7eu128),
-        ];
-        Self::_assert_state_is_correct(&state, expected_state);
-
-        let expected_initial_state: [Value<F>; 8] = [
-            value_for(7640891576939301192u64),
-            value_for(13503953896175478587u64),
-            value_for(4354685564936845355u64),
-            value_for(11912009170470909681u64),
-            value_for(5840696475078001361u64),
-            value_for(11170449401992604703u64),
-            value_for(2270897969802886507u64),
-            value_for(6620516959819538809u64),
-        ];
-
         for i in 0..8 {
             global_state[i] = config.blake2b_table16_chip.xor(global_state[i].clone(), state[i].clone(), &mut layouter);
             global_state[i] = config.blake2b_table16_chip.xor(global_state[i].clone(), state[i + 8].clone(), &mut layouter);
         }
-        let expected_final_state: [Value<F>; 8] = [
-            value_for(241225442164632184u64),
-            value_for(8273765786548291270u64),
-            value_for(7009669069494759313u64),
-            value_for(1825118895109998218u64),
-            value_for(6005812539308400338u64),
-            value_for(5453945543160269075u64),
-            value_for(6176484666232027792u64),
-            value_for(14907649232217337813u64)
-        ];
 
         for i in 0..8 {
-            Self::assert_cell_has_value(global_state[i].clone(), expected_final_state[i]);
+           layouter.constrain_instance(global_state[i].cell(), config.expected_final_state, i)?;
         }
 
         Ok(())
