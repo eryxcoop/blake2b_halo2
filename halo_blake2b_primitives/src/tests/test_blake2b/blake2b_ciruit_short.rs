@@ -164,7 +164,7 @@ impl<F: PrimeField> Circuit<F> for Blake2bCircuitShort<F> {
         // This implementation is for single block input+key, so some values can be hardcoded
 
         // accumulative_state[12] ^= processed_bytes_count
-        let mut processed_bytes_count = config
+        let processed_bytes_count = config
             .blake2b_table16_chip
             .new_row_for(self.input_size, &mut layouter)?;
         state[12] = config.blake2b_table16_chip.xor(

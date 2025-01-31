@@ -7,7 +7,6 @@ use crate::chips::xor_chip::XorChip;
 use ff::PrimeField;
 use halo2_proofs::circuit::{AssignedCell, Layouter, Value};
 use halo2_proofs::plonk::{Advice, Column, ConstraintSystem};
-use crate::auxiliar_functions::value_for;
 use crate::chips::decomposition_trait::Decomposition;
 use crate::chips::negate_chip::NegateChip;
 

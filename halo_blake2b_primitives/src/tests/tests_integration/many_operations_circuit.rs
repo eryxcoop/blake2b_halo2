@@ -67,8 +67,8 @@ impl<F: PrimeField> Circuit<F> for ManyOperationsCircuit<F> {
     #[allow(unused_variables)]
     fn synthesize(
         &self,
-        mut config: Self::Config,
-        mut layouter: impl Layouter<F>,
+        config: Self::Config,
+        layouter: impl Layouter<F>,
     ) -> Result<(), Error> {
         // initialize
         // TODO ver que hacemos con esto
