@@ -168,6 +168,7 @@ fn blake2b_compress(ctx: &mut Blake2bCtx, last: bool) {
     for i in 0..8 {
         ctx.state[i] ^= accumulative_state[i] ^ accumulative_state[i + 8];
     }
+    let a = 0;
 }
 
 fn blake2b_final(ctx: &mut Blake2bCtx, out: &mut Vec<u8>) {

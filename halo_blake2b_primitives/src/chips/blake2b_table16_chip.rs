@@ -7,6 +7,7 @@ use crate::chips::xor_chip::XorChip;
 use ff::PrimeField;
 use halo2_proofs::circuit::{AssignedCell, Layouter, Value};
 use halo2_proofs::plonk::{Advice, Column, ConstraintSystem};
+use crate::auxiliar_functions::value_for;
 use crate::chips::decomposition_trait::Decomposition;
 use crate::chips::negate_chip::NegateChip;
 
@@ -163,52 +164,57 @@ impl<F: PrimeField> Blake2bTable16Chip<F> {
     }
 
     pub fn mix(
-        &mut self, a: usize, b: usize, c: usize, d: usize, sigma_even: usize, sigma_odd: usize,
+        &mut self, a_: usize, b_: usize, c_: usize, d_: usize, sigma_even: usize, sigma_odd: usize,
         state: &mut [AssignedCell<F, F>; 16], current_block_words: &[AssignedCell<F, F>; 16],
         layouter: &mut impl Layouter<F>) -> Result<(), Error> {
-        let v_a = state[a].clone();
-        let v_b = state[b].clone();
-        let v_c = state[c].clone();
-        let v_d = state[d].clone();
+        let v_a = state[a_].clone();
+        let v_b = state[b_].clone();
+        let v_c = state[c_].clone();
+        let v_d = state[d_].clone();
         let x = current_block_words[sigma_even].clone();
         let y = current_block_words[sigma_odd].clone();
 
         // v[a] = ((v[a] as u128 + v[b] as u128 + x as u128) % (1 << 64)) as u64;
         let a_plus_b = self.add(v_a, v_b.clone(), layouter);
         let a = self.add(a_plus_b, x, layouter);
-        // Self::assert_values_are_equal(a, value_for(13481588052017302553u64));
+        // Self::assert_values_are_equal(a.clone(), value_for(13481588052017302553u64));
 
         // v[d] = rotr_64(v[d] ^ v[a], 32);
         let d_xor_a = self.xor(v_d.clone(), a.clone(), layouter);
         let d = self.rotate_right_32(d_xor_a, layouter);
-        // Self::assert_values_are_equal(d, value_for(955553433272085144u64));
+        // Self::assert_values_are_equal(d.clone(), value_for(955553433272085144u64));
 
         // v[c] = ((v[c] as u128 + v[d] as u128) % (1 << 64)) as u64;
         let c = self.add(v_c, d.clone(), layouter);
-        // Self::assert_values_are_equal(c, value_for(8596445010228097952u64));
+        // Self::assert_values_are_equal(c.clone(), value_for(8596445010228097952u64));
 
         // v[b] = rotr_64(v[b] ^ v[c], 24);
         let b_xor_c = self.xor(v_b, c.clone(), layouter);
         let b = self.rotate_right_24(b_xor_c, layouter);
-        // Self::assert_values_are_equal(b, value_for(3868997964033118064u64));
+        // Self::assert_values_are_equal(b.clone(), value_for(3868997964033118064u64));
 
         // v[a] = ((v[a] as u128 + v[b] as u128 + y as u128) % (1 << 64)) as u64;
         let a_plus_b = self.add(a.clone(), b.clone(), layouter);
         let a = self.add(a_plus_b, y, layouter);
-        // Self::assert_values_are_equal(a, value_for(17350586016050420617u64));
+        // Self::assert_values_are_equal(a.clone(), value_for(13537687662323754138u64));
 
         // v[d] = rotr_64(v[d] ^ v[a], 16);
         let d_xor_a = self.xor(d.clone(), a.clone(), layouter);
         let d = self.rotate_right_16(d_xor_a, layouter);
-        // Self::assert_values_are_equal(d, value_for(17370944012877629853u64));
+        // Self::assert_values_are_equal(d.clone(), value_for(11170449401992604703u64));
 
         // v[c] = ((v[c] as u128 + v[d] as u128) % (1 << 64)) as u64;
         let c = self.add(c.clone(), d.clone(), layouter);
-        // Self::assert_values_are_equal(c, value_for(7520644949396176189u64));
+        // Self::assert_values_are_equal(c.clone(), value_for(2270897969802886507u64));
 
         // v[b] = rotr_64(v[b] ^ v[c], 63);
         let b_xor_c = self.xor(b.clone(), c.clone(), layouter);
         let b = self.rotate_right_63(b_xor_c, layouter);
+
+        state[a_] = a;
+        state[b_] = b;
+        state[c_] = c;
+        state[d_] = d;
 
         Ok(())
     }

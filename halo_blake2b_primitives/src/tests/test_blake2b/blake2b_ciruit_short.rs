@@ -186,7 +186,6 @@ impl<F: PrimeField> Circuit<F> for Blake2bCircuitShort<F> {
             }
         }
 
-
         let expected_state = [
             value_for(0xf073bffaf051091cu128),
             value_for(0x2aae4f5841e01ac0u128),
@@ -207,9 +206,34 @@ impl<F: PrimeField> Circuit<F> for Blake2bCircuitShort<F> {
         ];
         Self::_assert_state_is_correct(&state, expected_state);
 
+        let expected_initial_state: [Value<F>; 8] = [
+            value_for(7640891576939301192u64),
+            value_for(13503953896175478587u64),
+            value_for(4354685564936845355u64),
+            value_for(11912009170470909681u64),
+            value_for(5840696475078001361u64),
+            value_for(11170449401992604703u64),
+            value_for(2270897969802886507u64),
+            value_for(6620516959819538809u64),
+        ];
+
         for i in 0..8 {
             global_state[i] = config.blake2b_table16_chip.xor(global_state[i].clone(), state[i].clone(), &mut layouter);
-            global_state[i] = config.blake2b_table16_chip.xor(global_state[i].clone(), state[i+8].clone(), &mut layouter);
+            global_state[i] = config.blake2b_table16_chip.xor(global_state[i].clone(), state[i + 8].clone(), &mut layouter);
+        }
+        let expected_final_state: [Value<F>; 8] = [
+            value_for(241225442164632184u64),
+            value_for(8273765786548291270u64),
+            value_for(7009669069494759313u64),
+            value_for(1825118895109998218u64),
+            value_for(6005812539308400338u64),
+            value_for(5453945543160269075u64),
+            value_for(6176484666232027792u64),
+            value_for(14907649232217337813u64)
+        ];
+
+        for i in 0..8 {
+            Self::assert_cell_has_value(global_state[i].clone(), expected_final_state[i]);
         }
 
         Ok(())
