@@ -84,7 +84,7 @@ impl<F: PrimeField, const T: usize> Circuit<F> for LimbRotationCircuitAutogenera
         let result = config
             .limb_rotation_config
             .limb_rotation_chip
-            .generate_rotation_rows(
+            .generate_rotation_rows_from_value(
                 &mut layouter,
                 &mut config.limb_rotation_config.decompose_8_chip,
                 self.input,
