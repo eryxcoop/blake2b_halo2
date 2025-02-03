@@ -1,5 +1,5 @@
 use super::*;
-use crate::circuits::short_circuit::Blake2bCircuitShort;
+use crate::circuits::blake2b_circuit::Blake2bCircuit;
 use halo2_proofs::dev::MockProver;
 
 
@@ -9,7 +9,7 @@ fn test_blake2b_single_empty_block_positive() {
     let input = [zero(); 16];
     let input_size = zero();
     let expected_output_state = _correct_final_state_for_empty_input();
-    let circuit = Blake2bCircuitShort::new_for(output_size, input, input_size);
+    let circuit = Blake2bCircuit::new_for(output_size, input, input_size);
     let prover = MockProver::run(17, &circuit, vec![expected_output_state.to_vec()]).unwrap();
     prover.verify().unwrap();
 }
@@ -23,7 +23,7 @@ fn test_blake2b_single_empty_block_negative() {
     let mut expected_output_state = _correct_final_state_for_empty_input();
     expected_output_state[7] = Fr::from(14907649232217337814u64); // Wrong value
 
-    let circuit = Blake2bCircuitShort::new_for(output_size, input, input_size);
+    let circuit = Blake2bCircuit::new_for(output_size, input, input_size);
     let prover = MockProver::run(17, &circuit, vec![expected_output_state.to_vec()]).unwrap();
     prover.verify().unwrap();
 }
@@ -63,7 +63,7 @@ fn run_test(input: &String, _key: &String, expected: &String) {
     let expected_output_state_fields: [Fr; 8] = expected_output_state.iter().map(|x| Fr::from(*x)).collect::<Vec<_>>().try_into().unwrap();
     let output_size_value = value_for(output_size as u128);
 
-    let circuit = Blake2bCircuitShort::new_for(output_size_value, input_values, input_size_value);
+    let circuit = Blake2bCircuit::new_for(output_size_value, input_values, input_size_value);
     let prover = MockProver::run(17, &circuit, vec![expected_output_state_fields.to_vec()]).unwrap();
     prover.verify().unwrap();
 }

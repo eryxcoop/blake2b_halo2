@@ -1,3 +1,3 @@
 use super::*;
 
-pub mod short_circuit;
+pub mod blake2b_circuit;

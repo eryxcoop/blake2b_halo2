@@ -5,30 +5,30 @@ use halo2_proofs::circuit::{AssignedCell, SimpleFloorPlanner};
 use halo2_proofs::plonk::{Circuit, Fixed, Instance};
 use std::array;
 
-pub struct Blake2bCircuitShort<F: Field> {
+pub struct Blake2bCircuit<F: Field, const R: usize> {
     _ph: PhantomData<F>,
     output_size: Value<F>,
-    input: [Value<F>; 16],
+    input: [Value<F>; R],
     input_size: Value<F>,
 }
 
 #[derive(Clone)]
-pub struct Blake2bShortConfig<F: PrimeField> {
+pub struct Blake2bConfig<F: PrimeField> {
     _ph: PhantomData<F>,
     blake2b_table16_chip: Blake2bTable16Chip<F>,
     constants: Column<Fixed>,
     expected_final_state: Column<Instance>,
 }
 
-impl<F: PrimeField> Circuit<F> for Blake2bCircuitShort<F> {
-    type Config = Blake2bShortConfig<F>;
+impl<F: PrimeField, const R: usize> Circuit<F> for Blake2bCircuit<F, R> {
+    type Config = Blake2bConfig<F>;
     type FloorPlanner = SimpleFloorPlanner;
 
     fn without_witnesses(&self) -> Self {
         Self {
             _ph: PhantomData,
             output_size: Value::unknown(),
-            input: [Value::unknown(); 16],
+            input: [Value::unknown(); R],
             input_size: Value::unknown(),
         }
     }
@@ -70,13 +70,7 @@ impl<F: PrimeField> Circuit<F> for Blake2bCircuitShort<F> {
     ) -> Result<(), Error> {
         config.blake2b_table16_chip.initialize_with(&mut layouter);
 
-        let current_block_words = self.input.map(|input| {
-            config
-                .blake2b_table16_chip
-                .new_row_from_value(input, &mut layouter)
-                .unwrap()
-        });
-
+        // Initialize constants that will be used for state
         let constants = Self::iv_constants();
         let iv_constants: [AssignedCell<F, F>; 8] = constants
             .iter()
@@ -114,11 +108,7 @@ impl<F: PrimeField> Circuit<F> for Blake2bCircuitShort<F> {
             },
         )?;
 
-        let mut iv_constants_doubled: [Value<F>; 16] = [Value::known(F::ZERO); 16];
-        iv_constants_doubled[..8].copy_from_slice(&constants);
-        iv_constants_doubled[8..].copy_from_slice(&constants);
-
-        let mut state = iv_constants_doubled.map(|constant| {
+        let mut global_state = constants.map(|constant| {
             config
                 .blake2b_table16_chip
                 .new_row_from_value(constant, &mut layouter)
@@ -130,74 +120,31 @@ impl<F: PrimeField> Circuit<F> for Blake2bCircuitShort<F> {
             || "iv copy constraints",
             |mut region| {
                 for i in 0..8 {
-                    region.constrain_equal(iv_constants[i].cell(), state[i].cell())?;
-                    region.constrain_equal(iv_constants[i].cell(), state[i + 8].cell())?;
+                    region.constrain_equal(iv_constants[i].cell(), global_state[i].cell())?;
                 }
                 Ok(())
             },
         )?;
 
         // state[0] = state[0] ^ 0x01010000 ^ (key.len() << 8) as u64 ^ outlen as u64;
-        state[0] = config.blake2b_table16_chip.xor(
-            state[0].clone(),
+        global_state[0] = config.blake2b_table16_chip.xor(
+            global_state[0].clone(),
             init_const_state_0.clone(),
             &mut layouter,
         );
-        state[0] =
+        global_state[0] =
             config
                 .blake2b_table16_chip
-                .xor(state[0].clone(), output_size_constant, &mut layouter);
+                .xor(global_state[0].clone(), output_size_constant, &mut layouter);
 
-        let mut global_state: [AssignedCell<F, F>; 8] = array::from_fn(|i| state[i].clone());
+        //TODO split input in blocks and call compress for each block
+        let mut blocks: Vec<[Value<F>; 16]> = Vec::new();
+        let block_aux: [Value<F>; 16] = self.input[0..16].try_into().unwrap();
+        blocks.push(block_aux);
 
-        // This implementation is for single block input+key, so some values can be hardcoded
+        let block = blocks[0];
 
-        // accumulative_state[12] ^= processed_bytes_count
-        let processed_bytes_count = config
-            .blake2b_table16_chip
-            .new_row_from_value(self.input_size, &mut layouter)?;
-        state[12] = config.blake2b_table16_chip.xor(
-            state[12].clone(),
-            processed_bytes_count.clone(),
-            &mut layouter,
-        );
-        // accumulative_state[13] ^= ctx.processed_bytes_count[1]; This is 0 so we ignore it
-
-        // accumulative_state[14] = !accumulative_state[14]
-        state[14] = config
-            .blake2b_table16_chip
-            .not(state[14].clone(), &mut layouter);
-
-        // Self::_assert_state_is_correct_before_mixing(&state);
-
-        for i in 0..12 {
-            for j in 0..8 {
-                config.blake2b_table16_chip.mix(
-                    Self::ABCD[j][0],
-                    Self::ABCD[j][1],
-                    Self::ABCD[j][2],
-                    Self::ABCD[j][3],
-                    Self::SIGMA[i][2 * j],
-                    Self::SIGMA[i][2 * j + 1],
-                    &mut state,
-                    &current_block_words,
-                    &mut layouter,
-                )?;
-            }
-        }
-
-        for i in 0..8 {
-            global_state[i] = config.blake2b_table16_chip.xor(
-                global_state[i].clone(),
-                state[i].clone(),
-                &mut layouter,
-            );
-            global_state[i] = config.blake2b_table16_chip.xor(
-                global_state[i].clone(),
-                state[i + 8].clone(),
-                &mut layouter,
-            );
-        }
+        self.compress(&mut config, &mut layouter, &iv_constants, &mut global_state, block)?;
 
         for i in 0..8 {
             layouter.constrain_instance(global_state[i].cell(), config.expected_final_state, i)?;
@@ -207,7 +154,7 @@ impl<F: PrimeField> Circuit<F> for Blake2bCircuitShort<F> {
     }
 }
 
-impl<F: PrimeField> Blake2bCircuitShort<F> {
+impl<F: PrimeField, const R: usize> Blake2bCircuit<F, R> {
     const ABCD: [[usize; 4]; 8] = [
         [0, 4, 8, 12],
         [1, 5, 9, 13],
@@ -258,7 +205,7 @@ impl<F: PrimeField> Blake2bCircuitShort<F> {
     }
 }
 
-impl<F: PrimeField> Blake2bCircuitShort<F> {
+impl<F: PrimeField, const R: usize> Blake2bCircuit<F, R> {
     /*fn desired_state_before_mixing() -> [Value<F>; 16] {
         [
             value_for(7640891576939301192u64),
@@ -290,7 +237,71 @@ impl<F: PrimeField> Blake2bCircuitShort<F> {
         });
     }
 
-    pub fn new_for(output_size: Value<F>, input: [Value<F>; 16], input_size: Value<F>) -> Self {
+    fn compress(&self, config: &mut Blake2bConfig<F>, layouter: &mut impl Layouter<F>, iv_constants: &[AssignedCell<F, F>; 8], global_state: &mut [AssignedCell<F, F>; 8], block: [Value<F>; 16]) -> Result<(), Error> {
+        let current_block_words = block.map(|input| {
+            config
+                .blake2b_table16_chip
+                .new_row_from_value(input, layouter)
+                .unwrap()
+        });
+
+        let mut state_vector: Vec<AssignedCell<F, F>> = Vec::new();
+        state_vector.extend_from_slice(global_state);
+        state_vector.extend_from_slice(iv_constants);
+
+        let mut state: [AssignedCell<F, F>; 16] = state_vector.try_into().unwrap();
+
+        // accumulative_state[12] ^= processed_bytes_count
+        let processed_bytes_count = config
+            .blake2b_table16_chip
+            .new_row_from_value(self.input_size, layouter)?;
+        state[12] = config.blake2b_table16_chip.xor(
+            state[12].clone(),
+            processed_bytes_count.clone(),
+            layouter,
+        );
+        // accumulative_state[13] ^= ctx.processed_bytes_count[1]; This is 0 so we ignore it
+
+        //TODO this should only occur in the last block
+        // accumulative_state[14] = !accumulative_state[14]
+        state[14] = config
+            .blake2b_table16_chip
+            .not(state[14].clone(), layouter);
+
+        // Self::_assert_state_is_correct_before_mixing(&state);
+
+        for i in 0..12 {
+            for j in 0..8 {
+                config.blake2b_table16_chip.mix(
+                    Self::ABCD[j][0],
+                    Self::ABCD[j][1],
+                    Self::ABCD[j][2],
+                    Self::ABCD[j][3],
+                    Self::SIGMA[i][2 * j],
+                    Self::SIGMA[i][2 * j + 1],
+                    &mut state,
+                    &current_block_words,
+                    layouter,
+                )?;
+            }
+        }
+
+        for i in 0..8 {
+            global_state[i] = config.blake2b_table16_chip.xor(
+                global_state[i].clone(),
+                state[i].clone(),
+                layouter,
+            );
+            global_state[i] = config.blake2b_table16_chip.xor(
+                global_state[i].clone(),
+                state[i + 8].clone(),
+                layouter,
+            );
+        }
+        Ok(())
+    }
+
+    pub fn new_for(output_size: Value<F>, input: [Value<F>; R], input_size: Value<F>) -> Self {
         Self {
             _ph: PhantomData,
             output_size,
