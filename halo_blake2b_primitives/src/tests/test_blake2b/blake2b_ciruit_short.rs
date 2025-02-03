@@ -233,10 +233,9 @@ impl<F: PrimeField> Blake2bCircuitShort<F> {
         [14, 10, 4, 8, 9, 15, 13, 6, 1, 12, 0, 2, 11, 7, 5, 3],
     ];
 
-    fn _assert_state_is_correct_before_mixing(state: &[AssignedCell<F, F>; 16]) {
-        let desired_state = Self::desired_state_before_mixing();
-        Self::_assert_state_is_correct(state, desired_state);
-    }
+    /*fn _assert_state_is_correct_before_mixing(state: &[AssignedCell<F, F>; 16]) {
+        Self::_assert_state_is_correct(state, Self::desired_state_before_mixing());
+    }*/
 
     fn _assert_state_is_correct(state: &[AssignedCell<F, F>; 16], desired_state: [Value<F>; 16]) {
         for i in 0..16 {
@@ -259,7 +258,7 @@ impl<F: PrimeField> Blake2bCircuitShort<F> {
 }
 
 impl<F: PrimeField> Blake2bCircuitShort<F> {
-    fn desired_state_before_mixing() -> [Value<F>; 16] {
+    /*fn desired_state_before_mixing() -> [Value<F>; 16] {
         [
             value_for(7640891576939301192u64),
             value_for(13503953896175478587u64),
@@ -278,8 +277,9 @@ impl<F: PrimeField> Blake2bCircuitShort<F> {
             value_for(16175846103906665108u64),
             value_for(6620516959819538809u64),
         ]
-    }
+    }*/
 
+    #[allow(dead_code)]
     fn assert_cell_has_value(obtained_cell: AssignedCell<F, F>, expected_value: Value<F>) {
         obtained_cell.value().copied().and_then(|x| {
             expected_value.and_then(|y| {

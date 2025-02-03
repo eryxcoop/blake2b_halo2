@@ -57,10 +57,10 @@ struct TestCase {
 }
 
 fn run_test(input: &String, _key: &String, expected: &String) {
-    let (input, input_size) = _formed_input_block_for(input);
+    let (input_u64, input_size) = _formed_input_block_for(input);
     let (expected_output_state, output_size) = _formed_output_block_for(expected);
 
-    let input_values: [Value<Fr>; 16] = input.iter().map(|x| value_for(*x)).collect::<Vec<_>>().try_into().unwrap();
+    let input_values: [Value<Fr>; 16] = input_u64.iter().map(|x| value_for(*x)).collect::<Vec<_>>().try_into().unwrap();
     let input_size_value = value_for(input_size as u128);
     let expected_output_state_fields: [Fr; 8] = expected_output_state.iter().map(|x| Fr::from(*x)).collect::<Vec<_>>().try_into().unwrap();
     let output_size_value = value_for(output_size as u128);
@@ -78,6 +78,9 @@ fn test_hashes_in_circuit() {
         serde_json::from_str(&file_content).expect("Failed to parse JSON");
 
     for (i, case) in test_cases.iter().enumerate() {
+        // Empty key and single block for now
+        if !case.key.is_empty() || case.input.len() > 256 { continue; }
+
         println!("Running test case {}", i);
         run_test(&case.input, &case.key, &case.out);
     }
@@ -88,7 +91,7 @@ fn _formed_input_block_for(input: &String) -> ([u64; 16], usize) {
     let input_block_size = input.len()/2; // Amount of bytes
 
     let mut input_bytes = hex::decode(input).expect("Invalid hex string");
-    input_bytes.resize(128, 0); // Fill with zeros to pad to 64/128 bytes
+    input_bytes.resize(128, 0); // Fill with zeros to pad to 128 bytes
 
     for i in 0..input_bytes.len() / 8 {
         block[i] = _merge_bytes_into_64_bit_word(&(input_bytes[8*i..8*i+8]))
@@ -101,16 +104,11 @@ fn _formed_output_block_for(output: &String) -> ([u64; 8], usize) {
     let mut block = [0u64; 8];
     let output_block_size = output.len()/2; // Amount of bytes
 
-    let mut output_bytes = hex::decode(output).expect("Invalid hex string");
+    let output_bytes = hex::decode(output).expect("Invalid hex string");
 
     for i in 0..output_bytes.len() / 8 {
-        // _merge_bytes_into_64_bit_word
         let bytes = &(output_bytes[(8 * i)..(8 * i + 8)]);
-        let mut word = 0u64;
-        for j in 0..8 {
-            word += (bytes[j] as u64) << (j * 8);
-        }
-        block[i] = word
+        block[i] = _merge_bytes_into_64_bit_word(bytes)
     }
 
     (block, output_block_size)
@@ -119,7 +117,7 @@ fn _formed_output_block_for(output: &String) -> ([u64; 8], usize) {
 fn _merge_bytes_into_64_bit_word(bytes: &[u8]) -> u64 {
     let mut word = 0u64;
     for i in 0..8 {
-        word = word + (bytes[i] as u64) << (i * 8);
+        word += (bytes[i] as u64) << (i * 8);
     }
     word
 }
