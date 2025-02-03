@@ -11,3 +11,4 @@ serde_json = "1.0.135"
 ff = "0.13"
 halo2_proofs = { git = "https://github.com/input-output-hk/halo2" }
 rand = "0.8"
+hex = "0.4.3"
