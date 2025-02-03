@@ -1,4 +1,5 @@
 use super::*;
+use crate::auxiliar_functions::*;
 use crate::chips::blake2b_table16_chip::Blake2bTable16Chip;
 use halo2_proofs::circuit::{AssignedCell, SimpleFloorPlanner};
 use halo2_proofs::plonk::{Circuit, Fixed, Instance};
