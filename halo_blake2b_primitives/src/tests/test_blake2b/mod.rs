@@ -32,14 +32,14 @@ fn test_blake2b_single_empty_block_negative() {
 
 fn _correct_final_state_for_empty_input() -> [Fr; 8] {
     [
-        Fr::from(241225442164632184u64),
-        Fr::from(8273765786548291270u64),
-        Fr::from(7009669069494759313u64),
-        Fr::from(1825118895109998218u64),
-        Fr::from(6005812539308400338u64),
-        Fr::from(5453945543160269075u64),
-        Fr::from(6176484666232027792u64),
-        Fr::from(14907649232217337813u64),
+        Fr::from(241225442164632184u64),  // 3590142F7026A78
+        Fr::from(8273765786548291270u64), // 72D2522585FDC6C6
+        Fr::from(7009669069494759313u64), // 614758E140472F91
+        Fr::from(1825118895109998218u64), // 19541FF717E2868A
+        Fr::from(6005812539308400338u64), // 5358EEAF31105ED2
+        Fr::from(5453945543160269075u64), // 4BB04E9344648913
+        Fr::from(6176484666232027792u64), // 55B748145B683A90
+        Fr::from(14907649232217337813u64),// CEE29BFE1A706FD5
     ]
 }
 
@@ -57,12 +57,12 @@ struct TestCase {
 }
 
 fn run_test(input: &String, _key: &String, expected: &String) {
-    let (input, input_size) = _formed_input_block_for::<16>(input);
-    let (expected_output_state, output_size) = _formed_input_block_for::<8>(expected);
+    let (input, input_size) = _formed_input_block_for(input);
+    let (expected_output_state, output_size) = _formed_output_block_for(expected);
 
     let input_values: [Value<Fr>; 16] = input.iter().map(|x| value_for(*x)).collect::<Vec<_>>().try_into().unwrap();
     let input_size_value = value_for(input_size as u128);
-    let expected_output_state_fields: [Fr; 16] = expected_output_state.iter().map(|x| Fr::from(*x)).collect::<Vec<_>>().try_into().unwrap();
+    let expected_output_state_fields: [Fr; 8] = expected_output_state.iter().map(|x| Fr::from(*x)).collect::<Vec<_>>().try_into().unwrap();
     let output_size_value = value_for(output_size as u128);
 
     let circuit = Blake2bCircuitShort::new_for(output_size_value, input_values, input_size_value);
@@ -83,18 +83,37 @@ fn test_hashes_in_circuit() {
     }
 }
 
-fn _formed_input_block_for<const T: usize>(input: &String) -> ([u64; T], usize) {
-    let mut block = [0u64; T];
+fn _formed_input_block_for(input: &String) -> ([u64; 16], usize) {
+    let mut block = [0u64; 16];
     let input_block_size = input.len()/2; // Amount of bytes
 
     let mut input_bytes = hex::decode(input).expect("Invalid hex string");
-    input_bytes.resize(T*8, 0); // Fill with zeros to pad to 64/128 bytes
+    input_bytes.resize(128, 0); // Fill with zeros to pad to 64/128 bytes
 
     for i in 0..input_bytes.len() / 8 {
         block[i] = _merge_bytes_into_64_bit_word(&(input_bytes[8*i..8*i+8]))
     }
 
     (block, input_block_size)
+}
+
+fn _formed_output_block_for(output: &String) -> ([u64; 8], usize) {
+    let mut block = [0u64; 8];
+    let output_block_size = output.len()/2; // Amount of bytes
+
+    let mut output_bytes = hex::decode(output).expect("Invalid hex string");
+
+    for i in 0..output_bytes.len() / 8 {
+        // _merge_bytes_into_64_bit_word
+        let bytes = &(output_bytes[(8 * i)..(8 * i + 8)]);
+        let mut word = 0u64;
+        for j in 0..8 {
+            word += (bytes[j] as u64) << (j * 8);
+        }
+        block[i] = word
+    }
+
+    (block, output_block_size)
 }
 
 fn _merge_bytes_into_64_bit_word(bytes: &[u8]) -> u64 {

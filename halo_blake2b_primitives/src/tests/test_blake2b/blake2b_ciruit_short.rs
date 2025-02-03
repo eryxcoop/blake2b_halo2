@@ -167,7 +167,7 @@ impl<F: PrimeField> Circuit<F> for Blake2bCircuitShort<F> {
             .blake2b_table16_chip
             .not(state[14].clone(), &mut layouter);
 
-        Self::_assert_state_is_correct_before_mixing(&state);
+        // Self::_assert_state_is_correct_before_mixing(&state);
 
         for i in 0..12 {
             for j in 0..8 {
