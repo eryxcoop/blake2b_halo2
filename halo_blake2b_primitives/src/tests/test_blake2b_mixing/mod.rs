@@ -32,7 +32,7 @@ fn test_b2b_g_positive() {
         v_c_final,
         v_d_final,
     );
-    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+    let prover = MockProver::run(17, &circuit, vec![vec![Fr::from(0u64)]]).unwrap();
     prover.verify().unwrap();
 }
 

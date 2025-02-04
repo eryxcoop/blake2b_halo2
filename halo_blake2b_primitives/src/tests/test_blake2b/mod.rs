@@ -57,10 +57,18 @@ fn run_test<const BLOCKS: usize>(input: &String, _key: &String, expected: &Strin
     let (input_u64, input_size) = _formed_input_blocks_for::<BLOCKS>(input);
     let (expected_output_state, output_size) = _formed_output_block_for(expected);
 
-    let input_values: [[Value<Fr>; 16]; BLOCKS] = input_u64.iter().map(|x| {
-            x.iter().map(|y| value_for(*y))
-                .collect::<Vec<_>>().try_into().unwrap()
-        }).collect::<Vec<_>>().try_into().unwrap();
+    let input_values: [[Value<Fr>; 16]; BLOCKS] = input_u64
+        .iter()
+        .map(|x| {
+            x.iter()
+                .map(|y| value_for(*y))
+                .collect::<Vec<_>>()
+                .try_into()
+                .unwrap()
+        })
+        .collect::<Vec<_>>()
+        .try_into()
+        .unwrap();
 
     let input_size_value = value_for(input_size as u128);
     let expected_output_state_fields: [Fr; 8] = expected_output_state
@@ -120,13 +128,14 @@ fn _formed_input_blocks_for<const BLOCKS: usize>(input: &String) -> ([[u64; 16];
     let input_size = input.len() / 2; // Amount of bytes
     let mut input_bytes = hex::decode(input).expect("Invalid hex string");
 
-    input_bytes.resize(128*BLOCKS, 0); // Fill with zeros to pad to 128*BLOCKS bytes
+    input_bytes.resize(128 * BLOCKS, 0); // Fill with zeros to pad to 128*BLOCKS bytes
 
     let mut blocks = [[0u64; 16]; BLOCKS];
-    for k in 0..BLOCKS{
+    for k in 0..BLOCKS {
         let mut current_block = [0u64; 16];
         for i in 0..16 {
-            current_block[i] = _merge_bytes_into_64_bit_word(&(input_bytes[128*k + 8 * i..128*k + 8 * i + 8]))
+            current_block[i] =
+                _merge_bytes_into_64_bit_word(&(input_bytes[128 * k + 8 * i..128 * k + 8 * i + 8]))
         }
         blocks[k] = current_block;
     }

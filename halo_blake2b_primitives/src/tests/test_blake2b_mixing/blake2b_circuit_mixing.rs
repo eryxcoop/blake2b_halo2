@@ -44,7 +44,6 @@ impl<F: PrimeField> Circuit<F> for Blake2bMixingCircuit<F> {
         }
     }
 
-    #[allow(unused_variables)]
     fn configure(meta: &mut ConstraintSystem<F>) -> Self::Config {
         let full_number_u64 = meta.advice_column();
         meta.enable_equality(full_number_u64);
@@ -65,7 +64,6 @@ impl<F: PrimeField> Circuit<F> for Blake2bMixingCircuit<F> {
         }
     }
 
-    #[allow(unused_variables)]
     fn synthesize(
         &self,
         mut config: Self::Config,

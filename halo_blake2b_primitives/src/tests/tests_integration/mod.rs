@@ -40,6 +40,6 @@ fn test_positive_chained_operations_2() {
 
 fn _test_many_operations(a: Value<Fr>, b: Value<Fr>, c: Value<Fr>, expected_result: Value<Fr>) {
     let circuit = ManyOperationsCircuit::<Fr>::new_for(a, b, c, expected_result);
-    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+    let prover = MockProver::run(17, &circuit, vec![vec![Fr::from(0u64)]]).unwrap();
     prover.verify().unwrap();
 }
