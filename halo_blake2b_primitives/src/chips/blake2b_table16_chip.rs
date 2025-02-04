@@ -9,6 +9,8 @@ use crate::chips::xor_chip::XorChip;
 use ff::PrimeField;
 use halo2_proofs::circuit::{AssignedCell, Layouter, Value};
 use halo2_proofs::plonk::{Advice, Column, ConstraintSystem};
+use crate::auxiliar_functions::value_for;
+use crate::circuits::blake2b_circuit::Blake2bConfig;
 
 #[derive(Clone, Debug)]
 pub struct Blake2bTable16Chip<F: PrimeField> {
@@ -200,11 +202,174 @@ impl<F: PrimeField> Blake2bTable16Chip<F> {
         Ok(())
     }
 
+    pub fn compress(
+        &mut self,
+        layouter: &mut impl Layouter<F>,
+        iv_constants: &[AssignedCell<F, F>; 8],
+        global_state: &mut [AssignedCell<F, F>; 8],
+        block: [Value<F>; 16],
+        input_size: Value<F>,
+    ) -> Result<(), Error> {
+        let current_block_words =
+            block.map(|input| self.new_row_from_value(input, layouter).unwrap());
+
+        let mut state_vector: Vec<AssignedCell<F, F>> = Vec::new();
+        state_vector.extend_from_slice(global_state);
+        state_vector.extend_from_slice(iv_constants);
+
+        let mut state: [AssignedCell<F, F>; 16] = state_vector.try_into().unwrap();
+
+        // accumulative_state[12] ^= processed_bytes_count
+        let processed_bytes_count = self.new_row_from_value(input_size, layouter)?;
+        state[12] = self.xor(state[12].clone(), processed_bytes_count.clone(), layouter);
+        // accumulative_state[13] ^= ctx.processed_bytes_count[1]; This is 0 so we ignore it
+
+        //TODO this should only occur in the last block
+        // accumulative_state[14] = !accumulative_state[14]
+        state[14] = self.not(state[14].clone(), layouter);
+
+        // Self::_assert_state_is_correct_before_mixing(&state);
+
+        for i in 0..12 {
+            for j in 0..8 {
+                self.mix(
+                    Self::ABCD[j][0],
+                    Self::ABCD[j][1],
+                    Self::ABCD[j][2],
+                    Self::ABCD[j][3],
+                    Self::SIGMA[i][2 * j],
+                    Self::SIGMA[i][2 * j + 1],
+                    &mut state,
+                    &current_block_words,
+                    layouter,
+                )?;
+            }
+        }
+
+        for i in 0..8 {
+            global_state[i] = self.xor(global_state[i].clone(), state[i].clone(), layouter);
+            global_state[i] = self.xor(global_state[i].clone(), state[i + 8].clone(), layouter);
+        }
+        Ok(())
+    }
+
+    pub fn compute_initial_state(&mut self, mut layouter: &mut impl Layouter<F>, constants: [Value<F>; 8], iv_constants: &[AssignedCell<F, F>; 8], init_const_state_0: AssignedCell<F, F>, output_size_constant: AssignedCell<F, F>) -> Result<[AssignedCell<F, F>; 8], Error> {
+        let mut global_state = constants.map(|constant| {
+            self.new_row_from_value(constant, layouter)
+                .unwrap()
+        });
+
+        // Set copy constraints to recently initialized state
+        layouter.assign_region(
+            || "iv copy constraints",
+            |mut region| {
+                for i in 0..8 {
+                    region.constrain_equal(iv_constants[i].cell(), global_state[i].cell())?;
+                }
+                Ok(())
+            },
+        )?;
+
+        // state[0] = state[0] ^ 0x01010000 ^ (key.len() << 8) as u64 ^ outlen as u64;
+        global_state[0] = self.xor(
+            global_state[0].clone(),
+            init_const_state_0.clone(),
+            layouter,
+        );
+        global_state[0] = self.xor(
+            global_state[0].clone(),
+            output_size_constant,
+            layouter,
+        );
+        Ok(global_state)
+    }
+
+    pub fn assign_output_size_to_fixed_cell(mut config: &mut Blake2bConfig<F>, layouter: &mut impl Layouter<F>, output_size: Value<F>) -> Result<AssignedCell<F, F>, Error> {
+        layouter.assign_region(
+            || "output size",
+            |mut region| {
+                region.assign_fixed(|| "output size", config.constants, 9, || output_size)
+            },
+        )
+    }
+
+    pub fn assign_01010000_constant_to_fixed_cell(mut config: &mut Blake2bConfig<F>, layouter: &mut impl Layouter<F>) -> Result<AssignedCell<F, F>, Error> {
+        layouter.assign_region(
+            || "constant",
+            |mut region| {
+                region.assign_fixed(
+                    || "state 0 xor",
+                    config.constants,
+                    8,
+                    || value_for(0x01010000u64),
+                )
+            },
+        )
+    }
+
+    pub fn assign_iv_constants_to_fixed_cells(mut config: &mut Blake2bConfig<F>, mut layouter: &mut impl Layouter<F>, constants: [Value<F>; 8]) -> [AssignedCell<F, F>; 8] {
+        constants
+            .iter()
+            .enumerate()
+            .map(|(i, value)| {
+                layouter
+                    .assign_region(
+                        || "row",
+                        |mut region| {
+                            region.assign_fixed(|| "iv constants", config.constants, i, || *value)
+                        },
+                    )
+                    .unwrap()
+            })
+            .collect::<Vec<AssignedCell<F, F>>>()
+            .try_into()
+            .unwrap()
+    }
+
     fn _populate_lookup_table(&mut self, layouter: &mut impl Layouter<F>) {
         let _ = self.decompose_8_chip.populate_lookup_table(layouter);
     }
 
     fn _populate_xor_lookup_table(&mut self, layouter: &mut impl Layouter<F>) {
         let _ = self.xor_chip.populate_xor_lookup_table(layouter);
+    }
+
+    const ABCD: [[usize; 4]; 8] = [
+        [0, 4, 8, 12],
+        [1, 5, 9, 13],
+        [2, 6, 10, 14],
+        [3, 7, 11, 15],
+        [0, 5, 10, 15],
+        [1, 6, 11, 12],
+        [2, 7, 8, 13],
+        [3, 4, 9, 14],
+    ];
+
+    const SIGMA: [[usize; 16]; 12] = [
+        [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+        [14, 10, 4, 8, 9, 15, 13, 6, 1, 12, 0, 2, 11, 7, 5, 3],
+        [11, 8, 12, 0, 5, 2, 15, 13, 10, 14, 3, 6, 7, 1, 9, 4],
+        [7, 9, 3, 1, 13, 12, 11, 14, 2, 6, 5, 10, 4, 0, 15, 8],
+        [9, 0, 5, 7, 2, 4, 10, 15, 14, 1, 11, 12, 6, 8, 3, 13],
+        [2, 12, 6, 10, 0, 11, 8, 3, 4, 13, 7, 5, 15, 14, 1, 9],
+        [12, 5, 1, 15, 14, 13, 4, 10, 0, 7, 6, 3, 9, 2, 8, 11],
+        [13, 11, 7, 14, 12, 1, 3, 9, 5, 0, 15, 4, 8, 6, 2, 10],
+        [6, 15, 14, 9, 11, 3, 0, 8, 12, 2, 13, 7, 1, 4, 10, 5],
+        [10, 2, 8, 4, 7, 6, 1, 5, 15, 11, 9, 14, 3, 12, 13, 0],
+        [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+        [14, 10, 4, 8, 9, 15, 13, 6, 1, 12, 0, 2, 11, 7, 5, 3],
+    ];
+
+    pub fn iv_constants() -> [Value<F>; 8] {
+        [
+            value_for(0x6A09E667F3BCC908u128),
+            value_for(0xBB67AE8584CAA73Bu128),
+            value_for(0x3C6EF372FE94F82Bu128),
+            value_for(0xA54FF53A5F1D36F1u128),
+            value_for(0x510E527FADE682D1u128),
+            value_for(0x9B05688C2B3E6C1Fu128),
+            value_for(0x1F83D9ABFB41BD6Bu128),
+            value_for(0x5BE0CD19137E2179u128),
+        ]
     }
 }
