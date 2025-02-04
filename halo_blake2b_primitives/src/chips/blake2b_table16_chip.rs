@@ -10,11 +10,13 @@ use crate::chips::xor_chip::XorChip;
 use ff::PrimeField;
 use halo2_proofs::circuit::{AssignedCell, Layouter, Value};
 use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Fixed, Instance};
+use crate::chips::decompose_16_chip::Decompose16Chip;
 
 #[derive(Clone, Debug)]
 pub struct Blake2bTable16Chip<F: PrimeField> {
-    addition_chip: AdditionMod64Chip<F, 8, 10>,
+    addition_chip: AdditionMod64Chip<F, 4, 6>,
     decompose_8_chip: Decompose8Chip<F>,
+    decompose_16_chip: Decompose16Chip<F>,
     generic_limb_rotation_chip: LimbRotationChip<F>,
     rotate_63_chip: Rotate63Chip<F, 8, 9>,
     xor_chip: XorChip<F>,
@@ -29,10 +31,11 @@ impl<F: PrimeField> Blake2bTable16Chip<F> {
         meta: &mut ConstraintSystem<F>,
         full_number_u64: Column<Advice>,
         limbs: [Column<Advice>; 8],
-        carry: Column<Advice>,
+        _carry: Column<Advice>,
     ) -> Self {
         let decompose_8_chip = Decompose8Chip::configure(meta, full_number_u64, limbs);
-        let addition_chip = AdditionMod64Chip::<F, 8, 10>::configure(meta, full_number_u64, carry);
+        let decompose_16_chip = Decompose16Chip::configure(meta, full_number_u64, limbs[0..4].try_into().unwrap());
+        let addition_chip = AdditionMod64Chip::<F, 4, 6>::configure(meta, full_number_u64, limbs[4]);
         let generic_limb_rotation_chip = LimbRotationChip::new();
         let rotate_63_chip = Rotate63Chip::configure(meta, full_number_u64);
         let xor_chip = XorChip::configure(meta, limbs);
@@ -47,6 +50,7 @@ impl<F: PrimeField> Blake2bTable16Chip<F> {
         Self {
             addition_chip,
             decompose_8_chip,
+            decompose_16_chip,
             generic_limb_rotation_chip,
             rotate_63_chip,
             xor_chip,
@@ -57,7 +61,8 @@ impl<F: PrimeField> Blake2bTable16Chip<F> {
     }
 
     pub fn initialize_with(&mut self, layouter: &mut impl Layouter<F>) {
-        self._populate_lookup_table(layouter);
+        self._populate_lookup_table_8(layouter);
+        self._populate_lookup_table_16(layouter);
         self._populate_xor_lookup_table(layouter);
     }
 
@@ -68,7 +73,7 @@ impl<F: PrimeField> Blake2bTable16Chip<F> {
         layouter: &mut impl Layouter<F>,
     ) -> AssignedCell<F, F> {
         self.addition_chip
-            .generate_addition_rows_from_cells(layouter, lhs, rhs, &mut self.decompose_8_chip)
+            .generate_addition_rows_from_cells(layouter, lhs, rhs, &mut self.decompose_16_chip)
             .unwrap()
     }
 
@@ -434,8 +439,12 @@ impl<F: PrimeField> Blake2bTable16Chip<F> {
         self.constraint_public_inputs_to_equal_computation_results(layouter, global_state)
     }
 
-    fn _populate_lookup_table(&mut self, layouter: &mut impl Layouter<F>) {
+    fn _populate_lookup_table_8(&mut self, layouter: &mut impl Layouter<F>) {
         let _ = self.decompose_8_chip.populate_lookup_table(layouter);
+    }
+
+    fn _populate_lookup_table_16(&mut self, layouter: &mut impl Layouter<F>) {
+        let _ = self.decompose_16_chip.populate_lookup_table(layouter);
     }
 
     fn _populate_xor_lookup_table(&mut self, layouter: &mut impl Layouter<F>) {

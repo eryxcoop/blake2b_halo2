@@ -118,10 +118,30 @@ impl<F: PrimeField> Decomposition<F, 4> for Decompose16Chip<F> {
 
     fn generate_row_from_value(
         &mut self,
-        _region: &mut Region<F>,
-        _value: Value<F>,
-        _offset: usize,
+        region: &mut Region<F>,
+        value: Value<F>,
+        offset: usize,
     ) -> Result<AssignedCell<F, F>, Error> {
-        panic!("Not implemented");
+        let _ = self.q_decompose.enable(region, offset);
+        let result = region.assign_advice(|| "full number", self.full_number_u64, offset, || value);
+
+        let limbs: [Value<F>; 4] = (0..4)
+            .map(|i| Self::get_limb_from(value, i))
+            .collect::<Vec<_>>()
+            .try_into()
+            .unwrap();
+
+        for (i, limb) in limbs.iter().enumerate() {
+            let _ = region.assign_advice(|| format!("limb{}", i), self.limbs[i], offset, || *limb);
+        }
+        result
+    }
+
+    fn get_limb_from(value: Value<F>, limb_number: usize) -> Value<F> {
+        value.and_then(|v| {
+            let binding = v.to_repr();
+            let a_bytes = binding.as_ref();
+            Value::known(F::from(a_bytes[2*limb_number] as u64 + 256u64 * a_bytes[2*limb_number+1] as u64))
+        })
     }
 }

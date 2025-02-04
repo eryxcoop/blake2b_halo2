@@ -39,10 +39,16 @@ pub trait Decomposition<F: PrimeField, const T: usize> {
 
     fn generate_row_from_cell(
         &mut self,
-        _region: &mut Region<F>,
-        _cell: AssignedCell<F, F>,
-        _offset: usize,
+        region: &mut Region<F>,
+        cell: AssignedCell<F, F>,
+        offset: usize,
     ) -> Result<AssignedCell<F, F>, Error> {
-        panic!("Not implemented");
+        let value = cell.value().copied();
+
+        let new_cell = self.generate_row_from_value(region, value, offset)?;
+        region.constrain_equal(cell.cell(), new_cell.cell())?;
+        Ok(new_cell)
     }
+
+    fn get_limb_from(value: Value<F>, limb_number: usize) -> Value<F>;
 }
