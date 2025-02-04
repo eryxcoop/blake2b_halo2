@@ -361,7 +361,7 @@ impl<F: PrimeField> Blake2bTable16Chip<F> {
             let bytes_count_for_iteration = Value::known(F::from(128));
             let iteration_value = Value::known(F::from(iteration as u64));
             bytes_count_for_iteration
-                .and_then(|a| iteration_value.and_then(|b| Value::known(a + b)))
+                .and_then(|a| iteration_value.and_then(|b| Value::known(a * (b + F::ONE))))
         }
     }
 
