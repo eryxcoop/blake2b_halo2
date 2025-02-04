@@ -1,5 +1,5 @@
 use ff::{Field, PrimeField};
-use halo2_proofs::circuit::Value;
+use halo2_proofs::circuit::{AssignedCell, Value};
 use halo2_proofs::halo2curves::bn256::Fr;
 
 pub fn trash() -> Value<Fr> {
@@ -131,4 +131,21 @@ pub(crate) fn rotate_right_field_element<F: PrimeField>(
         | ((value_to_rotate as u128) << (64 - rotation_degree));
     // println!("after rotation of {}: {}", rotation_degree, rotated_value as u64);
     F::from(rotated_value as u64)
+}
+
+#[allow(dead_code)]
+fn assert_cell_has_value(obtained_cell: AssignedCell<Fr, Fr>, expected_value: Value<Fr>) {
+    obtained_cell.value().copied().and_then(|x| {
+        expected_value.and_then(|y| {
+            assert_eq!(x, y);
+            Value::<Fr>::unknown()
+        })
+    });
+}
+
+#[allow(dead_code)]
+fn assert_state_is_correct(state: &[AssignedCell<Fr, Fr>; 16], desired_state: [Value<Fr>; 16]) {
+    for i in 0..16 {
+        assert_cell_has_value(state[i].clone(), desired_state[i]);
+    }
 }

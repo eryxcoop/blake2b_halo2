@@ -57,38 +57,17 @@ impl<F: PrimeField, const BLOCKS: usize> Circuit<F> for Blake2bCircuit<F, BLOCKS
         mut config: Self::Config,
         mut layouter: impl Layouter<F>,
     ) -> Result<(), Error> {
-        let output_size = self.output_size;
-        let input_size = self.input_size;
-        let input_blocks = self.input;
-
         config.blake2b_table16_chip.initialize_with(&mut layouter);
         config.blake2b_table16_chip.compute_blake2b_hash_for_inputs(
             &mut layouter,
-            output_size,
-            input_size,
-            input_blocks,
+            self.output_size,
+            self.input_size,
+            self.input,
         )
     }
 }
 
 impl<F: PrimeField, const BLOCKS: usize> Blake2bCircuit<F, BLOCKS> {
-    #[allow(dead_code)]
-    fn assert_cell_has_value(obtained_cell: AssignedCell<F, F>, expected_value: Value<F>) {
-        obtained_cell.value().copied().and_then(|x| {
-            expected_value.and_then(|y| {
-                assert_eq!(x, y);
-                Value::<F>::unknown()
-            })
-        });
-    }
-
-    #[allow(dead_code)]
-    fn assert_state_is_correct(state: &[AssignedCell<F, F>; 16], desired_state: [Value<F>; 16]) {
-        for i in 0..16 {
-            Self::assert_cell_has_value(state[i].clone(), desired_state[i]);
-        }
-    }
-
     pub fn new_for(
         output_size: Value<F>,
         input: [[Value<F>; 16]; BLOCKS],
