@@ -5,7 +5,7 @@ use halo2_proofs::dev::MockProver;
 #[test]
 fn test_blake2b_single_empty_block_positive() {
     let output_size = value_for(64u128);
-    let input = [zero(); 16];
+    let input = [[zero(); 16]; 1];
     let input_size = zero();
     let expected_output_state = _correct_final_state_for_empty_input();
     let circuit = Blake2bCircuit::new_for(output_size, input, input_size);
@@ -17,7 +17,7 @@ fn test_blake2b_single_empty_block_positive() {
 #[should_panic]
 fn test_blake2b_single_empty_block_negative() {
     let output_size = value_for(64u128);
-    let input = [zero(); 16];
+    let input = [[zero(); 16]; 1];
     let input_size = zero();
     let mut expected_output_state = _correct_final_state_for_empty_input();
     expected_output_state[7] = Fr::from(14907649232217337814u64); // Wrong value
@@ -53,16 +53,15 @@ struct TestCase {
     out: String,
 }
 
-fn run_test(input: &String, _key: &String, expected: &String) {
-    let (input_u64, input_size) = _formed_input_block_for(input);
+fn run_test<const BLOCKS: usize>(input: &String, _key: &String, expected: &String) {
+    let (input_u64, input_size) = _formed_input_blocks_for::<BLOCKS>(input);
     let (expected_output_state, output_size) = _formed_output_block_for(expected);
 
-    let input_values: [Value<Fr>; 16] = input_u64
-        .iter()
-        .map(|x| value_for(*x))
-        .collect::<Vec<_>>()
-        .try_into()
-        .unwrap();
+    let input_values: [[Value<Fr>; 16]; BLOCKS] = input_u64.iter().map(|x| {
+            x.iter().map(|y| value_for(*y))
+                .collect::<Vec<_>>().try_into().unwrap()
+        }).collect::<Vec<_>>().try_into().unwrap();
+
     let input_size_value = value_for(input_size as u128);
     let expected_output_state_fields: [Fr; 8] = expected_output_state
         .iter()
@@ -92,7 +91,11 @@ fn test_hashes_in_circuit_one_block() {
         }
 
         println!("Running test case {}", i);
-        run_test(&case.input, &case.key, &case.out);
+        if i < 129 {
+            run_test::<1>(&case.input, &case.key, &case.out);
+        } else {
+            run_test::<2>(&case.input, &case.key, &case.out);
+        }
     }
 }
 
@@ -104,28 +107,31 @@ fn test_hashes_in_circuit_more_than_one_block() {
         serde_json::from_str(&file_content).expect("Failed to parse JSON");
 
     for (i, case) in test_cases.iter().enumerate() {
-        // Empty key and single block for now
         if !case.key.is_empty() || case.input.len() <= 256 {
             continue;
         }
 
         println!("Running test case {}", i);
-        run_test(&case.input, &case.key, &case.out);
+        run_test::<2>(&case.input, &case.key, &case.out);
     }
 }
 
-fn _formed_input_block_for(input: &String) -> ([u64; 16], usize) {
-    let mut block = [0u64; 16];
-    let input_block_size = input.len() / 2; // Amount of bytes
-
+fn _formed_input_blocks_for<const BLOCKS: usize>(input: &String) -> ([[u64; 16]; BLOCKS], usize) {
+    let input_size = input.len() / 2; // Amount of bytes
     let mut input_bytes = hex::decode(input).expect("Invalid hex string");
-    input_bytes.resize(128, 0); // Fill with zeros to pad to 128 bytes
 
-    for i in 0..input_bytes.len() / 8 {
-        block[i] = _merge_bytes_into_64_bit_word(&(input_bytes[8 * i..8 * i + 8]))
+    input_bytes.resize(128*BLOCKS, 0); // Fill with zeros to pad to 128*BLOCKS bytes
+
+    let mut blocks = [[0u64; 16]; BLOCKS];
+    for k in 0..BLOCKS{
+        let mut current_block = [0u64; 16];
+        for i in 0..16 {
+            current_block[i] = _merge_bytes_into_64_bit_word(&(input_bytes[128*k + 8 * i..128*k + 8 * i + 8]))
+        }
+        blocks[k] = current_block;
     }
 
-    (block, input_block_size)
+    (blocks, input_size)
 }
 
 fn _formed_output_block_for(output: &String) -> ([u64; 8], usize) {

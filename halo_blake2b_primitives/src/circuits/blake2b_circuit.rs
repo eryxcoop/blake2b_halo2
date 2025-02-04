@@ -7,7 +7,7 @@ use std::array;
 pub struct Blake2bCircuit<F: Field, const R: usize> {
     _ph: PhantomData<F>,
     output_size: Value<F>,
-    input: [Value<F>; R],
+    input: [[Value<F>; 16]; R],
     input_size: Value<F>,
 }
 
@@ -27,7 +27,7 @@ impl<F: PrimeField, const R: usize> Circuit<F> for Blake2bCircuit<F, R> {
         Self {
             _ph: PhantomData,
             output_size: Value::unknown(),
-            input: [Value::unknown(); R],
+            input: [[Value::unknown(); 16]; R],
             input_size: Value::unknown(),
         }
     }
@@ -77,10 +77,10 @@ impl<F: PrimeField, const R: usize> Circuit<F> for Blake2bCircuit<F, R> {
         let mut global_state = config.blake2b_table16_chip.compute_initial_state(&mut layouter,
                                                        constants, &iv_constants, init_const_state_0, output_size_constant)?;
 
-        let blocks_quantity: usize = R / 16;
+        let blocks_quantity: usize = R;
         let mut processed_bytes_count = Value::known(F::ZERO);
         for i in 0..blocks_quantity {
-            let block = self.input[i * 16..(i + 1) * 16].try_into().unwrap();
+            let block = self.input[i];
             let is_last_block = i == blocks_quantity - 1;
 
             if is_last_block {
@@ -131,7 +131,7 @@ impl<F: PrimeField, const R: usize> Blake2bCircuit<F, R> {
         });
     }
 
-    pub fn new_for(output_size: Value<F>, input: [Value<F>; R], input_size: Value<F>) -> Self {
+    pub fn new_for(output_size: Value<F>, input: [[Value<F>; 16]; R], input_size: Value<F>) -> Self {
         Self {
             _ph: PhantomData,
             output_size,
