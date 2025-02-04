@@ -40,10 +40,7 @@ impl<F: PrimeField, const BLOCKS: usize> Circuit<F> for Blake2bCircuit<F, BLOCKS
             meta.enable_equality(limb);
         }
 
-        let carry = meta.advice_column();
-
-        let blake2b_table16_chip =
-            Blake2bTable16Chip::configure(meta, full_number_u64, limbs, carry);
+        let blake2b_table16_chip = Blake2bTable16Chip::configure(meta, full_number_u64, limbs);
 
         Self::Config {
             _ph: PhantomData,

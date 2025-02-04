@@ -141,7 +141,9 @@ impl<F: PrimeField> Decomposition<F, 4> for Decompose16Chip<F> {
         value.and_then(|v| {
             let binding = v.to_repr();
             let a_bytes = binding.as_ref();
-            Value::known(F::from(a_bytes[2*limb_number] as u64 + 256u64 * a_bytes[2*limb_number+1] as u64))
+            Value::known(F::from(
+                a_bytes[2 * limb_number] as u64 + 256u64 * a_bytes[2 * limb_number + 1] as u64,
+            ))
         })
     }
 }

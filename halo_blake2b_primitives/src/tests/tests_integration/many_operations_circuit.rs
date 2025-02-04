@@ -54,9 +54,7 @@ impl<F: PrimeField> Circuit<F> for ManyOperationsCircuit<F> {
             meta.enable_equality(limb);
         }
 
-        let carry = meta.advice_column();
-
-        let blake2b_chip = Blake2bTable16Chip::configure(meta, full_number_u64, limbs, carry);
+        let blake2b_chip = Blake2bTable16Chip::configure(meta, full_number_u64, limbs);
 
         Self::Config {
             _ph: PhantomData,

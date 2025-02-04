@@ -145,4 +145,3 @@ impl<F: PrimeField> Decomposition<F, 8> for Decompose8Chip<F> {
         })
     }
 }
-
