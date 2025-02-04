@@ -67,12 +67,11 @@ impl<F: PrimeField> LimbRotationChip<F> {
                 let input_row = decompose_chip.generate_row_from_cell(&mut region, cell.clone(), 0)?;
                 let result_row = decompose_chip.generate_row_from_value_and_keep_row(&mut region, result_value, 1)?;
 
-                // TODO: tests fail when this is active, NEED FIX
-                /*for i in 0..7 {
-                    let top_cell = input_row[i].cell();
-                    let bottom_cell = result_row[(i + limbs_to_rotate_to_the_right) % 8].cell();
+                for i in 0..8 {
+                    let top_cell = input_row[i + 1].cell();
+                    let bottom_cell = result_row[((i - limbs_to_rotate_to_the_right) % 8) + 1].cell();
                     region.constrain_equal(top_cell, bottom_cell)?;
-                }*/
+                }
 
                 let result_cell = result_row[0].clone();
                 Ok(result_cell)
