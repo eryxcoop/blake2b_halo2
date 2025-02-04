@@ -79,7 +79,7 @@ fn run_test(input: &String, _key: &String, expected: &String) {
 }
 
 #[test]
-fn test_hashes_in_circuit() {
+fn test_hashes_in_circuit_one_block() {
     let file_content = std::fs::read_to_string("../blake2b_implementation_rust/test_vector.json")
         .expect("Failed to read file");
     let test_cases: Vec<TestCase> =
@@ -88,6 +88,24 @@ fn test_hashes_in_circuit() {
     for (i, case) in test_cases.iter().enumerate() {
         // Empty key and single block for now
         if !case.key.is_empty() || case.input.len() > 256 {
+            continue;
+        }
+
+        println!("Running test case {}", i);
+        run_test(&case.input, &case.key, &case.out);
+    }
+}
+
+#[test]
+fn test_hashes_in_circuit_more_than_one_block() {
+    let file_content = std::fs::read_to_string("../blake2b_implementation_rust/test_vector.json")
+        .expect("Failed to read file");
+    let test_cases: Vec<TestCase> =
+        serde_json::from_str(&file_content).expect("Failed to parse JSON");
+
+    for (i, case) in test_cases.iter().enumerate() {
+        // Empty key and single block for now
+        if !case.key.is_empty() || case.input.len() <= 256 {
             continue;
         }
 

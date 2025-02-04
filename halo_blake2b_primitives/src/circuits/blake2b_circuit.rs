@@ -1,5 +1,4 @@
 use super::*;
-use crate::auxiliar_functions::*;
 use crate::chips::blake2b_table16_chip::Blake2bTable16Chip;
 use halo2_proofs::circuit::{AssignedCell, SimpleFloorPlanner};
 use halo2_proofs::plonk::{Circuit, Fixed, Instance};
@@ -78,20 +77,33 @@ impl<F: PrimeField, const R: usize> Circuit<F> for Blake2bCircuit<F, R> {
         let mut global_state = config.blake2b_table16_chip.compute_initial_state(&mut layouter,
                                                        constants, &iv_constants, init_const_state_0, output_size_constant)?;
 
-        //TODO split input in blocks and call compress for each block
-        let mut blocks: Vec<[Value<F>; 16]> = Vec::new();
-        let block_aux: [Value<F>; 16] = self.input[0..16].try_into().unwrap();
-        blocks.push(block_aux);
+        let blocks_quantity: usize = R / 16;
+        let mut processed_bytes_count = Value::known(F::ZERO);
+        for i in 0..blocks_quantity {
+            let block = self.input[i * 16..(i + 1) * 16].try_into().unwrap();
+            let is_last_block = i == blocks_quantity - 1;
 
-        let block = blocks[0];
-
-        config.blake2b_table16_chip.compress(
-            &mut layouter,
-            &iv_constants,
-            &mut global_state,
-            block,
-            self.input_size,
-        )?;
+            if is_last_block {
+                processed_bytes_count = self.input_size;
+            } else {
+                let bytes_count_for_iteration = Value::known(F::from(128));
+                processed_bytes_count = processed_bytes_count.and_then(|a| {
+                    bytes_count_for_iteration.and_then( |b| {
+                        let value = a + b;
+                        println!("processed_bytes_count: {:?}", auxiliar_functions::convert_to_u64(value));
+                        Value::known(value)
+                    })
+                });
+            }
+            config.blake2b_table16_chip.compress(
+                &mut layouter,
+                &iv_constants,
+                &mut global_state,
+                block,
+                processed_bytes_count,
+                is_last_block,
+            )?;
+        }
 
         for i in 0..8 {
             layouter.constrain_instance(global_state[i].cell(), config.expected_final_state, i)?;

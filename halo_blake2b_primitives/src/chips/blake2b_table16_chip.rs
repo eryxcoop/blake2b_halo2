@@ -208,7 +208,8 @@ impl<F: PrimeField> Blake2bTable16Chip<F> {
         iv_constants: &[AssignedCell<F, F>; 8],
         global_state: &mut [AssignedCell<F, F>; 8],
         block: [Value<F>; 16],
-        input_size: Value<F>,
+        processed_bytes_count: Value<F>,
+        is_last_block: bool,
     ) -> Result<(), Error> {
         let current_block_words =
             block.map(|input| self.new_row_from_value(input, layouter).unwrap());
@@ -220,13 +221,13 @@ impl<F: PrimeField> Blake2bTable16Chip<F> {
         let mut state: [AssignedCell<F, F>; 16] = state_vector.try_into().unwrap();
 
         // accumulative_state[12] ^= processed_bytes_count
-        let processed_bytes_count = self.new_row_from_value(input_size, layouter)?;
-        state[12] = self.xor(state[12].clone(), processed_bytes_count.clone(), layouter);
+        let processed_bytes_count_cell = self.new_row_from_value(processed_bytes_count, layouter)?;
+        state[12] = self.xor(state[12].clone(), processed_bytes_count_cell.clone(), layouter);
         // accumulative_state[13] ^= ctx.processed_bytes_count[1]; This is 0 so we ignore it
 
-        //TODO this should only occur in the last block
-        // accumulative_state[14] = !accumulative_state[14]
-        state[14] = self.not(state[14].clone(), layouter);
+        if is_last_block {
+            state[14] = self.not(state[14].clone(), layouter);
+        }
 
         // Self::_assert_state_is_correct_before_mixing(&state);
 
@@ -253,7 +254,7 @@ impl<F: PrimeField> Blake2bTable16Chip<F> {
         Ok(())
     }
 
-    pub fn compute_initial_state(&mut self, mut layouter: &mut impl Layouter<F>, constants: [Value<F>; 8], iv_constants: &[AssignedCell<F, F>; 8], init_const_state_0: AssignedCell<F, F>, output_size_constant: AssignedCell<F, F>) -> Result<[AssignedCell<F, F>; 8], Error> {
+    pub fn compute_initial_state(&mut self, layouter: &mut impl Layouter<F>, constants: [Value<F>; 8], iv_constants: &[AssignedCell<F, F>; 8], init_const_state_0: AssignedCell<F, F>, output_size_constant: AssignedCell<F, F>) -> Result<[AssignedCell<F, F>; 8], Error> {
         let mut global_state = constants.map(|constant| {
             self.new_row_from_value(constant, layouter)
                 .unwrap()
@@ -284,7 +285,7 @@ impl<F: PrimeField> Blake2bTable16Chip<F> {
         Ok(global_state)
     }
 
-    pub fn assign_output_size_to_fixed_cell(mut config: &mut Blake2bConfig<F>, layouter: &mut impl Layouter<F>, output_size: Value<F>) -> Result<AssignedCell<F, F>, Error> {
+    pub fn assign_output_size_to_fixed_cell(config: &mut Blake2bConfig<F>, layouter: &mut impl Layouter<F>, output_size: Value<F>) -> Result<AssignedCell<F, F>, Error> {
         layouter.assign_region(
             || "output size",
             |mut region| {
@@ -293,7 +294,7 @@ impl<F: PrimeField> Blake2bTable16Chip<F> {
         )
     }
 
-    pub fn assign_01010000_constant_to_fixed_cell(mut config: &mut Blake2bConfig<F>, layouter: &mut impl Layouter<F>) -> Result<AssignedCell<F, F>, Error> {
+    pub fn assign_01010000_constant_to_fixed_cell(config: &mut Blake2bConfig<F>, layouter: &mut impl Layouter<F>) -> Result<AssignedCell<F, F>, Error> {
         layouter.assign_region(
             || "constant",
             |mut region| {
@@ -307,7 +308,7 @@ impl<F: PrimeField> Blake2bTable16Chip<F> {
         )
     }
 
-    pub fn assign_iv_constants_to_fixed_cells(mut config: &mut Blake2bConfig<F>, mut layouter: &mut impl Layouter<F>, constants: [Value<F>; 8]) -> [AssignedCell<F, F>; 8] {
+    pub fn assign_iv_constants_to_fixed_cells(config: &mut Blake2bConfig<F>, layouter: &mut impl Layouter<F>, constants: [Value<F>; 8]) -> [AssignedCell<F, F>; 8] {
         constants
             .iter()
             .enumerate()
