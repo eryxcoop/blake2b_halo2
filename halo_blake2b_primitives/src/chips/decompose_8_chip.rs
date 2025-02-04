@@ -122,8 +122,33 @@ impl<F: PrimeField> Decomposition<F, 8> for Decompose8Chip<F> {
         value: Value<F>,
         offset: usize,
     ) -> Result<AssignedCell<F, F>, Error> {
+        let full_number_cell = self.generate_row_from_value_and_keep_row(region, value, offset)?[0].clone();
+        Ok(full_number_cell)
+    }
+
+    fn generate_row_from_cell(
+        &mut self,
+        region: &mut Region<F>,
+        cell: AssignedCell<F, F>,
+        offset: usize,
+    ) -> Result<Vec<AssignedCell<F, F>>, Error> {
+        let value = cell.value().copied();
+
+        let new_cells = self.generate_row_from_value_and_keep_row(region, value, offset)?;
+        region.constrain_equal(cell.cell(), new_cells[0].cell())?;
+        Ok(new_cells)
+    }
+
+    fn generate_row_from_value_and_keep_row(
+        &mut self,
+        region: &mut Region<F>,
+        value: Value<F>,
+        offset: usize,
+    ) -> Result<Vec<AssignedCell<F, F>>, Error> {
         let _ = self.q_decompose.enable(region, offset);
-        let result = region.assign_advice(|| "full number", self.full_number_u64, offset, || value);
+        let full_number_cell = region.assign_advice(|| "full number", self.full_number_u64, offset, || value)?;
+
+        let mut result = vec![full_number_cell];
 
         let limbs: [Value<F>; 8] = (0..8)
             .map(|i| Self::get_limb_from(value, i))
@@ -132,22 +157,11 @@ impl<F: PrimeField> Decomposition<F, 8> for Decompose8Chip<F> {
             .unwrap();
 
         for (i, limb) in limbs.iter().enumerate() {
-            let _ = region.assign_advice(|| format!("limb{}", i), self.limbs[i], offset, || *limb);
+            let limb_cell = region.assign_advice(|| format!("limb{}", i), self.limbs[i], offset, || *limb)?;
+            result.push(limb_cell);
         }
-        result
-    }
 
-    fn generate_row_from_cell(
-        &mut self,
-        region: &mut Region<F>,
-        cell: AssignedCell<F, F>,
-        offset: usize,
-    ) -> Result<AssignedCell<F, F>, Error> {
-        let value = cell.value().copied();
-
-        let new_cell = self.generate_row_from_value(region, value, offset)?;
-        region.constrain_equal(cell.cell(), new_cell.cell())?;
-        Ok(new_cell)
+        Ok(result)
     }
 }
 
