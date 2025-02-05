@@ -400,7 +400,7 @@ impl<F: PrimeField> Blake2bChip<F> {
         input_size: Value<F>,
         input_blocks: [[Value<F>; 16]; BLOCKS],
         iv_constants: &[AssignedCell<F, F>; 8],
-        mut global_state: &mut [AssignedCell<F, F>; 8],
+        global_state: &mut [AssignedCell<F, F>; 8],
     ) -> Result<(), Error> {
         for i in 0..BLOCKS {
             let is_last_block = i == BLOCKS - 1;
@@ -413,7 +413,7 @@ impl<F: PrimeField> Blake2bChip<F> {
             self.compress(
                 layouter,
                 iv_constants,
-                &mut global_state,
+                global_state,
                 input_blocks[i],
                 processed_bytes_count,
                 is_last_block,
