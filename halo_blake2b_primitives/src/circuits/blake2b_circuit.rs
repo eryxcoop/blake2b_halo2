@@ -2,7 +2,19 @@ use super::*;
 use halo2_proofs::circuit::SimpleFloorPlanner;
 use halo2_proofs::plonk::Circuit;
 use std::array;
-use crate::chips::blake2b_implementations::blake2b_table16_chip::Blake2bTable16Chip;
+
+cfg_if::cfg_if! {
+    if #[cfg(feature = "sum_with_8_limbs")] {
+        use crate::chips::blake2b_implementations::blake2b_chip_sum_with_8_limbs::Blake2bChip_SumWith8Limbs;
+        type Blake2bChip<F> = Blake2bChip_SumWith8Limbs<F>;
+    } else if #[cfg(feature = "sum_with_4_limbs")] {
+        use crate::chips::blake2b_implementations::blake2b_chip_sum_with_4_limbs::Blake2bChip_SumWith4Limbs;
+        type Blake2bChip<F> = Blake2bChip_SumWith4Limbs<F>;
+    } else {
+        use crate::chips::blake2b_implementations::blake2b_chip_sum_with_8_limbs::Blake2bChip_SumWith8Limbs;
+        type Blake2bChip<F> = Blake2bChip_SumWith8Limbs<F>;
+    }
+}
 
 pub struct Blake2bCircuit<F: Field, const BLOCKS: usize> {
     _ph: PhantomData<F>,
@@ -14,7 +26,7 @@ pub struct Blake2bCircuit<F: Field, const BLOCKS: usize> {
 #[derive(Clone)]
 pub struct Blake2bConfig<F: PrimeField> {
     _ph: PhantomData<F>,
-    blake2b_table16_chip: Blake2bTable16Chip<F>,
+    blake2b_table16_chip: Blake2bChip<F>,
 }
 
 impl<F: PrimeField, const BLOCKS: usize> Circuit<F> for Blake2bCircuit<F, BLOCKS> {
@@ -41,7 +53,7 @@ impl<F: PrimeField, const BLOCKS: usize> Circuit<F> for Blake2bCircuit<F, BLOCKS
         }
 
         let blake2b_table16_chip =
-            Blake2bTable16Chip::configure(meta, full_number_u64, limbs);
+            Blake2bChip::configure(meta, full_number_u64, limbs);
 
         Self::Config {
             _ph: PhantomData,

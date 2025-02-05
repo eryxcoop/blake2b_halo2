@@ -2,7 +2,7 @@ use super::*;
 use halo2_proofs::circuit::{AssignedCell, SimpleFloorPlanner};
 use halo2_proofs::plonk::Circuit;
 use std::array;
-use crate::chips::blake2b_implementations::blake2b_table16_chip::Blake2bTable16Chip;
+use crate::chips::blake2b_implementations::blake2b_chip_sum_with_8_limbs::Blake2bChip_SumWith8Limbs;
 
 pub struct Blake2bMixingCircuit<F: Field> {
     _ph: PhantomData<F>,
@@ -21,7 +21,7 @@ pub struct Blake2bMixingCircuit<F: Field> {
 #[derive(Clone)]
 pub struct Blake2bMixingConfig<F: PrimeField> {
     _ph: PhantomData<F>,
-    blake2b_table16_chip: Blake2bTable16Chip<F>,
+    blake2b_table16_chip: Blake2bChip_SumWith8Limbs<F>,
 }
 
 impl<F: PrimeField> Circuit<F> for Blake2bMixingCircuit<F> {
@@ -54,7 +54,7 @@ impl<F: PrimeField> Circuit<F> for Blake2bMixingCircuit<F> {
         }
 
         let blake2b_table16_chip =
-            Blake2bTable16Chip::configure(meta, full_number_u64, limbs);
+            Blake2bChip_SumWith8Limbs::configure(meta, full_number_u64, limbs);
 
         Self::Config {
             _ph: PhantomData,

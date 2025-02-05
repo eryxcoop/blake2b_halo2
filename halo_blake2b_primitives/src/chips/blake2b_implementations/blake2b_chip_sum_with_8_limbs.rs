@@ -12,7 +12,7 @@ use halo2_proofs::circuit::{AssignedCell, Layouter, Value};
 use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Fixed, Instance};
 
 #[derive(Clone, Debug)]
-pub struct Blake2bTable16Chip<F: PrimeField> {
+pub struct Blake2bChip_SumWith8Limbs<F: PrimeField> {
     addition_chip: AdditionMod64Chip<F, 8, 10>,
     decompose_8_chip: Decompose8Chip<F>,
     generic_limb_rotation_chip: LimbRotationChip<F>,
@@ -24,7 +24,7 @@ pub struct Blake2bTable16Chip<F: PrimeField> {
     expected_final_state: Column<Instance>,
 }
 
-impl<F: PrimeField> Blake2bTable16Chip<F> {
+impl<F: PrimeField> Blake2bChip_SumWith8Limbs<F> {
     pub fn configure(
         meta: &mut ConstraintSystem<F>,
         full_number_u64: Column<Advice>,
@@ -367,7 +367,7 @@ impl<F: PrimeField> Blake2bTable16Chip<F> {
             let is_last_block = i == BLOCKS - 1;
 
             let processed_bytes_count =
-                Blake2bTable16Chip::compute_processed_bytes_count_value_for_iteration(
+                Blake2bChip_SumWith8Limbs::compute_processed_bytes_count_value_for_iteration(
                     i,
                     is_last_block,
                     input_size,
