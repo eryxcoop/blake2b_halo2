@@ -35,7 +35,7 @@ impl<F: PrimeField> LimbRotationChip<F> {
                     .populate_row_from_values(&mut region, trace[1].to_vec(), 1)
                     .unwrap();
 
-                for i in 0..7 {
+                for i in 0..8 {
                     let top_cell = first_row[i].cell();
                     let bottom_cell = second_row[(i + limb_rotations_right) % 8].cell();
                     region.constrain_equal(top_cell, bottom_cell)?;
