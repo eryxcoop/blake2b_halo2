@@ -74,30 +74,16 @@ impl<F: PrimeField> Circuit<F> for ManyOperationsCircuit<F> {
         // TODO ver que hacemos con esto
         config.blake2b_chip.initialize_with(&mut layouter);
 
-        let a = config
-            .blake2b_chip
-            .new_row_from_value(self.a, &mut layouter)?;
-        let b = config
-            .blake2b_chip
-            .new_row_from_value(self.b, &mut layouter)?;
-        let c = config
-            .blake2b_chip
-            .new_row_from_value(self.c, &mut layouter)?;
+        let a = config.blake2b_chip.new_row_from_value(self.a, &mut layouter)?;
+        let b = config.blake2b_chip.new_row_from_value(self.b, &mut layouter)?;
+        let c = config.blake2b_chip.new_row_from_value(self.c, &mut layouter)?;
 
         let addition_result = config.blake2b_chip.add(a, b, &mut layouter);
         let xor_result = config.blake2b_chip.xor(addition_result, c, &mut layouter);
-        let rotate63_result = config
-            .blake2b_chip
-            .rotate_right_63(xor_result, &mut layouter);
-        let rotate16_result = config
-            .blake2b_chip
-            .rotate_right_16(rotate63_result, &mut layouter);
-        let rotate24_result = config
-            .blake2b_chip
-            .rotate_right_24(rotate16_result, &mut layouter);
-        let rotate32_result = config
-            .blake2b_chip
-            .rotate_right_32(rotate24_result, &mut layouter);
+        let rotate63_result = config.blake2b_chip.rotate_right_63(xor_result, &mut layouter);
+        let rotate16_result = config.blake2b_chip.rotate_right_16(rotate63_result, &mut layouter);
+        let rotate24_result = config.blake2b_chip.rotate_right_24(rotate16_result, &mut layouter);
+        let rotate32_result = config.blake2b_chip.rotate_right_32(rotate24_result, &mut layouter);
 
         rotate32_result.value().cloned().and_then(|x| {
             self.expected_result.and_then(|y| {

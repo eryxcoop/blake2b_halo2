@@ -59,13 +59,9 @@ impl<F: PrimeField> Circuit<F> for Rotation24Circuit<F> {
         mut config: Self::Config,
         mut layouter: impl Layouter<F>,
     ) -> Result<(), Error> {
-        config
-            .decompose_16_chip
-            .populate_lookup_table(&mut layouter)?;
+        config.decompose_16_chip.populate_lookup_table(&mut layouter)?;
 
-        config
-            .rotation_24_chip
-            .populate_lookup_table8(&mut layouter);
+        config.rotation_24_chip.populate_lookup_table8(&mut layouter);
 
         config.rotation_24_chip.assign_rotation_rows(
             &mut layouter,

@@ -59,24 +59,14 @@ fn run_test<const BLOCKS: usize>(input: &String, _key: &String, expected: &Strin
 
     let input_values: [[Value<Fr>; 16]; BLOCKS] = input_u64
         .iter()
-        .map(|x| {
-            x.iter()
-                .map(|y| value_for(*y))
-                .collect::<Vec<_>>()
-                .try_into()
-                .unwrap()
-        })
+        .map(|x| x.iter().map(|y| value_for(*y)).collect::<Vec<_>>().try_into().unwrap())
         .collect::<Vec<_>>()
         .try_into()
         .unwrap();
 
     let input_size_value = value_for(input_size as u128);
-    let expected_output_state_fields: [Fr; 8] = expected_output_state
-        .iter()
-        .map(|x| Fr::from(*x))
-        .collect::<Vec<_>>()
-        .try_into()
-        .unwrap();
+    let expected_output_state_fields: [Fr; 8] =
+        expected_output_state.iter().map(|x| Fr::from(*x)).collect::<Vec<_>>().try_into().unwrap();
     let output_size_value = value_for(output_size as u128);
 
     let circuit = Blake2bCircuit::new_for(output_size_value, input_values, input_size_value);

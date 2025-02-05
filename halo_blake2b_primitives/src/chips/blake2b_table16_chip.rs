@@ -140,10 +140,7 @@ impl<F: PrimeField> Blake2bTable16Chip<F> {
     ) -> Result<AssignedCell<F, F>, Error> {
         layouter.assign_region(
             || "row",
-            |mut region| {
-                self.decompose_8_chip
-                    .generate_row_from_value(&mut region, value, 0)
-            },
+            |mut region| self.decompose_8_chip.generate_row_from_value(&mut region, value, 0),
         )
     }
 
@@ -233,11 +230,7 @@ impl<F: PrimeField> Blake2bTable16Chip<F> {
         // accumulative_state[12] ^= processed_bytes_count
         let processed_bytes_count_cell =
             self.new_row_from_value(processed_bytes_count, layouter)?;
-        state[12] = self.xor(
-            state[12].clone(),
-            processed_bytes_count_cell.clone(),
-            layouter,
-        );
+        state[12] = self.xor(state[12].clone(), processed_bytes_count_cell.clone(), layouter);
         // accumulative_state[13] ^= ctx.processed_bytes_count[1]; This is 0 so we ignore it
 
         if is_last_block {
@@ -291,11 +284,7 @@ impl<F: PrimeField> Blake2bTable16Chip<F> {
         )?;
 
         // state[0] = state[0] ^ 0x01010000 ^ (key.len() << 8) as u64 ^ outlen as u64;
-        global_state[0] = self.xor(
-            global_state[0].clone(),
-            init_const_state_0.clone(),
-            layouter,
-        );
+        global_state[0] = self.xor(global_state[0].clone(), init_const_state_0.clone(), layouter);
         global_state[0] = self.xor(global_state[0].clone(), output_size_constant, layouter);
         Ok(global_state)
     }

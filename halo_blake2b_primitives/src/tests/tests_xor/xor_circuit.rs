@@ -51,9 +51,7 @@ impl<F: PrimeField> Circuit<F> for XorCircuit<F> {
         mut config: Self::Config,
         mut layouter: impl Layouter<F>,
     ) -> Result<(), Error> {
-        config
-            .decompose_8_chip
-            .populate_lookup_table(&mut layouter)?;
+        config.decompose_8_chip.populate_lookup_table(&mut layouter)?;
 
         config.xor_chip.populate_xor_lookup_table(&mut layouter)?;
         config.xor_chip.populate_xor_region(

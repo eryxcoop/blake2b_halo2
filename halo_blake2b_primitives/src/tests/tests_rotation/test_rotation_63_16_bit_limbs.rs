@@ -33,8 +33,5 @@ fn test_badly_decomposed_rotate_right_63() {
 }
 
 fn _valid_rotation_63_trace() -> [[Value<Fr>; 5]; 2] {
-    [
-        [one(), one(), zero(), zero(), zero()],
-        [one() + one(), one() + one(), zero(), zero(), zero()],
-    ]
+    [[one(), one(), zero(), zero(), zero()], [one() + one(), one() + one(), zero(), zero(), zero()]]
 }

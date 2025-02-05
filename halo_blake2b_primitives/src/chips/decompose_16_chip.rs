@@ -23,10 +23,8 @@ impl<F: PrimeField> Decomposition<F, 4> for Decompose16Chip<F> {
         meta.create_gate("decompose in 16bit words", |meta| {
             let q_decompose = meta.query_selector(q_decompose);
             let full_number = meta.query_advice(full_number_u64, Rotation::cur());
-            let limbs: Vec<Expression<F>> = limbs
-                .iter()
-                .map(|column| meta.query_advice(*column, Rotation::cur()))
-                .collect();
+            let limbs: Vec<Expression<F>> =
+                limbs.iter().map(|column| meta.query_advice(*column, Rotation::cur())).collect();
             vec![
                 q_decompose
                     * (full_number
@@ -58,18 +56,10 @@ impl<F: PrimeField> Decomposition<F, 4> for Decompose16Chip<F> {
     ) -> Option<Vec<AssignedCell<F, F>>> {
         let _ = self.q_decompose.enable(region, offset);
         let _ = region.assign_advice(|| "full number", self.full_number_u64, offset, || row[0]);
-        let limb_0 = region
-            .assign_advice(|| "limb0", self.limbs[0], offset, || row[1])
-            .ok()?;
-        let limb_1 = region
-            .assign_advice(|| "limb1", self.limbs[1], offset, || row[2])
-            .ok()?;
-        let limb_2 = region
-            .assign_advice(|| "limb2", self.limbs[2], offset, || row[3])
-            .ok()?;
-        let limb_3 = region
-            .assign_advice(|| "limb3", self.limbs[3], offset, || row[4])
-            .ok()?;
+        let limb_0 = region.assign_advice(|| "limb0", self.limbs[0], offset, || row[1]).ok()?;
+        let limb_1 = region.assign_advice(|| "limb1", self.limbs[1], offset, || row[2]).ok()?;
+        let limb_2 = region.assign_advice(|| "limb2", self.limbs[2], offset, || row[3]).ok()?;
+        let limb_3 = region.assign_advice(|| "limb3", self.limbs[3], offset, || row[4]).ok()?;
 
         Some(vec![limb_0, limb_1, limb_2, limb_3])
     }

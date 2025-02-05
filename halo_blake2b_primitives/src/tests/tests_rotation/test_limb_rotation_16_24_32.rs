@@ -7,12 +7,10 @@ use rand::Rng;
 
 #[test]
 fn test_positive_rotate_right_32() {
-    let first_row: [Value<Fr>; 9] = generate_row_8bits((1u64 << 32) - 1u64)[0..9]
-        .try_into()
-        .unwrap();
-    let second_row: [Value<Fr>; 9] = generate_row_8bits((1u128 << 64) - (1u128 << 32))[0..9]
-        .try_into()
-        .unwrap();
+    let first_row: [Value<Fr>; 9] =
+        generate_row_8bits((1u64 << 32) - 1u64)[0..9].try_into().unwrap();
+    let second_row: [Value<Fr>; 9] =
+        generate_row_8bits((1u128 << 64) - (1u128 << 32))[0..9].try_into().unwrap();
     let valid_rotation_32_trace = [first_row, second_row];
 
     let circuit = LimbRotationCircuit::<Fr, 32>::new_for_trace(valid_rotation_32_trace);
@@ -28,9 +26,7 @@ fn test_positive_random_rotate_right_32() {
     let pow32 = 1u64 << 32;
     let expected_result = ((n % pow32) << 32) + (n / pow32);
     let first_row: [Value<Fr>; 9] = generate_row_8bits(n)[0..9].try_into().unwrap();
-    let second_row: [Value<Fr>; 9] = generate_row_8bits(expected_result)[0..9]
-        .try_into()
-        .unwrap();
+    let second_row: [Value<Fr>; 9] = generate_row_8bits(expected_result)[0..9].try_into().unwrap();
     let valid_rotation_32_trace = [first_row, second_row];
 
     let circuit = LimbRotationCircuit::<Fr, 32>::new_for_trace(valid_rotation_32_trace);
@@ -42,12 +38,10 @@ fn test_positive_random_rotate_right_32() {
 #[test]
 #[should_panic]
 fn test_negative_rotate_right_32() {
-    let first_row: [Value<Fr>; 9] = generate_row_8bits((1u64 << 32) - 1u64)[0..9]
-        .try_into()
-        .unwrap();
-    let second_row: [Value<Fr>; 9] = generate_row_8bits((1u128 << 64) - 1)[0..9]
-        .try_into()
-        .unwrap();
+    let first_row: [Value<Fr>; 9] =
+        generate_row_8bits((1u64 << 32) - 1u64)[0..9].try_into().unwrap();
+    let second_row: [Value<Fr>; 9] =
+        generate_row_8bits((1u128 << 64) - 1)[0..9].try_into().unwrap();
     let invalid_rotation_32_trace = [first_row, second_row];
 
     let circuit = LimbRotationCircuit::<Fr, 32>::new_for_trace(invalid_rotation_32_trace);
@@ -91,9 +85,7 @@ fn test_positive_random_rotate_right_24() {
     let pow24 = 1u64 << 24;
     let expected_result = ((n % pow24) << 40) + (n / pow24);
     let first_row: [Value<Fr>; 9] = generate_row_8bits(n)[0..9].try_into().unwrap();
-    let second_row: [Value<Fr>; 9] = generate_row_8bits(expected_result)[0..9]
-        .try_into()
-        .unwrap();
+    let second_row: [Value<Fr>; 9] = generate_row_8bits(expected_result)[0..9].try_into().unwrap();
     let valid_rotation_24_trace = [first_row, second_row];
 
     let circuit = LimbRotationCircuit::<Fr, 24>::new_for_trace(valid_rotation_24_trace);
@@ -150,9 +142,7 @@ fn test_positive_random_rotate_right_16() {
     let pow16 = 1u64 << 16;
     let expected_result = ((n % pow16) << 48) + (n / pow16);
     let first_row: [Value<Fr>; 9] = generate_row_8bits(n)[0..9].try_into().unwrap();
-    let second_row: [Value<Fr>; 9] = generate_row_8bits(expected_result)[0..9]
-        .try_into()
-        .unwrap();
+    let second_row: [Value<Fr>; 9] = generate_row_8bits(expected_result)[0..9].try_into().unwrap();
     let valid_rotation_16_trace = [first_row, second_row];
 
     let circuit = LimbRotationCircuit::<Fr, 16>::new_for_trace(valid_rotation_16_trace);

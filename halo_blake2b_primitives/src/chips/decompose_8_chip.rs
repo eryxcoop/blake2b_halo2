@@ -22,10 +22,8 @@ impl<F: PrimeField> Decomposition<F, 8> for Decompose8Chip<F> {
         meta.create_gate("decompose in 8 bit words", |meta| {
             let q_decompose = meta.query_selector(q_decompose);
             let full_number = meta.query_advice(full_number_u64, Rotation::cur());
-            let limbs: Vec<Expression<F>> = limbs
-                .iter()
-                .map(|column| meta.query_advice(*column, Rotation::cur()))
-                .collect();
+            let limbs: Vec<Expression<F>> =
+                limbs.iter().map(|column| meta.query_advice(*column, Rotation::cur())).collect();
             vec![
                 q_decompose
                     * (full_number
@@ -66,12 +64,7 @@ impl<F: PrimeField> Decomposition<F, 8> for Decompose8Chip<F> {
 
         (0..8)
             .map(|i| {
-                region.assign_advice(
-                    || format!("limb{}", i),
-                    self.limbs[i],
-                    offset,
-                    || row[i + 1],
-                )
+                region.assign_advice(|| format!("limb{}", i), self.limbs[i], offset, || row[i + 1])
             })
             .collect::<Result<Vec<_>, _>>()
             .ok()
@@ -122,7 +115,8 @@ impl<F: PrimeField> Decomposition<F, 8> for Decompose8Chip<F> {
         value: Value<F>,
         offset: usize,
     ) -> Result<AssignedCell<F, F>, Error> {
-        let full_number_cell = self.generate_row_from_value_and_keep_row(region, value, offset)?[0].clone();
+        let full_number_cell =
+            self.generate_row_from_value_and_keep_row(region, value, offset)?[0].clone();
         Ok(full_number_cell)
     }
 
@@ -146,18 +140,17 @@ impl<F: PrimeField> Decomposition<F, 8> for Decompose8Chip<F> {
         offset: usize,
     ) -> Result<Vec<AssignedCell<F, F>>, Error> {
         let _ = self.q_decompose.enable(region, offset);
-        let full_number_cell = region.assign_advice(|| "full number", self.full_number_u64, offset, || value)?;
+        let full_number_cell =
+            region.assign_advice(|| "full number", self.full_number_u64, offset, || value)?;
 
         let mut result = vec![full_number_cell];
 
-        let limbs: [Value<F>; 8] = (0..8)
-            .map(|i| Self::get_limb_from(value, i))
-            .collect::<Vec<_>>()
-            .try_into()
-            .unwrap();
+        let limbs: [Value<F>; 8] =
+            (0..8).map(|i| Self::get_limb_from(value, i)).collect::<Vec<_>>().try_into().unwrap();
 
         for (i, limb) in limbs.iter().enumerate() {
-            let limb_cell = region.assign_advice(|| format!("limb{}", i), self.limbs[i], offset, || *limb)?;
+            let limb_cell =
+                region.assign_advice(|| format!("limb{}", i), self.limbs[i], offset, || *limb)?;
             result.push(limb_cell);
         }
 
