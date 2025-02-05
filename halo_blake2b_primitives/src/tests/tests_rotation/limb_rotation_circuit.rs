@@ -58,8 +58,8 @@ impl<F: PrimeField, const T: usize> Circuit<F> for LimbRotationCircuit<F, T> {
     ) -> Result<(), Error> {
         let limbs_to_rotate_to_the_right = match T {
             32 => 4,
-            24 => 5,
-            16 => 6,
+            24 => 3,
+            16 => 2,
             _ => panic!("Unexpected Rotation"),
         };
 
