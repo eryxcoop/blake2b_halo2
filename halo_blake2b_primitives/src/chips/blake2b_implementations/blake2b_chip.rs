@@ -18,7 +18,7 @@ cfg_if::cfg_if! {
     } else if #[cfg(feature = "sum_with_4_limbs")] {
         type AdditionChip<F> = AdditionMod64Chip<F, 4, 6>;
     } else {
-        panic!("No feature selected")
+        panic!("No feature selected");
     }
 }
 
@@ -38,8 +38,6 @@ pub struct Blake2bChip<F: PrimeField> {
 }
 
 impl<F: PrimeField> Blake2bChip<F> {
-
-
     pub fn configure(
         meta: &mut ConstraintSystem<F>,
         full_number_u64: Column<Advice>,
@@ -52,11 +50,12 @@ impl<F: PrimeField> Blake2bChip<F> {
             } else if #[cfg(feature = "sum_with_4_limbs")] {
                 let addition_chip = AdditionMod64Chip::<F, 4, 6>::configure(meta, full_number_u64, limbs[4]);
             } else {
-                panic!("No feature selected")
+                panic!("No feature selected");
             }
         }
 
-        let decompose_16_chip = Decompose16Chip::configure(meta, full_number_u64, limbs[0..4].try_into().unwrap());
+        let decompose_16_chip =
+            Decompose16Chip::configure(meta, full_number_u64, limbs[0..4].try_into().unwrap());
         let decompose_8_chip = Decompose8Chip::configure(meta, full_number_u64, limbs);
         let generic_limb_rotation_chip = LimbRotationChip::new();
         let rotate_63_chip = Rotate63Chip::configure(meta, full_number_u64);
@@ -90,7 +89,6 @@ impl<F: PrimeField> Blake2bChip<F> {
                 self._populate_lookup_table_16(layouter);
             }
         }
-
     }
 
     pub fn add(
@@ -109,7 +107,7 @@ impl<F: PrimeField> Blake2bChip<F> {
                     .generate_addition_rows_from_cells(layouter, lhs, rhs, &mut self.decompose_16_chip)
                     .unwrap()
             } else {
-                panic!("No feature selected")
+                panic!("No feature selected");
             }
         }
     }
@@ -407,12 +405,11 @@ impl<F: PrimeField> Blake2bChip<F> {
         for i in 0..BLOCKS {
             let is_last_block = i == BLOCKS - 1;
 
-            let processed_bytes_count =
-                Self::compute_processed_bytes_count_value_for_iteration(
-                    i,
-                    is_last_block,
-                    input_size,
-                );
+            let processed_bytes_count = Self::compute_processed_bytes_count_value_for_iteration(
+                i,
+                is_last_block,
+                input_size,
+            );
             self.compress(
                 layouter,
                 iv_constants,

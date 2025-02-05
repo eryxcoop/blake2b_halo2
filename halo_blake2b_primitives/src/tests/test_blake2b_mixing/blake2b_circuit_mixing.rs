@@ -53,8 +53,7 @@ impl<F: PrimeField> Circuit<F> for Blake2bMixingCircuit<F> {
             meta.enable_equality(limb);
         }
 
-        let blake2b_table16_chip =
-            Blake2bChip::configure(meta, full_number_u64, limbs);
+        let blake2b_table16_chip = Blake2bChip::configure(meta, full_number_u64, limbs);
 
         Self::Config {
             _ph: PhantomData,
