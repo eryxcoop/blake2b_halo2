@@ -37,7 +37,7 @@ impl<F: PrimeField> LimbRotationChip<F> {
 
                 for i in 0..8 {
                     let top_cell = first_row[i].cell();
-                    let bottom_cell = second_row[(i + limb_rotations_right) % 8].cell();
+                    let bottom_cell = second_row[(i - limb_rotations_right) % 8].cell();
                     region.constrain_equal(top_cell, bottom_cell)?;
                 }
 
