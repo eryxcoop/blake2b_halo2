@@ -29,8 +29,9 @@ impl<F: PrimeField> Blake2bTable16Chip<F> {
         meta: &mut ConstraintSystem<F>,
         full_number_u64: Column<Advice>,
         limbs: [Column<Advice>; 8],
-        carry: Column<Advice>,
     ) -> Self {
+        let carry = meta.advice_column();
+
         let decompose_8_chip = Decompose8Chip::configure(meta, full_number_u64, limbs);
         let addition_chip = AdditionMod64Chip::<F, 8, 10>::configure(meta, full_number_u64, carry);
         let generic_limb_rotation_chip = LimbRotationChip::new();
