@@ -32,13 +32,10 @@ impl<F: PrimeField> Blake2bChip_SumWith4Limbs<F> {
         full_number_u64: Column<Advice>,
         limbs: [Column<Advice>; 8],
     ) -> Self {
-        let carry = meta.advice_column();
+        let decompose_16_chip = Decompose16Chip::configure(meta, full_number_u64, limbs[0..4].try_into().unwrap());
+        let addition_chip = AdditionMod64Chip::<F, 4, 6>::configure(meta, full_number_u64, limbs[4]);
 
         let decompose_8_chip = Decompose8Chip::configure(meta, full_number_u64, limbs);
-        let decompose_16_chip =
-            Decompose16Chip::configure(meta, full_number_u64, limbs[0..4].try_into().unwrap());
-        let addition_chip =
-            AdditionMod64Chip::<F, 4, 6>::configure(meta, full_number_u64, limbs[4]);
         let generic_limb_rotation_chip = LimbRotationChip::new();
         let rotate_63_chip = Rotate63Chip::configure(meta, full_number_u64);
         let xor_chip = XorChip::configure(meta, limbs);
@@ -374,7 +371,7 @@ impl<F: PrimeField> Blake2bChip_SumWith4Limbs<F> {
             let is_last_block = i == BLOCKS - 1;
 
             let processed_bytes_count =
-                Blake2bChip_SumWith4Limbs::compute_processed_bytes_count_value_for_iteration(
+                Self::compute_processed_bytes_count_value_for_iteration(
                     i,
                     is_last_block,
                     input_size,

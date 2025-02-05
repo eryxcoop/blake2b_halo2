@@ -52,8 +52,7 @@ impl<F: PrimeField, const BLOCKS: usize> Circuit<F> for Blake2bCircuit<F, BLOCKS
             meta.enable_equality(limb);
         }
 
-        let blake2b_table16_chip =
-            Blake2bChip::configure(meta, full_number_u64, limbs);
+        let blake2b_table16_chip = Blake2bChip::configure(meta, full_number_u64, limbs);
 
         Self::Config {
             _ph: PhantomData,

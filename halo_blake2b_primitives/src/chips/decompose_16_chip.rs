@@ -115,11 +115,8 @@ impl<F: PrimeField> Decomposition<F, 4> for Decompose16Chip<F> {
         let _ = self.q_decompose.enable(region, offset);
         let result = region.assign_advice(|| "full number", self.full_number_u64, offset, || value);
 
-        let limbs: [Value<F>; 4] = (0..4)
-            .map(|i| Self::get_limb_from(value, i))
-            .collect::<Vec<_>>()
-            .try_into()
-            .unwrap();
+        let limbs: [Value<F>; 4] =
+            (0..4).map(|i| Self::get_limb_from(value, i)).collect::<Vec<_>>().try_into().unwrap();
 
         for (i, limb) in limbs.iter().enumerate() {
             let _ = region.assign_advice(|| format!("limb{}", i), self.limbs[i], offset, || *limb);

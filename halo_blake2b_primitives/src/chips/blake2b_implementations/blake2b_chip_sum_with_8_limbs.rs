@@ -1,6 +1,7 @@
 use super::*;
 use crate::auxiliar_functions::value_for;
 use crate::chips::addition_mod_64_chip::AdditionMod64Chip;
+
 use crate::chips::decompose_8_chip::Decompose8Chip;
 use crate::chips::decomposition_trait::Decomposition;
 use crate::chips::generic_limb_rotation_chip::LimbRotationChip;
@@ -31,9 +32,9 @@ impl<F: PrimeField> Blake2bChip_SumWith8Limbs<F> {
         limbs: [Column<Advice>; 8],
     ) -> Self {
         let carry = meta.advice_column();
+        let addition_chip = AdditionMod64Chip::<F, 8, 10>::configure(meta, full_number_u64, carry);
 
         let decompose_8_chip = Decompose8Chip::configure(meta, full_number_u64, limbs);
-        let addition_chip = AdditionMod64Chip::<F, 8, 10>::configure(meta, full_number_u64, carry);
         let generic_limb_rotation_chip = LimbRotationChip::new();
         let rotate_63_chip = Rotate63Chip::configure(meta, full_number_u64);
         let xor_chip = XorChip::configure(meta, limbs);
@@ -58,7 +59,7 @@ impl<F: PrimeField> Blake2bChip_SumWith8Limbs<F> {
     }
 
     pub fn initialize_with(&mut self, layouter: &mut impl Layouter<F>) {
-        self._populate_lookup_table(layouter);
+        self._populate_lookup_table_8(layouter);
         self._populate_xor_lookup_table(layouter);
     }
 
@@ -367,7 +368,7 @@ impl<F: PrimeField> Blake2bChip_SumWith8Limbs<F> {
             let is_last_block = i == BLOCKS - 1;
 
             let processed_bytes_count =
-                Blake2bChip_SumWith8Limbs::compute_processed_bytes_count_value_for_iteration(
+                Self::compute_processed_bytes_count_value_for_iteration(
                     i,
                     is_last_block,
                     input_size,
@@ -424,7 +425,7 @@ impl<F: PrimeField> Blake2bChip_SumWith8Limbs<F> {
         self.constraint_public_inputs_to_equal_computation_results(layouter, global_state)
     }
 
-    fn _populate_lookup_table(&mut self, layouter: &mut impl Layouter<F>) {
+    fn _populate_lookup_table_8(&mut self, layouter: &mut impl Layouter<F>) {
         let _ = self.decompose_8_chip.populate_lookup_table(layouter);
     }
 
