@@ -1,8 +1,8 @@
 use super::*;
-use crate::chips::blake2b_table16_chip::Blake2bTable16Chip;
 use halo2_proofs::circuit::{AssignedCell, SimpleFloorPlanner};
 use halo2_proofs::plonk::Circuit;
 use std::array;
+use crate::chips::blake2b_implementations::blake2b_table16_chip::Blake2bTable16Chip;
 
 pub struct Blake2bMixingCircuit<F: Field> {
     _ph: PhantomData<F>,

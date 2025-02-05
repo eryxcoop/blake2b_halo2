@@ -1,7 +1,8 @@
 use super::*;
 
+pub mod blake2b_implementations;
+
 pub mod addition_mod_64_chip;
-pub mod blake2b_chip_sum_with_4_limbs;
 pub mod decompose_16_chip;
 pub mod decompose_8_chip;
 pub mod decomposition_trait;
