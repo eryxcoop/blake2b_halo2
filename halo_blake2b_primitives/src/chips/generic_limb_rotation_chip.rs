@@ -37,6 +37,7 @@ impl<F: PrimeField> LimbRotationChip<F> {
 
                 for i in 0..8 {
                     let top_cell = first_row[i].cell();
+                    // We must subtract limb_rotations_right because if a number is expressed bitwise as x = l1|l2|...|l7|l8, the limbs are stored as [l8, l7, ..., l2, l1]
                     let bottom_cell = second_row[(i - limb_rotations_right) % 8].cell();
                     region.constrain_equal(top_cell, bottom_cell)?;
                 }
