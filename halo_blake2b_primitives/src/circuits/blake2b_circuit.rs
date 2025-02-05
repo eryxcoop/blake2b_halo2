@@ -1,6 +1,6 @@
 use super::*;
 use crate::chips::blake2b_table16_chip::Blake2bTable16Chip;
-use halo2_proofs::circuit::{AssignedCell, SimpleFloorPlanner};
+use halo2_proofs::circuit::SimpleFloorPlanner;
 use halo2_proofs::plonk::Circuit;
 use std::array;
 
