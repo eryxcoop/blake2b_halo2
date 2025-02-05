@@ -42,12 +42,12 @@ pub trait Decomposition<F: PrimeField, const T: usize> {
         region: &mut Region<F>,
         cell: AssignedCell<F, F>,
         offset: usize,
-    ) -> Result<AssignedCell<F, F>, Error> {
+    ) -> Result<Vec<AssignedCell<F, F>>, Error> {
         let value = cell.value().copied();
 
         let new_cell = self.generate_row_from_value(region, value, offset)?;
         region.constrain_equal(cell.cell(), new_cell.cell())?;
-        Ok(new_cell)
+        Ok(vec![new_cell])
     }
 
     fn generate_row_from_value_and_keep_row(

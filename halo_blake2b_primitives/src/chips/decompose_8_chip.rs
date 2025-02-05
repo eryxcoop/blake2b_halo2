@@ -139,6 +139,14 @@ impl<F: PrimeField> Decomposition<F, 8> for Decompose8Chip<F> {
         Ok(new_cells)
     }
 
+    fn get_limb_from(value: Value<F>, limb_number: usize) -> Value<F> {
+        value.and_then(|v| {
+            let binding = v.to_repr();
+            let a_bytes = binding.as_ref();
+            Value::known(F::from(a_bytes[limb_number] as u64))
+        })
+    }
+
     fn generate_row_from_value_and_keep_row(
         &mut self,
         region: &mut Region<F>,
@@ -162,15 +170,5 @@ impl<F: PrimeField> Decomposition<F, 8> for Decompose8Chip<F> {
         }
 
         Ok(result)
-    }
-}
-
-impl<F: PrimeField> Decompose8Chip<F> {
-    fn get_limb_from(value: Value<F>, limb_number: usize) -> Value<F> {
-        value.and_then(|v| {
-            let binding = v.to_repr();
-            let a_bytes = binding.as_ref();
-            Value::known(F::from(a_bytes[limb_number] as u64))
-        })
     }
 }
