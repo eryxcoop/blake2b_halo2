@@ -54,13 +54,7 @@ fn test_rotate_right_24_chunk_out_of_range() {
 
 fn _valid_rotation24_trace() -> [[Value<Fr>; 5]; 3] {
     [
-        [
-            max_u24(),
-            max_u16(),
-            value_for((1u64 << 8) - 1),
-            zero(),
-            zero(),
-        ],
+        [max_u24(), max_u16(), value_for((1u64 << 8) - 1), zero(), zero()],
         [zero(), zero(), zero(), zero(), zero()],
         [
             value_for(((1u128 << 24) - 1) << 40),

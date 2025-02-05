@@ -60,21 +60,14 @@ impl<F: PrimeField> Circuit<F> for NegateCircuit<F> {
         mut config: Self::Config,
         mut layouter: impl Layouter<F>,
     ) -> Result<(), Error> {
-        config
-            .decompose_8_chip
-            .populate_lookup_table(&mut layouter)?;
+        config.decompose_8_chip.populate_lookup_table(&mut layouter)?;
         let result = config.negate_chip.generate_rows(
             &mut layouter,
             self.value,
             &mut config.decompose_8_chip,
         )?;
 
-        Self::assert_cell_value(
-            &mut layouter,
-            &result,
-            config.fixed_result,
-            self.expected_result,
-        )?;
+        Self::assert_cell_value(&mut layouter, &result, config.fixed_result, self.expected_result)?;
         Ok(())
     }
 }

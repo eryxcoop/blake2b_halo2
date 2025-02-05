@@ -15,14 +15,7 @@ fn test_positive_addition() {
 #[should_panic]
 fn test_wrong_sum_with_overflow() {
     let trace = [
-        [
-            max_u64(),
-            max_u16(),
-            max_u16(),
-            max_u16(),
-            max_u16(),
-            zero(),
-        ],
+        [max_u64(), max_u16(), max_u16(), max_u16(), max_u16(), zero()],
         [one(), one(), zero(), zero(), zero(), zero()],
         [one(), one(), zero(), zero(), zero(), one()],
     ];
@@ -36,14 +29,7 @@ fn test_wrong_sum_with_overflow() {
 #[should_panic]
 fn test_negative_wrong_decomposition() {
     let trace = [
-        [
-            max_u64(),
-            max_u16(),
-            max_u16(),
-            max_u16(),
-            max_u16(),
-            zero(),
-        ],
+        [max_u64(), max_u16(), max_u16(), max_u16(), max_u16(), zero()],
         [zero(), zero(), zero(), zero(), zero(), zero()],
         [max_u64(), max_u16(), max_u16(), one(), max_u16(), zero()],
     ];
@@ -57,14 +43,7 @@ fn test_negative_wrong_decomposition() {
 #[should_panic]
 fn test_negative_wrong_carry() {
     let trace = [
-        [
-            max_u64(),
-            max_u16(),
-            max_u16(),
-            max_u16(),
-            max_u16(),
-            zero(),
-        ],
+        [max_u64(), max_u16(), max_u16(), max_u16(), max_u16(), zero()],
         [one(), one(), zero(), zero(), zero(), zero()],
         [zero(), zero(), zero(), zero(), zero(), one() + one()],
     ];
@@ -78,14 +57,7 @@ fn test_negative_wrong_carry() {
 #[should_panic]
 fn test_negative_wrong_rangecheck() {
     let trace = [
-        [
-            max_u16() + one(),
-            max_u16() + one(),
-            zero(),
-            zero(),
-            zero(),
-            zero(),
-        ],
+        [max_u16() + one(), max_u16() + one(), zero(), zero(), zero(), zero()],
         [zero(), zero(), zero(), zero(), zero(), zero()],
         [max_u16() + one(), zero(), one(), zero(), zero(), zero()],
     ];
@@ -97,14 +69,7 @@ fn test_negative_wrong_rangecheck() {
 
 fn _valid_addition_trace() -> [[Value<Fr>; 6]; 3] {
     [
-        [
-            max_u64(),
-            max_u16(),
-            max_u16(),
-            max_u16(),
-            max_u16(),
-            zero(),
-        ],
+        [max_u64(), max_u16(), max_u16(), max_u16(), max_u16(), zero()],
         [one(), one(), zero(), zero(), zero(), zero()],
         [zero(), zero(), zero(), zero(), zero(), one()],
     ]

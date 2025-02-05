@@ -57,9 +57,7 @@ impl<F: PrimeField> Circuit<F> for AdditionMod64Circuit16Bits<F> {
         mut config: Self::Config,
         mut layouter: impl Layouter<F>,
     ) -> Result<(), Error> {
-        config
-            .decompose_16_chip
-            .populate_lookup_table(&mut layouter)?;
+        config.decompose_16_chip.populate_lookup_table(&mut layouter)?;
         config.addition_mod_64_chip.populate_addition_rows(
             &mut layouter,
             self.trace,

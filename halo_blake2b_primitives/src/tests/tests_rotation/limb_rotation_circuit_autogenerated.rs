@@ -77,14 +77,9 @@ impl<F: PrimeField, const T: usize> Circuit<F> for LimbRotationCircuitAutogenera
             _ => panic!("Unexpected Rotation"),
         };
 
-        config
-            .limb_rotation_config
-            .decompose_8_chip
-            .populate_lookup_table(&mut layouter)?;
-        let result = config
-            .limb_rotation_config
-            .limb_rotation_chip
-            .generate_rotation_rows_from_value(
+        config.limb_rotation_config.decompose_8_chip.populate_lookup_table(&mut layouter)?;
+        let result =
+            config.limb_rotation_config.limb_rotation_chip.generate_rotation_rows_from_value(
                 &mut layouter,
                 &mut config.limb_rotation_config.decompose_8_chip,
                 self.input,

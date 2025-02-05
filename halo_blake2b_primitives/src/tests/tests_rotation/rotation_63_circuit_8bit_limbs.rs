@@ -52,9 +52,7 @@ impl<F: PrimeField> Circuit<F> for Rotation63Circuit8bitLimbs<F> {
         config: Self::Config,
         mut layouter: impl Layouter<F>,
     ) -> Result<(), Error> {
-        config
-            .decompose_8_chip
-            .populate_lookup_table(&mut layouter)?;
+        config.decompose_8_chip.populate_lookup_table(&mut layouter)?;
         config.rotation_63_chip.assign_rotation_rows(
             &mut layouter,
             &mut config.decompose_8_chip.clone(),

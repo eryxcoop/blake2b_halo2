@@ -63,9 +63,7 @@ impl<F: PrimeField, const T: usize> Circuit<F> for LimbRotationCircuit<F, T> {
             _ => panic!("Unexpected Rotation"),
         };
 
-        config
-            .decompose_8_chip
-            .populate_lookup_table(&mut layouter)?;
+        config.decompose_8_chip.populate_lookup_table(&mut layouter)?;
         config.limb_rotation_chip.assign_rotation_rows(
             &mut layouter,
             &mut config.decompose_8_chip,
