@@ -2,19 +2,7 @@ use super::*;
 use halo2_proofs::circuit::SimpleFloorPlanner;
 use halo2_proofs::plonk::Circuit;
 use std::array;
-
-cfg_if::cfg_if! {
-    if #[cfg(feature = "sum_with_8_limbs")] {
-        use crate::chips::blake2b_implementations::blake2b_chip_sum_with_8_limbs::Blake2bChip_SumWith8Limbs;
-        type Blake2bChip<F> = Blake2bChip_SumWith8Limbs<F>;
-    } else if #[cfg(feature = "sum_with_4_limbs")] {
-        use crate::chips::blake2b_implementations::blake2b_chip_sum_with_4_limbs::Blake2bChip_SumWith4Limbs;
-        type Blake2bChip<F> = Blake2bChip_SumWith4Limbs<F>;
-    } else {
-        use crate::chips::blake2b_implementations::blake2b_chip_sum_with_8_limbs::Blake2bChip_SumWith8Limbs;
-        type Blake2bChip<F> = Blake2bChip_SumWith8Limbs<F>;
-    }
-}
+use crate::chips::blake2b_implementations::blake2b_chip::Blake2bChip;
 
 pub struct Blake2bCircuit<F: Field, const BLOCKS: usize> {
     _ph: PhantomData<F>,

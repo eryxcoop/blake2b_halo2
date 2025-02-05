@@ -2,7 +2,7 @@ use super::*;
 use halo2_proofs::circuit::SimpleFloorPlanner;
 use halo2_proofs::plonk::Circuit;
 use std::array;
-use crate::chips::blake2b_implementations::blake2b_chip_sum_with_8_limbs::Blake2bChip_SumWith8Limbs;
+use crate::chips::blake2b_implementations::blake2b_chip::Blake2bChip;
 
 pub struct ManyOperationsCircuit<F: PrimeField> {
     _ph: PhantomData<F>,
@@ -15,7 +15,7 @@ pub struct ManyOperationsCircuit<F: PrimeField> {
 #[derive(Clone)]
 pub struct ManyOperationsCircuitConfig<F: PrimeField> {
     _ph: PhantomData<F>,
-    blake2b_chip: Blake2bChip_SumWith8Limbs<F>,
+    blake2b_chip: Blake2bChip<F>,
 }
 
 impl<F: PrimeField> ManyOperationsCircuit<F> {
@@ -54,7 +54,7 @@ impl<F: PrimeField> Circuit<F> for ManyOperationsCircuit<F> {
             meta.enable_equality(limb);
         }
 
-        let blake2b_chip = Blake2bChip_SumWith8Limbs::configure(meta, full_number_u64, limbs);
+        let blake2b_chip = Blake2bChip::configure(meta, full_number_u64, limbs);
 
         Self::Config {
             _ph: PhantomData,
