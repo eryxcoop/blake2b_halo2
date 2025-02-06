@@ -13,6 +13,16 @@
 // |  constants   | (32, 24, 16, 63) |
 // +--------------+------------------+
 
+pub fn hex_to_bytes(hex: &str) -> Vec<u8> {
+    (0..hex.len())
+        .step_by(2)
+        .map(|i| u8::from_str_radix(&hex[i..i + 2], 16).unwrap())
+        .collect()
+}
+
+#[cfg(test)]
+pub mod tests;
+
 // Constants
 const BLAKE2B_IV: [u64; 8] = [
     0x6A09E667F3BCC908,
@@ -187,53 +197,18 @@ fn blake2b_final(ctx: &mut Blake2bCtx, out: &mut Vec<u8>) {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use serde::Deserialize;
-    use serde_json;
+fn main() {
 
-    #[derive(Deserialize, Debug)]
-    struct TestCase {
-        #[serde(rename = "in")]
-        input: String,
-        key: String,
-        out: String,
-    }
+    let output_length= 32;
 
-    #[test]
-    fn test_hashes() {
-        let file_content =
-            std::fs::read_to_string("./test_vector.json").expect("Failed to read file");
-        let test_cases: Vec<TestCase> =
-            serde_json::from_str(&file_content).expect("Failed to parse JSON");
+    let input= "";
+    let key= "";
 
-        for (i, case) in test_cases.iter().enumerate() {
-            println!("Running test case {}", i);
-            run_test(&case.input, &case.key, &case.out);
-        }
-    }
+    let mut input_message = hex_to_bytes(input);
+    let mut key = hex_to_bytes(key);
+    let mut buffer_out: Vec<u8> = Vec::new();
+    buffer_out.resize(output_length, 0);
 
-    fn run_test(input: &str, key: &str, expected: &str) {
-        let mut input_message = hex_to_bytes(input);
-        let mut key = hex_to_bytes(key);
-        let expected_out = hex_to_bytes(expected);
-        let mut buffer_out: Vec<u8> = Vec::new();
-        buffer_out.resize(expected_out.len(), 0);
-
-        let _ = blake2b(&mut buffer_out, &mut key, &mut input_message);
-
-        assert_eq!(
-            buffer_out, expected_out,
-            "Test failed for input: {:?}, key: {:?}",
-            input, key
-        );
-    }
-
-    fn hex_to_bytes(hex: &str) -> Vec<u8> {
-        (0..hex.len())
-            .step_by(2)
-            .map(|i| u8::from_str_radix(&hex[i..i + 2], 16).unwrap())
-            .collect()
-    }
+    let _ = blake2b(&mut buffer_out, &mut key, &mut input_message);
+    println!("{:?}", buffer_out);
 }

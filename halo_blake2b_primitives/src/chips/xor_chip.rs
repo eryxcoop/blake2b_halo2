@@ -140,7 +140,7 @@ impl<F: PrimeField> XorChip<F> {
         cell_a: AssignedCell<F, F>,
         cell_b: AssignedCell<F, F>,
         decompose_8_chip: &mut Decompose8Chip<F>,
-    ) -> Result<AssignedCell<F, F>, Error> {
+    ) -> Result<[AssignedCell<F, F>; 9], Error> {
         let value_a = cell_a.value().copied();
         let value_b = cell_b.value().copied();
 
@@ -157,10 +157,12 @@ impl<F: PrimeField> XorChip<F> {
                 decompose_8_chip.generate_row_from_cell(&mut region, cell_a.clone(), 0)?;
                 decompose_8_chip.generate_row_from_cell(&mut region, cell_b.clone(), 1)?;
 
-                let result_cell =
-                    decompose_8_chip.generate_row_from_value(&mut region, result_value, 2)?;
+                let result_row = decompose_8_chip
+                    .generate_row_from_value_and_keep_row(&mut region, result_value, 2)
+                    .unwrap();
 
-                Ok(result_cell)
+                let result_row_array = result_row.try_into().unwrap();
+                Ok(result_row_array)
             },
         )
     }

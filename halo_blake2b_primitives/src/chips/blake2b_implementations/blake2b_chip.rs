@@ -130,6 +130,18 @@ impl<F: PrimeField> Blake2bChip<F> {
     ) -> AssignedCell<F, F> {
         self.xor_chip
             .generate_xor_rows_from_cells(layouter, lhs, rhs, &mut self.decompose_8_chip)
+            .unwrap()[0]
+            .clone()
+    }
+
+    pub fn xor_with_full_rows(
+        &mut self,
+        lhs: AssignedCell<F, F>,
+        rhs: AssignedCell<F, F>,
+        layouter: &mut impl Layouter<F>,
+    ) -> [AssignedCell<F, F>; 9] {
+        self.xor_chip
+            .generate_xor_rows_from_cells(layouter, lhs, rhs, &mut self.decompose_8_chip)
             .unwrap()
     }
 
@@ -257,7 +269,7 @@ impl<F: PrimeField> Blake2bChip<F> {
         block: [Value<F>; 16],
         processed_bytes_count: Value<F>,
         is_last_block: bool,
-    ) -> Result<(), Error> {
+    ) -> Result<[AssignedCell<F, F>; 64], Error> {
         let current_block_words =
             block.map(|input| self.new_row_from_value(input, layouter).unwrap());
 
@@ -295,11 +307,16 @@ impl<F: PrimeField> Blake2bChip<F> {
             }
         }
 
+        let mut global_state_bytes = Vec::new();
         for i in 0..8 {
             global_state[i] = self.xor(global_state[i].clone(), state[i].clone(), layouter);
-            global_state[i] = self.xor(global_state[i].clone(), state[i + 8].clone(), layouter);
+            let row =
+                self.xor_with_full_rows(global_state[i].clone(), state[i + 8].clone(), layouter);
+            global_state_bytes.extend_from_slice(&row[1..]);
+            global_state[i] = row[0].clone();
         }
-        Ok(())
+        let global_state_bytes_array = global_state_bytes.try_into().unwrap();
+        Ok(global_state_bytes_array)
     }
 
     pub fn compute_initial_state(
@@ -401,7 +418,10 @@ impl<F: PrimeField> Blake2bChip<F> {
         input_blocks: [[Value<F>; 16]; BLOCKS],
         iv_constants: &[AssignedCell<F, F>; 8],
         global_state: &mut [AssignedCell<F, F>; 8],
-    ) -> Result<(), Error> {
+    ) -> Result<[AssignedCell<F, F>; 64], Error> {
+        // This is just to be able to return the result of the last compress call
+        let mut global_state_bytes = Err(Error::Synthesis);
+
         for i in 0..BLOCKS {
             let is_last_block = i == BLOCKS - 1;
 
@@ -410,25 +430,31 @@ impl<F: PrimeField> Blake2bChip<F> {
                 is_last_block,
                 input_size,
             );
-            self.compress(
+            let result = self.compress(
                 layouter,
                 iv_constants,
                 global_state,
                 input_blocks[i],
                 processed_bytes_count,
                 is_last_block,
-            )?;
+            );
+            global_state_bytes = result;
         }
-        Ok(())
+        global_state_bytes
     }
 
     pub fn constraint_public_inputs_to_equal_computation_results(
         &self,
         layouter: &mut impl Layouter<F>,
-        global_state: [AssignedCell<F, F>; 8],
+        global_state_bytes: [AssignedCell<F, F>; 64],
+        output_size: usize,
     ) -> Result<(), Error> {
-        for i in 0..8 {
-            layouter.constrain_instance(global_state[i].cell(), self.expected_final_state, i)?;
+        for i in 0..output_size {
+            layouter.constrain_instance(
+                global_state_bytes[i].cell(),
+                self.expected_final_state,
+                i,
+            )?;
         }
         Ok(())
     }
@@ -436,14 +462,17 @@ impl<F: PrimeField> Blake2bChip<F> {
     pub fn compute_blake2b_hash_for_inputs<const BLOCKS: usize>(
         &mut self,
         layouter: &mut impl Layouter<F>,
-        output_size: Value<F>,
+        output_size: usize,
         input_size: Value<F>,
         input_blocks: [[Value<F>; 16]; BLOCKS],
     ) -> Result<(), Error> {
+        let output_size_value = Value::known(F::from(output_size as u64));
+
         let iv_constants: [AssignedCell<F, F>; 8] =
             self.assign_iv_constants_to_fixed_cells(layouter);
         let init_const_state_0 = self.assign_01010000_constant_to_fixed_cell(layouter)?;
-        let output_size_constant = self.assign_output_size_to_fixed_cell(layouter, output_size)?;
+        let output_size_constant =
+            self.assign_output_size_to_fixed_cell(layouter, output_size_value)?;
         let mut global_state = self.compute_initial_state(
             layouter,
             &iv_constants,
@@ -451,7 +480,7 @@ impl<F: PrimeField> Blake2bChip<F> {
             output_size_constant,
         )?;
 
-        self.perform_blake2b_iterations::<BLOCKS>(
+        let global_state_bytes = self.perform_blake2b_iterations::<BLOCKS>(
             layouter,
             input_size,
             input_blocks,
@@ -459,7 +488,11 @@ impl<F: PrimeField> Blake2bChip<F> {
             &mut global_state,
         )?;
 
-        self.constraint_public_inputs_to_equal_computation_results(layouter, global_state)
+        self.constraint_public_inputs_to_equal_computation_results(
+            layouter,
+            global_state_bytes,
+            output_size,
+        )
     }
 
     fn _populate_lookup_table_8(&mut self, layouter: &mut impl Layouter<F>) {
