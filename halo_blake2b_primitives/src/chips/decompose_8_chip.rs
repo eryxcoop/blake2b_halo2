@@ -120,6 +120,24 @@ impl<F: PrimeField> Decomposition<F, 8> for Decompose8Chip<F> {
         Ok(full_number_cell)
     }
 
+    fn generate_row_from_bytes(
+        &mut self,
+        region: &mut Region<F>,
+        bytes: [Value<F>; 8],
+        offset: usize,
+    ) -> Result<AssignedCell<F, F>, Error> {
+        let mut full_number = F::ZERO;
+
+        for byte in bytes.iter().rev() {
+            byte.and_then(|v| {
+                full_number = full_number * F::from(256u64);
+                full_number += v;
+                Value::<F>::unknown()
+            });
+        }
+        self.generate_row_from_value(region, Value::known(full_number), offset)
+    }
+
     fn generate_row_from_cell(
         &mut self,
         region: &mut Region<F>,

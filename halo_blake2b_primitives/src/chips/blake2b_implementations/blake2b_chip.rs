@@ -1,5 +1,6 @@
+use std::cmp::max;
 use super::*;
-use crate::auxiliar_functions::value_for;
+use crate::auxiliar_functions::{value_for};
 use crate::chips::addition_mod_64_chip::AdditionMod64Chip;
 use crate::chips::decompose_16_chip::Decompose16Chip;
 use crate::chips::decompose_8_chip::Decompose8Chip;
@@ -185,6 +186,17 @@ impl<F: PrimeField> Blake2bChip<F> {
             .unwrap()
     }
 
+    pub fn new_row_from_bytes(
+        &mut self,
+        bytes: [Value<F>; 8],
+        layouter: &mut impl Layouter<F>,
+    ) -> Result<AssignedCell<F, F>, Error> {
+        layouter.assign_region(
+            || "row",
+            |mut region| self.decompose_8_chip.generate_row_from_bytes(&mut region, bytes, 0),
+        )
+    }
+
     pub fn new_row_from_value(
         &mut self,
         value: Value<F>,
@@ -266,12 +278,17 @@ impl<F: PrimeField> Blake2bChip<F> {
         layouter: &mut impl Layouter<F>,
         iv_constants: &[AssignedCell<F, F>; 8],
         global_state: &mut [AssignedCell<F, F>; 8],
-        block: [Value<F>; 16],
+        block: [Value<F>; 128],
         processed_bytes_count: Value<F>,
         is_last_block: bool,
     ) -> Result<[AssignedCell<F, F>; 64], Error> {
-        let current_block_words =
-            block.map(|input| self.new_row_from_value(input, layouter).unwrap());
+        let mut current_block_words: Vec<AssignedCell<F, F>> = Vec::new();
+        for i in 0..16 {
+            let bytes: [Value<F>; 8] = block[i * 8..(i + 1) * 8].try_into().unwrap();
+            current_block_words.push(self.new_row_from_bytes(bytes, layouter)?);
+        }
+
+        let current_block_words = current_block_words.try_into().unwrap();
 
         let mut state_vector: Vec<AssignedCell<F, F>> = Vec::new();
         state_vector.extend_from_slice(global_state);
@@ -399,10 +416,10 @@ impl<F: PrimeField> Blake2bChip<F> {
     pub fn compute_processed_bytes_count_value_for_iteration(
         iteration: usize,
         is_last_block: bool,
-        input_size: Value<F>,
+        input_size: usize,
     ) -> Value<F> {
         if is_last_block {
-            input_size
+            Value::known(F::from(input_size as u64))
         } else {
             let bytes_count_for_iteration = Value::known(F::from(128));
             let iteration_value = Value::known(F::from(iteration as u64));
@@ -411,30 +428,46 @@ impl<F: PrimeField> Blake2bChip<F> {
         }
     }
 
-    pub fn perform_blake2b_iterations<const BLOCKS: usize>(
+    pub fn perform_blake2b_iterations(
         &mut self,
         layouter: &mut impl Layouter<F>,
-        input_size: Value<F>,
-        input_blocks: [[Value<F>; 16]; BLOCKS],
+        input_size: usize,
+        input: &Vec<Value<F>>,
         iv_constants: &[AssignedCell<F, F>; 8],
         global_state: &mut [AssignedCell<F, F>; 8],
     ) -> Result<[AssignedCell<F, F>; 64], Error> {
         // This is just to be able to return the result of the last compress call
         let mut global_state_bytes = Err(Error::Synthesis);
 
-        for i in 0..BLOCKS {
-            let is_last_block = i == BLOCKS - 1;
+        const BLAKE2B_BLOCK_SIZE: usize = 128;
+
+        // This is to calculate the ceiling of the division
+        let blocks = max((input_size + BLAKE2B_BLOCK_SIZE - 1) / BLAKE2B_BLOCK_SIZE, 1);
+        for i in 0..blocks {
+            let is_last_block = i == blocks - 1;
 
             let processed_bytes_count = Self::compute_processed_bytes_count_value_for_iteration(
                 i,
                 is_last_block,
                 input_size,
             );
+
+            let mut block: Vec<Value<F>>;
+            if is_last_block {
+                let last_block_size = input_size - i * BLAKE2B_BLOCK_SIZE;
+                let zeros_amount = BLAKE2B_BLOCK_SIZE - last_block_size;
+                let mut zeros = vec![Value::known(F::ZERO); zeros_amount];
+                block = input[i * BLAKE2B_BLOCK_SIZE..].to_vec();
+                block.append(&mut zeros);
+            } else {
+                block = input[i * BLAKE2B_BLOCK_SIZE..(i + 1) * BLAKE2B_BLOCK_SIZE].to_vec();
+            }
+
             let result = self.compress(
                 layouter,
                 iv_constants,
                 global_state,
-                input_blocks[i],
+                block.try_into().unwrap(),
                 processed_bytes_count,
                 is_last_block,
             );
@@ -459,12 +492,12 @@ impl<F: PrimeField> Blake2bChip<F> {
         Ok(())
     }
 
-    pub fn compute_blake2b_hash_for_inputs<const BLOCKS: usize>(
+    pub fn compute_blake2b_hash_for_inputs(
         &mut self,
         layouter: &mut impl Layouter<F>,
         output_size: usize,
-        input_size: Value<F>,
-        input_blocks: [[Value<F>; 16]; BLOCKS],
+        input_size: usize,
+        input: &Vec<Value<F>>,
     ) -> Result<(), Error> {
         let output_size_value = Value::known(F::from(output_size as u64));
 
@@ -480,10 +513,10 @@ impl<F: PrimeField> Blake2bChip<F> {
             output_size_constant,
         )?;
 
-        let global_state_bytes = self.perform_blake2b_iterations::<BLOCKS>(
+        let global_state_bytes = self.perform_blake2b_iterations(
             layouter,
             input_size,
-            input_blocks,
+            input,
             &iv_constants,
             &mut global_state,
         )?;

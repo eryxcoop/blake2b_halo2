@@ -3,10 +3,10 @@ use super::*;
 #[test]
 fn test_blake2b_single_empty_block_positive() {
     const OUTPUT_SIZE: usize = 64;
-    let input = [[zero(); 16]; 1];
-    let input_size = zero();
+    let input = vec![];
+    let input_size = 0;
     let expected_output_state = _correct_output_for_empty_input_64();
-    let circuit = Blake2bCircuit::<Fr, 1, OUTPUT_SIZE>::new_for(input, input_size);
+    let circuit = Blake2bCircuit::<Fr, OUTPUT_SIZE>::new_for(input, input_size);
     let prover = MockProver::run(17, &circuit, vec![expected_output_state.to_vec()]).unwrap();
     prover.verify().unwrap();
 }
@@ -15,12 +15,12 @@ fn test_blake2b_single_empty_block_positive() {
 #[should_panic]
 fn test_blake2b_single_empty_block_negative() {
     const OUTPUT_SIZE: usize = 64;
-    let input = [[zero(); 16]; 1];
-    let input_size = zero();
+    let input = vec![];
+    let input_size = 0;
     let mut expected_output_state = _correct_output_for_empty_input_64();
     expected_output_state[7] = Fr::from(14u64); // Wrong value
 
-    let circuit = Blake2bCircuit::<Fr, 1, OUTPUT_SIZE>::new_for(input, input_size);
+    let circuit = Blake2bCircuit::<Fr, OUTPUT_SIZE>::new_for(input, input_size);
     let prover = MockProver::run(17, &circuit, vec![expected_output_state.to_vec()]).unwrap();
     prover.verify().unwrap();
 }

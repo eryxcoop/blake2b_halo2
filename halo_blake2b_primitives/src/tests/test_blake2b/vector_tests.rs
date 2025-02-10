@@ -11,18 +11,12 @@ struct TestCase {
     out: String,
 }
 
-fn run_test<const BLOCKS: usize>(input: &String, _key: &String, expected: &String) {
-    let (input_u64, input_size) = _formed_input_blocks_for::<BLOCKS>(input);
+fn run_test(input: &String, _key: &String, expected: &String) {
+    let input_size = input.len() / 2; // Amount of bytes
+    let input_bytes = hex::decode(input).expect("Invalid hex string");
+    let input_values = input_bytes.iter().map(|x| Value::known(Fr::from(*x as u64))).collect::<Vec<_>>();
     let (expected_output_state, _output_size) = _formed_output_block_for(expected);
 
-    let input_values: [[Value<Fr>; 16]; BLOCKS] = input_u64
-        .iter()
-        .map(|x| x.iter().map(|y| value_for(*y)).collect::<Vec<_>>().try_into().unwrap())
-        .collect::<Vec<_>>()
-        .try_into()
-        .unwrap();
-
-    let input_size_value = value_for(input_size as u128);
     let expected_output_state_fields: [Fr; 64] = expected_output_state
         .iter()
         .map(|x| Fr::from(*x as u64))
@@ -30,7 +24,7 @@ fn run_test<const BLOCKS: usize>(input: &String, _key: &String, expected: &Strin
         .try_into()
         .unwrap();
 
-    let circuit = Blake2bCircuit::<Fr, BLOCKS, 64>::new_for(input_values, input_size_value);
+    let circuit = Blake2bCircuit::<Fr, 64>::new_for(input_values, input_size);
     let prover =
         MockProver::run(17, &circuit, vec![expected_output_state_fields.to_vec()]).unwrap();
     prover.verify().unwrap();
@@ -50,11 +44,7 @@ fn test_hashes_in_circuit_one_block() {
         }
 
         println!("Running test case {}", i);
-        if i < 129 {
-            run_test::<1>(&case.input, &case.key, &case.out);
-        } else {
-            run_test::<2>(&case.input, &case.key, &case.out);
-        }
+        run_test(&case.input, &case.key, &case.out);
     }
 }
 
@@ -71,28 +61,10 @@ fn test_hashes_in_circuit_more_than_one_block() {
         }
 
         println!("Running test case {}", i);
-        run_test::<2>(&case.input, &case.key, &case.out);
+        run_test(&case.input, &case.key, &case.out);
     }
 }
 
-fn _formed_input_blocks_for<const BLOCKS: usize>(input: &String) -> ([[u64; 16]; BLOCKS], usize) {
-    let input_size = input.len() / 2; // Amount of bytes
-    let mut input_bytes = hex::decode(input).expect("Invalid hex string");
-
-    input_bytes.resize(128 * BLOCKS, 0); // Fill with zeros to pad to 128*BLOCKS bytes
-
-    let mut blocks = [[0u64; 16]; BLOCKS];
-    for k in 0..BLOCKS {
-        let mut current_block = [0u64; 16];
-        for i in 0..16 {
-            current_block[i] =
-                _merge_bytes_into_64_bit_word(&(input_bytes[128 * k + 8 * i..128 * k + 8 * i + 8]))
-        }
-        blocks[k] = current_block;
-    }
-
-    (blocks, input_size)
-}
 
 fn _formed_output_block_for(output: &String) -> ([u8; 64], usize) {
     let output_block_size = output.len() / 2; // Amount of bytes

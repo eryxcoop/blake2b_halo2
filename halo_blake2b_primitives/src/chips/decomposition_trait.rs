@@ -37,6 +37,15 @@ pub trait Decomposition<F: PrimeField, const T: usize> {
         offset: usize,
     ) -> Result<AssignedCell<F, F>, Error>;
 
+    fn generate_row_from_bytes(
+        &mut self,
+        _region: &mut Region<F>,
+        _bytes: [Value<F>; 8],
+        _offset: usize,
+    ) -> Result<AssignedCell<F, F>, Error> {
+        panic!("Not implemented");
+    }
+
     fn generate_row_from_cell(
         &mut self,
         region: &mut Region<F>,
