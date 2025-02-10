@@ -282,13 +282,7 @@ impl<F: PrimeField> Blake2bChip<F> {
         processed_bytes_count: Value<F>,
         is_last_block: bool,
     ) -> Result<[AssignedCell<F, F>; 64], Error> {
-        let mut current_block_words: Vec<AssignedCell<F, F>> = Vec::new();
-        for i in 0..16 {
-            let bytes: [Value<F>; 8] = block[i * 8..(i + 1) * 8].try_into().unwrap();
-            current_block_words.push(self.new_row_from_bytes(bytes, layouter)?);
-        }
-
-        let current_block_words = current_block_words.try_into().unwrap();
+        let current_block_words = self.block_words_from_bytes(layouter, block)?;
 
         let mut state_vector: Vec<AssignedCell<F, F>> = Vec::new();
         state_vector.extend_from_slice(global_state);
@@ -336,6 +330,17 @@ impl<F: PrimeField> Blake2bChip<F> {
         Ok(global_state_bytes_array)
     }
 
+    fn block_words_from_bytes(&mut self, layouter: &mut impl Layouter<F>, block: [Value<F>; 128])
+        -> Result<[AssignedCell<F, F>; 16], Error> {
+        let mut current_block_words: Vec<AssignedCell<F, F>> = Vec::new();
+        for i in 0..16 {
+            let bytes: [Value<F>; 8] = block[i * 8..(i + 1) * 8].try_into().unwrap();
+            current_block_words.push(self.new_row_from_bytes(bytes, layouter)?);
+        }
+        let current_block_words = current_block_words.try_into().unwrap();
+        Ok(current_block_words)
+    }
+
     pub fn compute_initial_state(
         &mut self,
         layouter: &mut impl Layouter<F>,
@@ -370,7 +375,7 @@ impl<F: PrimeField> Blake2bChip<F> {
     ) -> Result<AssignedCell<F, F>, Error> {
         layouter.assign_region(
             || "output size",
-            |mut region| region.assign_fixed(|| "output size", self.constants, 9, || output_size),
+            |mut region| region.assign_fixed(|| "output size", self.constants, 0, || output_size),
         )
     }
 
@@ -384,7 +389,7 @@ impl<F: PrimeField> Blake2bChip<F> {
                 region.assign_fixed(
                     || "state 0 xor",
                     self.constants,
-                    8,
+                    0,
                     || value_for(0x01010000u64),
                 )
             },
