@@ -1,7 +1,7 @@
 use super::*;
 
 #[test]
-fn test_blake2b_circuit_can_verify_an_output_of_length_1(){
+fn test_blake2b_circuit_can_verify_an_output_of_length_1() {
     let output_size = 1;
     let input = vec![];
     let input_size = 0;
@@ -13,7 +13,7 @@ fn test_blake2b_circuit_can_verify_an_output_of_length_1(){
 
 #[test]
 #[should_panic]
-fn test_blake2b_circuit_can_verify_an_output_of_length_1_negative(){
+fn test_blake2b_circuit_can_verify_an_output_of_length_1_negative() {
     let output_size = 1;
     let input = vec![];
     let input_size = 0;
@@ -25,7 +25,7 @@ fn test_blake2b_circuit_can_verify_an_output_of_length_1_negative(){
 }
 
 #[test]
-fn test_blake2b_circuit_can_verify_an_output_of_length_32(){
+fn test_blake2b_circuit_can_verify_an_output_of_length_32() {
     let output_size = 32;
     let input = vec![];
     let input_size = 0;
@@ -37,7 +37,7 @@ fn test_blake2b_circuit_can_verify_an_output_of_length_32(){
 
 #[test]
 #[should_panic]
-fn test_blake2b_circuit_can_verify_an_output_of_length_32_negative(){
+fn test_blake2b_circuit_can_verify_an_output_of_length_32_negative() {
     let output_size = 32;
     let input = vec![];
     let input_size = 0;
@@ -54,8 +54,12 @@ fn _correct_output_for_empty_input_1() -> [Fr; 1] {
 
 fn _correct_output_for_empty_input_32() -> [Fr; 32] {
     [
-        14, 87, 81, 192, 38, 229, 67, 178, 232, 171, 46,
-        176, 96, 153, 218, 161, 209, 229, 223, 71,
-        119, 143, 119, 135, 250, 171, 69, 205, 241, 47, 227, 168
-    ].iter().map(|x| Fr::from(*x as u64)).collect::<Vec<_>>().try_into().unwrap()
+        14, 87, 81, 192, 38, 229, 67, 178, 232, 171, 46, 176, 96, 153, 218, 161, 209, 229, 223, 71,
+        119, 143, 119, 135, 250, 171, 69, 205, 241, 47, 227, 168,
+    ]
+    .iter()
+    .map(|x| Fr::from(*x as u64))
+    .collect::<Vec<_>>()
+    .try_into()
+    .unwrap()
 }

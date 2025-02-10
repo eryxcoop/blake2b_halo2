@@ -190,7 +190,7 @@ impl<F: PrimeField> Blake2bChip<F> {
         &mut self,
         bytes: [Value<F>; 8],
         layouter: &mut impl Layouter<F>,
-    ) -> Result<AssignedCell<F, F>, Error> {
+    ) -> Result<Vec<AssignedCell<F, F>>, Error> {
         layouter.assign_region(
             || "row",
             |mut region| self.decompose_8_chip.generate_row_from_bytes(&mut region, bytes, 0),
@@ -278,12 +278,10 @@ impl<F: PrimeField> Blake2bChip<F> {
         layouter: &mut impl Layouter<F>,
         iv_constants: &[AssignedCell<F, F>; 8],
         global_state: &mut [AssignedCell<F, F>; 8],
-        block: [Value<F>; 128],
+        current_block_cells: [AssignedCell<F, F>; 16],
         processed_bytes_count: Value<F>,
         is_last_block: bool,
     ) -> Result<[AssignedCell<F, F>; 64], Error> {
-        let current_block_words = self.block_words_from_bytes(layouter, block)?;
-
         let mut state_vector: Vec<AssignedCell<F, F>> = Vec::new();
         state_vector.extend_from_slice(global_state);
         state_vector.extend_from_slice(iv_constants);
@@ -312,7 +310,7 @@ impl<F: PrimeField> Blake2bChip<F> {
                     Self::SIGMA[i][2 * j],
                     Self::SIGMA[i][2 * j + 1],
                     &mut state,
-                    &current_block_words,
+                    &current_block_cells,
                     layouter,
                 )?;
             }
@@ -330,14 +328,18 @@ impl<F: PrimeField> Blake2bChip<F> {
         Ok(global_state_bytes_array)
     }
 
-    fn block_words_from_bytes(&mut self, layouter: &mut impl Layouter<F>, block: [Value<F>; 128])
-        -> Result<[AssignedCell<F, F>; 16], Error> {
-        let mut current_block_words: Vec<AssignedCell<F, F>> = Vec::new();
+    fn block_words_from_bytes(
+        &mut self,
+        layouter: &mut impl Layouter<F>,
+        block: [Value<F>; 128],
+    ) -> Result<[Vec<AssignedCell<F, F>>; 16], Error> {
+        let mut current_block_rows: Vec<Vec<AssignedCell<F, F>>> = Vec::new();
         for i in 0..16 {
             let bytes: [Value<F>; 8] = block[i * 8..(i + 1) * 8].try_into().unwrap();
-            current_block_words.push(self.new_row_from_bytes(bytes, layouter)?);
+            let current_row_cells = self.new_row_from_bytes(bytes, layouter)?;
+            current_block_rows.push(current_row_cells);
         }
-        let current_block_words = current_block_words.try_into().unwrap();
+        let current_block_words = current_block_rows.try_into().unwrap();
         Ok(current_block_words)
     }
 
@@ -396,6 +398,16 @@ impl<F: PrimeField> Blake2bChip<F> {
         )
     }
 
+    pub fn assign_0_constant_to_fixed_cell(
+        &self,
+        layouter: &mut impl Layouter<F>,
+    ) -> Result<AssignedCell<F, F>, Error> {
+        layouter.assign_region(
+            || "constant",
+            |mut region| region.assign_fixed(|| "fixed 0", self.constants, 0, || value_for(0u64)),
+        )
+    }
+
     pub fn assign_iv_constants_to_fixed_cells(
         &self,
         layouter: &mut impl Layouter<F>,
@@ -445,9 +457,10 @@ impl<F: PrimeField> Blake2bChip<F> {
         let mut global_state_bytes = Err(Error::Synthesis);
 
         const BLAKE2B_BLOCK_SIZE: usize = 128;
-
-        // This is to calculate the ceiling of the division
         let amount_of_blocks = max((input_size + BLAKE2B_BLOCK_SIZE - 1) / BLAKE2B_BLOCK_SIZE, 1);
+        let last_block_size = input_size - (amount_of_blocks - 1) * BLAKE2B_BLOCK_SIZE;
+        let zeros_amount = BLAKE2B_BLOCK_SIZE - last_block_size;
+
         for i in 0..amount_of_blocks {
             let is_last_block = i == amount_of_blocks - 1;
 
@@ -459,26 +472,72 @@ impl<F: PrimeField> Blake2bChip<F> {
 
             let mut current_block_values: Vec<Value<F>>;
             if is_last_block {
-                let last_block_size = input_size - i * BLAKE2B_BLOCK_SIZE;
-                let zeros_amount = BLAKE2B_BLOCK_SIZE - last_block_size;
                 let mut zeros = vec![Value::known(F::ZERO); zeros_amount];
                 current_block_values = input[i * BLAKE2B_BLOCK_SIZE..].to_vec();
                 current_block_values.append(&mut zeros);
             } else {
-                current_block_values = input[i * BLAKE2B_BLOCK_SIZE..(i + 1) * BLAKE2B_BLOCK_SIZE].to_vec();
+                current_block_values =
+                    input[i * BLAKE2B_BLOCK_SIZE..(i + 1) * BLAKE2B_BLOCK_SIZE].to_vec();
             }
+
+            let current_block_rows =
+                self.block_words_from_bytes(layouter, current_block_values.try_into().unwrap())?;
+
+            if is_last_block {
+                self.constrain_padding_cells_to_equal_zero(
+                    layouter,
+                    zeros_amount,
+                    &current_block_rows,
+                )?;
+            }
+
+            let current_block_cells = current_block_rows
+                .iter()
+                .map(|row| row[0].clone())
+                .collect::<Vec<_>>()
+                .try_into()
+                .unwrap();
 
             let result = self.compress(
                 layouter,
                 iv_constants,
                 global_state,
-                current_block_values.try_into().unwrap(),
+                current_block_cells,
                 processed_bytes_count,
                 is_last_block,
             );
             global_state_bytes = result;
         }
         global_state_bytes
+    }
+
+    fn constrain_padding_cells_to_equal_zero(
+        &mut self,
+        layouter: &mut impl Layouter<F>,
+        zeros_amount: usize,
+        current_block_rows: &[Vec<AssignedCell<F, F>>; 16],
+    ) -> Result<(), Error> {
+            let zero_constant_cell = self.assign_0_constant_to_fixed_cell(layouter)?;
+            let mut constrained_padding_cells = 0;
+            layouter.assign_region(
+                || "constrain padding",
+                |mut region| {
+                    for row in (0..16).rev() {
+                        for limb in 1..9 {
+                            if constrained_padding_cells < zeros_amount {
+                                region.constrain_equal(
+                                    current_block_rows[row][limb].cell(),
+                                    zero_constant_cell.cell(),
+                                )?;
+                                constrained_padding_cells += 1;
+                            }
+                        }
+                    }
+                    Ok(())
+                },
+            )?;
+
+        Ok(())
     }
 
     pub fn constraint_public_inputs_to_equal_computation_results(

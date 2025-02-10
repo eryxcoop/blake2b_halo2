@@ -42,7 +42,7 @@ pub trait Decomposition<F: PrimeField, const T: usize> {
         _region: &mut Region<F>,
         _bytes: [Value<F>; 8],
         _offset: usize,
-    ) -> Result<AssignedCell<F, F>, Error> {
+    ) -> Result<Vec<AssignedCell<F, F>>, Error> {
         panic!("Not implemented");
     }
 

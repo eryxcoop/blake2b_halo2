@@ -125,7 +125,7 @@ impl<F: PrimeField> Decomposition<F, 8> for Decompose8Chip<F> {
         region: &mut Region<F>,
         bytes: [Value<F>; 8],
         offset: usize,
-    ) -> Result<AssignedCell<F, F>, Error> {
+    ) -> Result<Vec<AssignedCell<F, F>>, Error> {
         let mut full_number = F::ZERO;
 
         for byte in bytes.iter().rev() {
@@ -135,7 +135,7 @@ impl<F: PrimeField> Decomposition<F, 8> for Decompose8Chip<F> {
                 Value::<F>::unknown()
             });
         }
-        self.generate_row_from_value(region, Value::known(full_number), offset)
+        self.generate_row_from_value_and_keep_row(region, Value::known(full_number), offset)
     }
 
     fn generate_row_from_cell(

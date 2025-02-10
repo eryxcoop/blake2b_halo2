@@ -17,9 +17,7 @@ pub struct Blake2bConfig<F: PrimeField> {
     blake2b_table16_chip: Blake2bChip<F>,
 }
 
-impl<F: PrimeField> Circuit<F>
-    for Blake2bCircuit<F>
-{
+impl<F: PrimeField> Circuit<F> for Blake2bCircuit<F> {
     type Config = Blake2bConfig<F>;
     type FloorPlanner = SimpleFloorPlanner;
 
