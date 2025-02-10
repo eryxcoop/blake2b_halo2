@@ -442,9 +442,9 @@ impl<F: PrimeField> Blake2bChip<F> {
         const BLAKE2B_BLOCK_SIZE: usize = 128;
 
         // This is to calculate the ceiling of the division
-        let blocks = max((input_size + BLAKE2B_BLOCK_SIZE - 1) / BLAKE2B_BLOCK_SIZE, 1);
-        for i in 0..blocks {
-            let is_last_block = i == blocks - 1;
+        let amount_of_blocks = max((input_size + BLAKE2B_BLOCK_SIZE - 1) / BLAKE2B_BLOCK_SIZE, 1);
+        for i in 0..amount_of_blocks {
+            let is_last_block = i == amount_of_blocks - 1;
 
             let processed_bytes_count = Self::compute_processed_bytes_count_value_for_iteration(
                 i,
@@ -452,22 +452,22 @@ impl<F: PrimeField> Blake2bChip<F> {
                 input_size,
             );
 
-            let mut block: Vec<Value<F>>;
+            let mut current_block: Vec<Value<F>>;
             if is_last_block {
                 let last_block_size = input_size - i * BLAKE2B_BLOCK_SIZE;
                 let zeros_amount = BLAKE2B_BLOCK_SIZE - last_block_size;
                 let mut zeros = vec![Value::known(F::ZERO); zeros_amount];
-                block = input[i * BLAKE2B_BLOCK_SIZE..].to_vec();
-                block.append(&mut zeros);
+                current_block = input[i * BLAKE2B_BLOCK_SIZE..].to_vec();
+                current_block.append(&mut zeros);
             } else {
-                block = input[i * BLAKE2B_BLOCK_SIZE..(i + 1) * BLAKE2B_BLOCK_SIZE].to_vec();
+                current_block = input[i * BLAKE2B_BLOCK_SIZE..(i + 1) * BLAKE2B_BLOCK_SIZE].to_vec();
             }
 
             let result = self.compress(
                 layouter,
                 iv_constants,
                 global_state,
-                block.try_into().unwrap(),
+                current_block.try_into().unwrap(),
                 processed_bytes_count,
                 is_last_block,
             );
