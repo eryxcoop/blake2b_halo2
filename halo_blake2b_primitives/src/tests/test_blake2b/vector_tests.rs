@@ -24,7 +24,7 @@ fn run_test(input: &String, _key: &String, expected: &String) {
         .try_into()
         .unwrap();
 
-    let circuit = Blake2bCircuit::<Fr, 64>::new_for(input_values, input_size);
+    let circuit = Blake2bCircuit::<Fr>::new_for(input_values, input_size, 64);
     let prover =
         MockProver::run(17, &circuit, vec![expected_output_state_fields.to_vec()]).unwrap();
     prover.verify().unwrap();

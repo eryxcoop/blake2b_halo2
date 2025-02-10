@@ -4,10 +4,11 @@ use halo2_proofs::plonk::Circuit;
 use std::array;
 use crate::chips::blake2b_implementations::blake2b_chip::Blake2bChip;
 
-pub struct Blake2bCircuit<F: Field, const OUT_LEN: usize> {
+pub struct Blake2bCircuit<F: Field> {
     _ph: PhantomData<F>,
     input: Vec<Value<F>>,
     input_size: usize,
+    output_size: usize,
 }
 
 #[derive(Clone)]
@@ -16,8 +17,8 @@ pub struct Blake2bConfig<F: PrimeField> {
     blake2b_table16_chip: Blake2bChip<F>,
 }
 
-impl<F: PrimeField, const OUT_LEN: usize> Circuit<F>
-    for Blake2bCircuit<F, OUT_LEN>
+impl<F: PrimeField> Circuit<F>
+    for Blake2bCircuit<F>
 {
     type Config = Blake2bConfig<F>;
     type FloorPlanner = SimpleFloorPlanner;
@@ -27,6 +28,7 @@ impl<F: PrimeField, const OUT_LEN: usize> Circuit<F>
             _ph: PhantomData,
             input: vec![Value::unknown(); self.input_size],
             input_size: self.input_size,
+            output_size: self.output_size,
         }
     }
 
@@ -57,19 +59,20 @@ impl<F: PrimeField, const OUT_LEN: usize> Circuit<F>
         config.blake2b_table16_chip.initialize_with(&mut layouter);
         config.blake2b_table16_chip.compute_blake2b_hash_for_inputs(
             &mut layouter,
-            OUT_LEN,
+            self.output_size,
             self.input_size,
             &self.input,
         )
     }
 }
 
-impl<F: PrimeField, const OUT_LEN: usize> Blake2bCircuit<F, OUT_LEN> {
-    pub fn new_for(input: Vec<Value<F>>, input_size: usize) -> Self {
+impl<F: PrimeField> Blake2bCircuit<F> {
+    pub fn new_for(input: Vec<Value<F>>, input_size: usize, output_size: usize) -> Self {
         Self {
             _ph: PhantomData,
             input,
             input_size,
+            output_size,
         }
     }
 }
