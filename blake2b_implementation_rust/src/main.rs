@@ -63,7 +63,6 @@ impl Blake2bCtx {
     fn new(key: &mut Vec<u8>, outlen: usize) -> Self {
         let mut state: [u64; 8] = BLAKE2B_IV;
         state[0] = state[0] ^ 0x01010000 ^ (key.len() << 8) as u64 ^ outlen as u64;
-
         Self {
             iteration_buffer: [0; 128],
             state,

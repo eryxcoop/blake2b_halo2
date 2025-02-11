@@ -1,4 +1,3 @@
-use std::cmp::max;
 use super::*;
 use crate::auxiliar_functions::{value_for};
 use crate::chips::addition_mod_64_chip::AdditionMod64Chip;
@@ -22,6 +21,8 @@ cfg_if::cfg_if! {
         panic!("No feature selected");
     }
 }
+
+const BLAKE2B_BLOCK_SIZE: usize = 128;
 
 #[derive(Clone, Debug)]
 pub struct Blake2bChip<F: PrimeField> {
@@ -91,6 +92,483 @@ impl<F: PrimeField> Blake2bChip<F> {
             }
         }
     }
+
+    pub fn compute_blake2b_hash_for_inputs(
+        &mut self,
+        layouter: &mut impl Layouter<F>,
+        output_size: usize,
+        input_size: usize,
+        key_size: usize,
+        input: &Vec<Value<F>>,
+        key: &Vec<Value<F>>,
+    ) -> Result<(), Error> {
+
+        let iv_constants: [AssignedCell<F, F>; 8] =
+            self.assign_iv_constants_to_fixed_cells(layouter);
+        let init_const_state_0 = self.assign_01010000_constant_to_fixed_cell(layouter)?;
+        let output_size_constant = self.assign_constant_to_fixed_cell(layouter, output_size, "output size")?;
+        let key_size_constant_shifted = self.assign_constant_to_fixed_cell(layouter, key_size << 8, "key size")?;
+        let mut global_state = self.compute_initial_state(
+            layouter,
+            &iv_constants,
+            init_const_state_0,
+            output_size_constant,
+            key_size_constant_shifted,
+        )?;
+
+        let global_state_bytes = self.perform_blake2b_iterations(
+            layouter,
+            input_size,
+            input,
+            key,
+            &iv_constants,
+            &mut global_state,
+        )?;
+
+        self.constraint_public_inputs_to_equal_computation_results(
+            layouter,
+            global_state_bytes,
+            output_size,
+        )
+    }
+
+    // ================ PRIVATE METHODS ================
+
+    // Core methods
+
+    fn compute_initial_state(
+        &mut self,
+        layouter: &mut impl Layouter<F>,
+        iv_constants: &[AssignedCell<F, F>; 8],
+        init_const_state_0: AssignedCell<F, F>,
+        output_size_constant: AssignedCell<F, F>,
+        key_size_constant_shifted: AssignedCell<F, F>,
+    ) -> Result<[AssignedCell<F, F>; 8], Error> {
+        let mut global_state = Self::iv_constants()
+            .map(|constant| self.new_row_from_value(constant, layouter).unwrap());
+
+        Self::constrain_initial_state(layouter, &mut global_state, iv_constants)?;
+
+        // state[0] = state[0] ^ 0x01010000 ^ (key.len() << 8) as u64 ^ outlen as u64;
+        global_state[0] = self.xor(global_state[0].clone(), init_const_state_0.clone(), layouter);
+        global_state[0] = self.xor(global_state[0].clone(), output_size_constant, layouter);
+        global_state[0] = self.xor(global_state[0].clone(), key_size_constant_shifted, layouter);
+        Ok(global_state)
+    }
+
+    pub fn perform_blake2b_iterations(
+        &mut self,
+        layouter: &mut impl Layouter<F>,
+        input_size: usize,
+        input: &Vec<Value<F>>,
+        key: &Vec<Value<F>>,
+        iv_constants: &[AssignedCell<F, F>; 8],
+        global_state: &mut [AssignedCell<F, F>; 8],
+    ) -> Result<[AssignedCell<F, F>; 64], Error> {
+        // This is just to be able to return the result of the last compress call
+        let mut global_state_bytes = Err(Error::Synthesis);
+
+        let empty_key = key.is_empty();
+        let empty_input = input_size == 0;
+
+        let input_blocks = (input_size + BLAKE2B_BLOCK_SIZE - 1) / BLAKE2B_BLOCK_SIZE;
+        let total_blocks = if empty_key {
+            if empty_input { 1 } else { input_blocks }
+        } else {
+            if empty_input { 1 } else { input_blocks + 1 }
+        };
+        let last_input_block_index = if empty_input { 0 } else { input_blocks - 1 };
+
+        for i in 0..total_blocks {
+            let is_last_block = i == total_blocks - 1;
+            let is_key_block = !empty_key && i == 0;
+
+            let processed_bytes_count = Self::compute_processed_bytes_count_value_for_iteration(
+                i, is_last_block, input_size, empty_key
+            );
+
+            let mut current_block_values: Vec<Value<F>>;
+            if is_last_block && !is_key_block {
+                current_block_values = input[last_input_block_index * BLAKE2B_BLOCK_SIZE..].to_vec();
+                current_block_values.resize(128, Value::known(F::ZERO));
+            } else if is_key_block {
+                current_block_values = key.to_vec();
+                current_block_values.resize(128, Value::known(F::ZERO));
+            } else {
+                let current_input_block_index = if empty_key { i } else { i - 1 };
+                current_block_values =
+                    input[current_input_block_index * BLAKE2B_BLOCK_SIZE..(current_input_block_index + 1) * BLAKE2B_BLOCK_SIZE].to_vec();
+            }
+
+            let current_block_rows =
+                self.block_words_from_bytes(layouter, current_block_values.try_into().unwrap())?;
+
+            if is_last_block {
+                let zeros_amount_for_input_padding = if input_size == 0 {
+                    128
+                } else {
+                    (BLAKE2B_BLOCK_SIZE - input_size % BLAKE2B_BLOCK_SIZE) % BLAKE2B_BLOCK_SIZE
+                };
+                self.constrain_padding_cells_to_equal_zero(
+                    layouter,
+                    zeros_amount_for_input_padding,
+                    &current_block_rows,
+                )?;
+            }
+
+            if is_key_block {
+                let zeros_amount_for_key_padding = BLAKE2B_BLOCK_SIZE - key.len();
+                self.constrain_padding_cells_to_equal_zero(
+                    layouter,
+                    zeros_amount_for_key_padding,
+                    &current_block_rows,
+                )?;
+            }
+
+            let current_block_cells = Self::get_full_number_of_each(
+                current_block_rows
+            );
+
+            let result = self.compress(
+                layouter,
+                iv_constants,
+                global_state,
+                current_block_cells,
+                processed_bytes_count,
+                is_last_block,
+            );
+            global_state_bytes = result;
+        }
+        global_state_bytes
+    }
+
+    fn get_full_number_of_each(current_block_rows: [Vec<AssignedCell<F, F>>; 16]) -> [AssignedCell<F, F>; 16] {
+        current_block_rows
+            .iter()
+            .map(|row| row[0].clone())
+            .collect::<Vec<_>>()
+            .try_into()
+            .unwrap()
+    }
+
+    fn compress(
+        &mut self,
+        layouter: &mut impl Layouter<F>,
+        iv_constants: &[AssignedCell<F, F>; 8],
+        global_state: &mut [AssignedCell<F, F>; 8],
+        current_block_cells: [AssignedCell<F, F>; 16],
+        processed_bytes_count: Value<F>,
+        is_last_block: bool,
+    ) -> Result<[AssignedCell<F, F>; 64], Error> {
+        let mut state_vector: Vec<AssignedCell<F, F>> = Vec::new();
+        state_vector.extend_from_slice(global_state);
+        state_vector.extend_from_slice(iv_constants);
+
+        let mut state: [AssignedCell<F, F>; 16] = state_vector.try_into().unwrap();
+
+        // accumulative_state[12] ^= processed_bytes_count
+        let processed_bytes_count_cell =
+            self.new_row_from_value(processed_bytes_count, layouter)?;
+        state[12] = self.xor(state[12].clone(), processed_bytes_count_cell.clone(), layouter);
+        // accumulative_state[13] ^= ctx.processed_bytes_count[1]; This is 0 so we ignore it
+
+        if is_last_block {
+            state[14] = self.not(state[14].clone(), layouter);
+        }
+
+        for i in 0..12 {
+            for j in 0..8 {
+                self.mix(
+                    Self::ABCD[j][0],
+                    Self::ABCD[j][1],
+                    Self::ABCD[j][2],
+                    Self::ABCD[j][3],
+                    Self::SIGMA[i][2 * j],
+                    Self::SIGMA[i][2 * j + 1],
+                    &mut state,
+                    &current_block_cells,
+                    layouter,
+                )?;
+            }
+        }
+
+        let mut global_state_bytes = Vec::new();
+        for i in 0..8 {
+            global_state[i] = self.xor(global_state[i].clone(), state[i].clone(), layouter);
+            let row =
+                self.xor_with_full_rows(global_state[i].clone(), state[i + 8].clone(), layouter);
+            global_state_bytes.extend_from_slice(&row[1..]);
+            global_state[i] = row[0].clone();
+        }
+        let global_state_bytes_array = global_state_bytes.try_into().unwrap();
+        Ok(global_state_bytes_array)
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn mix(
+        &mut self,
+        a_: usize,
+        b_: usize,
+        c_: usize,
+        d_: usize,
+        sigma_even: usize,
+        sigma_odd: usize,
+        state: &mut [AssignedCell<F, F>; 16],
+        current_block_words: &[AssignedCell<F, F>; 16],
+        layouter: &mut impl Layouter<F>,
+    ) -> Result<(), Error> {
+        let v_a = state[a_].clone();
+        let v_b = state[b_].clone();
+        let v_c = state[c_].clone();
+        let v_d = state[d_].clone();
+        let x = current_block_words[sigma_even].clone();
+        let y = current_block_words[sigma_odd].clone();
+
+        // v[a] = ((v[a] as u128 + v[b] as u128 + x as u128) % (1 << 64)) as u64;
+        let a_plus_b = self.add(v_a, v_b.clone(), layouter);
+        let a = self.add(a_plus_b, x, layouter);
+
+        // v[d] = rotr_64(v[d] ^ v[a], 32);
+        let d_xor_a = self.xor(v_d.clone(), a.clone(), layouter);
+        let d = self.rotate_right_32(d_xor_a, layouter);
+
+        // v[c] = ((v[c] as u128 + v[d] as u128) % (1 << 64)) as u64;
+        let c = self.add(v_c, d.clone(), layouter);
+
+        // v[b] = rotr_64(v[b] ^ v[c], 24);
+        let b_xor_c = self.xor(v_b, c.clone(), layouter);
+        let b = self.rotate_right_24(b_xor_c, layouter);
+
+        // v[a] = ((v[a] as u128 + v[b] as u128 + y as u128) % (1 << 64)) as u64;
+        let a_plus_b = self.add(a.clone(), b.clone(), layouter);
+        let a = self.add(a_plus_b, y, layouter);
+
+        // v[d] = rotr_64(v[d] ^ v[a], 16);
+        let d_xor_a = self.xor(d.clone(), a.clone(), layouter);
+        let d = self.rotate_right_16(d_xor_a, layouter);
+
+        // v[c] = ((v[c] as u128 + v[d] as u128) % (1 << 64)) as u64;
+        let c = self.add(c.clone(), d.clone(), layouter);
+
+        // v[b] = rotr_64(v[b] ^ v[c], 63);
+        let b_xor_c = self.xor(b.clone(), c.clone(), layouter);
+        let b = self.rotate_right_63(b_xor_c, layouter);
+
+        state[a_] = a;
+        state[b_] = b;
+        state[c_] = c;
+        state[d_] = d;
+
+        Ok(())
+    }
+
+    fn block_words_from_bytes(
+        &mut self,
+        layouter: &mut impl Layouter<F>,
+        block: [Value<F>; 128],
+    ) -> Result<[Vec<AssignedCell<F, F>>; 16], Error> {
+        let mut current_block_rows: Vec<Vec<AssignedCell<F, F>>> = Vec::new();
+        for i in 0..16 {
+            let bytes: [Value<F>; 8] = block[i * 8..(i + 1) * 8].try_into().unwrap();
+            let current_row_cells = self.new_row_from_bytes(bytes, layouter)?;
+            current_block_rows.push(current_row_cells);
+        }
+        let current_block_words = current_block_rows.try_into().unwrap();
+        Ok(current_block_words)
+    }
+
+    fn compute_processed_bytes_count_value_for_iteration(
+        iteration: usize,
+        is_last_block: bool,
+        input_size: usize,
+        empty_key: bool,
+    ) -> Value<F> {
+        let processed_bytes_count = if is_last_block {
+            input_size + if empty_key { 0 } else { 128 }
+        } else {
+            128 * (iteration + 1)
+        };
+
+        Value::known(F::from(processed_bytes_count as u64))
+    }
+
+    // Create rows
+
+    fn new_row_from_bytes(
+        &mut self,
+        bytes: [Value<F>; 8],
+        layouter: &mut impl Layouter<F>,
+    ) -> Result<Vec<AssignedCell<F, F>>, Error> {
+        layouter.assign_region(
+            || "row",
+            |mut region| self.decompose_8_chip.generate_row_from_bytes(&mut region, bytes, 0),
+        )
+    }
+
+    pub fn new_row_from_value(
+        &mut self,
+        value: Value<F>,
+        layouter: &mut impl Layouter<F>,
+    ) -> Result<AssignedCell<F, F>, Error> {
+        layouter.assign_region(
+            || "row",
+            |mut region| self.decompose_8_chip.generate_row_from_value(&mut region, value, 0),
+        )
+    }
+
+    // Copy constrains
+
+    fn constrain_padding_cells_to_equal_zero(
+        &mut self,
+        layouter: &mut impl Layouter<F>,
+        zeros_amount: usize,
+        current_block_rows: &[Vec<AssignedCell<F, F>>; 16],
+    ) -> Result<(), Error> {
+        let zero_constant_cell = self.assign_0_constant_to_fixed_cell(layouter)?;
+        let mut constrained_padding_cells = 0;
+        layouter.assign_region(
+            || "constrain padding",
+            |mut region| {
+                for row in (0..16).rev() {
+                    for limb in 1..9 {
+                        if constrained_padding_cells < zeros_amount {
+                            region.constrain_equal(
+                                current_block_rows[row][limb].cell(),
+                                zero_constant_cell.cell(),
+                            )?;
+                            constrained_padding_cells += 1;
+                        }
+                    }
+                }
+                Ok(())
+            },
+        )?;
+
+        Ok(())
+    }
+
+    fn constraint_public_inputs_to_equal_computation_results(
+        &self,
+        layouter: &mut impl Layouter<F>,
+        global_state_bytes: [AssignedCell<F, F>; 64],
+        output_size: usize,
+    ) -> Result<(), Error> {
+        for i in 0..output_size {
+            layouter.constrain_instance(
+                global_state_bytes[i].cell(),
+                self.expected_final_state,
+                i,
+            )?;
+        }
+        Ok(())
+    }
+
+    fn constrain_initial_state(layouter: &mut impl Layouter<F>, global_state: &mut [AssignedCell<F, F>; 8], iv_constants: &[AssignedCell<F, F>; 8]) -> Result<(), Error> {
+        // Set copy constraints to recently initialized state
+        layouter.assign_region(
+            || "iv copy constraints",
+            |mut region| {
+                for i in 0..8 {
+                    region.constrain_equal(iv_constants[i].cell(), global_state[i].cell())?;
+                }
+                Ok(())
+            },
+        )?;
+        Ok(())
+    }
+
+
+    // Assign constants
+
+    pub fn assign_constant_to_fixed_cell(
+        &self,
+        layouter: &mut impl Layouter<F>,
+        constant: usize,
+        region_name: &str,
+    ) -> Result<AssignedCell<F, F>, Error> {
+        let constant_value = Value::known(F::from(constant as u64));
+        layouter.assign_region(
+            || region_name,
+            |mut region| region.assign_fixed(|| region_name, self.constants, 0, || constant_value),
+        )
+    }
+
+    fn assign_output_size_to_fixed_cell(
+        &self,
+        layouter: &mut impl Layouter<F>,
+        output_size: Value<F>,
+    ) -> Result<AssignedCell<F, F>, Error> {
+        layouter.assign_region(
+            || "output size",
+            |mut region| region.assign_fixed(|| "output size", self.constants, 0, || output_size),
+        )
+    }
+
+    fn assign_01010000_constant_to_fixed_cell(
+        &self,
+        layouter: &mut impl Layouter<F>,
+    ) -> Result<AssignedCell<F, F>, Error> {
+        layouter.assign_region(
+            || "constant",
+            |mut region| {
+                region.assign_fixed(
+                    || "state 0 xor",
+                    self.constants,
+                    0,
+                    || value_for(0x01010000u64),
+                )
+            },
+        )
+    }
+
+    fn assign_0_constant_to_fixed_cell(
+        &self,
+        layouter: &mut impl Layouter<F>,
+    ) -> Result<AssignedCell<F, F>, Error> {
+        layouter.assign_region(
+            || "constant",
+            |mut region| region.assign_fixed(|| "fixed 0", self.constants, 0, || value_for(0u64)),
+        )
+    }
+
+    fn assign_iv_constants_to_fixed_cells(
+        &self,
+        layouter: &mut impl Layouter<F>,
+    ) -> [AssignedCell<F, F>; 8] {
+        Self::iv_constants()
+            .iter()
+            .enumerate()
+            .map(|(i, value)| {
+                layouter
+                    .assign_region(
+                        || "row",
+                        |mut region| {
+                            region.assign_fixed(|| "iv constants", self.constants, i, || *value)
+                        },
+                    )
+                    .unwrap()
+            })
+            .collect::<Vec<AssignedCell<F, F>>>()
+            .try_into()
+            .unwrap()
+    }
+
+    // Populate tables
+
+    fn _populate_lookup_table_8(&mut self, layouter: &mut impl Layouter<F>) {
+        let _ = self.decompose_8_chip.populate_lookup_table(layouter);
+    }
+
+    #[allow(dead_code)]
+    fn _populate_lookup_table_16(&mut self, layouter: &mut impl Layouter<F>) {
+        let _ = self.decompose_16_chip.populate_lookup_table(layouter);
+    }
+
+    fn _populate_xor_lookup_table(&mut self, layouter: &mut impl Layouter<F>) {
+        let _ = self.xor_chip.populate_xor_lookup_table(layouter);
+    }
+
+    // Primitive operations (they are public for testing purposes)
 
     pub fn add(
         &mut self,
@@ -186,425 +664,6 @@ impl<F: PrimeField> Blake2bChip<F> {
             .unwrap()
     }
 
-    pub fn new_row_from_bytes(
-        &mut self,
-        bytes: [Value<F>; 8],
-        layouter: &mut impl Layouter<F>,
-    ) -> Result<Vec<AssignedCell<F, F>>, Error> {
-        layouter.assign_region(
-            || "row",
-            |mut region| self.decompose_8_chip.generate_row_from_bytes(&mut region, bytes, 0),
-        )
-    }
-
-    pub fn new_row_from_value(
-        &mut self,
-        value: Value<F>,
-        layouter: &mut impl Layouter<F>,
-    ) -> Result<AssignedCell<F, F>, Error> {
-        layouter.assign_region(
-            || "row",
-            |mut region| self.decompose_8_chip.generate_row_from_value(&mut region, value, 0),
-        )
-    }
-
-    #[allow(clippy::too_many_arguments)]
-    pub fn mix(
-        &mut self,
-        a_: usize,
-        b_: usize,
-        c_: usize,
-        d_: usize,
-        sigma_even: usize,
-        sigma_odd: usize,
-        state: &mut [AssignedCell<F, F>; 16],
-        current_block_words: &[AssignedCell<F, F>; 16],
-        layouter: &mut impl Layouter<F>,
-    ) -> Result<(), Error> {
-        let v_a = state[a_].clone();
-        let v_b = state[b_].clone();
-        let v_c = state[c_].clone();
-        let v_d = state[d_].clone();
-        let x = current_block_words[sigma_even].clone();
-        let y = current_block_words[sigma_odd].clone();
-
-        // v[a] = ((v[a] as u128 + v[b] as u128 + x as u128) % (1 << 64)) as u64;
-        let a_plus_b = self.add(v_a, v_b.clone(), layouter);
-        let a = self.add(a_plus_b, x, layouter);
-        // Self::assert_values_are_equal(a.clone(), value_for(13481588052017302553u64));
-
-        // v[d] = rotr_64(v[d] ^ v[a], 32);
-        let d_xor_a = self.xor(v_d.clone(), a.clone(), layouter);
-        let d = self.rotate_right_32(d_xor_a, layouter);
-        // Self::assert_values_are_equal(d.clone(), value_for(955553433272085144u64));
-
-        // v[c] = ((v[c] as u128 + v[d] as u128) % (1 << 64)) as u64;
-        let c = self.add(v_c, d.clone(), layouter);
-        // Self::assert_values_are_equal(c.clone(), value_for(8596445010228097952u64));
-
-        // v[b] = rotr_64(v[b] ^ v[c], 24);
-        let b_xor_c = self.xor(v_b, c.clone(), layouter);
-        let b = self.rotate_right_24(b_xor_c, layouter);
-        // Self::assert_values_are_equal(b.clone(), value_for(3868997964033118064u64));
-
-        // v[a] = ((v[a] as u128 + v[b] as u128 + y as u128) % (1 << 64)) as u64;
-        let a_plus_b = self.add(a.clone(), b.clone(), layouter);
-        let a = self.add(a_plus_b, y, layouter);
-        // Self::assert_values_are_equal(a.clone(), value_for(13537687662323754138u64));
-
-        // v[d] = rotr_64(v[d] ^ v[a], 16);
-        let d_xor_a = self.xor(d.clone(), a.clone(), layouter);
-        let d = self.rotate_right_16(d_xor_a, layouter);
-        // Self::assert_values_are_equal(d.clone(), value_for(11170449401992604703u64));
-
-        // v[c] = ((v[c] as u128 + v[d] as u128) % (1 << 64)) as u64;
-        let c = self.add(c.clone(), d.clone(), layouter);
-        // Self::assert_values_are_equal(c.clone(), value_for(2270897969802886507u64));
-
-        // v[b] = rotr_64(v[b] ^ v[c], 63);
-        let b_xor_c = self.xor(b.clone(), c.clone(), layouter);
-        let b = self.rotate_right_63(b_xor_c, layouter);
-
-        state[a_] = a;
-        state[b_] = b;
-        state[c_] = c;
-        state[d_] = d;
-
-        Ok(())
-    }
-
-    pub fn compress(
-        &mut self,
-        layouter: &mut impl Layouter<F>,
-        iv_constants: &[AssignedCell<F, F>; 8],
-        global_state: &mut [AssignedCell<F, F>; 8],
-        current_block_cells: [AssignedCell<F, F>; 16],
-        processed_bytes_count: Value<F>,
-        is_last_block: bool,
-    ) -> Result<[AssignedCell<F, F>; 64], Error> {
-        let mut state_vector: Vec<AssignedCell<F, F>> = Vec::new();
-        state_vector.extend_from_slice(global_state);
-        state_vector.extend_from_slice(iv_constants);
-
-        let mut state: [AssignedCell<F, F>; 16] = state_vector.try_into().unwrap();
-
-        // accumulative_state[12] ^= processed_bytes_count
-        let processed_bytes_count_cell =
-            self.new_row_from_value(processed_bytes_count, layouter)?;
-        state[12] = self.xor(state[12].clone(), processed_bytes_count_cell.clone(), layouter);
-        // accumulative_state[13] ^= ctx.processed_bytes_count[1]; This is 0 so we ignore it
-
-        if is_last_block {
-            state[14] = self.not(state[14].clone(), layouter);
-        }
-
-        // Self::_assert_state_is_correct_before_mixing(&state);
-
-        for i in 0..12 {
-            for j in 0..8 {
-                self.mix(
-                    Self::ABCD[j][0],
-                    Self::ABCD[j][1],
-                    Self::ABCD[j][2],
-                    Self::ABCD[j][3],
-                    Self::SIGMA[i][2 * j],
-                    Self::SIGMA[i][2 * j + 1],
-                    &mut state,
-                    &current_block_cells,
-                    layouter,
-                )?;
-            }
-        }
-
-        let mut global_state_bytes = Vec::new();
-        for i in 0..8 {
-            global_state[i] = self.xor(global_state[i].clone(), state[i].clone(), layouter);
-            let row =
-                self.xor_with_full_rows(global_state[i].clone(), state[i + 8].clone(), layouter);
-            global_state_bytes.extend_from_slice(&row[1..]);
-            global_state[i] = row[0].clone();
-        }
-        let global_state_bytes_array = global_state_bytes.try_into().unwrap();
-        Ok(global_state_bytes_array)
-    }
-
-    fn block_words_from_bytes(
-        &mut self,
-        layouter: &mut impl Layouter<F>,
-        block: [Value<F>; 128],
-    ) -> Result<[Vec<AssignedCell<F, F>>; 16], Error> {
-        let mut current_block_rows: Vec<Vec<AssignedCell<F, F>>> = Vec::new();
-        for i in 0..16 {
-            let bytes: [Value<F>; 8] = block[i * 8..(i + 1) * 8].try_into().unwrap();
-            let current_row_cells = self.new_row_from_bytes(bytes, layouter)?;
-            current_block_rows.push(current_row_cells);
-        }
-        let current_block_words = current_block_rows.try_into().unwrap();
-        Ok(current_block_words)
-    }
-
-    pub fn compute_initial_state(
-        &mut self,
-        layouter: &mut impl Layouter<F>,
-        iv_constants: &[AssignedCell<F, F>; 8],
-        init_const_state_0: AssignedCell<F, F>,
-        output_size_constant: AssignedCell<F, F>,
-    ) -> Result<[AssignedCell<F, F>; 8], Error> {
-        let mut global_state = Self::iv_constants()
-            .map(|constant| self.new_row_from_value(constant, layouter).unwrap());
-
-        // Set copy constraints to recently initialized state
-        layouter.assign_region(
-            || "iv copy constraints",
-            |mut region| {
-                for i in 0..8 {
-                    region.constrain_equal(iv_constants[i].cell(), global_state[i].cell())?;
-                }
-                Ok(())
-            },
-        )?;
-
-        // state[0] = state[0] ^ 0x01010000 ^ (key.len() << 8) as u64 ^ outlen as u64;
-        global_state[0] = self.xor(global_state[0].clone(), init_const_state_0.clone(), layouter);
-        global_state[0] = self.xor(global_state[0].clone(), output_size_constant, layouter);
-        Ok(global_state)
-    }
-
-    pub fn assign_output_size_to_fixed_cell(
-        &self,
-        layouter: &mut impl Layouter<F>,
-        output_size: Value<F>,
-    ) -> Result<AssignedCell<F, F>, Error> {
-        layouter.assign_region(
-            || "output size",
-            |mut region| region.assign_fixed(|| "output size", self.constants, 0, || output_size),
-        )
-    }
-
-    pub fn assign_01010000_constant_to_fixed_cell(
-        &self,
-        layouter: &mut impl Layouter<F>,
-    ) -> Result<AssignedCell<F, F>, Error> {
-        layouter.assign_region(
-            || "constant",
-            |mut region| {
-                region.assign_fixed(
-                    || "state 0 xor",
-                    self.constants,
-                    0,
-                    || value_for(0x01010000u64),
-                )
-            },
-        )
-    }
-
-    pub fn assign_0_constant_to_fixed_cell(
-        &self,
-        layouter: &mut impl Layouter<F>,
-    ) -> Result<AssignedCell<F, F>, Error> {
-        layouter.assign_region(
-            || "constant",
-            |mut region| region.assign_fixed(|| "fixed 0", self.constants, 0, || value_for(0u64)),
-        )
-    }
-
-    pub fn assign_iv_constants_to_fixed_cells(
-        &self,
-        layouter: &mut impl Layouter<F>,
-    ) -> [AssignedCell<F, F>; 8] {
-        Self::iv_constants()
-            .iter()
-            .enumerate()
-            .map(|(i, value)| {
-                layouter
-                    .assign_region(
-                        || "row",
-                        |mut region| {
-                            region.assign_fixed(|| "iv constants", self.constants, i, || *value)
-                        },
-                    )
-                    .unwrap()
-            })
-            .collect::<Vec<AssignedCell<F, F>>>()
-            .try_into()
-            .unwrap()
-    }
-
-    pub fn compute_processed_bytes_count_value_for_iteration(
-        iteration: usize,
-        is_last_block: bool,
-        input_size: usize,
-    ) -> Value<F> {
-        if is_last_block {
-            Value::known(F::from(input_size as u64))
-        } else {
-            let bytes_count_for_iteration = Value::known(F::from(128));
-            let iteration_value = Value::known(F::from(iteration as u64));
-            bytes_count_for_iteration
-                .and_then(|a| iteration_value.and_then(|b| Value::known(a * (b + F::ONE))))
-        }
-    }
-
-    pub fn perform_blake2b_iterations(
-        &mut self,
-        layouter: &mut impl Layouter<F>,
-        input_size: usize,
-        input: &Vec<Value<F>>,
-        iv_constants: &[AssignedCell<F, F>; 8],
-        global_state: &mut [AssignedCell<F, F>; 8],
-    ) -> Result<[AssignedCell<F, F>; 64], Error> {
-        // This is just to be able to return the result of the last compress call
-        let mut global_state_bytes = Err(Error::Synthesis);
-
-        const BLAKE2B_BLOCK_SIZE: usize = 128;
-        let amount_of_blocks = max((input_size + BLAKE2B_BLOCK_SIZE - 1) / BLAKE2B_BLOCK_SIZE, 1);
-        let last_block_size = input_size - (amount_of_blocks - 1) * BLAKE2B_BLOCK_SIZE;
-        let zeros_amount = BLAKE2B_BLOCK_SIZE - last_block_size;
-
-        for i in 0..amount_of_blocks {
-            let is_last_block = i == amount_of_blocks - 1;
-
-            let processed_bytes_count = Self::compute_processed_bytes_count_value_for_iteration(
-                i,
-                is_last_block,
-                input_size,
-            );
-
-            let mut current_block_values: Vec<Value<F>>;
-            if is_last_block {
-                let mut zeros = vec![Value::known(F::ZERO); zeros_amount];
-                current_block_values = input[i * BLAKE2B_BLOCK_SIZE..].to_vec();
-                current_block_values.append(&mut zeros);
-            } else {
-                current_block_values =
-                    input[i * BLAKE2B_BLOCK_SIZE..(i + 1) * BLAKE2B_BLOCK_SIZE].to_vec();
-            }
-
-            let current_block_rows =
-                self.block_words_from_bytes(layouter, current_block_values.try_into().unwrap())?;
-
-            if is_last_block {
-                self.constrain_padding_cells_to_equal_zero(
-                    layouter,
-                    zeros_amount,
-                    &current_block_rows,
-                )?;
-            }
-
-            let current_block_cells = current_block_rows
-                .iter()
-                .map(|row| row[0].clone())
-                .collect::<Vec<_>>()
-                .try_into()
-                .unwrap();
-
-            let result = self.compress(
-                layouter,
-                iv_constants,
-                global_state,
-                current_block_cells,
-                processed_bytes_count,
-                is_last_block,
-            );
-            global_state_bytes = result;
-        }
-        global_state_bytes
-    }
-
-    fn constrain_padding_cells_to_equal_zero(
-        &mut self,
-        layouter: &mut impl Layouter<F>,
-        zeros_amount: usize,
-        current_block_rows: &[Vec<AssignedCell<F, F>>; 16],
-    ) -> Result<(), Error> {
-            let zero_constant_cell = self.assign_0_constant_to_fixed_cell(layouter)?;
-            let mut constrained_padding_cells = 0;
-            layouter.assign_region(
-                || "constrain padding",
-                |mut region| {
-                    for row in (0..16).rev() {
-                        for limb in (1..9).rev() {
-                            if constrained_padding_cells < zeros_amount {
-                                region.constrain_equal(
-                                    current_block_rows[row][limb].cell(),
-                                    zero_constant_cell.cell(),
-                                )?;
-                                constrained_padding_cells += 1;
-                            }
-                        }
-                    }
-                    Ok(())
-                },
-            )?;
-
-        Ok(())
-    }
-
-    pub fn constraint_public_inputs_to_equal_computation_results(
-        &self,
-        layouter: &mut impl Layouter<F>,
-        global_state_bytes: [AssignedCell<F, F>; 64],
-        output_size: usize,
-    ) -> Result<(), Error> {
-        for i in 0..output_size {
-            layouter.constrain_instance(
-                global_state_bytes[i].cell(),
-                self.expected_final_state,
-                i,
-            )?;
-        }
-        Ok(())
-    }
-
-    pub fn compute_blake2b_hash_for_inputs(
-        &mut self,
-        layouter: &mut impl Layouter<F>,
-        output_size: usize,
-        input_size: usize,
-        input: &Vec<Value<F>>,
-    ) -> Result<(), Error> {
-        let output_size_value = Value::known(F::from(output_size as u64));
-
-        let iv_constants: [AssignedCell<F, F>; 8] =
-            self.assign_iv_constants_to_fixed_cells(layouter);
-        let init_const_state_0 = self.assign_01010000_constant_to_fixed_cell(layouter)?;
-        let output_size_constant =
-            self.assign_output_size_to_fixed_cell(layouter, output_size_value)?;
-        let mut global_state = self.compute_initial_state(
-            layouter,
-            &iv_constants,
-            init_const_state_0,
-            output_size_constant,
-        )?;
-
-        let global_state_bytes = self.perform_blake2b_iterations(
-            layouter,
-            input_size,
-            input,
-            &iv_constants,
-            &mut global_state,
-        )?;
-
-        self.constraint_public_inputs_to_equal_computation_results(
-            layouter,
-            global_state_bytes,
-            output_size,
-        )
-    }
-
-    fn _populate_lookup_table_8(&mut self, layouter: &mut impl Layouter<F>) {
-        let _ = self.decompose_8_chip.populate_lookup_table(layouter);
-    }
-
-    #[allow(dead_code)]
-    fn _populate_lookup_table_16(&mut self, layouter: &mut impl Layouter<F>) {
-        let _ = self.decompose_16_chip.populate_lookup_table(layouter);
-    }
-
-    fn _populate_xor_lookup_table(&mut self, layouter: &mut impl Layouter<F>) {
-        let _ = self.xor_chip.populate_xor_lookup_table(layouter);
-    }
-
     const ABCD: [[usize; 4]; 8] = [
         [0, 4, 8, 12],
         [1, 5, 9, 13],
@@ -631,7 +690,7 @@ impl<F: PrimeField> Blake2bChip<F> {
         [14, 10, 4, 8, 9, 15, 13, 6, 1, 12, 0, 2, 11, 7, 5, 3],
     ];
 
-    pub fn iv_constants() -> [Value<F>; 8] {
+    fn iv_constants() -> [Value<F>; 8] {
         [
             value_for(0x6A09E667F3BCC908u128),
             value_for(0xBB67AE8584CAA73Bu128),

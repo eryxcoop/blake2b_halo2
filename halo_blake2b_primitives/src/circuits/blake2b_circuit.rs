@@ -8,6 +8,8 @@ pub struct Blake2bCircuit<F: Field> {
     _ph: PhantomData<F>,
     input: Vec<Value<F>>,
     input_size: usize,
+    key: Vec<Value<F>>,
+    key_size: usize,
     output_size: usize,
 }
 
@@ -22,10 +24,14 @@ impl<F: PrimeField> Circuit<F> for Blake2bCircuit<F> {
     type FloorPlanner = SimpleFloorPlanner;
 
     fn without_witnesses(&self) -> Self {
+        let input_size = self.input_size;
+        let key_size = self.key_size;
         Self {
             _ph: PhantomData,
-            input: vec![Value::unknown(); self.input_size],
-            input_size: self.input_size,
+            input: vec![Value::unknown(); input_size],
+            input_size,
+            key: vec![Value::unknown(); key_size],
+            key_size,
             output_size: self.output_size,
         }
     }
@@ -59,17 +65,21 @@ impl<F: PrimeField> Circuit<F> for Blake2bCircuit<F> {
             &mut layouter,
             self.output_size,
             self.input_size,
+            self.key_size,
             &self.input,
+            &self.key,
         )
     }
 }
 
 impl<F: PrimeField> Blake2bCircuit<F> {
-    pub fn new_for(input: Vec<Value<F>>, input_size: usize, output_size: usize) -> Self {
+    pub fn new_for(input: Vec<Value<F>>, input_size: usize, key: Vec<Value<F>>, key_size: usize, output_size: usize) -> Self {
         Self {
             _ph: PhantomData,
             input,
             input_size,
+            key,
+            key_size,
             output_size,
         }
     }
