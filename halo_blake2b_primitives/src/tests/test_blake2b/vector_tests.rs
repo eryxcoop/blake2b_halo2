@@ -74,10 +74,3 @@ pub fn formed_output_block_for(output: &String) -> ([u8; 64], usize) {
     (output_bytes.try_into().unwrap(), output_block_size)
 }
 
-fn _merge_bytes_into_64_bit_word(bytes: &[u8]) -> u64 {
-    let mut word = 0u64;
-    for i in 0..8 {
-        word += (bytes[i] as u64) << (i * 8);
-    }
-    word
-}
