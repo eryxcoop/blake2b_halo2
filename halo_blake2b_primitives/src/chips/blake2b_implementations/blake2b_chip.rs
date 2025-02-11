@@ -169,51 +169,29 @@ impl<F: PrimeField> Blake2bChip<F> {
         // This is just to be able to return the result of the last compress call
         let mut global_state_bytes = Err(Error::Synthesis);
 
-        let empty_key = key.is_empty();
-        let empty_input = input_size == 0;
+        let is_key_empty = key.is_empty();
+        let is_input_empty = input_size == 0;
 
         let input_blocks = input_size.div_ceil(BLAKE2B_BLOCK_SIZE);
-        let total_blocks = if empty_key {
-            if empty_input {
-                1
-            } else {
-                input_blocks
-            }
-        } else if empty_input {
-            1
-        } else {
-            input_blocks + 1
-        };
-        let last_input_block_index = if empty_input { 0 } else { input_blocks - 1 };
+        let total_blocks = Self::get_total_blocks_count(
+            input_blocks, is_input_empty, is_key_empty
+        );
+        let last_input_block_index = if is_input_empty { 0 } else { input_blocks - 1 };
 
         for i in 0..total_blocks {
             let is_last_block = i == total_blocks - 1;
-            let is_key_block = !empty_key && i == 0;
+            let is_key_block = !is_key_empty && i == 0;
 
             let processed_bytes_count = Self::compute_processed_bytes_count_value_for_iteration(
                 i,
                 is_last_block,
                 input_size,
-                empty_key,
+                is_key_empty,
             );
 
-            let mut current_block_values: Vec<Value<F>>;
-            if is_last_block && !is_key_block {
-                current_block_values =
-                    input[last_input_block_index * BLAKE2B_BLOCK_SIZE..].to_vec();
-                current_block_values.resize(128, Value::known(F::ZERO));
-            } else if is_key_block {
-                current_block_values = key.to_vec();
-                current_block_values.resize(128, Value::known(F::ZERO));
-            } else {
-                let current_input_block_index = if empty_key { i } else { i - 1 };
-                current_block_values = input[current_input_block_index * BLAKE2B_BLOCK_SIZE
-                    ..(current_input_block_index + 1) * BLAKE2B_BLOCK_SIZE]
-                    .to_vec();
-            }
-
-            let current_block_rows =
-                self.block_words_from_bytes(layouter, current_block_values.try_into().unwrap())?;
+            let current_block_rows = self.build_current_block_rows(
+                layouter, input, key, i, last_input_block_index, is_key_empty, is_last_block, is_key_block
+            )?;
 
             if is_last_block {
                 let zeros_amount_for_input_padding = if input_size == 0 {
@@ -250,6 +228,50 @@ impl<F: PrimeField> Blake2bChip<F> {
             global_state_bytes = result;
         }
         global_state_bytes
+    }
+
+    fn get_total_blocks_count(input_blocks: usize, is_input_empty: bool, is_key_empty: bool) -> usize {
+        if is_key_empty {
+            if is_input_empty {
+                1
+            } else {
+                input_blocks
+            }
+        } else if is_input_empty {
+            1
+        } else {
+            input_blocks + 1
+        }
+    }
+
+    fn build_current_block_rows(&mut self, layouter: &mut impl Layouter<F>, input: &Vec<Value<F>>, key: &Vec<Value<F>>, block_number: usize, last_input_block_index: usize, is_key_empty: bool, is_last_block: bool, is_key_block: bool) -> Result<[Vec<AssignedCell<F, F>>; 16], Error> {
+        let current_block_values = Self::build_values_for_current_block(
+            input, key, block_number, last_input_block_index, is_key_empty, is_last_block, is_key_block
+        );
+
+        let current_block_rows =
+            self.block_words_from_bytes(layouter, current_block_values.try_into().unwrap())?;
+        Ok(current_block_rows)
+    }
+
+    fn build_values_for_current_block(input: &Vec<Value<F>>, key: &Vec<Value<F>>, block_number: usize, last_input_block_index: usize, is_key_empty: bool, is_last_block: bool, is_key_block: bool) -> Vec<Value<F>> {
+        let mut current_block_values: Vec<Value<F>> = if is_last_block && !is_key_block {
+            let mut result =
+                input[last_input_block_index * BLAKE2B_BLOCK_SIZE..].to_vec();
+            result.resize(128, Value::known(F::ZERO));
+            result
+        } else if is_key_block {
+            let mut result = key.to_vec();
+            result.resize(128, Value::known(F::ZERO));
+            result
+        } else {
+            let current_input_block_index = if is_key_empty { block_number } else { block_number - 1 };
+            let mut result = input[current_input_block_index * BLAKE2B_BLOCK_SIZE
+                ..(current_input_block_index + 1) * BLAKE2B_BLOCK_SIZE]
+                .to_vec();
+            result
+        };
+        current_block_values
     }
 
     fn get_full_number_of_each(
