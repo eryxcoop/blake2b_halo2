@@ -20,12 +20,8 @@ pub fn run_test(input: &String, key: &String, expected: &String) {
 
     // OUTPUT
     let (expected_output, output_size) = formed_output_block_for(expected);
-    let expected_output_fields: [Fr; 64] = expected_output
-        .iter()
-        .map(|x| Fr::from(*x as u64))
-        .collect::<Vec<_>>()
-        .try_into()
-        .unwrap();
+    let expected_output_fields: [Fr; 64] =
+        expected_output.iter().map(|x| Fr::from(*x as u64)).collect::<Vec<_>>().try_into().unwrap();
 
     // KEY
     let key_size = key.len() / 2; // Amount of bytes
@@ -34,9 +30,9 @@ pub fn run_test(input: &String, key: &String, expected: &String) {
         key_bytes.iter().map(|x| Value::known(Fr::from(*x as u64))).collect::<Vec<_>>();
 
     // TEST
-    let circuit = Blake2bCircuit::<Fr>::new_for(input_values, input_size, key_values, key_size, output_size);
-    let prover =
-        MockProver::run(17, &circuit, vec![expected_output_fields.to_vec()]).unwrap();
+    let circuit =
+        Blake2bCircuit::<Fr>::new_for(input_values, input_size, key_values, key_size, output_size);
+    let prover = MockProver::run(17, &circuit, vec![expected_output_fields.to_vec()]).unwrap();
     prover.verify().unwrap();
 }
 
@@ -104,4 +100,3 @@ pub fn formed_output_block_for(output: &String) -> ([u8; 64], usize) {
 
     (output_bytes.try_into().unwrap(), output_block_size)
 }
-

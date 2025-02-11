@@ -130,7 +130,7 @@ impl<F: PrimeField> Decomposition<F, 8> for Decompose8Chip<F> {
 
         for byte in bytes.iter().rev() {
             byte.and_then(|v| {
-                full_number = full_number * F::from(256u64);
+                full_number *= F::from(256u64);
                 full_number += v;
                 Value::<F>::unknown()
             });

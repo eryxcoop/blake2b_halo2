@@ -73,7 +73,13 @@ impl<F: PrimeField> Circuit<F> for Blake2bCircuit<F> {
 }
 
 impl<F: PrimeField> Blake2bCircuit<F> {
-    pub fn new_for(input: Vec<Value<F>>, input_size: usize, key: Vec<Value<F>>, key_size: usize, output_size: usize) -> Self {
+    pub fn new_for(
+        input: Vec<Value<F>>,
+        input_size: usize,
+        key: Vec<Value<F>>,
+        key_size: usize,
+        output_size: usize,
+    ) -> Self {
         Self {
             _ph: PhantomData,
             input,

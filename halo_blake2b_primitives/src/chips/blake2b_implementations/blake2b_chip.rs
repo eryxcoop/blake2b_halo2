@@ -102,12 +102,13 @@ impl<F: PrimeField> Blake2bChip<F> {
         input: &Vec<Value<F>>,
         key: &Vec<Value<F>>,
     ) -> Result<(), Error> {
-
         let iv_constants: [AssignedCell<F, F>; 8] =
             self.assign_iv_constants_to_fixed_cells(layouter);
         let init_const_state_0 = self.assign_01010000_constant_to_fixed_cell(layouter)?;
-        let output_size_constant = self.assign_constant_to_fixed_cell(layouter, output_size, "output size")?;
-        let key_size_constant_shifted = self.assign_constant_to_fixed_cell(layouter, key_size << 8, "key size")?;
+        let output_size_constant =
+            self.assign_constant_to_fixed_cell(layouter, output_size, "output size")?;
+        let key_size_constant_shifted =
+            self.assign_constant_to_fixed_cell(layouter, key_size << 8, "key size")?;
         let mut global_state = self.compute_initial_state(
             layouter,
             &iv_constants,
@@ -156,7 +157,7 @@ impl<F: PrimeField> Blake2bChip<F> {
         Ok(global_state)
     }
 
-    pub fn perform_blake2b_iterations(
+    fn perform_blake2b_iterations(
         &mut self,
         layouter: &mut impl Layouter<F>,
         input_size: usize,
@@ -171,11 +172,17 @@ impl<F: PrimeField> Blake2bChip<F> {
         let empty_key = key.is_empty();
         let empty_input = input_size == 0;
 
-        let input_blocks = (input_size + BLAKE2B_BLOCK_SIZE - 1) / BLAKE2B_BLOCK_SIZE;
+        let input_blocks = input_size.div_ceil(BLAKE2B_BLOCK_SIZE);
         let total_blocks = if empty_key {
-            if empty_input { 1 } else { input_blocks }
+            if empty_input {
+                1
+            } else {
+                input_blocks
+            }
+        } else if empty_input {
+            1
         } else {
-            if empty_input { 1 } else { input_blocks + 1 }
+            input_blocks + 1
         };
         let last_input_block_index = if empty_input { 0 } else { input_blocks - 1 };
 
@@ -184,20 +191,25 @@ impl<F: PrimeField> Blake2bChip<F> {
             let is_key_block = !empty_key && i == 0;
 
             let processed_bytes_count = Self::compute_processed_bytes_count_value_for_iteration(
-                i, is_last_block, input_size, empty_key
+                i,
+                is_last_block,
+                input_size,
+                empty_key,
             );
 
             let mut current_block_values: Vec<Value<F>>;
             if is_last_block && !is_key_block {
-                current_block_values = input[last_input_block_index * BLAKE2B_BLOCK_SIZE..].to_vec();
+                current_block_values =
+                    input[last_input_block_index * BLAKE2B_BLOCK_SIZE..].to_vec();
                 current_block_values.resize(128, Value::known(F::ZERO));
             } else if is_key_block {
                 current_block_values = key.to_vec();
                 current_block_values.resize(128, Value::known(F::ZERO));
             } else {
                 let current_input_block_index = if empty_key { i } else { i - 1 };
-                current_block_values =
-                    input[current_input_block_index * BLAKE2B_BLOCK_SIZE..(current_input_block_index + 1) * BLAKE2B_BLOCK_SIZE].to_vec();
+                current_block_values = input[current_input_block_index * BLAKE2B_BLOCK_SIZE
+                    ..(current_input_block_index + 1) * BLAKE2B_BLOCK_SIZE]
+                    .to_vec();
             }
 
             let current_block_rows =
@@ -225,9 +237,7 @@ impl<F: PrimeField> Blake2bChip<F> {
                 )?;
             }
 
-            let current_block_cells = Self::get_full_number_of_each(
-                current_block_rows
-            );
+            let current_block_cells = Self::get_full_number_of_each(current_block_rows);
 
             let result = self.compress(
                 layouter,
@@ -242,13 +252,10 @@ impl<F: PrimeField> Blake2bChip<F> {
         global_state_bytes
     }
 
-    fn get_full_number_of_each(current_block_rows: [Vec<AssignedCell<F, F>>; 16]) -> [AssignedCell<F, F>; 16] {
-        current_block_rows
-            .iter()
-            .map(|row| row[0].clone())
-            .collect::<Vec<_>>()
-            .try_into()
-            .unwrap()
+    fn get_full_number_of_each(
+        current_block_rows: [Vec<AssignedCell<F, F>>; 16],
+    ) -> [AssignedCell<F, F>; 16] {
+        current_block_rows.iter().map(|row| row[0].clone()).collect::<Vec<_>>().try_into().unwrap()
     }
 
     fn compress(
@@ -405,7 +412,7 @@ impl<F: PrimeField> Blake2bChip<F> {
         )
     }
 
-    pub fn new_row_from_value(
+    fn new_row_from_value(
         &mut self,
         value: Value<F>,
         layouter: &mut impl Layouter<F>,
@@ -463,7 +470,11 @@ impl<F: PrimeField> Blake2bChip<F> {
         Ok(())
     }
 
-    fn constrain_initial_state(layouter: &mut impl Layouter<F>, global_state: &mut [AssignedCell<F, F>; 8], iv_constants: &[AssignedCell<F, F>; 8]) -> Result<(), Error> {
+    fn constrain_initial_state(
+        layouter: &mut impl Layouter<F>,
+        global_state: &mut [AssignedCell<F, F>; 8],
+        iv_constants: &[AssignedCell<F, F>; 8],
+    ) -> Result<(), Error> {
         // Set copy constraints to recently initialized state
         layouter.assign_region(
             || "iv copy constraints",
@@ -477,10 +488,9 @@ impl<F: PrimeField> Blake2bChip<F> {
         Ok(())
     }
 
-
     // Assign constants
 
-    pub fn assign_constant_to_fixed_cell(
+    fn assign_constant_to_fixed_cell(
         &self,
         layouter: &mut impl Layouter<F>,
         constant: usize,
@@ -490,17 +500,6 @@ impl<F: PrimeField> Blake2bChip<F> {
         layouter.assign_region(
             || region_name,
             |mut region| region.assign_fixed(|| region_name, self.constants, 0, || constant_value),
-        )
-    }
-
-    fn assign_output_size_to_fixed_cell(
-        &self,
-        layouter: &mut impl Layouter<F>,
-        output_size: Value<F>,
-    ) -> Result<AssignedCell<F, F>, Error> {
-        layouter.assign_region(
-            || "output size",
-            |mut region| region.assign_fixed(|| "output size", self.constants, 0, || output_size),
         )
     }
 
@@ -570,7 +569,7 @@ impl<F: PrimeField> Blake2bChip<F> {
 
     // Primitive operations (they are public for testing purposes)
 
-    pub fn add(
+    fn add(
         &mut self,
         lhs: AssignedCell<F, F>,
         rhs: AssignedCell<F, F>,
@@ -591,7 +590,7 @@ impl<F: PrimeField> Blake2bChip<F> {
         }
     }
 
-    pub fn not(
+    fn not(
         &mut self,
         input_cell: AssignedCell<F, F>,
         layouter: &mut impl Layouter<F>,
@@ -601,7 +600,7 @@ impl<F: PrimeField> Blake2bChip<F> {
             .unwrap()
     }
 
-    pub fn xor(
+    fn xor(
         &mut self,
         lhs: AssignedCell<F, F>,
         rhs: AssignedCell<F, F>,
@@ -613,7 +612,7 @@ impl<F: PrimeField> Blake2bChip<F> {
             .clone()
     }
 
-    pub fn xor_with_full_rows(
+    fn xor_with_full_rows(
         &mut self,
         lhs: AssignedCell<F, F>,
         rhs: AssignedCell<F, F>,
@@ -624,7 +623,7 @@ impl<F: PrimeField> Blake2bChip<F> {
             .unwrap()
     }
 
-    pub fn rotate_right_63(
+    fn rotate_right_63(
         &mut self,
         input_cell: AssignedCell<F, F>,
         layouter: &mut impl Layouter<F>,
@@ -634,7 +633,7 @@ impl<F: PrimeField> Blake2bChip<F> {
             .unwrap()
     }
 
-    pub fn rotate_right_16(
+    fn rotate_right_16(
         &mut self,
         input_cell: AssignedCell<F, F>,
         layouter: &mut impl Layouter<F>,
@@ -644,7 +643,7 @@ impl<F: PrimeField> Blake2bChip<F> {
             .unwrap()
     }
 
-    pub fn rotate_right_24(
+    fn rotate_right_24(
         &mut self,
         input_cell: AssignedCell<F, F>,
         layouter: &mut impl Layouter<F>,
@@ -654,7 +653,7 @@ impl<F: PrimeField> Blake2bChip<F> {
             .unwrap()
     }
 
-    pub fn rotate_right_32(
+    fn rotate_right_32(
         &mut self,
         input_cell: AssignedCell<F, F>,
         layouter: &mut impl Layouter<F>,
