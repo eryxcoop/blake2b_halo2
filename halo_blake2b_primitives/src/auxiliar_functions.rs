@@ -39,13 +39,9 @@ pub fn spread(mut n: u16) -> u32 {
     let mut position: u32 = 0;
 
     while n != 0 {
-        // Extract the least significant bit
         let bit: u32 = (n & 1u16) as u32;
-        // Shift it to the appropriate position in the spread number
         spread |= bit << (2 * position);
-        // Move to the next bit of the input number
         n >>= 1;
-        // Increment the spread position
         position += 1;
     }
 
@@ -125,11 +121,9 @@ pub(crate) fn rotate_right_field_element<F: PrimeField>(
     rotation_degree: usize,
 ) -> F {
     let value_to_rotate = convert_to_u64(value_to_rotate);
-    // println!("before rotation of {}: {}", rotation_degree, value_to_rotate);
     let rotation_degree = rotation_degree % 64;
     let rotated_value = ((value_to_rotate as u128) >> rotation_degree)
         | ((value_to_rotate as u128) << (64 - rotation_degree));
-    // println!("after rotation of {}: {}", rotation_degree, rotated_value as u64);
     F::from(rotated_value as u64)
 }
 

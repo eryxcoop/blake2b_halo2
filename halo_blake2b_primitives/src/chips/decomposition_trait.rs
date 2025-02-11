@@ -1,6 +1,7 @@
 use ff::PrimeField;
 use halo2_proofs::circuit::{AssignedCell, Layouter, Region, Value};
-use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Error, Selector, TableColumn};
+use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Error, Expression, Selector, TableColumn};
+use halo2_proofs::poly::Rotation;
 
 pub trait Decomposition<F: PrimeField, const T: usize> {
     fn configure(
@@ -28,7 +29,13 @@ pub trait Decomposition<F: PrimeField, const T: usize> {
         limb: &Column<Advice>,
         q_decompose: &Selector,
         t_range: &TableColumn,
-    );
+    ){
+        meta.lookup(format!("lookup limb {:?}", limb), |meta| {
+            let limb: Expression<F> = meta.query_advice(*limb, Rotation::cur());
+            let q_decompose = meta.query_selector(*q_decompose);
+            vec![(q_decompose * limb, *t_range)]
+        });
+    }
 
     fn generate_row_from_value(
         &mut self,

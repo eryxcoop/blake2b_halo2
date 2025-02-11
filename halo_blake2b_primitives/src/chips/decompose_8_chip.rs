@@ -96,19 +96,6 @@ impl<F: PrimeField> Decomposition<F, 8> for Decompose8Chip<F> {
         )
     }
 
-    fn _range_check_for_limb(
-        meta: &mut ConstraintSystem<F>,
-        limb: &Column<Advice>,
-        q_decompose: &Selector,
-        t_range: &TableColumn,
-    ) {
-        meta.lookup(format!("lookup limb {:?}", limb), |meta| {
-            let limb: Expression<F> = meta.query_advice(*limb, Rotation::cur());
-            let q_decompose = meta.query_selector(*q_decompose);
-            vec![(q_decompose * limb, *t_range)]
-        });
-    }
-
     fn generate_row_from_value(
         &mut self,
         region: &mut Region<F>,

@@ -112,8 +112,6 @@ impl<F: PrimeField> XorChip<F> {
         value_b: Value<F>,
         decompose_8_chip: &mut Decompose8Chip<F>,
     ) -> Result<AssignedCell<F, F>, Error> {
-        // This method receives two values and generates the xor operation. It generates the trace
-        // instead of receiving it and just filling the cells
         layouter.assign_region(
             || "xor",
             |mut region| {

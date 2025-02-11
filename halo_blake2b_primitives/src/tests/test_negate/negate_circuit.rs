@@ -82,9 +82,7 @@ impl<F: PrimeField> NegateCircuit<F> {
         layouter.assign_region(
             || "fixed",
             |mut region| {
-                // add the value to the fixed column
-                // if the same constant is used multiple times,
-                // we could optimize this by caching the cell
+
                 let fixed_cell =
                     region.assign_fixed(|| "assign fixed", fixed_column, 0, || expected_value)?;
                 region.constrain_equal(cell.cell(), fixed_cell.cell())?;

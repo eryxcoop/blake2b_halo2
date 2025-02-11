@@ -95,8 +95,6 @@ fn test_hashes_in_circuit_with_key() {
 
 pub fn formed_output_block_for(output: &String) -> ([u8; 64], usize) {
     let output_block_size = output.len() / 2; // Amount of bytes
-
     let output_bytes = hex::decode(output).expect("Invalid hex string");
-
     (output_bytes.try_into().unwrap(), output_block_size)
 }
