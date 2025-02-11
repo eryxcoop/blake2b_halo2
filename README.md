@@ -19,15 +19,18 @@ If you don't set any feature, the default will be `sum_with_4_limbs`
 
 # Running the tests
 
-We have unit tests for all our auxiliar chips and the vector tests for the Blake2b implementation.
+We have unit tests for all our auxiliar chips and the vector tests for the Blake2b implementation. All the tests should be executed on the ```halo_blake2b_primitives``` directory.
 
 To test the optimization `sum_with_4_limbs`:
-```test --release  --features sum_with_4_limbs test_hashes_in_circuit_```
+
+```cargo test --release  --features sum_with_4_limbs test_hashes_in_circuit_```
 
 To test the optimization `sum_with_8_limbs`:
-```test --release  --features sum_with_8_limbs test_hashes_in_circuit_```
+
+``` cargo test --release  --features sum_with_8_limbs test_hashes_in_circuit_```
 
 Those tests use the same test vector than the plain Rust implementation. Running the above tests can take some time since there are 512 tests in the test vector, and each one repeats all the static procedures (like creating big lookup tables), but it shouldn't take more than 2 minutes in release mode.
 
 To test the auxiliar chips:
-```test --release -- --skip test_hashes_in_circuit_```
+
+```cargo test --release -- --skip test_hashes_in_circuit_```
