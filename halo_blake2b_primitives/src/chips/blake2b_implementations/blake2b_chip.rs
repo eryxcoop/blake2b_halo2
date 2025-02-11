@@ -523,7 +523,7 @@ impl<F: PrimeField> Blake2bChip<F> {
                 || "constrain padding",
                 |mut region| {
                     for row in (0..16).rev() {
-                        for limb in 1..9 {
+                        for limb in (1..9).rev() {
                             if constrained_padding_cells < zeros_amount {
                                 region.constrain_equal(
                                     current_block_rows[row][limb].cell(),

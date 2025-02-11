@@ -11,12 +11,12 @@ struct TestCase {
     out: String,
 }
 
-fn run_test(input: &String, _key: &String, expected: &String) {
+pub fn run_test(input: &String, _key: &String, expected: &String) {
     let input_size = input.len() / 2; // Amount of bytes
     let input_bytes = hex::decode(input).expect("Invalid hex string");
     let input_values =
         input_bytes.iter().map(|x| Value::known(Fr::from(*x as u64))).collect::<Vec<_>>();
-    let (expected_output_state, _output_size) = _formed_output_block_for(expected);
+    let (expected_output_state, _output_size) = formed_output_block_for(expected);
 
     let expected_output_state_fields: [Fr; 64] = expected_output_state
         .iter()
@@ -66,7 +66,7 @@ fn test_hashes_in_circuit_more_than_one_block() {
     }
 }
 
-fn _formed_output_block_for(output: &String) -> ([u8; 64], usize) {
+pub fn formed_output_block_for(output: &String) -> ([u8; 64], usize) {
     let output_block_size = output.len() / 2; // Amount of bytes
 
     let output_bytes = hex::decode(output).expect("Invalid hex string");

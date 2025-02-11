@@ -1,3 +1,4 @@
+use crate::tests::test_blake2b::vector_tests::run_test;
 use super::*;
 
 #[test]
@@ -23,6 +24,14 @@ fn test_blake2b_single_empty_block_negative() {
     let circuit = Blake2bCircuit::<Fr>::new_for(input, input_size, output_size);
     let prover = MockProver::run(17, &circuit, vec![expected_output_state.to_vec()]).unwrap();
     prover.verify().unwrap();
+}
+
+#[test]
+fn test_blake2b_input_constrained() {
+    let input = String::from("0001");
+    let out = String::from("1c08798dc641aba9dee435e22519a4729a09b2bfe0ff00ef2dcd8ed6f8a07d15eaf4aee52bbf18ab5608a6190f70b90486c8a7d4873710b1115d3debbb4327b5");
+    let key = String::from("");
+    run_test(&input, &key, &out);
 }
 
 fn _correct_output_for_empty_input_64() -> [Fr; 64] {
