@@ -1,6 +1,6 @@
-max_width = 100 # Default value
-reorder_imports = false # No me reordenes los imports!!!
+max_width = 100
+reorder_imports = false
 reorder_modules = false
-use_small_heuristics = "Max" # Usa el max_width como limite para todas las lineas
+use_small_heuristics = "Max"
 
-struct_lit_width = 18 # Esto para que no use el máximo en los structs que queda feo
+struct_lit_width = 18
