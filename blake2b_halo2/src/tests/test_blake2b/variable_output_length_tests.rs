@@ -48,8 +48,8 @@ fn test_blake2b_circuit_can_verify_an_output_of_length_32_negative() {
     prover.verify().unwrap();
 }
 
-/*#[test]
-#[should_panic(expected = "Illegal input parameters")]
+#[test]
+#[should_panic(expected = "Output size must be between 1 and 64 bytes")]
 fn test_blake2b_circuit_should_receive_an_output_length_less_or_equal_64() {
     let output_size = 65;
     let input = vec![];
@@ -58,7 +58,7 @@ fn test_blake2b_circuit_should_receive_an_output_length_less_or_equal_64() {
     let circuit = Blake2bCircuit::<Fr>::new_for(input, input_size, vec![], 0, output_size);
     let prover = MockProver::run(17, &circuit, vec![expected_output_state.to_vec()]).unwrap();
     prover.verify().unwrap();
-}*/
+}
 
 fn _correct_output_for_empty_input_1() -> [Fr; 1] {
     [Fr::from(46)]
