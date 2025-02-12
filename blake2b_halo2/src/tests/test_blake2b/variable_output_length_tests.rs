@@ -60,6 +60,18 @@ fn test_blake2b_circuit_should_receive_an_output_length_less_or_equal_64() {
     prover.verify().unwrap();
 }
 
+#[test]
+#[should_panic(expected = "Output size must be between 1 and 64 bytes")]
+fn test_blake2b_circuit_should_receive_an_output_length_bigger_or_equal_1() {
+    let output_size = 0;
+    let input = vec![];
+    let input_size = 0;
+    let mut expected_output_state = [Fr::ZERO; 65];
+    let circuit = Blake2bCircuit::<Fr>::new_for(input, input_size, vec![], 0, output_size);
+    let prover = MockProver::run(17, &circuit, vec![expected_output_state.to_vec()]).unwrap();
+    prover.verify().unwrap();
+}
+
 fn _correct_output_for_empty_input_1() -> [Fr; 1] {
     [Fr::from(46)]
 }

@@ -104,6 +104,7 @@ impl<F: PrimeField> Blake2bChip<F> {
     ) -> Result<(), Error> {
 
         assert!(output_size <= 64, "Output size must be between 1 and 64 bytes");
+        assert!(output_size > 0, "Output size must be between 1 and 64 bytes");
 
         let iv_constants: [AssignedCell<F, F>; 8] =
             self.assign_iv_constants_to_fixed_cells(layouter);
