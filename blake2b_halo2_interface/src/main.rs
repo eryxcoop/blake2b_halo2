@@ -1,3 +1,4 @@
+use std::cmp::max;
 use serde::Deserialize;
 use blake2b_primitives::circuits::blake2b_circuit::Blake2bCircuit;
 use halo2_proofs::dev::MockProver;
@@ -64,12 +65,17 @@ fn run_blake2b_halo2(input_bytes: Vec<u8>, key_bytes: Vec<u8>, expected_output: 
     // TEST
     let circuit = Blake2bCircuit::<Fr>::new_for(input_values, input_size, key_values, key_size, output_size);
 
-    let options = from_circuit_to_cost_model_options(Some(17), &circuit, 1);
-
-    let prover = MockProver::run(17, &circuit, vec![expected_output_fields]).unwrap();
+    let k = compute_k(amount_of_blocks(&input_bytes, &key_bytes));
+    let options = from_circuit_to_cost_model_options(Some(k), &circuit, 1);
+    let prover = MockProver::run(k, &circuit, vec![expected_output_fields]).unwrap();
     prover.verify().unwrap();
 
     options
+}
+
+fn compute_k(amount_of_blocks: usize) -> u32 {
+    let value = max(1 << 17, 3735_u32.saturating_mul(amount_of_blocks as u32));
+    f64::from(value).log2().ceil() as u32
 }
 
 fn amount_of_blocks(input: &Vec<u8>, key: &Vec<u8>) -> usize {
