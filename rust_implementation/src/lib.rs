@@ -195,19 +195,3 @@ fn blake2b_final(ctx: &mut Blake2bCtx, out: &mut Vec<u8>) {
         out[i] = ((ctx.state[i >> 3] >> (8 * (i & 7))) & 0xFF) as u8;
     }
 }
-
-// fn main() {
-//
-//     let output_length= 32;
-//
-//     let input= "";
-//     let key= "";
-//
-//     let mut input_message = hex_to_bytes(input);
-//     let mut key = hex_to_bytes(key);
-//     let mut buffer_out: Vec<u8> = Vec::new();
-//     buffer_out.resize(output_length, 0);
-//
-//     let _ = blake2b(&mut buffer_out, &mut key, &mut input_message);
-//     println!("{:?}", buffer_out);
-// }

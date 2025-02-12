@@ -102,9 +102,7 @@ impl<F: PrimeField> Blake2bChip<F> {
         input: &Vec<Value<F>>,
         key: &Vec<Value<F>>,
     ) -> Result<(), Error> {
-
-        assert!(output_size <= 64, "Output size must be between 1 and 64 bytes");
-        assert!(output_size > 0, "Output size must be between 1 and 64 bytes");
+        Self::_enforce_input_sizes(output_size, key_size);
 
         let iv_constants: [AssignedCell<F, F>; 8] =
             self.assign_iv_constants_to_fixed_cells(layouter);
@@ -137,9 +135,11 @@ impl<F: PrimeField> Blake2bChip<F> {
         )
     }
 
-    // ================ PRIVATE METHODS ================
-
-    // Core methods
+    fn _enforce_input_sizes(output_size: usize, key_size: usize) {
+        assert!(output_size <= 64, "Output size must be between 1 and 64 bytes");
+        assert!(output_size > 0, "Output size must be between 1 and 64 bytes");
+        assert!(key_size <= 64, "Key size must be between 1 and 64 bytes");
+    }
 
     fn compute_initial_state(
         &mut self,
