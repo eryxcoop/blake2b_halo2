@@ -255,7 +255,7 @@ impl<F: PrimeField> Blake2bChip<F> {
     }
 
     fn build_values_for_current_block(input: &Vec<Value<F>>, key: &Vec<Value<F>>, block_number: usize, last_input_block_index: usize, is_key_empty: bool, is_last_block: bool, is_key_block: bool) -> Vec<Value<F>> {
-        let mut current_block_values: Vec<Value<F>> = if is_last_block && !is_key_block {
+        let current_block_values: Vec<Value<F>> = if is_last_block && !is_key_block {
             let mut result =
                 input[last_input_block_index * BLAKE2B_BLOCK_SIZE..].to_vec();
             result.resize(128, Value::known(F::ZERO));
@@ -266,7 +266,7 @@ impl<F: PrimeField> Blake2bChip<F> {
             result
         } else {
             let current_input_block_index = if is_key_empty { block_number } else { block_number - 1 };
-            let mut result = input[current_input_block_index * BLAKE2B_BLOCK_SIZE
+            let result = input[current_input_block_index * BLAKE2B_BLOCK_SIZE
                 ..(current_input_block_index + 1) * BLAKE2B_BLOCK_SIZE]
                 .to_vec();
             result

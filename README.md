@@ -4,9 +4,10 @@ This repo holds an optimized Blake2b implementation in Halo2 prover.
 * We are using [this halo2 version](https://github.com/input-output-hk/halo2) to build our circuits.
 * The cargo version should be 1.84.0 or higher (no need for nightly).
 
-The repo is divided into two parts:
+The repo is divided into three parts:
 * Under the directory ```blake2b_implementation_rust``` there's an implementation in plain Rust of the algorithm Blake2b with its test vector. This implementation is based on the C implementation in the [Blake2 RFC](https://datatracker.ietf.org/doc/html/rfc7693.html).
 * Under the directory ```halo_blake2b_primitives``` there are all the things that have to do with Halo2. In particular, there are Halo2 chips that implement primitives for operating modulo $2^{64}$, a chip for the Blake2b operation and tests for all of the above.
+* Under the directory ```blake2b_halo2_interface``` there is a simple package that lets you try the implementation. More details below.   
 
 
 # Different blake implementations
@@ -16,6 +17,19 @@ We use features to toggle between different implementations. Right now we have t
 To use our A implementation, set the `sum_with_4_limbs` feature. To use our B implementation, set it to `sum_with_8_limbs`.
 
 If you don't set any feature, the default will be `sum_with_4_limbs`
+
+# Trying the implementation
+Under the directory ```blake2b_halo2_interface``` you can try the halo2 implementation of Blake2b.
+Just fill the ```src/inputs.json``` file with the message, key and desired output length (in bytes) and run the following commands:
+
+To try the optimization `sum_with_4_limbs`: 
+
+```cargo run --release --features blake2b_primitives/sum_with_4_limbs```
+
+To try the optimization `sum_with_8_limbs`:
+
+```cargo run --release --features blake2b_primitives/sum_with_8_limbs```
+
 
 # Running the tests
 

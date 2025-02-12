@@ -1,5 +1,5 @@
 [package]
-name = "blake2b"
+name = "blake2b_primitives"
 version = "0.1.0"
 edition = "2021"
 

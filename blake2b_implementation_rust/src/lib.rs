@@ -171,9 +171,9 @@ fn blake2b_compress(ctx: &mut Blake2bCtx, last: bool) {
         b2b_g(3, 4, 9, 14, current_block_words[SIGMA[i][14]], current_block_words[SIGMA[i][15]], &mut accumulative_state);
     }
 
-    for i in 0..16 {
+    /*for i in 0..16 {
         println!("accumulative_state[{}]: {:x}", i, accumulative_state[i]);
-    }
+    }*/
     for i in 0..8 {
         ctx.state[i] ^= accumulative_state[i] ^ accumulative_state[i + 8];
     }
@@ -196,18 +196,18 @@ fn blake2b_final(ctx: &mut Blake2bCtx, out: &mut Vec<u8>) {
     }
 }
 
-fn main() {
-
-    let output_length= 32;
-
-    let input= "";
-    let key= "";
-
-    let mut input_message = hex_to_bytes(input);
-    let mut key = hex_to_bytes(key);
-    let mut buffer_out: Vec<u8> = Vec::new();
-    buffer_out.resize(output_length, 0);
-
-    let _ = blake2b(&mut buffer_out, &mut key, &mut input_message);
-    println!("{:?}", buffer_out);
-}
+// fn main() {
+//
+//     let output_length= 32;
+//
+//     let input= "";
+//     let key= "";
+//
+//     let mut input_message = hex_to_bytes(input);
+//     let mut key = hex_to_bytes(key);
+//     let mut buffer_out: Vec<u8> = Vec::new();
+//     buffer_out.resize(output_length, 0);
+//
+//     let _ = blake2b(&mut buffer_out, &mut key, &mut input_message);
+//     println!("{:?}", buffer_out);
+// }

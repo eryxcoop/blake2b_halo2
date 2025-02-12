@@ -1,0 +1,83 @@
+use serde::Deserialize;
+use blake2b_primitives::circuits::blake2b_circuit::Blake2bCircuit;
+use halo2_proofs::dev::MockProver;
+use halo2_proofs::halo2curves::bn256::Fr;
+use halo2_proofs::circuit::Value;
+use halo2_proofs::dev::cost_model::{from_circuit_to_cost_model_options, CostOptions};
+
+
+#[derive(Deserialize, Debug)]
+struct Blake2bInput {
+    #[serde(rename = "in")]
+    input: String,
+    key: String,
+    output_size: usize,
+}
+
+fn main() {
+    let file_content = std::fs::read_to_string("src/inputs.json").expect("Failed to read input file");
+    let input: Blake2bInput = serde_json::from_str(&file_content).expect("Failed to parse input");
+
+    let (input, key, buffer_out) = run_blake2b(&input.input, &input.key, input.output_size);
+    println!("Hash digest bytes: {:?}\n\n", buffer_out);
+    println!("The amount of bytes in your input is {}", input.len());
+    println!("The amount of bytes in your key is {}", key.len());
+    println!("The amount of blocks processed by the hash is {}", amount_of_blocks(&input, &key));
+    println!("The amount of rows in the circuit depends only on the amount of blocks, so two inputs \
+    of different sizes but same amount of blocks will have same length in the circuit\n\n");
+    let cost_options = run_blake2b_halo2(input.clone(), key.clone(), buffer_out);
+    println!("Cost model options: ");
+    println!("The amount of advice rows is {} (for {} blocks of input)", cost_options.rows_count, amount_of_blocks(&input, &key));
+    println!("The amount of advice columns is {}", cost_options.advice.len());
+    println!("The amount of instance columns is {}", cost_options.instance.len());
+    println!("The amount of fixed columns is {}", cost_options.fixed.len());
+    println!("The gate degree is {}", cost_options.gate_degree);
+    println!("The max degree is {}", cost_options.max_degree);
+    println!("The table rows count is {}", cost_options.table_rows_count);
+    println!("The compressed rows count is {}", cost_options.compressed_rows_count);
+}
+
+fn run_blake2b(input: &String, key: &String, output_size: usize) -> (Vec<u8>, Vec<u8>, Vec<u8>) {
+
+    let mut input_message = blake2b::hex_to_bytes(input.as_str());
+    let mut key = blake2b::hex_to_bytes(key.as_str());
+    let mut buffer_out: Vec<u8> = vec![0; output_size];
+
+    let _ = blake2b::blake2b(&mut buffer_out, &mut key, &mut input_message);
+    (input_message, key, buffer_out)
+}
+
+
+fn run_blake2b_halo2(input_bytes: Vec<u8>, key_bytes: Vec<u8>, expected_output: Vec<u8>) -> CostOptions{
+    // INPUT
+    let input_size = input_bytes.len();
+    let input_values = input_bytes.iter().map(|x| Value::known(Fr::from(*x as u64))).collect::<Vec<_>>();
+
+    // OUTPUT
+    let output_size  = expected_output.len();
+    let expected_output_fields: Vec<Fr> = expected_output.iter().map(|x| Fr::from(*x as u64)).collect::<Vec<_>>().try_into().unwrap();
+
+    // KEY
+    let key_size = key_bytes.len();
+    let key_values = key_bytes.iter().map(|x| Value::known(Fr::from(*x as u64))).collect::<Vec<_>>();
+
+    // TEST
+    let circuit = Blake2bCircuit::<Fr>::new_for(input_values, input_size, key_values, key_size, output_size);
+
+    let options = from_circuit_to_cost_model_options(Some(17), &circuit, 1);
+
+    let prover = MockProver::run(17, &circuit, vec![expected_output_fields]).unwrap();
+    prover.verify().unwrap();
+
+    options
+}
+
+fn amount_of_blocks(input: &Vec<u8>, key: &Vec<u8>) -> usize {
+    if key.len() == 0 {
+        (input.len() as f64 / 128f64).ceil() as usize
+    } else if input.len() == 0 {
+        1
+    } else {
+        input.len() / 128 + 1
+    }
+}
