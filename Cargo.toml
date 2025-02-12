@@ -1,0 +1,7 @@
+[workspace]
+
+members = [
+    "blake2b_halo2",
+    "interface",
+    "rust_implementation",
+]

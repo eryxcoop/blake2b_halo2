@@ -1,6 +1,6 @@
 use std::cmp::max;
 use serde::Deserialize;
-use blake2b_primitives::circuits::blake2b_circuit::Blake2bCircuit;
+use blake2b_halo2::circuits::blake2b_circuit::Blake2bCircuit;
 use halo2_proofs::dev::MockProver;
 use halo2_proofs::halo2curves::bn256::Fr;
 use halo2_proofs::circuit::Value;
@@ -40,11 +40,11 @@ fn main() {
 
 fn run_blake2b(input: &String, key: &String, output_size: usize) -> (Vec<u8>, Vec<u8>, Vec<u8>) {
 
-    let mut input_message = blake2b::hex_to_bytes(input.as_str());
-    let mut key = blake2b::hex_to_bytes(key.as_str());
+    let mut input_message = rust_implementation::hex_to_bytes(input.as_str());
+    let mut key = rust_implementation::hex_to_bytes(key.as_str());
     let mut buffer_out: Vec<u8> = vec![0; output_size];
 
-    let _ = blake2b::blake2b(&mut buffer_out, &mut key, &mut input_message);
+    let _ = rust_implementation::blake2b(&mut buffer_out, &mut key, &mut input_message);
     (input_message, key, buffer_out)
 }
 

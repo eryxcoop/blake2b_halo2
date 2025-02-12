@@ -1,0 +1,13 @@
+[package]
+name = "interface"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+blake2b_halo2 = { path = "../blake2b_halo2" }
+rust_implementation = { path = "../rust_implementation" }
+serde = { version = "1.0.217", features = ["derive"] }
+serde_json = "1.0.135"
+ff = "0.13"
+hex = "0.4.3"
+halo2_proofs = { git = "https://github.com/input-output-hk/halo2", features = ["cost-estimator"] }

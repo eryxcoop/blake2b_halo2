@@ -38,7 +38,7 @@ pub fn run_test(input: &String, key: &String, expected: &String) {
 
 #[test]
 fn test_hashes_in_circuit_one_block() {
-    let file_content = std::fs::read_to_string("../blake2b_implementation_rust/test_vector.json")
+    let file_content = std::fs::read_to_string("../rust_implementation/test_vector.json")
         .expect("Failed to read file");
     let test_cases: Vec<TestCase> =
         serde_json::from_str(&file_content).expect("Failed to parse JSON");
@@ -56,7 +56,7 @@ fn test_hashes_in_circuit_one_block() {
 
 #[test]
 fn test_hashes_in_circuit_more_than_one_block() {
-    let file_content = std::fs::read_to_string("../blake2b_implementation_rust/test_vector.json")
+    let file_content = std::fs::read_to_string("../rust_implementation/test_vector.json")
         .expect("Failed to read file");
     let test_cases: Vec<TestCase> =
         serde_json::from_str(&file_content).expect("Failed to parse JSON");
@@ -73,7 +73,7 @@ fn test_hashes_in_circuit_more_than_one_block() {
 
 #[test]
 fn test_hashes_in_circuit_with_key() {
-    let file_content = std::fs::read_to_string("../blake2b_implementation_rust/test_vector.json")
+    let file_content = std::fs::read_to_string("../rust_implementation/test_vector.json")
         .expect("Failed to read file");
     let test_cases: Vec<TestCase> =
         serde_json::from_str(&file_content).expect("Failed to parse JSON");
