@@ -294,7 +294,6 @@ dependencies = [
 [[package]]
 name = "halo2_proofs"
 version = "0.3.0"
-source = "git+https://github.com/input-output-hk/halo2#04db20e066385fdc1e370c8f257eea0475b3fa10"
 dependencies = [
  "blake2b_simd",
  "blstrs",
@@ -370,9 +369,7 @@ name = "interface"
 version = "0.1.0"
 dependencies = [
  "blake2b_halo2",
- "ff",
  "halo2_proofs",
- "hex",
  "rust_implementation",
  "serde",
  "serde_json",
