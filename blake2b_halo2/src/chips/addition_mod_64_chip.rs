@@ -83,61 +83,33 @@ impl<F: PrimeField, const T: usize, const R: usize> AdditionMod64Chip<F, T, R> {
         let _ = region.assign_advice(|| "carry", self.carry, offset, || row[R - 1]);
     }
 
-    pub fn generate_addition_rows(
-        &mut self,
-        layouter: &mut impl Layouter<F>,
-        value_a: Value<F>,
-        value_b: Value<F>,
-        decompose_chip: &mut impl Decomposition<F, T>,
-    ) -> Result<[AssignedCell<F, F>; 2], Error> {
-        layouter.assign_region(
-            || "sum",
-            |mut region| {
-                let result_value = value_a.and_then(|v0| {
-                    value_b.and_then(|v1| Value::known(auxiliar_functions::sum_mod_64(v0, v1)))
-                });
-
-                let carry_value = value_a.and_then(|v0| {
-                    value_b.and_then(|v1| Value::known(auxiliar_functions::carry_mod_64(v0, v1)))
-                });
-                decompose_chip.generate_row_from_value(&mut region, value_a, 0)?;
-                decompose_chip.generate_row_from_value(&mut region, value_b, 1)?;
-                let result_cell =
-                    decompose_chip.generate_row_from_value(&mut region, result_value, 2)?;
-                let carry_cell = region.assign_advice(|| "carry", self.carry, 2, || carry_value)?;
-                let _ = self.q_add.enable(&mut region, 0);
-                Ok([result_cell, carry_cell])
-            },
-        )
-    }
-
     pub fn generate_addition_rows_from_cells(
         &mut self,
-        layouter: &mut impl Layouter<F>,
+        region: &mut Region<F>,
+        offset: &mut usize,
         cell_a: AssignedCell<F, F>,
         cell_b: AssignedCell<F, F>,
         decompose_chip: &mut impl Decomposition<F, T>,
-    ) -> Result<AssignedCell<F, F>, Error> {
-        layouter.assign_region(
-            || "sum",
-            |mut region| {
-                let value_a = cell_a.value().copied();
-                let value_b = cell_b.value().copied();
-                let result_value = value_a.and_then(|v0| {
-                    value_b.and_then(|v1| Value::known(auxiliar_functions::sum_mod_64(v0, v1)))
-                });
+    ) -> Result<[AssignedCell<F, F>; 2], Error> {
+        let value_a = cell_a.value().copied();
+        let value_b = cell_b.value().copied();
+        let result_value = value_a.and_then(|v0| {
+            value_b.and_then(|v1| Value::known(auxiliar_functions::sum_mod_64(v0, v1)))
+        });
 
-                let carry_value = value_a.and_then(|v0| {
-                    value_b.and_then(|v1| Value::known(auxiliar_functions::carry_mod_64(v0, v1)))
-                });
-                decompose_chip.generate_row_from_cell(&mut region, cell_a.clone(), 0)?;
-                decompose_chip.generate_row_from_cell(&mut region, cell_b.clone(), 1)?;
-                let result_cell =
-                    decompose_chip.generate_row_from_value(&mut region, result_value, 2)?;
-                region.assign_advice(|| "carry", self.carry, 2, || carry_value)?;
-                let _ = self.q_add.enable(&mut region, 0);
-                Ok(result_cell)
-            },
-        )
+        let carry_value = value_a.and_then(|v0| {
+            value_b.and_then(|v1| Value::known(auxiliar_functions::carry_mod_64(v0, v1)))
+        });
+
+        let _ = self.q_add.enable(region, *offset);
+        decompose_chip.generate_row_from_cell(region, cell_a.clone(), *offset)?; // 2
+        *offset += 1;
+        decompose_chip.generate_row_from_cell(region, cell_b.clone(), *offset)?; // 3
+        *offset += 1;
+        let result_cell =
+            decompose_chip.generate_row_from_value(region, result_value, *offset)?; // 4
+        let carry_cell = region.assign_advice(|| "carry", self.carry, *offset, || carry_value)?;
+        *offset += 1; // 5
+        Ok([result_cell, carry_cell])
     }
 }

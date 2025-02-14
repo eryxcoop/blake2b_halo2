@@ -50,41 +50,39 @@ impl<F: PrimeField> LimbRotationChip<F> {
 
     pub fn generate_rotation_rows_from_cell(
         &self,
-        layouter: &mut impl Layouter<F>,
+        region: &mut Region<F>,
+        offset: &mut usize,
         decompose_chip: &mut impl Decomposition<F, 8>,
         cell: AssignedCell<F, F>,
         limbs_to_rotate_to_the_right: usize,
     ) -> Result<AssignedCell<F, F>, Error> {
         let value = cell.value().copied();
-        layouter.assign_region(
-            || format!("Rotate {} limbs", limbs_to_rotate_to_the_right),
-            |mut region| {
-                let result_value = value.and_then(|input| {
-                    Value::known(auxiliar_functions::rotate_right_field_element(
-                        input,
-                        limbs_to_rotate_to_the_right * 8,
-                    ))
-                });
+        let result_value = value.and_then(|input| {
+            Value::known(auxiliar_functions::rotate_right_field_element(
+                input,
+                limbs_to_rotate_to_the_right * 8,
+            ))
+        });
 
-                let input_row =
-                    decompose_chip.generate_row_from_cell(&mut region, cell.clone(), 0)?;
-                let result_row = decompose_chip.generate_row_from_value_and_keep_row(
-                    &mut region,
-                    result_value,
-                    1,
-                )?;
+        let input_row =
+            decompose_chip.generate_row_from_cell(region, cell.clone(), *offset)?;
+        *offset += 1;
+        let result_row = decompose_chip.generate_row_from_value_and_keep_row(
+            region,
+            result_value,
+            *offset,
+        )?;
+        *offset += 1;
 
-                for i in 0..8 {
-                    let top_cell = input_row[i + 1].cell();
-                    let bottom_cell =
-                        result_row[((8 + i - limbs_to_rotate_to_the_right) % 8) + 1].cell();
-                    region.constrain_equal(top_cell, bottom_cell)?;
-                }
+        for i in 0..8 {
+            let top_cell = input_row[i + 1].cell();
+            let bottom_cell =
+                result_row[((8 + i - limbs_to_rotate_to_the_right) % 8) + 1].cell();
+            region.constrain_equal(top_cell, bottom_cell)?;
+        }
 
-                let result_cell = result_row[0].clone();
-                Ok(result_cell)
-            },
-        )
+        let result_cell = result_row[0].clone();
+        Ok(result_cell)
     }
 
     pub fn generate_rotation_rows_from_value(

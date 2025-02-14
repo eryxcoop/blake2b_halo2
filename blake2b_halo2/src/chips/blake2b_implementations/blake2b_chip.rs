@@ -104,29 +104,37 @@ impl<F: PrimeField> Blake2bChip<F> {
     ) -> Result<(), Error> {
         Self::_enforce_input_sizes(output_size, key_size);
 
-        let iv_constants: [AssignedCell<F, F>; 8] =
-            self.assign_iv_constants_to_fixed_cells(layouter);
-        let init_const_state_0 = self.assign_01010000_constant_to_fixed_cell(layouter)?;
-        let output_size_constant =
-            self.assign_constant_to_fixed_cell(layouter, output_size, "output size")?;
-        let key_size_constant_shifted =
-            self.assign_constant_to_fixed_cell(layouter, key_size << 8, "key size")?;
-        let mut global_state = self.compute_initial_state(
-            layouter,
-            &iv_constants,
-            init_const_state_0,
-            output_size_constant,
-            key_size_constant_shifted,
-        )?;
+        let global_state_bytes = layouter.assign_region(|| "single region", |mut region| {
+            let mut constants_offset: usize = 0;
+            let iv_constants: [AssignedCell<F, F>; 8] =
+                self.assign_iv_constants_to_fixed_cells(&mut region, &mut constants_offset);
+            let init_const_state_0 = self.assign_01010000_constant_to_fixed_cell(&mut region, &mut constants_offset)?;
+            let output_size_constant =
+                self.assign_constant_to_fixed_cell(&mut region, &mut constants_offset, output_size, "output size")?;
+            let key_size_constant_shifted =
+                self.assign_constant_to_fixed_cell(&mut region, &mut constants_offset, key_size << 8 , "key size")?;
+            
+            let mut advice_offset: usize = 0;
+            let mut global_state = self.compute_initial_state(
+                &mut region,
+                &mut advice_offset,
+                &iv_constants,
+                init_const_state_0,
+                output_size_constant,
+                key_size_constant_shifted,
+            )?;
 
-        let global_state_bytes = self.perform_blake2b_iterations(
-            layouter,
-            input_size,
-            input,
-            key,
-            &iv_constants,
-            &mut global_state,
-        )?;
+            self.perform_blake2b_iterations(
+                &mut region,
+                &mut advice_offset,
+                &mut constants_offset,
+                input_size,
+                input,
+                key,
+                &iv_constants,
+                &mut global_state,
+            )
+        })?;
 
         self.constraint_public_inputs_to_equal_computation_results(
             layouter,
@@ -143,27 +151,30 @@ impl<F: PrimeField> Blake2bChip<F> {
 
     fn compute_initial_state(
         &mut self,
-        layouter: &mut impl Layouter<F>,
+        region: &mut Region<F>,
+        offset: &mut usize,
         iv_constants: &[AssignedCell<F, F>; 8],
         init_const_state_0: AssignedCell<F, F>,
         output_size_constant: AssignedCell<F, F>,
         key_size_constant_shifted: AssignedCell<F, F>,
     ) -> Result<[AssignedCell<F, F>; 8], Error> {
         let mut global_state = Self::iv_constants()
-            .map(|constant| self.new_row_from_value(constant, layouter).unwrap());
+            .map(|constant| self.new_row_from_value(constant, region, offset).unwrap());
 
-        Self::constrain_initial_state(layouter, &mut global_state, iv_constants)?;
+        Self::constrain_initial_state(region, &global_state, iv_constants)?;
 
         // state[0] = state[0] ^ 0x01010000 ^ (key.len() << 8) as u64 ^ outlen as u64;
-        global_state[0] = self.xor(global_state[0].clone(), init_const_state_0.clone(), layouter);
-        global_state[0] = self.xor(global_state[0].clone(), output_size_constant, layouter);
-        global_state[0] = self.xor(global_state[0].clone(), key_size_constant_shifted, layouter);
+        global_state[0] = self.xor(global_state[0].clone(), init_const_state_0, region, offset);
+        global_state[0] = self.xor(global_state[0].clone(), output_size_constant, region, offset);
+        global_state[0] = self.xor(global_state[0].clone(), key_size_constant_shifted, region, offset);
         Ok(global_state)
     }
 
     fn perform_blake2b_iterations(
         &mut self,
-        layouter: &mut impl Layouter<F>,
+        region: &mut Region<F>,
+        advice_offset: &mut usize,
+        constants_offset: &mut usize,
         input_size: usize,
         input: &Vec<Value<F>>,
         key: &Vec<Value<F>>,
@@ -194,35 +205,39 @@ impl<F: PrimeField> Blake2bChip<F> {
             );
 
             let current_block_rows = self.build_current_block_rows(
-                layouter, input, key, i, last_input_block_index, is_key_empty, is_last_block, is_key_block
+                region, advice_offset, input, key, i, last_input_block_index, is_key_empty, is_last_block, is_key_block
             )?;
 
-            if is_last_block {
+            // Here we constrain the padding cells (either in the last block or in the key block) to be 0.
+            let zero_constant_cell = self.assign_0_constant_to_fixed_cell(region, constants_offset)?;
+            if is_last_block && !is_key_block {
                 let zeros_amount_for_input_padding = if input_size == 0 {
                     128
                 } else {
                     (BLAKE2B_BLOCK_SIZE - input_size % BLAKE2B_BLOCK_SIZE) % BLAKE2B_BLOCK_SIZE
                 };
                 self.constrain_padding_cells_to_equal_zero(
-                    layouter,
+                    region,
                     zeros_amount_for_input_padding,
                     &current_block_rows,
+                    zero_constant_cell.clone(),
                 )?;
             }
-
             if is_key_block {
                 let zeros_amount_for_key_padding = BLAKE2B_BLOCK_SIZE - key.len();
                 self.constrain_padding_cells_to_equal_zero(
-                    layouter,
+                    region,
                     zeros_amount_for_key_padding,
                     &current_block_rows,
+                    zero_constant_cell.clone(),
                 )?;
             }
 
             let current_block_cells = Self::get_full_number_of_each(current_block_rows);
 
             let result = self.compress(
-                layouter,
+                region,
+                advice_offset,
                 iv_constants,
                 global_state,
                 current_block_cells,
@@ -248,18 +263,18 @@ impl<F: PrimeField> Blake2bChip<F> {
         }
     }
 
-    fn build_current_block_rows(&mut self, layouter: &mut impl Layouter<F>, input: &Vec<Value<F>>, key: &Vec<Value<F>>, block_number: usize, last_input_block_index: usize, is_key_empty: bool, is_last_block: bool, is_key_block: bool) -> Result<[Vec<AssignedCell<F, F>>; 16], Error> {
+    fn build_current_block_rows(&mut self, region: &mut Region<F>, offset: &mut usize, input: &Vec<Value<F>>, key: &Vec<Value<F>>, block_number: usize, last_input_block_index: usize, is_key_empty: bool, is_last_block: bool, is_key_block: bool) -> Result<[Vec<AssignedCell<F, F>>; 16], Error> {
         let current_block_values = Self::build_values_for_current_block(
             input, key, block_number, last_input_block_index, is_key_empty, is_last_block, is_key_block
         );
 
         let current_block_rows =
-            self.block_words_from_bytes(layouter, current_block_values.try_into().unwrap())?;
+            self.block_words_from_bytes(region, offset, current_block_values.try_into().unwrap())?;
         Ok(current_block_rows)
     }
 
     fn build_values_for_current_block(input: &Vec<Value<F>>, key: &Vec<Value<F>>, block_number: usize, last_input_block_index: usize, is_key_empty: bool, is_last_block: bool, is_key_block: bool) -> Vec<Value<F>> {
-        let current_block_values: Vec<Value<F>> = if is_last_block && !is_key_block {
+        if is_last_block && !is_key_block {
             let mut result =
                 input[last_input_block_index * BLAKE2B_BLOCK_SIZE..].to_vec();
             result.resize(128, Value::known(F::ZERO));
@@ -274,8 +289,7 @@ impl<F: PrimeField> Blake2bChip<F> {
                 ..(current_input_block_index + 1) * BLAKE2B_BLOCK_SIZE]
                 .to_vec();
             result
-        };
-        current_block_values
+        }
     }
 
     fn get_full_number_of_each(
@@ -286,7 +300,8 @@ impl<F: PrimeField> Blake2bChip<F> {
 
     fn compress(
         &mut self,
-        layouter: &mut impl Layouter<F>,
+        region: &mut Region<F>,
+        row_offset: &mut usize,
         iv_constants: &[AssignedCell<F, F>; 8],
         global_state: &mut [AssignedCell<F, F>; 8],
         current_block_cells: [AssignedCell<F, F>; 16],
@@ -301,12 +316,12 @@ impl<F: PrimeField> Blake2bChip<F> {
 
         // accumulative_state[12] ^= processed_bytes_count
         let processed_bytes_count_cell =
-            self.new_row_from_value(processed_bytes_count, layouter)?;
-        state[12] = self.xor(state[12].clone(), processed_bytes_count_cell.clone(), layouter);
+            self.new_row_from_value(processed_bytes_count, region, row_offset)?;
+        state[12] = self.xor(state[12].clone(), processed_bytes_count_cell.clone(), region, row_offset);
         // accumulative_state[13] ^= ctx.processed_bytes_count[1]; This is 0 so we ignore it
 
         if is_last_block {
-            state[14] = self.not(state[14].clone(), layouter);
+            state[14] = self.not(state[14].clone(), region, row_offset);
         }
 
         for i in 0..12 {
@@ -320,16 +335,17 @@ impl<F: PrimeField> Blake2bChip<F> {
                     Self::SIGMA[i][2 * j + 1],
                     &mut state,
                     &current_block_cells,
-                    layouter,
+                    region,
+                    row_offset,
                 )?;
             }
         }
 
         let mut global_state_bytes = Vec::new();
         for i in 0..8 {
-            global_state[i] = self.xor(global_state[i].clone(), state[i].clone(), layouter);
+            global_state[i] = self.xor(global_state[i].clone(), state[i].clone(), region, row_offset);
             let row =
-                self.xor_with_full_rows(global_state[i].clone(), state[i + 8].clone(), layouter);
+                self.xor_with_full_rows(global_state[i].clone(), state[i + 8].clone(), region, row_offset);
             global_state_bytes.extend_from_slice(&row[1..]);
             global_state[i] = row[0].clone();
         }
@@ -348,7 +364,8 @@ impl<F: PrimeField> Blake2bChip<F> {
         sigma_odd: usize,
         state: &mut [AssignedCell<F, F>; 16],
         current_block_words: &[AssignedCell<F, F>; 16],
-        layouter: &mut impl Layouter<F>,
+        region: &mut Region<F>,
+        offset: &mut usize,
     ) -> Result<(), Error> {
         let v_a = state[a_].clone();
         let v_b = state[b_].clone();
@@ -358,34 +375,34 @@ impl<F: PrimeField> Blake2bChip<F> {
         let y = current_block_words[sigma_odd].clone();
 
         // v[a] = ((v[a] as u128 + v[b] as u128 + x as u128) % (1 << 64)) as u64;
-        let a_plus_b = self.add(v_a, v_b.clone(), layouter);
-        let a = self.add(a_plus_b, x, layouter);
+        let a_plus_b = self.add(v_a, v_b.clone(), region, offset);
+        let a = self.add(a_plus_b, x, region, offset);
 
         // v[d] = rotr_64(v[d] ^ v[a], 32);
-        let d_xor_a = self.xor(v_d.clone(), a.clone(), layouter);
-        let d = self.rotate_right_32(d_xor_a, layouter);
+        let d_xor_a = self.xor(v_d.clone(), a.clone(), region, offset);
+        let d = self.rotate_right_32(d_xor_a, region, offset);
 
         // v[c] = ((v[c] as u128 + v[d] as u128) % (1 << 64)) as u64;
-        let c = self.add(v_c, d.clone(), layouter);
+        let c = self.add(v_c, d.clone(), region, offset);
 
         // v[b] = rotr_64(v[b] ^ v[c], 24);
-        let b_xor_c = self.xor(v_b, c.clone(), layouter);
-        let b = self.rotate_right_24(b_xor_c, layouter);
+        let b_xor_c = self.xor(v_b, c.clone(), region, offset);
+        let b = self.rotate_right_24(b_xor_c, region, offset);
 
         // v[a] = ((v[a] as u128 + v[b] as u128 + y as u128) % (1 << 64)) as u64;
-        let a_plus_b = self.add(a.clone(), b.clone(), layouter);
-        let a = self.add(a_plus_b, y, layouter);
+        let a_plus_b = self.add(a.clone(), b.clone(), region, offset);
+        let a = self.add(a_plus_b, y, region, offset);
 
         // v[d] = rotr_64(v[d] ^ v[a], 16);
-        let d_xor_a = self.xor(d.clone(), a.clone(), layouter);
-        let d = self.rotate_right_16(d_xor_a, layouter);
+        let d_xor_a = self.xor(d.clone(), a.clone(), region, offset);
+        let d = self.rotate_right_16(d_xor_a, region, offset);
 
         // v[c] = ((v[c] as u128 + v[d] as u128) % (1 << 64)) as u64;
-        let c = self.add(c.clone(), d.clone(), layouter);
+        let c = self.add(c.clone(), d.clone(), region, offset);
 
         // v[b] = rotr_64(v[b] ^ v[c], 63);
-        let b_xor_c = self.xor(b.clone(), c.clone(), layouter);
-        let b = self.rotate_right_63(b_xor_c, layouter);
+        let b_xor_c = self.xor(b.clone(), c.clone(), region, offset);
+        let b = self.rotate_right_63(b_xor_c, region, offset);
 
         state[a_] = a;
         state[b_] = b;
@@ -397,13 +414,14 @@ impl<F: PrimeField> Blake2bChip<F> {
 
     fn block_words_from_bytes(
         &mut self,
-        layouter: &mut impl Layouter<F>,
+        region: &mut Region<F>,
+        offset: &mut usize,
         block: [Value<F>; 128],
     ) -> Result<[Vec<AssignedCell<F, F>>; 16], Error> {
         let mut current_block_rows: Vec<Vec<AssignedCell<F, F>>> = Vec::new();
         for i in 0..16 {
             let bytes: [Value<F>; 8] = block[i * 8..(i + 1) * 8].try_into().unwrap();
-            let current_row_cells = self.new_row_from_bytes(bytes, layouter)?;
+            let current_row_cells = self.new_row_from_bytes(bytes, region, offset)?;
             current_block_rows.push(current_row_cells);
         }
         let current_block_words = current_block_rows.try_into().unwrap();
@@ -430,53 +448,46 @@ impl<F: PrimeField> Blake2bChip<F> {
     fn new_row_from_bytes(
         &mut self,
         bytes: [Value<F>; 8],
-        layouter: &mut impl Layouter<F>,
+        region: &mut Region<F>,
+        offset: &mut usize,
     ) -> Result<Vec<AssignedCell<F, F>>, Error> {
-        layouter.assign_region(
-            || "row",
-            |mut region| self.decompose_8_chip.generate_row_from_bytes(&mut region, bytes, 0),
-        )
+            let ret = self.decompose_8_chip.generate_row_from_bytes(region, bytes, *offset);
+            *offset += 1;
+            ret
     }
 
     fn new_row_from_value(
         &mut self,
         value: Value<F>,
-        layouter: &mut impl Layouter<F>,
+        region: &mut Region<F>,
+        offset: &mut usize,
     ) -> Result<AssignedCell<F, F>, Error> {
-        layouter.assign_region(
-            || "row",
-            |mut region| self.decompose_8_chip.generate_row_from_value(&mut region, value, 0),
-        )
+        let ret = self.decompose_8_chip.generate_row_from_value(region, value, *offset);
+        *offset += 1;
+        ret
     }
 
     // Copy constrains
 
     fn constrain_padding_cells_to_equal_zero(
         &mut self,
-        layouter: &mut impl Layouter<F>,
+        region: &mut Region<F>,
         zeros_amount: usize,
         current_block_rows: &[Vec<AssignedCell<F, F>>; 16],
+        zero_constant_cell: AssignedCell<F, F>,
     ) -> Result<(), Error> {
-        let zero_constant_cell = self.assign_0_constant_to_fixed_cell(layouter)?;
         let mut constrained_padding_cells = 0;
-        layouter.assign_region(
-            || "constrain padding",
-            |mut region| {
-                for row in (0..16).rev() {
-                    for limb in (1..9).rev() {
-                        if constrained_padding_cells < zeros_amount {
-                            region.constrain_equal(
-                                current_block_rows[row][limb].cell(),
-                                zero_constant_cell.cell(),
-                            )?;
-                            constrained_padding_cells += 1;
-                        }
-                    }
+        for row in (0..16).rev() {
+            for limb in (1..9).rev() {
+                if constrained_padding_cells < zeros_amount {
+                    region.constrain_equal(
+                        current_block_rows[row][limb].cell(),
+                        zero_constant_cell.cell(),
+                    )?;
+                    constrained_padding_cells += 1;
                 }
-                Ok(())
-            },
-        )?;
-
+            }
+        }
         Ok(())
     }
 
@@ -497,20 +508,14 @@ impl<F: PrimeField> Blake2bChip<F> {
     }
 
     fn constrain_initial_state(
-        layouter: &mut impl Layouter<F>,
-        global_state: &mut [AssignedCell<F, F>; 8],
+        region: &mut Region<F>,
+        global_state: &[AssignedCell<F, F>; 8],
         iv_constants: &[AssignedCell<F, F>; 8],
     ) -> Result<(), Error> {
         // Set copy constraints to recently initialized state
-        layouter.assign_region(
-            || "iv copy constraints",
-            |mut region| {
-                for i in 0..8 {
-                    region.constrain_equal(iv_constants[i].cell(), global_state[i].cell())?;
-                }
-                Ok(())
-            },
-        )?;
+        for i in 0..8 {
+            region.constrain_equal(iv_constants[i].cell(), global_state[i].cell())?;
+        }
         Ok(())
     }
 
@@ -518,64 +523,59 @@ impl<F: PrimeField> Blake2bChip<F> {
 
     fn assign_constant_to_fixed_cell(
         &self,
-        layouter: &mut impl Layouter<F>,
+        region: &mut Region<F>,
+        offset: &mut usize,
         constant: usize,
         region_name: &str,
     ) -> Result<AssignedCell<F, F>, Error> {
         let constant_value = Value::known(F::from(constant as u64));
-        layouter.assign_region(
-            || region_name,
-            |mut region| region.assign_fixed(|| region_name, self.constants, 0, || constant_value),
-        )
+        let ret = region.assign_fixed(|| region_name, self.constants, *offset, || constant_value);
+        *offset += 1;
+        ret
     }
 
     fn assign_01010000_constant_to_fixed_cell(
         &self,
-        layouter: &mut impl Layouter<F>,
+        region: &mut Region<F>,
+        offset: &mut usize,
     ) -> Result<AssignedCell<F, F>, Error> {
-        layouter.assign_region(
-            || "constant",
-            |mut region| {
-                region.assign_fixed(
-                    || "state 0 xor",
-                    self.constants,
-                    0,
-                    || value_for(0x01010000u64),
-                )
-            },
-        )
+        let ret = region.assign_fixed(
+            || "state 0 xor",
+            self.constants,
+            *offset,
+            || value_for(0x01010000u64),
+        );
+        *offset += 1;
+        ret
     }
 
     fn assign_0_constant_to_fixed_cell(
         &self,
-        layouter: &mut impl Layouter<F>,
+        region: &mut Region<F>,
+        offset: &mut usize,
     ) -> Result<AssignedCell<F, F>, Error> {
-        layouter.assign_region(
-            || "constant",
-            |mut region| region.assign_fixed(|| "fixed 0", self.constants, 0, || value_for(0u64)),
-        )
+        let ret = region.assign_fixed(|| "fixed 0", self.constants, *offset, || value_for(0u64));
+        *offset += 1;
+        ret
     }
 
     fn assign_iv_constants_to_fixed_cells(
         &self,
-        layouter: &mut impl Layouter<F>,
+        region: &mut Region<F>,
+        offset: &mut usize,
     ) -> [AssignedCell<F, F>; 8] {
-        Self::iv_constants()
+        let ret = Self::iv_constants()
             .iter()
-            .enumerate()
-            .map(|(i, value)| {
-                layouter
-                    .assign_region(
-                        || "row",
-                        |mut region| {
-                            region.assign_fixed(|| "iv constants", self.constants, i, || *value)
-                        },
-                    )
-                    .unwrap()
+            .map(|value| {
+                let result = region.assign_fixed(|| "iv constants", self.constants, *offset, || *value)
+                    .unwrap();
+                *offset += 1;
+                result
             })
             .collect::<Vec<AssignedCell<F, F>>>()
             .try_into()
-            .unwrap()
+            .unwrap();
+        ret
     }
 
     // Populate tables
@@ -599,17 +599,18 @@ impl<F: PrimeField> Blake2bChip<F> {
         &mut self,
         lhs: AssignedCell<F, F>,
         rhs: AssignedCell<F, F>,
-        layouter: &mut impl Layouter<F>,
+        region: &mut Region<F>,
+        offset: &mut usize,
     ) -> AssignedCell<F, F> {
         cfg_if::cfg_if! {
             if #[cfg(feature = "sum_with_8_limbs")] {
                 self.addition_chip
-                    .generate_addition_rows_from_cells(layouter, lhs, rhs, &mut self.decompose_8_chip)
-                    .unwrap()
+                    .generate_addition_rows_from_cells(region, offset, lhs, rhs, &mut self.decompose_8_chip)
+                    .unwrap()[0].clone()
             } else if #[cfg(feature = "sum_with_4_limbs")] {
                 self.addition_chip
-                    .generate_addition_rows_from_cells(layouter, lhs, rhs, &mut self.decompose_16_chip)
-                    .unwrap()
+                    .generate_addition_rows_from_cells(region, offset, lhs, rhs, &mut self.decompose_16_chip)
+                    .unwrap()[0].clone()
             } else {
                 panic!("No feature selected");
             }
@@ -619,10 +620,11 @@ impl<F: PrimeField> Blake2bChip<F> {
     fn not(
         &mut self,
         input_cell: AssignedCell<F, F>,
-        layouter: &mut impl Layouter<F>,
+        region: &mut Region<F>,
+        offset: &mut usize,
     ) -> AssignedCell<F, F> {
         self.negate_chip
-            .generate_rows_from_cell(layouter, input_cell, &mut self.decompose_8_chip)
+            .generate_rows_from_cell(region, offset, input_cell, &mut self.decompose_8_chip)
             .unwrap()
     }
 
@@ -630,10 +632,11 @@ impl<F: PrimeField> Blake2bChip<F> {
         &mut self,
         lhs: AssignedCell<F, F>,
         rhs: AssignedCell<F, F>,
-        layouter: &mut impl Layouter<F>,
+        region: &mut Region<F>,
+        offset: &mut usize,
     ) -> AssignedCell<F, F> {
         self.xor_chip
-            .generate_xor_rows_from_cells(layouter, lhs, rhs, &mut self.decompose_8_chip)
+            .generate_xor_rows_from_cells(region, offset, lhs, rhs, &mut self.decompose_8_chip)
             .unwrap()[0]
             .clone()
     }
@@ -642,50 +645,55 @@ impl<F: PrimeField> Blake2bChip<F> {
         &mut self,
         lhs: AssignedCell<F, F>,
         rhs: AssignedCell<F, F>,
-        layouter: &mut impl Layouter<F>,
+        region: &mut Region<F>,
+        offset: &mut usize,
     ) -> [AssignedCell<F, F>; 9] {
         self.xor_chip
-            .generate_xor_rows_from_cells(layouter, lhs, rhs, &mut self.decompose_8_chip)
+            .generate_xor_rows_from_cells(region, offset, lhs, rhs, &mut self.decompose_8_chip)
             .unwrap()
     }
 
     fn rotate_right_63(
         &mut self,
         input_cell: AssignedCell<F, F>,
-        layouter: &mut impl Layouter<F>,
+        region: &mut Region<F>,
+        offset: &mut usize,
     ) -> AssignedCell<F, F> {
         self.rotate_63_chip
-            .generate_rotation_rows_from_cells(layouter, input_cell, &mut self.decompose_8_chip)
+            .generate_rotation_rows_from_cells(region, offset, input_cell, &mut self.decompose_8_chip)
             .unwrap()
     }
 
     fn rotate_right_16(
         &mut self,
         input_cell: AssignedCell<F, F>,
-        layouter: &mut impl Layouter<F>,
+        region: &mut Region<F>,
+        offset: &mut usize,
     ) -> AssignedCell<F, F> {
         self.generic_limb_rotation_chip
-            .generate_rotation_rows_from_cell(layouter, &mut self.decompose_8_chip, input_cell, 2)
+            .generate_rotation_rows_from_cell(region, offset, &mut self.decompose_8_chip, input_cell, 2)
             .unwrap()
     }
 
     fn rotate_right_24(
         &mut self,
         input_cell: AssignedCell<F, F>,
-        layouter: &mut impl Layouter<F>,
+        region: &mut Region<F>,
+        offset: &mut usize,
     ) -> AssignedCell<F, F> {
         self.generic_limb_rotation_chip
-            .generate_rotation_rows_from_cell(layouter, &mut self.decompose_8_chip, input_cell, 3)
+            .generate_rotation_rows_from_cell(region, offset, &mut self.decompose_8_chip, input_cell, 3)
             .unwrap()
     }
 
     fn rotate_right_32(
         &mut self,
         input_cell: AssignedCell<F, F>,
-        layouter: &mut impl Layouter<F>,
+        region: &mut Region<F>,
+        offset: &mut usize,
     ) -> AssignedCell<F, F> {
         self.generic_limb_rotation_chip
-            .generate_rotation_rows_from_cell(layouter, &mut self.decompose_8_chip, input_cell, 4)
+            .generate_rotation_rows_from_cell(region, offset, &mut self.decompose_8_chip, input_cell, 4)
             .unwrap()
     }
 

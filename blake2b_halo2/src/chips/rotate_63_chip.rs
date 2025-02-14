@@ -76,28 +76,25 @@ impl<F: PrimeField, const T: usize, const R: usize> Rotate63Chip<F, T, R> {
 
     pub fn generate_rotation_rows_from_cells(
         &mut self,
-        layouter: &mut impl Layouter<F>,
+        region: &mut Region<F>,
+        offset: &mut usize,
         input: AssignedCell<F, F>,
         decompose_chip: &mut impl Decomposition<F, T>,
     ) -> Result<AssignedCell<F, F>, Error> {
-        layouter.assign_region(
-            || "generate rotate 63",
-            |mut region| {
-                let _ = self.q_rot63.enable(&mut region, 0);
+        let _ = self.q_rot63.enable(region, *offset);
 
-                let input_value = input.value().copied();
-                let result_value = input_value.and_then(|input| {
-                    Value::known(auxiliar_functions::rotate_right_field_element(input, 63))
-                });
+        let input_value = input.value().copied();
+        let result_value = input_value.and_then(|input| {
+            Value::known(auxiliar_functions::rotate_right_field_element(input, 63))
+        });
 
-                decompose_chip.generate_row_from_cell(&mut region, input.clone(), 0)?;
+        decompose_chip.generate_row_from_cell(region, input.clone(), *offset)?;
+        *offset += 1;
 
-                let result_cell =
-                    decompose_chip.generate_row_from_value(&mut region, result_value, 1)?;
-
-                Ok(result_cell)
-            },
-        )
+        let result_cell =
+            decompose_chip.generate_row_from_value(region, result_value, *offset)?;
+        *offset += 1;
+        Ok(result_cell)
     }
 
     pub fn unknown_trace() -> [[Value<F>; R]; 2] {

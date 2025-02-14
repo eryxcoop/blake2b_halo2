@@ -51,23 +51,21 @@ impl<F: PrimeField> NegateChip<F> {
 
     pub fn generate_rows_from_cell(
         &mut self,
-        layouter: &mut impl Layouter<F>,
+        region: &mut Region<F>,
+        offset: &mut usize,
         input: AssignedCell<F, F>,
         decompose_chip: &mut Decompose8Chip<F>,
     ) -> Result<AssignedCell<F, F>, Error> {
-        layouter.assign_region(
-            || "sum",
-            |mut region| {
-                let _ = self.q_negate.enable(&mut region, 0);
+        let _ = self.q_negate.enable(region, *offset);
 
-                let value = input.value().copied();
-                let result_value =
-                    value.and_then(|v0| Value::known(F::from(((1u128 << 64) - 1) as u64) - v0));
-                decompose_chip.generate_row_from_cell(&mut region, input.clone(), 0)?;
-                let result_cell =
-                    decompose_chip.generate_row_from_value(&mut region, result_value, 1)?;
-                Ok(result_cell)
-            },
-        )
+        let value = input.value().copied();
+        let result_value =
+            value.and_then(|v0| Value::known(F::from(((1u128 << 64) - 1) as u64) - v0));
+        decompose_chip.generate_row_from_cell(region, input.clone(), *offset)?;
+        *offset += 1;
+        let result_cell =
+            decompose_chip.generate_row_from_value(region, result_value, *offset)?;
+        *offset += 1;
+        Ok(result_cell)
     }
 }
