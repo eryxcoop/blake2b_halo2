@@ -138,6 +138,40 @@ impl<F: PrimeField> XorChip<F> {
         Ok(result_row_array)
     }
 
+    pub fn generate_xor_rows_from_cells_optimized(
+        &mut self,
+        region: &mut Region<F>,
+        offset: &mut usize,
+        previous_cell: AssignedCell<F, F>,
+        cell_to_copy: AssignedCell<F, F>,
+        decompose_8_chip: &mut Decompose8Chip<F>,
+    ) -> Result<[AssignedCell<F, F>; 9], Error> {
+        // This method is intended to be used when one of the addition parameters (previous_cell)
+        // is the last cell that was generated in the circuit. This way, we can avoid generating
+        // the row for the previous_cell again, and just copy the cell_to_copy.
+
+        let value_a = previous_cell.value().copied();
+        let value_b = cell_to_copy.value().copied();
+
+        let _ = self.q_xor.enable(region, *offset - 1);
+
+        let result_value = value_a.and_then(|v0| {
+            value_b
+                .and_then(|v1| Value::known(auxiliar_functions::xor_field_elements(v0, v1)))
+        });
+
+        decompose_8_chip.generate_row_from_cell(region, cell_to_copy.clone(), *offset)?;
+        *offset += 1;
+
+        let result_row = decompose_8_chip
+            .generate_row_from_value_and_keep_row(region, result_value, *offset)
+            .unwrap();
+        *offset += 1;
+
+        let result_row_array = result_row.try_into().unwrap();
+        Ok(result_row_array)
+    }
+
     pub fn unknown_trace() -> [[Value<F>; 9]; 3] {
         [[Value::unknown(); 9]; 3]
     }
