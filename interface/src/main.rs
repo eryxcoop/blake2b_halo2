@@ -26,6 +26,7 @@ fn main() {
     println!("The amount of blocks processed by the hash is {}", amount_of_blocks(&input, &key));
     println!("The amount of rows in the circuit depends only on the amount of blocks, so two inputs \
     of different sizes but same amount of blocks will have same length in the circuit\n\n");
+    println!("Computing the circuit and generating the proof, this could take a couple of seconds ...\n\n");
     let cost_options = run_blake2b_halo2(input.clone(), key.clone(), buffer_out);
     println!("Cost model options: ");
     println!("The amount of advice rows is {} (for {} blocks of input)", cost_options.rows_count, amount_of_blocks(&input, &key));
