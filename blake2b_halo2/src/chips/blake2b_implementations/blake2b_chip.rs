@@ -379,14 +379,14 @@ impl<F: PrimeField> Blake2bChip<F> {
         let a = self.add(a_plus_b, x, region, offset);
 
         // v[d] = rotr_64(v[d] ^ v[a], 32);
-        let d_xor_a = self.xor(v_d.clone(), a.clone(), region, offset);
+        let d_xor_a = self.xor_full_row_result(v_d.clone(), a.clone(), region, offset);
         let d = self.rotate_right_32(d_xor_a, region, offset);
 
         // v[c] = ((v[c] as u128 + v[d] as u128) % (1 << 64)) as u64;
         let c = self.add(v_c, d.clone(), region, offset);
 
         // v[b] = rotr_64(v[b] ^ v[c], 24);
-        let b_xor_c = self.xor(v_b, c.clone(), region, offset);
+        let b_xor_c = self.xor_full_row_result(v_b, c.clone(), region, offset);
         let b = self.rotate_right_24(b_xor_c, region, offset);
 
         // v[a] = ((v[a] as u128 + v[b] as u128 + y as u128) % (1 << 64)) as u64;
@@ -394,7 +394,7 @@ impl<F: PrimeField> Blake2bChip<F> {
         let a = self.add(a_plus_b, y, region, offset);
 
         // v[d] = rotr_64(v[d] ^ v[a], 16);
-        let d_xor_a = self.xor(d.clone(), a.clone(), region, offset);
+        let d_xor_a = self.xor_full_row_result(d.clone(), a.clone(), region, offset);
         let d = self.rotate_right_16(d_xor_a, region, offset);
 
         // v[c] = ((v[c] as u128 + v[d] as u128) % (1 << 64)) as u64;
@@ -641,6 +641,18 @@ impl<F: PrimeField> Blake2bChip<F> {
             .clone()
     }
 
+    fn xor_full_row_result(
+        &mut self,
+        lhs: AssignedCell<F, F>,
+        rhs: AssignedCell<F, F>,
+        region: &mut Region<F>,
+        offset: &mut usize,
+    ) -> [AssignedCell<F, F>; 9] {
+        self.xor_chip
+            .generate_xor_rows_from_cells(region, offset, lhs, rhs, &mut self.decompose_8_chip)
+            .unwrap()
+    }
+
     fn xor_with_full_rows(
         &mut self,
         lhs: AssignedCell<F, F>,
@@ -666,34 +678,34 @@ impl<F: PrimeField> Blake2bChip<F> {
 
     fn rotate_right_16(
         &mut self,
-        input_cell: AssignedCell<F, F>,
+        input_row: [AssignedCell<F, F>; 9],
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> AssignedCell<F, F> {
         self.generic_limb_rotation_chip
-            .generate_rotation_rows_from_cell(region, offset, &mut self.decompose_8_chip, input_cell, 2)
+            .generate_rotation_rows_from_cell(region, offset, &mut self.decompose_8_chip, input_row, 2)
             .unwrap()
     }
 
     fn rotate_right_24(
         &mut self,
-        input_cell: AssignedCell<F, F>,
+        input_row: [AssignedCell<F, F>; 9],
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> AssignedCell<F, F> {
         self.generic_limb_rotation_chip
-            .generate_rotation_rows_from_cell(region, offset, &mut self.decompose_8_chip, input_cell, 3)
+            .generate_rotation_rows_from_cell(region, offset, &mut self.decompose_8_chip, input_row, 3)
             .unwrap()
     }
 
     fn rotate_right_32(
         &mut self,
-        input_cell: AssignedCell<F, F>,
+        input_row: [AssignedCell<F, F>; 9],
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> AssignedCell<F, F> {
         self.generic_limb_rotation_chip
-            .generate_rotation_rows_from_cell(region, offset, &mut self.decompose_8_chip, input_cell, 4)
+            .generate_rotation_rows_from_cell(region, offset, &mut self.decompose_8_chip, input_row, 4)
             .unwrap()
     }
 

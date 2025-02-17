@@ -53,10 +53,10 @@ impl<F: PrimeField> LimbRotationChip<F> {
         region: &mut Region<F>,
         offset: &mut usize,
         decompose_chip: &mut impl Decomposition<F, 8>,
-        cell: AssignedCell<F, F>,
+        cell_row: [AssignedCell<F, F>; 9],
         limbs_to_rotate_to_the_right: usize,
     ) -> Result<AssignedCell<F, F>, Error> {
-        let value = cell.value().copied();
+        let value = cell_row[0].value().copied();
         let result_value = value.and_then(|input| {
             Value::known(auxiliar_functions::rotate_right_field_element(
                 input,
@@ -64,9 +64,6 @@ impl<F: PrimeField> LimbRotationChip<F> {
             ))
         });
 
-        let input_row =
-            decompose_chip.generate_row_from_cell(region, cell.clone(), *offset)?;
-        *offset += 1;
         let result_row = decompose_chip.generate_row_from_value_and_keep_row(
             region,
             result_value,
@@ -75,7 +72,7 @@ impl<F: PrimeField> LimbRotationChip<F> {
         *offset += 1;
 
         for i in 0..8 {
-            let top_cell = input_row[i + 1].cell();
+            let top_cell = cell_row[i + 1].cell();
             let bottom_cell =
                 result_row[((8 + i - limbs_to_rotate_to_the_right) % 8) + 1].cell();
             region.constrain_equal(top_cell, bottom_cell)?;
