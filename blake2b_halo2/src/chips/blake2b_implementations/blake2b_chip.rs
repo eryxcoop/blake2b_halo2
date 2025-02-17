@@ -379,14 +379,14 @@ impl<F: PrimeField> Blake2bChip<F> {
         let a = self.add_copying_one_parameter(a_plus_b, x, region, offset);
 
         // v[d] = rotr_64(v[d] ^ v[a], 32);
-        let d_xor_a = self.xor_full_row_result(v_d.clone(), a.clone(), region, offset);
+        let d_xor_a = self.xor_for_mix(a.clone(), v_d.clone(), region, offset);
         let d = self.rotate_right_32(d_xor_a, region, offset);
 
         // v[c] = ((v[c] as u128 + v[d] as u128) % (1 << 64)) as u64;
         let c = self.add_copying_one_parameter(d.clone(), v_c, region, offset);
 
         // v[b] = rotr_64(v[b] ^ v[c], 24);
-        let b_xor_c = self.xor_full_row_result(v_b, c.clone(), region, offset);
+        let b_xor_c = self.xor_for_mix(c.clone(), v_b, region, offset);
         let b = self.rotate_right_24(b_xor_c, region, offset);
 
         // v[a] = ((v[a] as u128 + v[b] as u128 + y as u128) % (1 << 64)) as u64;
@@ -394,14 +394,14 @@ impl<F: PrimeField> Blake2bChip<F> {
         let a = self.add_copying_one_parameter(a_plus_b, y, region, offset);
 
         // v[d] = rotr_64(v[d] ^ v[a], 16);
-        let d_xor_a = self.xor_full_row_result(d.clone(), a.clone(), region, offset);
+        let d_xor_a = self.xor_for_mix(a.clone(), d.clone(), region, offset);
         let d = self.rotate_right_16(d_xor_a, region, offset);
 
         // v[c] = ((v[c] as u128 + v[d] as u128) % (1 << 64)) as u64;
         let c = self.add_copying_one_parameter(d.clone(), c.clone(), region, offset);
 
         // v[b] = rotr_64(v[b] ^ v[c], 63);
-        let b_xor_c = self.xor_full_row_result(b.clone(), c.clone(), region, offset);
+        let b_xor_c = self.xor_for_mix(c.clone(), b.clone(), region, offset);
         let b = self.rotate_right_63(b_xor_c, region, offset);
 
         state[a_] = a;
@@ -663,15 +663,27 @@ impl<F: PrimeField> Blake2bChip<F> {
             .clone()
     }
 
-    fn xor_full_row_result(
+    fn xor_for_mix(
         &mut self,
-        lhs: AssignedCell<F, F>,
-        rhs: AssignedCell<F, F>,
+        previous_cell: AssignedCell<F, F>,
+        cell_to_copy: AssignedCell<F, F>,
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> [AssignedCell<F, F>; 9] {
+        cfg_if::cfg_if! {
+            if #[cfg(feature = "sum_with_8_limbs")] {
+                self.xor_copying_one_parameter(previous_cell, cell_to_copy, region, offset)
+            } else if #[cfg(feature = "sum_with_4_limbs")] {
+                self.xor_with_full_rows(previous_cell, cell_to_copy, region, offset)
+            } else {
+                panic!("No feature selected");
+            }
+        }
+    }
+
+    fn xor_copying_one_parameter(&mut self, previous_cell: AssignedCell<F, F>, cell_to_copy: AssignedCell<F, F>, region: &mut Region<F>, offset: &mut usize) -> [AssignedCell<F, F>; 9] {
         self.xor_chip
-            .generate_xor_rows_from_cells(region, offset, lhs, rhs, &mut self.decompose_8_chip)
+            .generate_xor_rows_from_cells_optimized(region, offset, previous_cell, cell_to_copy, &mut self.decompose_8_chip)
             .unwrap()
     }
 

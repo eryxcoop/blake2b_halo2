@@ -20,8 +20,8 @@ impl<F: PrimeField> XorChip<F> {
 
         for limb in limbs_8_bits {
             meta.lookup(format!("xor lookup limb {:?}", limb), |meta| {
-                let left: Expression<F> = meta.query_advice(limb, Rotation::cur());
-                let right: Expression<F> = meta.query_advice(limb, Rotation::next());
+                let left: Expression<F> = meta.query_advice(limb, Rotation(0));
+                let right: Expression<F> = meta.query_advice(limb, Rotation(1));
                 let out: Expression<F> = meta.query_advice(limb, Rotation(2));
                 let q_xor = meta.query_selector(q_xor);
                 vec![
@@ -164,8 +164,7 @@ impl<F: PrimeField> XorChip<F> {
         *offset += 1;
 
         let result_row = decompose_8_chip
-            .generate_row_from_value_and_keep_row(region, result_value, *offset)
-            .unwrap();
+            .generate_row_from_value_and_keep_row(region, result_value, *offset)?;
         *offset += 1;
 
         let result_row_array = result_row.try_into().unwrap();
