@@ -54,8 +54,8 @@ const SIGMA: [[usize; 16]; 12] = [
 
 struct Blake2bCtx {
     iteration_buffer: [u8; 128],     // input buffer
-    state: [u64; 8], // chained state, es como el acumulador de la compression function
-    processed_bytes_count: [u64; 2], // total number of bytes, low part y high part del número (pq el mensaje puede ser de hasta 2^128 bytes)
+    state: [u64; 8], // chained state, it is like the accumulator of the compression function
+    processed_bytes_count: [u64; 2], // total number of bytes, low part and high part of the number (message can be up to 2^128)
     buffer_pointer: usize,           // pointer for b[]
 }
 
@@ -138,26 +138,20 @@ fn blake2b_compress(ctx: &mut Blake2bCtx, last: bool) {
 
     accumulative_state[..8].copy_from_slice(&ctx.state);
     accumulative_state[8..16].copy_from_slice(&BLAKE2B_IV);
-    // Primero, el array v se llena:
-    // - las primeras 8 posiciones con el estado actual
-    // - las siguientes 8 posiciones con los valores iniciales de la función de compresión
-    //   que van a ser siempre las mismas
-    // Esto lo podemos poner así como viene en la traza, o ir poniendo los valores cuando los necesitemos
+    // First, we fill the array v:
+    // - The first 8 positions are the current state
+    // - The following 8 positions are the IV values of the compression function, which will always be the same
 
-    accumulative_state[12] ^= ctx.processed_bytes_count[0]; // Esta es la parte baja del numero de bytes que se
-                                           // llevan procesados. Si tenemos un solo bloque esto
-                                           // va a ser siempre 128 (por ahora)
-    accumulative_state[13] ^= ctx.processed_bytes_count[1]; // Si tenemos un solo bloque esto va a ser siempre 0
-                                           // o sea que un xor con eso no hace nada (por ahora)
+    accumulative_state[12] ^= ctx.processed_bytes_count[0]; // This is the low part of the number of processed bytes
+    accumulative_state[13] ^= ctx.processed_bytes_count[1]; // and this is the high part.
 
     if last {
-        accumulative_state[14] = !accumulative_state[14] // Por ahora esto nos va a pasar siempre, en nuestra primera implementación
+        accumulative_state[14] = !accumulative_state[14]
     }
 
     for i in 0..16 {
+        // This simply formats the 128 bytes of the buffer in 16 u64
         current_block_words[i] = b2b_get64(&ctx.iteration_buffer[8 * i..8 * i + 8]);
-        // Simplemente reordena los 128 bytes del buffer en 16 u64, en Halo2 ya los podemos poner
-        // directamente en u64
     }
 
     for i in 0..12 {
