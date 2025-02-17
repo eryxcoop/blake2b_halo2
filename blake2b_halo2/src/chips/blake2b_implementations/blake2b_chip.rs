@@ -401,7 +401,7 @@ impl<F: PrimeField> Blake2bChip<F> {
         let c = self.add(c.clone(), d.clone(), region, offset);
 
         // v[b] = rotr_64(v[b] ^ v[c], 63);
-        let b_xor_c = self.xor(b.clone(), c.clone(), region, offset);
+        let b_xor_c = self.xor_full_row_result(b.clone(), c.clone(), region, offset);
         let b = self.rotate_right_63(b_xor_c, region, offset);
 
         state[a_] = a;
@@ -667,12 +667,12 @@ impl<F: PrimeField> Blake2bChip<F> {
 
     fn rotate_right_63(
         &mut self,
-        input_cell: AssignedCell<F, F>,
+        input_row: [AssignedCell<F, F>; 9],
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> AssignedCell<F, F> {
         self.rotate_63_chip
-            .generate_rotation_rows_from_cells(region, offset, input_cell, &mut self.decompose_8_chip)
+            .generate_rotation_rows_from_cells(region, offset, input_row, &mut self.decompose_8_chip)
             .unwrap()
     }
 

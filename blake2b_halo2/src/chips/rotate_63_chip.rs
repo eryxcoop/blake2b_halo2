@@ -12,8 +12,8 @@ impl<F: PrimeField, const T: usize, const R: usize> Rotate63Chip<F, T, R> {
         let q_rot63 = meta.complex_selector();
         meta.create_gate("rotate right 63", |meta| {
             let q_rot63 = meta.query_selector(q_rot63);
-            let input_full_number = meta.query_advice(full_number_u64, Rotation::cur());
-            let output_full_number = meta.query_advice(full_number_u64, Rotation::next());
+            let input_full_number = meta.query_advice(full_number_u64, Rotation(-1));
+            let output_full_number = meta.query_advice(full_number_u64, Rotation(0));
             vec![
                 q_rot63
                     * (Expression::Constant(F::from(2)) * input_full_number.clone()
@@ -39,57 +39,30 @@ impl<F: PrimeField, const T: usize, const R: usize> Rotate63Chip<F, T, R> {
         let _ = layouter.assign_region(
             || "rotate 63",
             |mut region| {
-                let _ = self.q_rot63.enable(&mut region, 0);
 
                 let first_row = trace[0].to_vec();
                 let second_row = trace[1].to_vec();
                 decompose_chip.populate_row_from_values(&mut region, first_row.clone(), 0);
                 decompose_chip.populate_row_from_values(&mut region, second_row.clone(), 1);
+                let _ = self.q_rot63.enable(&mut region, 1);
                 Ok(())
             },
         );
-    }
-
-    pub fn generate_rotation_rows(
-        &mut self,
-        layouter: &mut impl Layouter<F>,
-        input: Value<F>,
-        decompose_chip: &mut impl Decomposition<F, T>,
-    ) -> Result<AssignedCell<F, F>, Error> {
-        layouter.assign_region(
-            || "generate rotate 63",
-            |mut region| {
-                let _ = self.q_rot63.enable(&mut region, 0);
-
-                let result_value = input.and_then(|input| {
-                    Value::known(auxiliar_functions::rotate_right_field_element(input, 63))
-                });
-
-                decompose_chip.generate_row_from_value(&mut region, input, 0)?;
-                let result_cell =
-                    decompose_chip.generate_row_from_value(&mut region, result_value, 1)?;
-
-                Ok(result_cell)
-            },
-        )
     }
 
     pub fn generate_rotation_rows_from_cells(
         &mut self,
         region: &mut Region<F>,
         offset: &mut usize,
-        input: AssignedCell<F, F>,
+        input_row: [AssignedCell<F, F>; 9],
         decompose_chip: &mut impl Decomposition<F, T>,
     ) -> Result<AssignedCell<F, F>, Error> {
         let _ = self.q_rot63.enable(region, *offset);
 
-        let input_value = input.value().copied();
+        let input_value = input_row[0].value().copied();
         let result_value = input_value.and_then(|input| {
             Value::known(auxiliar_functions::rotate_right_field_element(input, 63))
         });
-
-        decompose_chip.generate_row_from_cell(region, input.clone(), *offset)?;
-        *offset += 1;
 
         let result_cell =
             decompose_chip.generate_row_from_value(region, result_value, *offset)?;
