@@ -25,9 +25,11 @@ impl<F: PrimeField, const T: usize, const R: usize> AdditionMod64Chip<F, T, R> {
             let carry = meta.query_advice(carry, Rotation(2));
 
             vec![
-                q_add
+                q_add.clone()
                     * (full_number_result - full_number_x - full_number_y
-                        + carry * (Expression::Constant(field_for(1u128 << 64)))),
+                        + carry.clone() * (Expression::Constant(field_for(1u128 << 64)))),
+                q_add
+                    * carry.clone() * (Expression::Constant(field_for(1u128)) - carry),
             ]
         });
 
