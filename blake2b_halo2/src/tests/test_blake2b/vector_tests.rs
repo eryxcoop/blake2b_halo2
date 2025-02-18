@@ -12,22 +12,8 @@ struct TestCase {
 }
 
 pub fn run_test(input: &String, key: &String, expected: &String) {
-    // INPUT
-    let input_size = input.len() / 2; // Amount of bytes
-    let input_bytes = hex::decode(input).expect("Invalid hex string");
-    let input_values =
-        input_bytes.iter().map(|x| Value::known(Fr::from(*x as u64))).collect::<Vec<_>>();
-
-    // OUTPUT
-    let (expected_output, output_size) = formed_output_block_for(expected);
-    let expected_output_fields: [Fr; 64] =
-        expected_output.iter().map(|x| Fr::from(*x as u64)).collect::<Vec<_>>().try_into().unwrap();
-
-    // KEY
-    let key_size = key.len() / 2; // Amount of bytes
-    let key_bytes = hex::decode(key).expect("Invalid hex string");
-    let key_values =
-        key_bytes.iter().map(|x| Value::known(Fr::from(*x as u64))).collect::<Vec<_>>();
+    let (input_values, input_size, key_values, key_size, expected_output_fields, output_size) =
+        prepare_parameters_for_test(input, key, expected);
 
     // TEST
     let circuit =
@@ -91,10 +77,4 @@ fn test_hashes_in_circuit_with_key() {
         println!("Running test case {}", i);
         run_test(&case.input, &case.key, &case.out);
     }
-}
-
-pub fn formed_output_block_for(output: &String) -> ([u8; 64], usize) {
-    let output_block_size = output.len() / 2; // Amount of bytes
-    let output_bytes = hex::decode(output).expect("Invalid hex string");
-    (output_bytes.try_into().unwrap(), output_block_size)
 }

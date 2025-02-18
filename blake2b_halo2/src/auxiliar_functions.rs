@@ -127,6 +127,33 @@ pub(crate) fn rotate_right_field_element<F: PrimeField>(
     F::from(rotated_value as u64)
 }
 
+pub fn formed_output_block_for(output: &String) -> ([u8; 64], usize) {
+    let output_block_size = output.len() / 2; // Amount of bytes
+    let output_bytes = hex::decode(output).expect("Invalid hex string");
+    (output_bytes.try_into().unwrap(), output_block_size)
+}
+
+pub fn prepare_parameters_for_test(input: &String, key: &String, expected: &String) -> (Vec<Value<Fr>>, usize, Vec<Value<Fr>>, usize, [Fr; 64], usize) {
+    // INPUT
+    let input_size = input.len() / 2; // Amount of bytes
+    let input_bytes = hex::decode(input).expect("Invalid hex string");
+    let input_values =
+        input_bytes.iter().map(|x| Value::known(Fr::from(*x as u64))).collect::<Vec<_>>();
+
+    // OUTPUT
+    let (expected_output, output_size) = formed_output_block_for(expected);
+    let expected_output_fields: [Fr; 64] =
+        expected_output.iter().map(|x| Fr::from(*x as u64)).collect::<Vec<_>>().try_into().unwrap();
+
+    // KEY
+    let key_size = key.len() / 2; // Amount of bytes
+    let key_bytes = hex::decode(key).expect("Invalid hex string");
+    let key_values =
+        key_bytes.iter().map(|x| Value::known(Fr::from(*x as u64))).collect::<Vec<_>>();
+
+    (input_values, input_size, key_values, key_size, expected_output_fields, output_size)
+}
+
 #[allow(dead_code)]
 fn assert_cell_has_value(obtained_cell: AssignedCell<Fr, Fr>, expected_value: Value<Fr>) {
     obtained_cell.value().copied().and_then(|x| {
