@@ -3,6 +3,8 @@ use halo2_proofs::circuit::{AssignedCell, Layouter, Region, Value};
 use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Error, Expression, Selector, TableColumn};
 use halo2_proofs::poly::Rotation;
 
+/// This trait enables indistinct decomposition of a number into a set of limbs.
+/// T is the amount of limbs that the number will be decomposed into.
 pub trait Decomposition<F: PrimeField, const T: usize> {
     fn configure(
         meta: &mut ConstraintSystem<F>,
