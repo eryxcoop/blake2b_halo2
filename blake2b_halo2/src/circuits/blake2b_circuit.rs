@@ -4,11 +4,14 @@ use halo2_proofs::plonk::Circuit;
 use std::array;
 use crate::chips::blake2b_implementations::blake2b_chip::Blake2bChip;
 
+/// This is an example circuit of how you should use the Blake2b chip.
 pub struct Blake2bCircuit<F: Field> {
     _ph: PhantomData<F>,
+    /// The input and the key should be unknown for the verifier.
     input: Vec<Value<F>>,
-    input_size: usize,
     key: Vec<Value<F>>,
+    /// All the sizes should be known at circuit building time, so we don't store them as values.
+    input_size: usize,
     key_size: usize,
     output_size: usize,
 }
@@ -16,6 +19,7 @@ pub struct Blake2bCircuit<F: Field> {
 #[derive(Clone)]
 pub struct Blake2bConfig<F: PrimeField> {
     _ph: PhantomData<F>,
+    /// The chip that will be used to compute the hash. We only need this.
     blake2b_table16_chip: Blake2bChip<F>,
 }
 
@@ -26,13 +30,14 @@ impl<F: PrimeField> Circuit<F> for Blake2bCircuit<F> {
     fn without_witnesses(&self) -> Self {
         let input_size = self.input_size;
         let key_size = self.key_size;
+        let output_size = self.output_size;
         Self {
             _ph: PhantomData,
             input: vec![Value::unknown(); input_size],
             input_size,
             key: vec![Value::unknown(); key_size],
             key_size,
-            output_size: self.output_size,
+            output_size,
         }
     }
 
@@ -46,6 +51,7 @@ impl<F: PrimeField> Circuit<F> for Blake2bCircuit<F> {
             meta.enable_equality(limb);
         }
 
+        /// We need to provide the chip with the advice columns that it will use.
         let blake2b_table16_chip = Blake2bChip::configure(meta, full_number_u64, limbs);
 
         Self::Config {
@@ -60,6 +66,8 @@ impl<F: PrimeField> Circuit<F> for Blake2bCircuit<F> {
         mut config: Self::Config,
         mut layouter: impl Layouter<F>,
     ) -> Result<(), Error> {
+        /// The initialization function should be called before the hash computation. For many hash
+        /// computations it should be called only once.
         config.blake2b_table16_chip.initialize_with(&mut layouter);
         config.blake2b_table16_chip.compute_blake2b_hash_for_inputs(
             &mut layouter,
