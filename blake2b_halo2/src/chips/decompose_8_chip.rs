@@ -3,9 +3,13 @@ use halo2_proofs::circuit::AssignedCell;
 
 #[derive(Clone, Debug)]
 pub struct Decompose8Chip<F: PrimeField> {
+    /// The full number and the limbs are not owned by the chip.
     full_number_u64: Column<Advice>,
     limbs: [Column<Advice>; 8],
+
+    /// Selector that turns on the gate that defines if the limbs should add up to the full number
     q_decompose: Selector,
+    /// Table of [0, 255] to check if the limb is in the correct range
     t_range: TableColumn,
     _ph: PhantomData<F>,
 }
@@ -13,12 +17,14 @@ pub struct Decompose8Chip<F: PrimeField> {
 impl<F: PrimeField> Decomposition<F, 8> for Decompose8Chip<F> {
     fn configure(
         meta: &mut ConstraintSystem<F>,
+        /// The full number and the limbs are not owned by the chip.
         full_number_u64: Column<Advice>,
         limbs: [Column<Advice>; 8],
     ) -> Self {
         let t_range = meta.lookup_table_column();
-
         let q_decompose = meta.complex_selector();
+
+        /// Gate that checks if the decomposition is correct
         meta.create_gate("decompose in 8 bit words", |meta| {
             let q_decompose = meta.query_selector(q_decompose);
             let full_number = meta.query_advice(full_number_u64, Rotation::cur());
@@ -38,6 +44,7 @@ impl<F: PrimeField> Decomposition<F, 8> for Decompose8Chip<F> {
             ]
         });
 
+        /// Range checks for all the limbs
         for limb in limbs {
             Self::_range_check_for_limb(meta, &limb, &q_decompose, &t_range);
         }
@@ -51,6 +58,7 @@ impl<F: PrimeField> Decomposition<F, 8> for Decompose8Chip<F> {
         }
     }
 
+    /// Given an explicir vector of values, it assigns the full number and the limbs in a row of the trace
     fn populate_row_from_values(
         &mut self,
         region: &mut Region<F>,
@@ -70,6 +78,7 @@ impl<F: PrimeField> Decomposition<F, 8> for Decompose8Chip<F> {
             .ok()
     }
 
+    /// Populates the table for the range check
     fn populate_lookup_table(&self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
         let lookup_column = self.t_range;
         Self::_populate_lookup_table(layouter, lookup_column)
@@ -96,6 +105,7 @@ impl<F: PrimeField> Decomposition<F, 8> for Decompose8Chip<F> {
         )
     }
 
+    /// Given a value of 64 bits, it returns a row with the assigned cells for the full number and the limbs
     fn generate_row_from_value(
         &mut self,
         region: &mut Region<F>,
@@ -107,6 +117,7 @@ impl<F: PrimeField> Decomposition<F, 8> for Decompose8Chip<F> {
         Ok(full_number_cell)
     }
 
+    /// Given 8 8-bit limbs, it returns a row with the assigned cells for the full number and the limbs
     fn generate_row_from_bytes(
         &mut self,
         region: &mut Region<F>,
@@ -125,6 +136,8 @@ impl<F: PrimeField> Decomposition<F, 8> for Decompose8Chip<F> {
         self.generate_row_from_value_and_keep_row(region, Value::known(full_number), offset)
     }
 
+    /// Given a cell with a 64-bit value, it returns a new row with the copied full number and the
+    /// decomposition in 8-bit limbs
     fn generate_row_from_cell(
         &mut self,
         region: &mut Region<F>,
@@ -146,6 +159,7 @@ impl<F: PrimeField> Decomposition<F, 8> for Decompose8Chip<F> {
         })
     }
 
+    /// Convenience method for generating a row from a value and keeping the full row
     fn generate_row_from_value_and_keep_row(
         &mut self,
         region: &mut Region<F>,
