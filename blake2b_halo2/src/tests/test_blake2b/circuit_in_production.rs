@@ -1,9 +1,14 @@
 use super::*;
 use halo2_proofs::{
-    halo2curves::bn256::{Bn256, Fr}, plonk::{create_proof, keygen_pk, keygen_vk, ProvingKey, VerifyingKey}, poly::kzg::{
+    halo2curves::bn256::{Bn256, Fr},
+    plonk::{
+        create_proof, keygen_pk, keygen_vk_with_k, ProvingKey, VerifyingKey
+    },
+    poly::kzg::{
         params::ParamsKZG,
-        KZGCommitmentScheme
-    }, transcript::{CircuitTranscript, Transcript}
+        KZGCommitmentScheme,
+    },
+    transcript::{CircuitTranscript, Transcript},
 };
 
 
@@ -17,11 +22,10 @@ fn test_with_real_snark() {
         prepare_parameters_for_test(&input, &key, &out);
     let circuit: Blake2bCircuit<Fr> = Blake2bCircuit::new_for(input_values, input_size, key_values, key_size, output_size);
     let params = ParamsKZG::<Bn256>::unsafe_setup(17, &mut rand::thread_rng());
-    let vk: VerifyingKey<Fr, KZGCommitmentScheme<Bn256>> = keygen_vk(&params, &circuit).expect("Verifying key should be created");
+    let vk: VerifyingKey<Fr, KZGCommitmentScheme<Bn256>> = keygen_vk_with_k(&params, &circuit, 17).expect("Verifying key should be created");
     let pk: ProvingKey<Fr, KZGCommitmentScheme<Bn256>>= keygen_pk(vk.clone(), &circuit).expect("Proving key should be created");
 
 
-    // let mut transcript = Blake2bWrite::<_, _, Challenge255<_>>::init(Vec::new());
     let mut transcript = CircuitTranscript::init();
     create_proof(
         &params,
@@ -33,5 +37,5 @@ fn test_with_real_snark() {
     ).expect("Proof generation should work");
 
     let proof = transcript.finalize();
-    println!("{:?}", proof);
+    println!("{:?}\n\n Proof length: {}", proof, proof.len());
 }
