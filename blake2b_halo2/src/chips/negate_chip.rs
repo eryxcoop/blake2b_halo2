@@ -13,6 +13,9 @@ impl<F: PrimeField> NegateChip<F> {
     pub fn configure(meta: &mut ConstraintSystem<F>, full_number_u64: Column<Advice>) -> Self {
         let q_negate = meta.complex_selector();
 
+        /// The gate that will be used to negate a number
+        /// The gate is defined as:
+        ///    negate = (1 << 64) - value - not_value
         meta.create_gate("negate", |meta| {
             let q_negate = meta.query_selector(q_negate);
             let value = meta.query_advice(full_number_u64, Rotation(0));
@@ -29,26 +32,6 @@ impl<F: PrimeField> NegateChip<F> {
         }
     }
 
-    pub fn generate_rows(
-        &mut self,
-        layouter: &mut impl Layouter<F>,
-        value: Value<F>,
-        decompose_chip: &mut Decompose8Chip<F>,
-    ) -> Result<AssignedCell<F, F>, Error> {
-        layouter.assign_region(
-            || "sum",
-            |mut region| {
-                let _ = self.q_negate.enable(&mut region, 0);
-                let result_value =
-                    value.and_then(|v0| Value::known(F::from(((1u128 << 64) - 1) as u64) - v0));
-                decompose_chip.generate_row_from_value(&mut region, value, 0)?;
-                let result_cell =
-                    decompose_chip.generate_row_from_value(&mut region, result_value, 1)?;
-                Ok(result_cell)
-            },
-        )
-    }
-
     pub fn generate_rows_from_cell(
         &mut self,
         region: &mut Region<F>,
@@ -56,12 +39,24 @@ impl<F: PrimeField> NegateChip<F> {
         input: AssignedCell<F, F>,
         decompose_chip: &mut Decompose8Chip<F>,
     ) -> Result<AssignedCell<F, F>, Error> {
-        let _ = self.q_negate.enable(region, *offset);
-
         let value = input.value().copied();
+        self.generate_rows(region, offset, value, decompose_chip)
+    }
+
+    pub fn generate_rows(
+        &mut self,
+        region: &mut Region<F>,
+        offset: &mut usize,
+        value: Value<F>,
+        decompose_chip: &mut Decompose8Chip<F>,
+    ) -> Result<AssignedCell<F, F>, Error> {
+        /// Receives a value, generates a row for that value and generates the row for the negation
+        /// of the value
+
+        let _ = self.q_negate.enable(region, *offset);
         let result_value =
             value.and_then(|v0| Value::known(F::from(((1u128 << 64) - 1) as u64) - v0));
-        decompose_chip.generate_row_from_cell(region, input.clone(), *offset)?;
+        decompose_chip.generate_row_from_value(region, value, *offset)?;
         *offset += 1;
         let result_cell =
             decompose_chip.generate_row_from_value(region, result_value, *offset)?;

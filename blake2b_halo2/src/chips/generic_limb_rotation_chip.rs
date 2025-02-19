@@ -10,6 +10,9 @@ pub struct LimbRotationChip<F: Field> {
 }
 
 impl<F: PrimeField> LimbRotationChip<F> {
+    /// This chip does not have a gate. It only rotates the limbs of a number to the right and
+    /// uses copy constrains to ensure that the rotation is correct.
+
     pub fn new() -> Self {
         Self { _ph: PhantomData }
     }
@@ -18,7 +21,7 @@ impl<F: PrimeField> LimbRotationChip<F> {
         [[Value::unknown(); 9]; 2]
     }
 
-    pub fn assign_rotation_rows(
+    pub fn populate_rotation_rows(
         &self,
         layouter: &mut impl Layouter<F>,
         decompose_chip: &mut Decompose8Chip<F>,
@@ -48,21 +51,37 @@ impl<F: PrimeField> LimbRotationChip<F> {
         );
     }
 
-    pub fn generate_rotation_rows_from_cell(
+    pub fn generate_rotation_rows_from_value(
         &self,
         region: &mut Region<F>,
         offset: &mut usize,
         decompose_chip: &mut impl Decomposition<F, 8>,
-        cell_row: [AssignedCell<F, F>; 9],
+        input: Value<F>,
         limbs_to_rotate_to_the_right: usize,
     ) -> Result<AssignedCell<F, F>, Error> {
-        let value = cell_row[0].value().copied();
-        let result_value = value.and_then(|input| {
-            Value::known(auxiliar_functions::rotate_right_field_element(
-                input,
-                limbs_to_rotate_to_the_right * 8,
-            ))
-        });
+        let input_row = decompose_chip.generate_row_from_value_and_keep_row(
+            region, input, *offset)?;
+        *offset += 1;
+
+        self.generate_rotation_rows_from_input_row(
+            region,
+            offset,
+            decompose_chip,
+            input_row.try_into().unwrap(),
+            limbs_to_rotate_to_the_right,
+        )
+    }
+
+    pub fn generate_rotation_rows_from_input_row(
+        &self,
+        region: &mut Region<F>,
+        offset: &mut usize,
+        decompose_chip: &mut impl Decomposition<F, 8>,
+        input_row: [AssignedCell<F, F>; 9],
+        limbs_to_rotate_to_the_right: usize,
+    ) -> Result<AssignedCell<F, F>, Error> {
+        let value = input_row[0].value().copied();
+        let result_value = Self::_right_rotation_value(value, limbs_to_rotate_to_the_right);
 
         let result_row = decompose_chip.generate_row_from_value_and_keep_row(
             region,
@@ -71,41 +90,30 @@ impl<F: PrimeField> LimbRotationChip<F> {
         )?;
         *offset += 1;
 
-        for i in 0..8 {
-            let top_cell = cell_row[i + 1].cell();
-            let bottom_cell =
-                result_row[((8 + i - limbs_to_rotate_to_the_right) % 8) + 1].cell();
-            region.constrain_equal(top_cell, bottom_cell)?;
-        }
+        Self::_constrain_result_with_input_row(region, &(input_row.try_into().unwrap()), &result_row, limbs_to_rotate_to_the_right)?;
 
         let result_cell = result_row[0].clone();
         Ok(result_cell)
     }
 
-    pub fn generate_rotation_rows_from_value(
-        &self,
-        layouter: &mut impl Layouter<F>,
-        decompose_chip: &mut impl Decomposition<F, 8>,
-        input: Value<F>,
-        limbs_to_rotate_to_the_right: usize,
-    ) -> Result<AssignedCell<F, F>, Error> {
-        layouter.assign_region(
-            || format!("Rotate {} limbs", limbs_to_rotate_to_the_right),
-            |mut region| {
-                let result_value = input.and_then(|input| {
-                    Value::known(auxiliar_functions::rotate_right_field_element(
-                        input,
-                        limbs_to_rotate_to_the_right * 8,
-                    ))
-                });
+    fn _constrain_result_with_input_row(region: &mut Region<F>, input_row: &Vec<AssignedCell<F, F>>, result_row: &Vec<AssignedCell<F, F>>, limbs_to_rotate: usize) -> Result<(), Error> {
+        for i in 0..8 {
+            let top_cell = input_row[i + 1].cell();
+            let bottom_cell =
+                result_row[((8 + i - limbs_to_rotate) % 8) + 1].cell();
+            region.constrain_equal(top_cell, bottom_cell)?;
+        }
+        Ok(())
+    }
 
-                decompose_chip.generate_row_from_value(&mut region, input, 0)?;
-                let result_cell =
-                    decompose_chip.generate_row_from_value(&mut region, result_value, 1)?;
-
-                Ok(result_cell)
-            },
-        )
+    fn _right_rotation_value(value: Value<F>, limbs_to_rotate: usize) -> Value<F> {
+        let result_value = value.and_then(|input| {
+            Value::known(auxiliar_functions::rotate_right_field_element(
+                input,
+                limbs_to_rotate * 8,
+            ))
+        });
+        result_value
     }
 }
 

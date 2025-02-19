@@ -756,7 +756,7 @@ impl<F: PrimeField> Blake2bChip<F> {
         offset: &mut usize,
     ) -> AssignedCell<F, F> {
         self.generic_limb_rotation_chip
-            .generate_rotation_rows_from_cell(region, offset, &mut self.decompose_8_chip, input_row, 2)
+            .generate_rotation_rows_from_input_row(region, offset, &mut self.decompose_8_chip, input_row, 2)
             .unwrap()
     }
 
@@ -767,7 +767,7 @@ impl<F: PrimeField> Blake2bChip<F> {
         offset: &mut usize,
     ) -> AssignedCell<F, F> {
         self.generic_limb_rotation_chip
-            .generate_rotation_rows_from_cell(region, offset, &mut self.decompose_8_chip, input_row, 3)
+            .generate_rotation_rows_from_input_row(region, offset, &mut self.decompose_8_chip, input_row, 3)
             .unwrap()
     }
 
@@ -778,7 +778,7 @@ impl<F: PrimeField> Blake2bChip<F> {
         offset: &mut usize,
     ) -> AssignedCell<F, F> {
         self.generic_limb_rotation_chip
-            .generate_rotation_rows_from_cell(region, offset, &mut self.decompose_8_chip, input_row, 4)
+            .generate_rotation_rows_from_input_row(region, offset, &mut self.decompose_8_chip, input_row, 4)
             .unwrap()
     }
 

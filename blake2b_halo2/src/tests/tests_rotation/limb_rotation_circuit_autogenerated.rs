@@ -78,29 +78,29 @@ impl<F: PrimeField, const T: usize> Circuit<F> for LimbRotationCircuitAutogenera
         };
 
         config.limb_rotation_config.decompose_8_chip.populate_lookup_table(&mut layouter)?;
-        let result =
-            config.limb_rotation_config.limb_rotation_chip.generate_rotation_rows_from_value(
-                &mut layouter,
-                &mut config.limb_rotation_config.decompose_8_chip,
-                self.input,
-                limbs_to_rotate_to_the_right,
-            )?;
-
-        // Check that the calculation was performed correctly by the limb rotation chip
         layouter.assign_region(
-            || "fixed",
-            |mut region| {
-                let fixed_cell = region.assign_fixed(
-                    || "assign expected result",
-                    config.fixed,
-                    0,
-                    || self.result,
+        || format!("Rotate {} limbs", limbs_to_rotate_to_the_right),
+        |mut region| {
+            let mut offset = 0;
+            let result =
+                config.limb_rotation_config.limb_rotation_chip.generate_rotation_rows_from_value(
+                    &mut region,
+                    &mut offset,
+                    &mut config.limb_rotation_config.decompose_8_chip,
+                    self.input,
+                    limbs_to_rotate_to_the_right,
                 )?;
-                // Constrain expected result
-                region.constrain_equal(result.cell(), fixed_cell.cell())?;
-                Ok(())
-            },
-        )?;
+
+            // Check that the calculation was performed correctly by the limb rotation chip
+            let fixed_cell = region.assign_fixed(
+                || "assign expected result",
+                config.fixed,
+                0,
+                || self.result,
+            )?;
+            region.constrain_equal(result.cell(), fixed_cell.cell())?;
+            Ok(())
+        })?;
 
         Ok(())
     }
