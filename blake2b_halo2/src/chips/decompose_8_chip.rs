@@ -5,19 +5,20 @@ use halo2_proofs::circuit::AssignedCell;
 pub struct Decompose8Chip<F: PrimeField> {
     /// The full number and the limbs are not owned by the chip.
     full_number_u64: Column<Advice>,
+    /// There are 8 limbs of 8 bits each
     limbs: [Column<Advice>; 8],
 
     /// Selector that turns on the gate that defines if the limbs should add up to the full number
     q_decompose: Selector,
-    /// Table of [0, 255] to check if the limb is in the correct range
+    /// Table of [0, 2^8) to check if the limb is in the correct range
     t_range: TableColumn,
     _ph: PhantomData<F>,
 }
 
 impl<F: PrimeField> Decomposition<F, 8> for Decompose8Chip<F> {
+    /// The full number and the limbs are not owned by the chip.
     fn configure(
         meta: &mut ConstraintSystem<F>,
-        /// The full number and the limbs are not owned by the chip.
         full_number_u64: Column<Advice>,
         limbs: [Column<Advice>; 8],
     ) -> Self {
@@ -58,7 +59,7 @@ impl<F: PrimeField> Decomposition<F, 8> for Decompose8Chip<F> {
         }
     }
 
-    /// Given an explicir vector of values, it assigns the full number and the limbs in a row of the trace
+    /// Given an explicit vector of values, it assigns the full number and the limbs in a row of the trace
     fn populate_row_from_values(
         &mut self,
         region: &mut Region<F>,
@@ -151,6 +152,7 @@ impl<F: PrimeField> Decomposition<F, 8> for Decompose8Chip<F> {
         Ok(new_cells)
     }
 
+    /// Given a value and a limb index, it returns the value of the limb
     fn get_limb_from(value: Value<F>, limb_number: usize) -> Value<F> {
         value.and_then(|v| {
             let binding = v.to_repr();
