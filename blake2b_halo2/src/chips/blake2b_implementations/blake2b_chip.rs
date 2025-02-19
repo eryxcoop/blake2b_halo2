@@ -12,10 +12,13 @@ use ff::PrimeField;
 use halo2_proofs::circuit::{AssignedCell, Layouter, Value};
 use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Fixed, Instance};
 
+/// This toggles between optimizations for the sum operation.
 cfg_if::cfg_if! {
     if #[cfg(feature = "sum_with_8_limbs")] {
+        /// Using 8 limbs for the sum operation.
         type AdditionChip<F> = AdditionMod64Chip<F, 8, 10>;
     } else if #[cfg(feature = "sum_with_4_limbs")] {
+        /// Using 4 limbs for the sum operation.
         type AdditionChip<F> = AdditionMod64Chip<F, 4, 6>;
     } else {
         panic!("No feature selected");
@@ -24,22 +27,29 @@ cfg_if::cfg_if! {
 
 const BLAKE2B_BLOCK_SIZE: usize = 128;
 
+/// This is the main chip for the Blake2b hash function. It is responsible for the entire hash computation.
+/// It contains all the necessary chips and some extra columns.
 #[derive(Clone, Debug)]
 pub struct Blake2bChip<F: PrimeField> {
-    addition_chip: AdditionChip<F>,
-    decompose_16_chip: Decompose16Chip<F>,
-
+    /// Decomposition chips
     decompose_8_chip: Decompose8Chip<F>,
+    decompose_16_chip: Decompose16Chip<F>,
+    /// Base oprerations chips
+    addition_chip: AdditionChip<F>,
     generic_limb_rotation_chip: LimbRotationChip<F>,
     rotate_63_chip: Rotate63Chip<F, 8, 9>,
     xor_chip: XorChip<F>,
     negate_chip: NegateChip<F>,
-
+    /// Column for constants of Blake2b
     constants: Column<Fixed>,
+    /// Column for the expected final state of the hash
     expected_final_state: Column<Instance>,
 }
 
 impl<F: PrimeField> Blake2bChip<F> {
+    /// The chip does not own the advice columns it utilizes. It is the responsibility of the caller
+    /// to provide them. This gives flexibility to the caller to use the same advice columns for
+    /// multiple purposes.
     pub fn configure(
         meta: &mut ConstraintSystem<F>,
         full_number_u64: Column<Advice>,
@@ -83,6 +93,8 @@ impl<F: PrimeField> Blake2bChip<F> {
         }
     }
 
+    /// This method initializes the chip with the necessary lookup tables. It should be called once
+    /// before the hash computation.
     pub fn initialize_with(&mut self, layouter: &mut impl Layouter<F>) {
         self._populate_lookup_table_8(layouter);
         self._populate_xor_lookup_table(layouter);
@@ -93,6 +105,7 @@ impl<F: PrimeField> Blake2bChip<F> {
         }
     }
 
+    /// This is the main method of the chip. It computes the Blake2b hash for the given inputs.
     pub fn compute_blake2b_hash_for_inputs(
         &mut self,
         layouter: &mut impl Layouter<F>,
@@ -104,6 +117,8 @@ impl<F: PrimeField> Blake2bChip<F> {
     ) -> Result<(), Error> {
         Self::_enforce_input_sizes(output_size, key_size);
 
+        /// All the computation is performed inside a single region. Some optimizations take advantage
+        /// of this fact, since we want to avoid copying cells between regions.
         let global_state_bytes = layouter.assign_region(|| "single region", |mut region| {
             let mut constants_offset: usize = 0;
             let iv_constants: [AssignedCell<F, F>; 8] =
@@ -143,12 +158,15 @@ impl<F: PrimeField> Blake2bChip<F> {
         )
     }
 
+    /// Enforces the output and key sizes.
     fn _enforce_input_sizes(output_size: usize, key_size: usize) {
         assert!(output_size <= 64, "Output size must be between 1 and 64 bytes");
         assert!(output_size > 0, "Output size must be between 1 and 64 bytes");
         assert!(key_size <= 64, "Key size must be between 1 and 64 bytes");
     }
 
+    /// Computes the initial global state of Blake2b. It only depends on the key size and the
+    /// output size, which are values known at circuit building time.
     fn compute_initial_state(
         &mut self,
         region: &mut Region<F>,
@@ -170,6 +188,8 @@ impl<F: PrimeField> Blake2bChip<F> {
         Ok(global_state)
     }
 
+    /// Here occurs the top loop of the hash. It iterates for each block of the input and key,
+    /// compressing the block and updating the global state.
     fn perform_blake2b_iterations(
         &mut self,
         region: &mut Region<F>,
@@ -193,10 +213,13 @@ impl<F: PrimeField> Blake2bChip<F> {
         );
         let last_input_block_index = if is_input_empty { 0 } else { input_blocks - 1 };
 
+        /// Main loop
         for i in 0..total_blocks {
             let is_last_block = i == total_blocks - 1;
             let is_key_block = !is_key_empty && i == 0;
 
+            /// This is an intermediate value in the Blake2b algorithm. It represents the amount of
+            /// bytes processed so far.
             let processed_bytes_count = Self::compute_processed_bytes_count_value_for_iteration(
                 i,
                 is_last_block,
@@ -204,16 +227,20 @@ impl<F: PrimeField> Blake2bChip<F> {
                 is_key_empty,
             );
 
+            /// This is the part where the inputs/key are organized inside the trace. Each iteration
+            /// processes 128 bytes, or as we represent them: 16 words of 64 bits.
             let current_block_rows = self.build_current_block_rows(
                 region, advice_offset, input, key, i, last_input_block_index, is_key_empty, is_last_block, is_key_block
             )?;
 
-            // Here we constrain the padding cells (either in the last block or in the key block) to be 0.
             let zero_constant_cell = self.assign_0_constant_to_fixed_cell(region, constants_offset)?;
+
+            /// Padding for the last block, in case the key block is not the only one.
             if is_last_block && !is_key_block {
                 let zeros_amount_for_input_padding = if input_size == 0 {
                     128
                 } else {
+                    // Complete the block with zeroes
                     (BLAKE2B_BLOCK_SIZE - input_size % BLAKE2B_BLOCK_SIZE) % BLAKE2B_BLOCK_SIZE
                 };
                 self.constrain_padding_cells_to_equal_zero(
@@ -223,7 +250,9 @@ impl<F: PrimeField> Blake2bChip<F> {
                     zero_constant_cell.clone(),
                 )?;
             }
+            /// Padding for the key block, in all cases that it exists. It is always the first block.
             if is_key_block {
+                /// Complete the block with zeroes
                 let zeros_amount_for_key_padding = BLAKE2B_BLOCK_SIZE - key.len();
                 self.constrain_padding_cells_to_equal_zero(
                     region,
@@ -249,16 +278,20 @@ impl<F: PrimeField> Blake2bChip<F> {
         global_state_bytes
     }
 
+    /// Computes the edge cases in the amount of blocks to process.
     fn get_total_blocks_count(input_blocks: usize, is_input_empty: bool, is_key_empty: bool) -> usize {
         if is_key_empty {
             if is_input_empty {
+                // If there's no input and no key, we still need to process one block of zeroes.
                 1
             } else {
                 input_blocks
             }
         } else if is_input_empty {
+            // If there's no input but there's key, key is processed in the first and only block.
             1
         } else {
+            // Key needs to be processed in a block alone, then come the input blocks.
             input_blocks + 1
         }
     }
@@ -468,7 +501,12 @@ impl<F: PrimeField> Blake2bChip<F> {
     }
 
     // Copy constrains
-
+    /// This method constrains the padding cells to equal zero. The amount of constraints
+    /// depends on the input size and the key size, which makes sense since those values are known
+    /// at circuit building time.
+    /// The idea is that since we decompose the state into 8 limbs, we already have the input
+    /// bytes in the trace. It's just a matter of iterating the cells in the correct order and knowing
+    /// which ones should equal zero. In Blake2b the padding is allways 0.
     fn constrain_padding_cells_to_equal_zero(
         &mut self,
         region: &mut Region<F>,
@@ -491,6 +529,9 @@ impl<F: PrimeField> Blake2bChip<F> {
         Ok(())
     }
 
+    /// Here we want to make sure that the public inputs are equal to the final state of the hash.
+    /// The amount of constrains is equal to the output size, which is known at circuit building time.
+    /// We should only constrain those, even tho the state contains the entire output.
     fn constraint_public_inputs_to_equal_computation_results(
         &self,
         layouter: &mut impl Layouter<F>,
@@ -507,20 +548,19 @@ impl<F: PrimeField> Blake2bChip<F> {
         Ok(())
     }
 
+    /// Set copy constraints to the part of the state that is copied from iv constants.
     fn constrain_initial_state(
         region: &mut Region<F>,
         global_state: &[AssignedCell<F, F>; 8],
         iv_constants: &[AssignedCell<F, F>; 8],
     ) -> Result<(), Error> {
-        // Set copy constraints to recently initialized state
         for i in 0..8 {
             region.constrain_equal(iv_constants[i].cell(), global_state[i].cell())?;
         }
         Ok(())
     }
 
-    // Assign constants
-
+    /// Assign constants to fixed cells to use later on
     fn assign_constant_to_fixed_cell(
         &self,
         region: &mut Region<F>,
@@ -528,7 +568,7 @@ impl<F: PrimeField> Blake2bChip<F> {
         constant: usize,
         region_name: &str,
     ) -> Result<AssignedCell<F, F>, Error> {
-        let constant_value = Value::known(F::from(constant as u64));
+        let constant_value = value_for(constant as u64);
         let ret = region.assign_fixed(|| region_name, self.constants, *offset, || constant_value);
         *offset += 1;
         ret
@@ -539,14 +579,7 @@ impl<F: PrimeField> Blake2bChip<F> {
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<AssignedCell<F, F>, Error> {
-        let ret = region.assign_fixed(
-            || "state 0 xor",
-            self.constants,
-            *offset,
-            || value_for(0x01010000u64),
-        );
-        *offset += 1;
-        ret
+        self.assign_constant_to_fixed_cell(region, offset, 0x01010000, "state 0 xor")
     }
 
     fn assign_0_constant_to_fixed_cell(
@@ -554,11 +587,11 @@ impl<F: PrimeField> Blake2bChip<F> {
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<AssignedCell<F, F>, Error> {
-        let ret = region.assign_fixed(|| "fixed 0", self.constants, *offset, || value_for(0u64));
-        *offset += 1;
-        ret
+        self.assign_constant_to_fixed_cell(region, offset, 0usize, "fixed 0")
     }
 
+    /// Blake2b uses an initialization vector (iv) that is hardcoded. This method assigns those
+    /// values to fixed cells to use later on.
     fn assign_iv_constants_to_fixed_cells(
         &self,
         region: &mut Region<F>,
@@ -593,8 +626,7 @@ impl<F: PrimeField> Blake2bChip<F> {
         let _ = self.xor_chip.populate_xor_lookup_table(layouter);
     }
 
-    // Primitive operations (they are public for testing purposes)
-
+    /// These are the methods that call primitive operation chips
     fn add(
         &mut self,
         lhs: AssignedCell<F, F>,
@@ -617,6 +649,8 @@ impl<F: PrimeField> Blake2bChip<F> {
         }
     }
 
+    /// Sometimes we can reutilice an output row to be the input row of the next operation. This is
+    /// a convenience method for that in the case of the sum operation.
     fn add_copying_one_parameter(
         &mut self,
         previous_cell: AssignedCell<F, F>,
@@ -663,6 +697,8 @@ impl<F: PrimeField> Blake2bChip<F> {
             .clone()
     }
 
+    /// Sometimes we can reutilice an output row to be the input row of the next operation. This is
+    /// a convenience method for that in the case of the xor operation.
     fn xor_for_mix(
         &mut self,
         previous_cell: AssignedCell<F, F>,
@@ -672,6 +708,7 @@ impl<F: PrimeField> Blake2bChip<F> {
     ) -> [AssignedCell<F, F>; 9] {
         cfg_if::cfg_if! {
             if #[cfg(feature = "sum_with_8_limbs")] {
+                // This feature is only used in the optimization where the sum is with 8 limbs
                 self.xor_copying_one_parameter(previous_cell, cell_to_copy, region, offset)
             } else if #[cfg(feature = "sum_with_4_limbs")] {
                 self.xor_with_full_rows(previous_cell, cell_to_copy, region, offset)
@@ -687,6 +724,8 @@ impl<F: PrimeField> Blake2bChip<F> {
             .unwrap()
     }
 
+    /// In this case we need to perform the xor operation and return the entire row, because we
+    /// need it to constrain the result.
     fn xor_with_full_rows(
         &mut self,
         lhs: AssignedCell<F, F>,
@@ -743,6 +782,7 @@ impl<F: PrimeField> Blake2bChip<F> {
             .unwrap()
     }
 
+    /// Constants for Blake2b
     const ABCD: [[usize; 4]; 8] = [
         [0, 4, 8, 12],
         [1, 5, 9, 13],
