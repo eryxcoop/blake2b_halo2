@@ -57,6 +57,7 @@ impl<F: PrimeField> Blake2bChip<F> {
     ) -> Self {
         cfg_if::cfg_if! {
             if #[cfg(feature = "sum_with_8_limbs")] {
+                /// An extra carry column is needed for the sum operation with 8 limbs.
                 let carry = meta.advice_column();
                 let addition_chip = AdditionMod64Chip::<F, 8, 10>::configure(meta, full_number_u64, carry);
             } else if #[cfg(feature = "sum_with_4_limbs")] {
@@ -120,6 +121,7 @@ impl<F: PrimeField> Blake2bChip<F> {
         /// All the computation is performed inside a single region. Some optimizations take advantage
         /// of this fact, since we want to avoid copying cells between regions.
         let global_state_bytes = layouter.assign_region(|| "single region", |mut region| {
+            /// Initialize in 0 the offset for the fixed cells in the region
             let mut constants_offset: usize = 0;
             let iv_constants: [AssignedCell<F, F>; 8] =
                 self.assign_iv_constants_to_fixed_cells(&mut region, &mut constants_offset);
@@ -128,8 +130,10 @@ impl<F: PrimeField> Blake2bChip<F> {
                 self.assign_constant_to_fixed_cell(&mut region, &mut constants_offset, output_size, "output size")?;
             let key_size_constant_shifted =
                 self.assign_constant_to_fixed_cell(&mut region, &mut constants_offset, key_size << 8 , "key size")?;
-            
+
+            /// Initialize in 0 the offset for the advice cells in the region
             let mut advice_offset: usize = 0;
+
             let mut global_state = self.compute_initial_state(
                 &mut region,
                 &mut advice_offset,
@@ -188,8 +192,11 @@ impl<F: PrimeField> Blake2bChip<F> {
         Ok(global_state)
     }
 
-    /// Here occurs the top loop of the hash. It iterates for each block of the input and key,
-    /// compressing the block and updating the global state.
+    /// Here occurs the top loop of the hash function. It iterates for each block of the input and
+    /// key, compressing the block and updating the global state.
+    /// The global state corresponds to 8 cells containing 64-bit numbers, which are updated when
+    /// some of those words change. A change in a state value is represented by changing the cell
+    /// that represent that particular word in the state.
     fn perform_blake2b_iterations(
         &mut self,
         region: &mut Region<F>,
