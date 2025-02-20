@@ -2,29 +2,13 @@ use ff::{Field, PrimeField};
 use halo2_proofs::circuit::{AssignedCell, Value};
 use halo2_proofs::halo2curves::bn256::Fr;
 
-pub fn trash() -> Value<Fr> {
-    zero()
-}
 pub fn max_u64() -> Value<Fr> {
     value_for((1u128 << 64) - 1)
 }
 
-pub fn max_u32() -> Value<Fr> {
-    value_for((1u128 << 32) - 1)
-}
 pub fn max_u16() -> Value<Fr> {
     let number = (1u64 << 16) - 1;
     value_for(number)
-}
-
-pub fn max_u24() -> Value<Fr> {
-    value_for((1u64 << 24) - 1)
-}
-pub fn max_u8() -> Value<Fr> {
-    value_for((1u64 << 8) - 1)
-}
-pub fn max_u40() -> Value<Fr> {
-    value_for((1u128 << 40) - 1)
 }
 
 pub fn one() -> Value<Fr> {
@@ -125,21 +109,4 @@ pub(crate) fn rotate_right_field_element<F: PrimeField>(
     let rotated_value = ((value_to_rotate as u128) >> rotation_degree)
         | ((value_to_rotate as u128) << (64 - rotation_degree));
     F::from(rotated_value as u64)
-}
-
-#[allow(dead_code)]
-fn assert_cell_has_value(obtained_cell: AssignedCell<Fr, Fr>, expected_value: Value<Fr>) {
-    obtained_cell.value().copied().and_then(|x| {
-        expected_value.and_then(|y| {
-            assert_eq!(x, y);
-            Value::<Fr>::unknown()
-        })
-    });
-}
-
-#[allow(dead_code)]
-fn assert_state_is_correct(state: &[AssignedCell<Fr, Fr>; 16], desired_state: [Value<Fr>; 16]) {
-    for i in 0..16 {
-        assert_cell_has_value(state[i].clone(), desired_state[i]);
-    }
 }
