@@ -1,6 +1,7 @@
 use super::*;
 use halo2_proofs::circuit::AssignedCell;
 
+/// This chip handles the decomposition of 64-bit numbers into 8-bit limbs in the trace
 #[derive(Clone, Debug)]
 pub struct Decompose8Chip<F: PrimeField> {
     /// The full number and the limbs are not owned by the chip.
