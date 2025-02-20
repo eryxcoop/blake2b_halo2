@@ -12,6 +12,7 @@ pub struct LimbRotationChip<F: Field> {
 impl<F: PrimeField> LimbRotationChip<F> {
     /// This chip does not have a gate. It only rotates the limbs of a number to the right and
     /// uses copy constrains to ensure that the rotation is correct.
+    /// This chip is used in our circuit to implement 16-bit, 24-bit and 32-bit rotations.
 
     pub fn new() -> Self {
         Self { _ph: PhantomData }

@@ -15,10 +15,20 @@ impl<F: PrimeField> Rotate24Chip<F> {
         full_number_u64: Column<Advice>,
         limbs: [Column<Advice>; 4],
     ) -> Self {
+        /// This chip is supposed to work with numbers represented in 4 limbs of 16 bits each
+        /// Since we opted for an 8 bits limbs representation in our circuit, we didn't use this
+        /// chip in our circuit. However, we didn't delete in case it is useful for future
+        /// implementations.
         let t_range8 = meta.lookup_table_column();
 
         let q_rot24 = meta.complex_selector();
-        // 0 = (x*2^40 + z) - z*2^64 - y
+        // y = (x*2^40 + z) - z*2^64
+        /// The gate that will be used to rotate a number to the right by 24 bits
+        /// The gate is defined as:
+        ///  output_full_number  = (1 << 40) * input_full_number + chunk - (1 << 64) * chunk
+        ///  where chunk is the 24 more significant bits of the input_full_number
+        /// The gate also uses a lookup table to check if the chunks are in the correct range
+
         meta.create_gate("rotate right 24", |meta| {
             let q_rot24 = meta.query_selector(q_rot24);
             let input_full_number = meta.query_advice(full_number_u64, Rotation(0));

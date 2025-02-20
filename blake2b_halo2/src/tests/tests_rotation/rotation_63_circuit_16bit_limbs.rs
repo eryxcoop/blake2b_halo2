@@ -60,7 +60,7 @@ impl<F: PrimeField> Circuit<F> for Rotation63Circuit16bitLimbs<F> {
         mut layouter: impl Layouter<F>,
     ) -> Result<(), Error> {
         config.decompose_16_chip.populate_lookup_table(&mut layouter)?;
-        config.rotation_63_chip.assign_rotation_rows(
+        config.rotation_63_chip.populate_rotation_rows(
             &mut layouter,
             &mut config.decompose_16_chip.clone(),
             self.trace,
