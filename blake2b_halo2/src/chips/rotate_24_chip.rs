@@ -22,7 +22,6 @@ impl<F: PrimeField> Rotate24Chip<F> {
         let t_range8 = meta.lookup_table_column();
 
         let q_rot24 = meta.complex_selector();
-        // y = (x*2^40 + z) - z*2^64
         /// The gate that will be used to rotate a number to the right by 24 bits
         /// The gate is defined as:
         ///  output_full_number  = (1 << 40) * input_full_number + chunk - (1 << 64) * chunk
