@@ -28,6 +28,12 @@ impl<F: PrimeField> LimbRotationChip<F> {
         trace: [[Value<F>; 9]; 2],
         limb_rotations_right: usize,
     ) {
+        /// This method is meant to receive a valid rotation_trace, and populate the circuit with it
+        /// The rotation trace is a matrix with 2 rows and 9 columns. The rows represent the input
+        /// and output of the rotation, and the columns represent the limbs of each number.
+        /// In the end of the method, the circuit will have the correct constraints to ensure that
+        /// the output is the input rotated to the right by the number of limbs specified in the
+        /// limb_rotations_right parameter.
         let _ = layouter.assign_region(
             || format!("rotate {}", limb_rotations_right),
             |mut region| {
@@ -59,6 +65,8 @@ impl<F: PrimeField> LimbRotationChip<F> {
         input: Value<F>,
         limbs_to_rotate_to_the_right: usize,
     ) -> Result<AssignedCell<F, F>, Error> {
+        /// This method receives a value, and copies it to the trace. Then calls another method to
+        /// do the rotation
         let input_row = decompose_chip.generate_row_from_value_and_keep_row(
             region, input, *offset)?;
         *offset += 1;
@@ -80,6 +88,11 @@ impl<F: PrimeField> LimbRotationChip<F> {
         input_row: [AssignedCell<F, F>; 9],
         limbs_to_rotate_to_the_right: usize,
     ) -> Result<AssignedCell<F, F>, Error> {
+        /// This method receives a row of cells, and rotates the limbs to the right by the number
+        /// specified in the limbs_to_rotate_to_the_right parameter. It then constrains the output
+        /// to be the correct rotation of the input.
+        /// For this method to work, the input_row must be the last row of the trace at the moment
+        /// the method is called
         let value = input_row[0].value().copied();
         let result_value = Self::_right_rotation_value(value, limbs_to_rotate_to_the_right);
 
