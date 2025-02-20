@@ -68,16 +68,19 @@ impl<F: PrimeField> Decomposition<F, 8> for Decompose8Chip<F> {
         offset: usize,
     ) -> Option<Vec<AssignedCell<F, F>>> {
         let _ = self.q_decompose.enable(region, offset);
-        let _ = region
+        let full_number = region
             .assign_advice(|| "full number", self.full_number_u64, offset, || row[0])
             .unwrap();
 
-        (0..8)
+        let limbs = (0..8)
             .map(|i| {
                 region.assign_advice(|| format!("limb{}", i), self.limbs[i], offset, || row[i + 1])
             })
             .collect::<Result<Vec<_>, _>>()
-            .ok()
+            .ok()?;
+
+        //return the full number and the limbs
+        Some(std::iter::once(full_number).chain(limbs.into_iter()).collect())
     }
 
     /// Populates the table for the range check

@@ -44,14 +44,7 @@ impl<F: PrimeField> LimbRotationChip<F> {
                     .populate_row_from_values(&mut region, trace[1].to_vec(), 1)
                     .unwrap();
 
-                for i in 0..8 {
-                    let top_cell = first_row[i].cell();
-                    // We must subtract limb_rotations_right because if a number is expressed bitwise
-                    // as x = l1|l2|...|l7|l8, the limbs are stored as [l8, l7, ..., l2, l1]
-                    let bottom_cell = second_row[(8 + i - limb_rotations_right) % 8].cell();
-                    region.constrain_equal(top_cell, bottom_cell)?;
-                }
-
+                Self::_constrain_result_with_input_row(&mut region, &first_row, &second_row, limb_rotations_right)?;
                 Ok(())
             },
         );
@@ -111,6 +104,8 @@ impl<F: PrimeField> LimbRotationChip<F> {
 
     fn _constrain_result_with_input_row(region: &mut Region<F>, input_row: &Vec<AssignedCell<F, F>>, result_row: &Vec<AssignedCell<F, F>>, limbs_to_rotate: usize) -> Result<(), Error> {
         for i in 0..8 {
+            // We must subtract limb_rotations_right because if a number is expressed bitwise
+            // as x = l1|l2|...|l7|l8, the limbs are stored as [l8, l7, ..., l2, l1]
             let top_cell = input_row[i + 1].cell();
             let bottom_cell =
                 result_row[((8 + i - limbs_to_rotate) % 8) + 1].cell();
@@ -130,8 +125,3 @@ impl<F: PrimeField> LimbRotationChip<F> {
     }
 }
 
-impl<F: PrimeField> Default for LimbRotationChip<F> {
-    fn default() -> Self {
-        Self::new()
-    }
-}
