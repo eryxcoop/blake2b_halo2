@@ -13,6 +13,11 @@ hex = "0.4.3"
 cfg-if = "1.0.0"
 
 [features]
-default = ["sum_with_4_limbs"]
+default = ["sum_with_4_limbs", "xor_with_table"]
+
 sum_with_8_limbs = []
 sum_with_4_limbs = []
+
+xor_with_table = []
+xor_with_spread = []
+# xor_with_spread requires sum_with_8_limbs

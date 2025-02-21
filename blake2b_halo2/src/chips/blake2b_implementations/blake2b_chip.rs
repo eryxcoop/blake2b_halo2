@@ -7,7 +7,7 @@ use crate::chips::decomposition_trait::Decomposition;
 use crate::chips::generic_limb_rotation_chip::LimbRotationChip;
 use crate::chips::negate_chip::NegateChip;
 use crate::chips::rotate_63_chip::Rotate63Chip;
-use crate::chips::xor_chip::XorChip;
+use crate::chips::xor_chip::XorChip as XorChipTable;
 use ff::PrimeField;
 use halo2_proofs::circuit::{AssignedCell, Layouter, Value};
 use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Fixed, Instance};
@@ -20,6 +20,18 @@ cfg_if::cfg_if! {
     } else if #[cfg(feature = "sum_with_4_limbs")] {
         /// Using 4 limbs for the sum operation.
         type AdditionChip<F> = AdditionMod64Chip<F, 4, 6>;
+    } else {
+        panic!("No feature selected");
+    }
+}
+
+/// This toggles between optimizations for the xor operation.
+cfg_if::cfg_if! {
+    if #[cfg(feature = "xor_with_spread")] {
+        type XorChip<F> = XorChipTable<F>;
+    } else if #[cfg(feature = "xor_with_table")] {
+        /// Using xor with a 16-bit lookup table
+        type XorChip<F> = XorChipTable<F>;
     } else {
         panic!("No feature selected");
     }
@@ -72,7 +84,16 @@ impl<F: PrimeField> Blake2bChip<F> {
         let decompose_8_chip = Decompose8Chip::configure(meta, full_number_u64, limbs);
         let generic_limb_rotation_chip = LimbRotationChip::new();
         let rotate_63_chip = Rotate63Chip::configure(meta, full_number_u64);
-        let xor_chip = XorChip::configure(meta, limbs);
+        cfg_if::cfg_if! {
+            if #[cfg(feature = "xor_with_spread")] {
+                let xor_chip = XorChip::configure(meta, limbs, full_number_u64, carry);
+            } else if #[cfg(feature = "xor_with_table")] {
+                let xor_chip = XorChip::configure(meta, limbs);
+            } else {
+                panic!("No feature selected");
+            }
+        }
+
         let negate_chip = NegateChip::configure(meta, full_number_u64);
 
         let constants = meta.fixed_column();
