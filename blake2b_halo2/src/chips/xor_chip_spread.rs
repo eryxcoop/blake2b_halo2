@@ -1,5 +1,7 @@
 use std::array;
-use crate::auxiliar_functions::value_for;
+use halo2_proofs::circuit::AssignedCell;
+use crate::auxiliar_functions::{generate_row_8bits, value_for};
+use crate::chips::decompose_8_chip::Decompose8Chip;
 use crate::chips::xor_chip::XorChip;
 use super::*;
 
@@ -172,5 +174,48 @@ impl<F: PrimeField> XorChipSpread<F> {
             spread |= ((x & (1 << i)) as u16) << (i+1);
         }
         spread
+    }
+
+    pub fn generate_xor_rows_from_cells_optimized(
+        &mut self,
+        region: &mut Region<F>,
+        offset: &mut usize,
+        previous_cell: AssignedCell<F, F>,
+        cell_to_copy: AssignedCell<F, F>,
+        decompose_8_chip: &mut Decompose8Chip<F>,
+        use_previous_cell: bool,
+    ) -> Result<[AssignedCell<F, F>; 9], Error> {
+        let value_lhs = previous_cell.value().copied();
+        let value_rhs = cell_to_copy.value().copied();
+
+        let difference_offset = if use_previous_cell { 1 } else { 0 };
+        let last_row_offset = (*offset).clone() + difference_offset + 5;
+        let _ = self.q_xor.enable(region, last_row_offset);
+
+        let value_result = value_lhs.and_then(|v0| {
+            value_rhs
+                .and_then(|v1| Value::known(auxiliar_functions::xor_field_elements(v0, v1)))
+        });
+
+        decompose_8_chip.generate_row_from_cell(region, cell_to_copy.clone(), *offset)?;
+        *offset += 1;
+
+        if !use_previous_cell {
+            decompose_8_chip.generate_row_from_cell(region, previous_cell.clone(), *offset)?;
+            *offset += 1;
+        }
+
+        let result_row = decompose_8_chip
+            .generate_row_from_value_and_keep_row(region, value_result, last_row_offset)?;
+        *offset += 1;
+
+        // Lhs
+        value_lhs.and_then(|lhs| {
+            let lhs_row_values = generate_row_8bits(lhs);
+
+            Value::unknown()
+        })?;
+
+        result_row.try_into().unwrap()
     }
 }

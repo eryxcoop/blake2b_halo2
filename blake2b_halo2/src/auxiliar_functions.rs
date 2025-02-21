@@ -54,6 +54,15 @@ where
     F::from(hi) * field_pow64 + F::from(lo)
 }
 
+pub fn decompose_field_8bit_limbs<F: PrimeField>(number: F) -> [u64; 9] {
+    let mut number: u64 = convert_to_u64(number);
+    let mut ans = [0; 9];
+    ans[0] = number;
+
+    // TODO: this is incomplete
+    ans
+}
+
 pub fn generate_row_8bits<T, F>(number: T) -> [Value<F>; 10]
 where
     F: PrimeField,
