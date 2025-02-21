@@ -1,4 +1,5 @@
 use std::array;
+use crate::auxiliar_functions::value_for;
 use crate::chips::xor_chip::XorChip;
 use super::*;
 
@@ -30,7 +31,7 @@ impl<F: PrimeField> XorChipSpread<F> {
             limbs[2], limbs[3], limbs[4], limbs[5], limbs[6],
             limbs[7], extra];
 
-        let empty_spread_positions = [(2, 0), (3, 0), (4, 0), (1, 9), (2, 9), (3, 9), (4, 9), (5, 9)];
+        let empty_spread_positions: [(usize, usize); 8] = [(2, 0), (3, 0), (4, 0), (1, 9), (2, 9), (3, 9), (4, 9), (5, 9)];
 
         meta.create_gate("xor with spread", |meta| {
             let q_xor = meta.query_selector(q_xor);
@@ -66,15 +67,15 @@ impl<F: PrimeField> XorChipSpread<F> {
         Self::_lookup_spread_rows(meta, q_xor, t_range, t_spread, columns, 0, -1);
 
         // Lookup empty spread
-        for position in empty_spread_positions.iter() {
+        for (row, column_index) in empty_spread_positions.iter() {
             meta.lookup("spread", |meta| {
                 let q_xor = meta.query_selector(q_xor);
-                let original_limb = meta.query_advice(
-                    columns[position.1], Rotation(position.0 - 5)
+                let empty_spread_limb = meta.query_advice(
+                    columns[*column_index], Rotation(*row as i32 - 5)
                 );
 
                 vec![
-                    // (, t_empty_spread),
+                    (q_xor.clone() * empty_spread_limb, t_empty_spread),
                 ]
             });
         }
@@ -105,5 +106,71 @@ impl<F: PrimeField> XorChipSpread<F> {
                 ]
             });
         }
+    }
+
+    /// Method that populates the spread lookup tables. Must be called only once in the user circuit.
+    pub fn populate_xor_lookup_table(
+        &mut self,
+        layouter: &mut impl Layouter<F>,
+    ) -> Result<(), Error> {
+        self.populate_spread_table(layouter)?;
+        self.populate_empty_spread_table(layouter)?;
+        Ok(())
+    }
+
+    fn populate_spread_table(&self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
+        layouter.assign_table(
+            || "xor spread table",
+            |mut table| {
+                for i in 0u8..1 << 8 {
+                    table.assign_cell(
+                        || "original value",
+                        self.t_range,
+                        i as usize,
+                        || value_for::<u64,F>(i as u64),
+                    )?;
+                    table.assign_cell(
+                        || "spread value",
+                        self.t_spread,
+                        i as usize,
+                        || value_for::<u64,F>(Self::spread_bits_left(i) as u64),
+                    )?;
+                }
+                Ok(())
+            }
+        )
+    }
+
+    fn spread_bits_left(mut x: u8) -> u16 {
+        let mut spread = 0;
+        for i in 0..8 {
+            spread |= ((x & (1 << i)) as u16) << i;
+        }
+        spread
+    }
+
+    fn populate_empty_spread_table(&self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
+        layouter.assign_table(
+            || "xor empty spread table",
+            |mut table| {
+                for i in 0u8..1 << 8 {
+                    table.assign_cell(
+                        || "spread value",
+                        self.t_spread,
+                        i as usize,
+                        || value_for::<u64,F>(Self::spread_bits_right(i) as u64),
+                    )?;
+                }
+                Ok(())
+            }
+        )
+    }
+
+    fn spread_bits_right(mut x: u8) -> u16 {
+        let mut spread = 0;
+        for i in 0..8 {
+            spread |= ((x & (1 << i)) as u16) << (i+1);
+        }
+        spread
     }
 }
