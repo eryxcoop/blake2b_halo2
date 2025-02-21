@@ -122,18 +122,18 @@ impl<F: PrimeField> XorChipSpread<F> {
         layouter.assign_table(
             || "xor spread table",
             |mut table| {
-                for i in 0u8..1 << 8 {
+                for i in 0..1 << 8 {
                     table.assign_cell(
                         || "original value",
                         self.t_range,
-                        i as usize,
+                        i,
                         || value_for::<u64,F>(i as u64),
                     )?;
                     table.assign_cell(
                         || "spread value",
                         self.t_spread,
-                        i as usize,
-                        || value_for::<u64,F>(Self::spread_bits_left(i) as u64),
+                        i,
+                        || value_for::<u64,F>(Self::spread_bits_left(i as u8) as u64),
                     )?;
                 }
                 Ok(())
@@ -153,12 +153,12 @@ impl<F: PrimeField> XorChipSpread<F> {
         layouter.assign_table(
             || "xor empty spread table",
             |mut table| {
-                for i in 0u8..1 << 8 {
+                for i in 0..1 << 8 {
                     table.assign_cell(
                         || "spread value",
                         self.t_spread,
                         i as usize,
-                        || value_for::<u64,F>(Self::spread_bits_right(i) as u64),
+                        || value_for::<u64,F>(Self::spread_bits_right(i as u8) as u64),
                     )?;
                 }
                 Ok(())
