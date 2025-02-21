@@ -34,20 +34,6 @@ pub fn zero() -> Value<Fr> {
     Value::known(Fr::ZERO)
 }
 
-pub fn spread(mut n: u16) -> u32 {
-    let mut spread: u32 = 0;
-    let mut position: u32 = 0;
-
-    while n != 0 {
-        let bit: u32 = (n & 1u16) as u32;
-        spread |= bit << (2 * position);
-        n >>= 1;
-        position += 1;
-    }
-
-    spread
-}
-
 pub fn value_for<T, F>(number: T) -> Value<F>
 where
     T: Into<u128>,
