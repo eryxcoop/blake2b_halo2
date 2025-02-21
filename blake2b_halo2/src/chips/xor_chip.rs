@@ -126,45 +126,10 @@ impl<F: PrimeField> XorChip<F> {
         );
     }
 
-    /// Given 2 assigned cells that live in some part of the user circuit, this method copies the
-    /// values of the cells to new cells in the trace, computes the result of the xor and saves it
-    /// in the trace using the Decompose8Chip.
-    pub fn generate_xor_rows_from_cells(
-        &mut self,
-        region: &mut Region<F>,
-        offset: &mut usize,
-        cell_a: AssignedCell<F, F>,
-        cell_b: AssignedCell<F, F>,
-        decompose_8_chip: &mut Decompose8Chip<F>,
-    ) -> Result<[AssignedCell<F, F>; 9], Error> {
-        let value_a = cell_a.value().copied();
-        let value_b = cell_b.value().copied();
 
-        let _ = self.q_xor.enable(region, *offset);
-
-        let result_value = value_a.and_then(|v0| {
-            value_b
-                .and_then(|v1| Value::known(auxiliar_functions::xor_field_elements(v0, v1)))
-        });
-
-        decompose_8_chip.generate_row_from_cell(region, cell_a.clone(), *offset)?;
-        *offset += 1;
-
-        decompose_8_chip.generate_row_from_cell(region, cell_b.clone(), *offset)?;
-        *offset += 1;
-
-        let result_row = decompose_8_chip
-            .generate_row_from_value_and_keep_row(region, result_value, *offset)
-            .unwrap();
-        *offset += 1;
-
-        let result_row_array = result_row.try_into().unwrap();
-        Ok(result_row_array)
-    }
-
-    /// This is a convenience method that avoids copying a row that was already in the immediate
-    /// upper position of the trace at the moment it is called. This way we can save a lot of
-    /// rows in total.
+    /// This method generates the xor rows in the trace. If the previous cell in the region is one
+    /// of the operands, it won't be copied. Otherwise, it will be copied from the cell_to_copy,
+    /// generating an extra row in the circuit.
     pub fn generate_xor_rows_from_cells_optimized(
         &mut self,
         region: &mut Region<F>,
@@ -172,11 +137,13 @@ impl<F: PrimeField> XorChip<F> {
         previous_cell: AssignedCell<F, F>,
         cell_to_copy: AssignedCell<F, F>,
         decompose_8_chip: &mut Decompose8Chip<F>,
+        use_previous_cell: bool,
     ) -> Result<[AssignedCell<F, F>; 9], Error> {
         let value_a = previous_cell.value().copied();
         let value_b = cell_to_copy.value().copied();
 
-        let _ = self.q_xor.enable(region, *offset - 1);
+        let difference_offset = if use_previous_cell { 1 } else { 0 };
+        let _ = self.q_xor.enable(region, *offset - difference_offset);
 
         let result_value = value_a.and_then(|v0| {
             value_b
@@ -185,6 +152,11 @@ impl<F: PrimeField> XorChip<F> {
 
         decompose_8_chip.generate_row_from_cell(region, cell_to_copy.clone(), *offset)?;
         *offset += 1;
+
+        if !use_previous_cell {
+            decompose_8_chip.generate_row_from_cell(region, previous_cell.clone(), *offset)?;
+            *offset += 1;
+        }
 
         let result_row = decompose_8_chip
             .generate_row_from_value_and_keep_row(region, result_value, *offset)?;

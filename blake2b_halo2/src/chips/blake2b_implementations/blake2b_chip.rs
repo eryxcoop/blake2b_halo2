@@ -720,7 +720,7 @@ impl<F: PrimeField> Blake2bChip<F> {
         offset: &mut usize,
     ) -> AssignedCell<F, F> {
         self.xor_chip
-            .generate_xor_rows_from_cells(region, offset, lhs, rhs, &mut self.decompose_8_chip)
+            .generate_xor_rows_from_cells_optimized(region, offset, lhs, rhs, &mut self.decompose_8_chip, false)
             .unwrap()[0]
             .clone()
     }
@@ -748,7 +748,7 @@ impl<F: PrimeField> Blake2bChip<F> {
 
     fn xor_copying_one_parameter(&mut self, previous_cell: AssignedCell<F, F>, cell_to_copy: AssignedCell<F, F>, region: &mut Region<F>, offset: &mut usize) -> [AssignedCell<F, F>; 9] {
         self.xor_chip
-            .generate_xor_rows_from_cells_optimized(region, offset, previous_cell, cell_to_copy, &mut self.decompose_8_chip)
+            .generate_xor_rows_from_cells_optimized(region, offset, previous_cell, cell_to_copy, &mut self.decompose_8_chip, true)
             .unwrap()
     }
 
@@ -762,7 +762,7 @@ impl<F: PrimeField> Blake2bChip<F> {
         offset: &mut usize,
     ) -> [AssignedCell<F, F>; 9] {
         self.xor_chip
-            .generate_xor_rows_from_cells(region, offset, lhs, rhs, &mut self.decompose_8_chip)
+            .generate_xor_rows_from_cells_optimized(region, offset, lhs, rhs, &mut self.decompose_8_chip, false)
             .unwrap()
     }
 
