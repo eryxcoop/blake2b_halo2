@@ -94,86 +94,14 @@ impl<F: PrimeField> XorChipSpread<F> {
         }
     }
 
-    fn _lookup_spread_rows(meta: &mut ConstraintSystem<F>, q_xor: Selector, t_range: TableColumn,
-                           t_spread: TableColumn, columns: [Column<Advice>; 10], original_rotation: i32,
-                           spread_rotation: i32) {
-        for i in 1..9 {
-            meta.lookup("spread", |meta| {
-                let q_xor = meta.query_selector(q_xor);
-                let original_limb = meta.query_advice(columns[i], Rotation(original_rotation));
-                let spread_limb = meta.query_advice(columns[i], Rotation(spread_rotation));
-                vec![
-                    (q_xor.clone() * original_limb.clone(), t_range),
-                    (q_xor.clone() * spread_limb.clone(), t_spread),
-                ]
-            });
-        }
-    }
-
     /// Method that populates the spread lookup tables. Must be called only once in the user circuit.
     pub fn populate_xor_lookup_table(
         &mut self,
         layouter: &mut impl Layouter<F>,
     ) -> Result<(), Error> {
-        self.populate_spread_table(layouter)?;
-        self.populate_empty_spread_table(layouter)?;
+        self._populate_spread_table(layouter)?;
+        self._populate_empty_spread_table(layouter)?;
         Ok(())
-    }
-
-    fn populate_spread_table(&self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
-        layouter.assign_table(
-            || "xor spread table",
-            |mut table| {
-                for i in 0..1 << 8 {
-                    table.assign_cell(
-                        || "original value",
-                        self.t_range,
-                        i,
-                        || value_for::<u64,F>(i as u64),
-                    )?;
-                    table.assign_cell(
-                        || "spread value",
-                        self.t_spread,
-                        i,
-                        || value_for::<u64,F>(Self::spread_bits_left(i as u8) as u64),
-                    )?;
-                }
-                Ok(())
-            }
-        )
-    }
-
-    fn spread_bits_left(mut x: u8) -> u16 {
-        let mut spread = 0;
-        for i in 0..8 {
-            spread |= ((x & (1 << i)) as u16) << i;
-        }
-        spread
-    }
-
-    fn populate_empty_spread_table(&self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
-        layouter.assign_table(
-            || "xor empty spread table",
-            |mut table| {
-                for i in 0..1 << 8 {
-                    table.assign_cell(
-                        || "spread value",
-                        self.t_spread,
-                        i as usize,
-                        || value_for::<u64,F>(Self::spread_bits_right(i as u8) as u64),
-                    )?;
-                }
-                Ok(())
-            }
-        )
-    }
-
-    fn spread_bits_right(mut x: u8) -> u16 {
-        let mut spread = 0;
-        for i in 0..8 {
-            spread |= ((x & (1 << i)) as u16) << (i+1);
-        }
-        spread
     }
 
     pub fn generate_xor_rows_from_cells_optimized(
@@ -197,13 +125,13 @@ impl<F: PrimeField> XorChipSpread<F> {
                 .and_then(|v1| Value::known(auxiliar_functions::xor_field_elements(v0, v1)))
         });
 
-        decompose_8_chip.generate_row_from_cell(region, cell_to_copy.clone(), *offset)?;
-        *offset += 1;
-
         if !use_previous_cell {
             decompose_8_chip.generate_row_from_cell(region, previous_cell.clone(), *offset)?;
             *offset += 1;
         }
+
+        decompose_8_chip.generate_row_from_cell(region, cell_to_copy.clone(), *offset)?;
+        *offset += 1;
 
         let result_row = decompose_8_chip
             .generate_row_from_value_and_keep_row(region, value_result, last_row_offset)?;
@@ -217,5 +145,77 @@ impl<F: PrimeField> XorChipSpread<F> {
         })?;
 
         result_row.try_into().unwrap()
+    }
+
+    fn _lookup_spread_rows(meta: &mut ConstraintSystem<F>, q_xor: Selector, t_range: TableColumn,
+                           t_spread: TableColumn, columns: [Column<Advice>; 10], original_rotation: i32,
+                           spread_rotation: i32) {
+        for i in 1..9 {
+            meta.lookup("spread", |meta| {
+                let q_xor = meta.query_selector(q_xor);
+                let original_limb = meta.query_advice(columns[i], Rotation(original_rotation));
+                let spread_limb = meta.query_advice(columns[i], Rotation(spread_rotation));
+                vec![
+                    (q_xor.clone() * original_limb.clone(), t_range),
+                    (q_xor.clone() * spread_limb.clone(), t_spread),
+                ]
+            });
+        }
+    }
+
+    fn _populate_spread_table(&self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
+        layouter.assign_table(
+            || "xor spread table",
+            |mut table| {
+                for i in 0..1 << 8 {
+                    table.assign_cell(
+                        || "original value",
+                        self.t_range,
+                        i,
+                        || value_for::<u64,F>(i as u64),
+                    )?;
+                    table.assign_cell(
+                        || "spread value",
+                        self.t_spread,
+                        i,
+                        || value_for::<u64,F>(Self::_spread_bits_left(i as u8) as u64),
+                    )?;
+                }
+                Ok(())
+            }
+        )
+    }
+
+    fn _populate_empty_spread_table(&self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
+        layouter.assign_table(
+            || "xor empty spread table",
+            |mut table| {
+                for i in 0..1 << 8 {
+                    table.assign_cell(
+                        || "spread value",
+                        self.t_spread,
+                        i as usize,
+                        || value_for::<u64,F>(Self::_spread_bits_right(i as u8) as u64),
+                    )?;
+                }
+                Ok(())
+            }
+        )
+    }
+
+    fn _spread_bits_right(mut x: u8) -> u16 {
+        let mut spread = 0;
+        for i in 0..8 {
+            spread |= ((x & (1 << i)) as u16) << (i+1);
+        }
+        spread
+    }
+
+    fn _spread_bits_left(mut x: u8) -> u16 {
+        let mut spread = 0;
+        for i in 0..8 {
+            spread |= ((x & (1 << i)) as u16) << i;
+        }
+        spread
     }
 }
