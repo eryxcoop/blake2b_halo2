@@ -10,7 +10,6 @@ pub struct AdditionMod64Chip<F: Field, const T: usize, const R: usize> {
     ///
     /// R is used to define the total number of columns in the trace.
     /// It will allways be T + 2 (full number and carry)
-
     carry: Column<Advice>,
     q_add: Selector,
     _ph: PhantomData<F>,
@@ -40,8 +39,7 @@ impl<F: PrimeField, const T: usize, const R: usize> AdditionMod64Chip<F, T, R> {
                 q_add.clone()
                     * (full_number_result - full_number_x - full_number_y
                         + carry.clone() * (Expression::Constant(field_for(1u128 << 64)))),
-                q_add
-                    * carry.clone() * (Expression::Constant(field_for(1u128)) - carry),
+                q_add * carry.clone() * (Expression::Constant(field_for(1u128)) - carry),
             ]
         });
 
@@ -65,7 +63,6 @@ impl<F: PrimeField, const T: usize, const R: usize> AdditionMod64Chip<F, T, R> {
         ///    [full_number, limb_1, ..., limb_R-2, carry]
         /// Note that the carry value is not used in the parameters of the addition, but it is used
         /// to calculate its result.
-
         let _ = layouter.assign_region(
             || "decompose",
             |mut region| {
@@ -105,7 +102,6 @@ impl<F: PrimeField, const T: usize, const R: usize> AdditionMod64Chip<F, T, R> {
         /// This method receives two cells, and generates the rows for the addition of their values.
         /// We copy the values of the cells to the trace, and then calculate the result and carry
         /// of the addition and write it in a third row.
-
         let (result_value, carry_value) = Self::_calculate_result_and_carry(&cell_a, &cell_b);
 
         let _ = self.q_add.enable(region, *offset);
@@ -113,8 +109,7 @@ impl<F: PrimeField, const T: usize, const R: usize> AdditionMod64Chip<F, T, R> {
         *offset += 1;
         decompose_chip.generate_row_from_cell(region, cell_b.clone(), *offset)?; // 3
         *offset += 1;
-        let result_cell =
-            decompose_chip.generate_row_from_value(region, result_value, *offset)?; // 4
+        let result_cell = decompose_chip.generate_row_from_value(region, result_value, *offset)?; // 4
         let carry_cell = region.assign_advice(|| "carry", self.carry, *offset, || carry_value)?;
         *offset += 1; // 5
         Ok([result_cell, carry_cell])
@@ -131,23 +126,22 @@ impl<F: PrimeField, const T: usize, const R: usize> AdditionMod64Chip<F, T, R> {
         /// This method is intended to be used when one of the addition parameters (previous_cell)
         /// is the last cell that was generated in the circuit. This way, we can avoid generating
         /// the row for the previous_cell again, and just copy the cell_to_copy.
-
-        let (result_value, carry_value) = Self::_calculate_result_and_carry(
-            &previous_cell,
-            &cell_to_copy
-        );
+        let (result_value, carry_value) =
+            Self::_calculate_result_and_carry(&previous_cell, &cell_to_copy);
 
         let _ = self.q_add.enable(region, *offset - 1);
         decompose_chip.generate_row_from_cell(region, cell_to_copy.clone(), *offset)?; // 3
         *offset += 1;
-        let result_cell =
-            decompose_chip.generate_row_from_value(region, result_value, *offset)?; // 4
+        let result_cell = decompose_chip.generate_row_from_value(region, result_value, *offset)?; // 4
         let carry_cell = region.assign_advice(|| "carry", self.carry, *offset, || carry_value)?;
         *offset += 1; // 5
         Ok([result_cell, carry_cell])
     }
 
-    fn _calculate_result_and_carry(cell_a: &AssignedCell<F, F>, cell_b: &AssignedCell<F, F>) -> (Value<F>, Value<F>) {
+    fn _calculate_result_and_carry(
+        cell_a: &AssignedCell<F, F>,
+        cell_b: &AssignedCell<F, F>,
+    ) -> (Value<F>, Value<F>) {
         let value_a = cell_a.value().copied();
         let value_b = cell_b.value().copied();
         let result_value = value_a.and_then(|v0| {

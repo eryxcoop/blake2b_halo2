@@ -52,14 +52,12 @@ impl<F: PrimeField> NegateChip<F> {
     ) -> Result<AssignedCell<F, F>, Error> {
         /// Receives a value, generates a row for that value and generates the row for the negation
         /// of the value
-
         let _ = self.q_negate.enable(region, *offset);
         let result_value =
             value.and_then(|v0| Value::known(F::from(((1u128 << 64) - 1) as u64) - v0));
         decompose_chip.generate_row_from_value(region, value, *offset)?;
         *offset += 1;
-        let result_cell =
-            decompose_chip.generate_row_from_value(region, result_value, *offset)?;
+        let result_cell = decompose_chip.generate_row_from_value(region, result_value, *offset)?;
         *offset += 1;
         Ok(result_cell)
     }

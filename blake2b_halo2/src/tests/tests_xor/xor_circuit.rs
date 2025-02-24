@@ -6,7 +6,6 @@ use halo2_proofs::plonk::Circuit;
 use std::array;
 use std::marker::PhantomData;
 
-
 #[derive(Clone)]
 pub struct XorConfig<F: PrimeField> {
     _ph: PhantomData<F>,

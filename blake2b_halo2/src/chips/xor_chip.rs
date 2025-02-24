@@ -126,7 +126,6 @@ impl<F: PrimeField> XorChip<F> {
         );
     }
 
-
     /// This method generates the xor rows in the trace. If the previous cell in the region is one
     /// of the operands, it won't be copied. Otherwise, it will be copied from the cell_to_copy,
     /// generating an extra row in the circuit.
@@ -146,8 +145,7 @@ impl<F: PrimeField> XorChip<F> {
         let _ = self.q_xor.enable(region, *offset - difference_offset);
 
         let result_value = value_a.and_then(|v0| {
-            value_b
-                .and_then(|v1| Value::known(auxiliar_functions::xor_field_elements(v0, v1)))
+            value_b.and_then(|v1| Value::known(auxiliar_functions::xor_field_elements(v0, v1)))
         });
 
         decompose_8_chip.generate_row_from_cell(region, cell_to_copy.clone(), *offset)?;
@@ -158,8 +156,8 @@ impl<F: PrimeField> XorChip<F> {
             *offset += 1;
         }
 
-        let result_row = decompose_8_chip
-            .generate_row_from_value_and_keep_row(region, result_value, *offset)?;
+        let result_row =
+            decompose_8_chip.generate_row_from_value_and_keep_row(region, result_value, *offset)?;
         *offset += 1;
 
         let result_row_array = result_row.try_into().unwrap();

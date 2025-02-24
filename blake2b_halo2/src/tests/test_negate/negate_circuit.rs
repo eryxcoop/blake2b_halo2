@@ -72,12 +72,16 @@ impl<F: PrimeField> Circuit<F> for NegateCircuit<F> {
                     self.value,
                     &mut config.decompose_8_chip,
                 )?;
-                let fixed_cell =
-                    region.assign_fixed(|| "assign fixed", config.fixed_result, 0, || self.expected_result)?;
+                let fixed_cell = region.assign_fixed(
+                    || "assign fixed",
+                    config.fixed_result,
+                    0,
+                    || self.expected_result,
+                )?;
                 region.constrain_equal(result.cell(), fixed_cell.cell())?;
                 Ok(())
-
-            })?;
+            },
+        )?;
 
         Ok(())
     }

@@ -45,7 +45,12 @@ impl<F: PrimeField> LimbRotationChip<F> {
                     .populate_row_from_values(&mut region, trace[1].to_vec(), 1)
                     .unwrap();
 
-                Self::_constrain_result_with_input_row(&mut region, &first_row, &second_row, limb_rotations_right)?;
+                Self::_constrain_result_with_input_row(
+                    &mut region,
+                    &first_row,
+                    &second_row,
+                    limb_rotations_right,
+                )?;
                 Ok(())
             },
         );
@@ -61,8 +66,8 @@ impl<F: PrimeField> LimbRotationChip<F> {
     ) -> Result<AssignedCell<F, F>, Error> {
         /// This method receives a value, and copies it to the trace. Then calls another method to
         /// do the rotation
-        let input_row = decompose_chip.generate_row_from_value_and_keep_row(
-            region, input, *offset)?;
+        let input_row =
+            decompose_chip.generate_row_from_value_and_keep_row(region, input, *offset)?;
         *offset += 1;
 
         self.generate_rotation_rows_from_input_row(
@@ -90,26 +95,32 @@ impl<F: PrimeField> LimbRotationChip<F> {
         let value = input_row[0].value().copied();
         let result_value = Self::_right_rotation_value(value, limbs_to_rotate_to_the_right);
 
-        let result_row = decompose_chip.generate_row_from_value_and_keep_row(
-            region,
-            result_value,
-            *offset,
-        )?;
+        let result_row =
+            decompose_chip.generate_row_from_value_and_keep_row(region, result_value, *offset)?;
         *offset += 1;
 
-        Self::_constrain_result_with_input_row(region, &(input_row.try_into().unwrap()), &result_row, limbs_to_rotate_to_the_right)?;
+        Self::_constrain_result_with_input_row(
+            region,
+            &(input_row.try_into().unwrap()),
+            &result_row,
+            limbs_to_rotate_to_the_right,
+        )?;
 
         let result_cell = result_row[0].clone();
         Ok(result_cell)
     }
 
-    fn _constrain_result_with_input_row(region: &mut Region<F>, input_row: &Vec<AssignedCell<F, F>>, result_row: &Vec<AssignedCell<F, F>>, limbs_to_rotate: usize) -> Result<(), Error> {
+    fn _constrain_result_with_input_row(
+        region: &mut Region<F>,
+        input_row: &Vec<AssignedCell<F, F>>,
+        result_row: &Vec<AssignedCell<F, F>>,
+        limbs_to_rotate: usize,
+    ) -> Result<(), Error> {
         for i in 0..8 {
             // We must subtract limb_rotations_right because if a number is expressed bitwise
             // as x = l1|l2|...|l7|l8, the limbs are stored as [l8, l7, ..., l2, l1]
             let top_cell = input_row[i + 1].cell();
-            let bottom_cell =
-                result_row[((8 + i - limbs_to_rotate) % 8) + 1].cell();
+            let bottom_cell = result_row[((8 + i - limbs_to_rotate) % 8) + 1].cell();
             region.constrain_equal(top_cell, bottom_cell)?;
         }
         Ok(())
@@ -117,12 +128,8 @@ impl<F: PrimeField> LimbRotationChip<F> {
 
     fn _right_rotation_value(value: Value<F>, limbs_to_rotate: usize) -> Value<F> {
         let result_value = value.and_then(|input| {
-            Value::known(auxiliar_functions::rotate_right_field_element(
-                input,
-                limbs_to_rotate * 8,
-            ))
+            Value::known(auxiliar_functions::rotate_right_field_element(input, limbs_to_rotate * 8))
         });
         result_value
     }
 }
-

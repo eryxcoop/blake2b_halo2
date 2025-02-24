@@ -144,40 +144,52 @@ impl<F: PrimeField> Blake2bChip<F> {
 
         /// All the computation is performed inside a single region. Some optimizations take advantage
         /// of this fact, since we want to avoid copying cells between regions.
-        let global_state_bytes = layouter.assign_region(|| "single region", |mut region| {
-            /// Initialize in 0 the offset for the fixed cells in the region
-            let mut constants_offset: usize = 0;
-            let iv_constants: [AssignedCell<F, F>; 8] =
-                self.assign_iv_constants_to_fixed_cells(&mut region, &mut constants_offset);
-            let init_const_state_0 = self.assign_01010000_constant_to_fixed_cell(&mut region, &mut constants_offset)?;
-            let output_size_constant =
-                self.assign_constant_to_fixed_cell(&mut region, &mut constants_offset, output_size, "output size")?;
-            let key_size_constant_shifted =
-                self.assign_constant_to_fixed_cell(&mut region, &mut constants_offset, key_size << 8 , "key size")?;
+        let global_state_bytes = layouter.assign_region(
+            || "single region",
+            |mut region| {
+                /// Initialize in 0 the offset for the fixed cells in the region
+                let mut constants_offset: usize = 0;
+                let iv_constants: [AssignedCell<F, F>; 8] =
+                    self.assign_iv_constants_to_fixed_cells(&mut region, &mut constants_offset);
+                let init_const_state_0 = self
+                    .assign_01010000_constant_to_fixed_cell(&mut region, &mut constants_offset)?;
+                let output_size_constant = self.assign_constant_to_fixed_cell(
+                    &mut region,
+                    &mut constants_offset,
+                    output_size,
+                    "output size",
+                )?;
+                let key_size_constant_shifted = self.assign_constant_to_fixed_cell(
+                    &mut region,
+                    &mut constants_offset,
+                    key_size << 8,
+                    "key size",
+                )?;
 
-            /// Initialize in 0 the offset for the advice cells in the region
-            let mut advice_offset: usize = 0;
+                /// Initialize in 0 the offset for the advice cells in the region
+                let mut advice_offset: usize = 0;
 
-            let mut global_state = self.compute_initial_state(
-                &mut region,
-                &mut advice_offset,
-                &iv_constants,
-                init_const_state_0,
-                output_size_constant,
-                key_size_constant_shifted,
-            )?;
+                let mut global_state = self.compute_initial_state(
+                    &mut region,
+                    &mut advice_offset,
+                    &iv_constants,
+                    init_const_state_0,
+                    output_size_constant,
+                    key_size_constant_shifted,
+                )?;
 
-            self.perform_blake2b_iterations(
-                &mut region,
-                &mut advice_offset,
-                &mut constants_offset,
-                input_size,
-                input,
-                key,
-                &iv_constants,
-                &mut global_state,
-            )
-        })?;
+                self.perform_blake2b_iterations(
+                    &mut region,
+                    &mut advice_offset,
+                    &mut constants_offset,
+                    input_size,
+                    input,
+                    key,
+                    &iv_constants,
+                    &mut global_state,
+                )
+            },
+        )?;
 
         self.constraint_public_inputs_to_equal_computation_results(
             layouter,
@@ -195,9 +207,8 @@ impl<F: PrimeField> Blake2bChip<F> {
 
     /// Enforces the field's modulus to be greater than 2^65, which is a necessary condition for the rot63 gate to be sound.
     fn _enforce_modulus_size() {
-        let modulus_bytes: Vec<u8> = hex::decode(
-            F::MODULUS.trim_start_matches("0x")
-            ).expect("Modulus is not a valid hex number");
+        let modulus_bytes: Vec<u8> = hex::decode(F::MODULUS.trim_start_matches("0x"))
+            .expect("Modulus is not a valid hex number");
         let modulus = BigUint::from_bytes_be(&modulus_bytes);
         let two_pow_65 = BigUint::from(1u128 << 65);
         assert!(modulus > two_pow_65, "Field modulus must be greater than 2^65");
@@ -222,7 +233,8 @@ impl<F: PrimeField> Blake2bChip<F> {
         // state[0] = state[0] ^ 0x01010000 ^ (key.len() << 8) as u64 ^ outlen as u64;
         global_state[0] = self.xor(global_state[0].clone(), init_const_state_0, region, offset);
         global_state[0] = self.xor(global_state[0].clone(), output_size_constant, region, offset);
-        global_state[0] = self.xor(global_state[0].clone(), key_size_constant_shifted, region, offset);
+        global_state[0] =
+            self.xor(global_state[0].clone(), key_size_constant_shifted, region, offset);
         Ok(global_state)
     }
 
@@ -249,9 +261,7 @@ impl<F: PrimeField> Blake2bChip<F> {
         let is_input_empty = input_size == 0;
 
         let input_blocks = input_size.div_ceil(BLAKE2B_BLOCK_SIZE);
-        let total_blocks = Self::get_total_blocks_count(
-            input_blocks, is_input_empty, is_key_empty
-        );
+        let total_blocks = Self::get_total_blocks_count(input_blocks, is_input_empty, is_key_empty);
         let last_input_block_index = if is_input_empty { 0 } else { input_blocks - 1 };
 
         /// Main loop
@@ -271,10 +281,19 @@ impl<F: PrimeField> Blake2bChip<F> {
             /// This is the part where the inputs/key are organized inside the trace. Each iteration
             /// processes 128 bytes, or as we represent them: 16 words of 64 bits.
             let current_block_rows = self.build_current_block_rows(
-                region, advice_offset, input, key, i, last_input_block_index, is_key_empty, is_last_block, is_key_block
+                region,
+                advice_offset,
+                input,
+                key,
+                i,
+                last_input_block_index,
+                is_key_empty,
+                is_last_block,
+                is_key_block,
             )?;
 
-            let zero_constant_cell = self.assign_0_constant_to_fixed_cell(region, constants_offset)?;
+            let zero_constant_cell =
+                self.assign_0_constant_to_fixed_cell(region, constants_offset)?;
 
             /// Padding for the last block, in case the key block is not the only one.
             if is_last_block && !is_key_block {
@@ -320,7 +339,11 @@ impl<F: PrimeField> Blake2bChip<F> {
     }
 
     /// Computes the edge cases in the amount of blocks to process.
-    fn get_total_blocks_count(input_blocks: usize, is_input_empty: bool, is_key_empty: bool) -> usize {
+    fn get_total_blocks_count(
+        input_blocks: usize,
+        is_input_empty: bool,
+        is_key_empty: bool,
+    ) -> usize {
         if is_key_empty {
             if is_input_empty {
                 // If there's no input and no key, we still need to process one block of zeroes.
@@ -337,9 +360,26 @@ impl<F: PrimeField> Blake2bChip<F> {
         }
     }
 
-    fn build_current_block_rows(&mut self, region: &mut Region<F>, offset: &mut usize, input: &Vec<Value<F>>, key: &Vec<Value<F>>, block_number: usize, last_input_block_index: usize, is_key_empty: bool, is_last_block: bool, is_key_block: bool) -> Result<[Vec<AssignedCell<F, F>>; 16], Error> {
+    fn build_current_block_rows(
+        &mut self,
+        region: &mut Region<F>,
+        offset: &mut usize,
+        input: &Vec<Value<F>>,
+        key: &Vec<Value<F>>,
+        block_number: usize,
+        last_input_block_index: usize,
+        is_key_empty: bool,
+        is_last_block: bool,
+        is_key_block: bool,
+    ) -> Result<[Vec<AssignedCell<F, F>>; 16], Error> {
         let current_block_values = Self::build_values_for_current_block(
-            input, key, block_number, last_input_block_index, is_key_empty, is_last_block, is_key_block
+            input,
+            key,
+            block_number,
+            last_input_block_index,
+            is_key_empty,
+            is_last_block,
+            is_key_block,
         );
 
         let current_block_rows =
@@ -347,10 +387,17 @@ impl<F: PrimeField> Blake2bChip<F> {
         Ok(current_block_rows)
     }
 
-    fn build_values_for_current_block(input: &Vec<Value<F>>, key: &Vec<Value<F>>, block_number: usize, last_input_block_index: usize, is_key_empty: bool, is_last_block: bool, is_key_block: bool) -> Vec<Value<F>> {
+    fn build_values_for_current_block(
+        input: &Vec<Value<F>>,
+        key: &Vec<Value<F>>,
+        block_number: usize,
+        last_input_block_index: usize,
+        is_key_empty: bool,
+        is_last_block: bool,
+        is_key_block: bool,
+    ) -> Vec<Value<F>> {
         if is_last_block && !is_key_block {
-            let mut result =
-                input[last_input_block_index * BLAKE2B_BLOCK_SIZE..].to_vec();
+            let mut result = input[last_input_block_index * BLAKE2B_BLOCK_SIZE..].to_vec();
             result.resize(128, Value::known(F::ZERO));
             result
         } else if is_key_block {
@@ -358,7 +405,8 @@ impl<F: PrimeField> Blake2bChip<F> {
             result.resize(128, Value::known(F::ZERO));
             result
         } else {
-            let current_input_block_index = if is_key_empty { block_number } else { block_number - 1 };
+            let current_input_block_index =
+                if is_key_empty { block_number } else { block_number - 1 };
             let result = input[current_input_block_index * BLAKE2B_BLOCK_SIZE
                 ..(current_input_block_index + 1) * BLAKE2B_BLOCK_SIZE]
                 .to_vec();
@@ -391,7 +439,8 @@ impl<F: PrimeField> Blake2bChip<F> {
         // accumulative_state[12] ^= processed_bytes_count
         let processed_bytes_count_cell =
             self.new_row_from_value(processed_bytes_count, region, row_offset)?;
-        state[12] = self.xor(state[12].clone(), processed_bytes_count_cell.clone(), region, row_offset);
+        state[12] =
+            self.xor(state[12].clone(), processed_bytes_count_cell.clone(), region, row_offset);
         // accumulative_state[13] ^= ctx.processed_bytes_count[1]; This is 0 so we ignore it
 
         if is_last_block {
@@ -417,9 +466,14 @@ impl<F: PrimeField> Blake2bChip<F> {
 
         let mut global_state_bytes = Vec::new();
         for i in 0..8 {
-            global_state[i] = self.xor(global_state[i].clone(), state[i].clone(), region, row_offset);
-            let row =
-                self.xor_with_full_rows(global_state[i].clone(), state[i + 8].clone(), region, row_offset);
+            global_state[i] =
+                self.xor(global_state[i].clone(), state[i].clone(), region, row_offset);
+            let row = self.xor_with_full_rows(
+                global_state[i].clone(),
+                state[i + 8].clone(),
+                region,
+                row_offset,
+            );
             global_state_bytes.extend_from_slice(&row[1..]);
             global_state[i] = row[0].clone();
         }
@@ -525,9 +579,9 @@ impl<F: PrimeField> Blake2bChip<F> {
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<Vec<AssignedCell<F, F>>, Error> {
-            let ret = self.decompose_8_chip.generate_row_from_bytes(region, bytes, *offset);
-            *offset += 1;
-            ret
+        let ret = self.decompose_8_chip.generate_row_from_bytes(region, bytes, *offset);
+        *offset += 1;
+        ret
     }
 
     fn new_row_from_value(
@@ -641,7 +695,8 @@ impl<F: PrimeField> Blake2bChip<F> {
         let ret = Self::iv_constants()
             .iter()
             .map(|value| {
-                let result = region.assign_fixed(|| "iv constants", self.constants, *offset, || *value)
+                let result = region
+                    .assign_fixed(|| "iv constants", self.constants, *offset, || *value)
                     .unwrap();
                 *offset += 1;
                 result
@@ -733,7 +788,14 @@ impl<F: PrimeField> Blake2bChip<F> {
         offset: &mut usize,
     ) -> AssignedCell<F, F> {
         self.xor_chip
-            .generate_xor_rows_from_cells_optimized(region, offset, lhs, rhs, &mut self.decompose_8_chip, false)
+            .generate_xor_rows_from_cells_optimized(
+                region,
+                offset,
+                lhs,
+                rhs,
+                &mut self.decompose_8_chip,
+                false,
+            )
             .unwrap()[0]
             .clone()
     }
@@ -759,9 +821,22 @@ impl<F: PrimeField> Blake2bChip<F> {
         }
     }
 
-    fn xor_copying_one_parameter(&mut self, previous_cell: AssignedCell<F, F>, cell_to_copy: AssignedCell<F, F>, region: &mut Region<F>, offset: &mut usize) -> [AssignedCell<F, F>; 9] {
+    fn xor_copying_one_parameter(
+        &mut self,
+        previous_cell: AssignedCell<F, F>,
+        cell_to_copy: AssignedCell<F, F>,
+        region: &mut Region<F>,
+        offset: &mut usize,
+    ) -> [AssignedCell<F, F>; 9] {
         self.xor_chip
-            .generate_xor_rows_from_cells_optimized(region, offset, previous_cell, cell_to_copy, &mut self.decompose_8_chip, true)
+            .generate_xor_rows_from_cells_optimized(
+                region,
+                offset,
+                previous_cell,
+                cell_to_copy,
+                &mut self.decompose_8_chip,
+                true,
+            )
             .unwrap()
     }
 
@@ -775,7 +850,14 @@ impl<F: PrimeField> Blake2bChip<F> {
         offset: &mut usize,
     ) -> [AssignedCell<F, F>; 9] {
         self.xor_chip
-            .generate_xor_rows_from_cells_optimized(region, offset, lhs, rhs, &mut self.decompose_8_chip, false)
+            .generate_xor_rows_from_cells_optimized(
+                region,
+                offset,
+                lhs,
+                rhs,
+                &mut self.decompose_8_chip,
+                false,
+            )
             .unwrap()
     }
 
@@ -786,7 +868,12 @@ impl<F: PrimeField> Blake2bChip<F> {
         offset: &mut usize,
     ) -> AssignedCell<F, F> {
         self.rotate_63_chip
-            .generate_rotation_rows_from_cells(region, offset, input_row, &mut self.decompose_8_chip)
+            .generate_rotation_rows_from_cells(
+                region,
+                offset,
+                input_row,
+                &mut self.decompose_8_chip,
+            )
             .unwrap()
     }
 
@@ -797,7 +884,13 @@ impl<F: PrimeField> Blake2bChip<F> {
         offset: &mut usize,
     ) -> AssignedCell<F, F> {
         self.generic_limb_rotation_chip
-            .generate_rotation_rows_from_input_row(region, offset, &mut self.decompose_8_chip, input_row, 2)
+            .generate_rotation_rows_from_input_row(
+                region,
+                offset,
+                &mut self.decompose_8_chip,
+                input_row,
+                2,
+            )
             .unwrap()
     }
 
@@ -808,7 +901,13 @@ impl<F: PrimeField> Blake2bChip<F> {
         offset: &mut usize,
     ) -> AssignedCell<F, F> {
         self.generic_limb_rotation_chip
-            .generate_rotation_rows_from_input_row(region, offset, &mut self.decompose_8_chip, input_row, 3)
+            .generate_rotation_rows_from_input_row(
+                region,
+                offset,
+                &mut self.decompose_8_chip,
+                input_row,
+                3,
+            )
             .unwrap()
     }
 
@@ -819,7 +918,13 @@ impl<F: PrimeField> Blake2bChip<F> {
         offset: &mut usize,
     ) -> AssignedCell<F, F> {
         self.generic_limb_rotation_chip
-            .generate_rotation_rows_from_input_row(region, offset, &mut self.decompose_8_chip, input_row, 4)
+            .generate_rotation_rows_from_input_row(
+                region,
+                offset,
+                &mut self.decompose_8_chip,
+                input_row,
+                4,
+            )
             .unwrap()
     }
 

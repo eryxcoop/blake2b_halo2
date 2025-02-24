@@ -25,7 +25,6 @@ pub struct Rotation63Config8bitLimbs<F: PrimeField> {
 
 // --------------------------------------------------
 
-
 #[cfg(test)]
 mod limb_rotation_circuit;
 mod test_limb_rotation_16_24_32;

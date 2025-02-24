@@ -13,6 +13,3 @@ fn test_blake2b_circuit_should_receive_an_key_length_less_or_equal_64() {
     let prover = MockProver::run(17, &circuit, vec![expected_output_state.to_vec()]).unwrap();
     prover.verify().unwrap();
 }
-
-
-

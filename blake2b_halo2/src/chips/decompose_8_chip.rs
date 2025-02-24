@@ -158,9 +158,7 @@ impl<F: PrimeField> Decomposition<F, 8> for Decompose8Chip<F> {
 
     /// Given a value and a limb index, it returns the value of the limb
     fn get_limb_from(value: Value<F>, limb_number: usize) -> Value<F> {
-        value.and_then(|v| {
-            auxiliar_functions::get_value_limb_from_field(v, limb_number)
-        })
+        value.and_then(|v| auxiliar_functions::get_value_limb_from_field(v, limb_number))
     }
 
     /// Convenience method for generating a row from a value and keeping the full row

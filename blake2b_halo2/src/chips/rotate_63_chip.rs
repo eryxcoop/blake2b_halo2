@@ -13,7 +13,6 @@ impl<F: PrimeField, const T: usize, const R: usize> Rotate63Chip<F, T, R> {
         /// The gate is defined as:
         ///    0 = 2 * input_full_number - output_full_number
         ///                      * (2 * input_full_number - output_full_number - (1 << 64 - 1))
-
         let q_rot63 = meta.complex_selector();
         meta.create_gate("rotate right 63", |meta| {
             let q_rot63 = meta.query_selector(q_rot63);
@@ -45,7 +44,6 @@ impl<F: PrimeField, const T: usize, const R: usize> Rotate63Chip<F, T, R> {
         let _ = layouter.assign_region(
             || "rotate 63",
             |mut region| {
-
                 let first_row = trace[0].to_vec();
                 let second_row = trace[1].to_vec();
                 decompose_chip.populate_row_from_values(&mut region, first_row.clone(), 0);
@@ -72,8 +70,7 @@ impl<F: PrimeField, const T: usize, const R: usize> Rotate63Chip<F, T, R> {
             Value::known(auxiliar_functions::rotate_right_field_element(input, 63))
         });
 
-        let result_cell =
-            decompose_chip.generate_row_from_value(region, result_value, *offset)?;
+        let result_cell = decompose_chip.generate_row_from_value(region, result_value, *offset)?;
         *offset += 1;
         Ok(result_cell)
     }
