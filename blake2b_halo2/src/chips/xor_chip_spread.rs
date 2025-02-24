@@ -95,7 +95,7 @@ impl<F: PrimeField> XorChipSpread<F> {
 
         // Lookup empty spread
         for (row, column_index) in empty_spread_positions.iter() {
-            meta.lookup("spread", |meta| {
+            meta.lookup("empty spread", |meta| {
                 let q_xor = meta.query_selector(q_xor);
                 let empty_spread_limb =
                     meta.query_advice(columns[*column_index], Rotation(*row as i32 - 5));
@@ -272,7 +272,7 @@ impl<F: PrimeField> XorChipSpread<F> {
             |mut table| {
                 for i in 0..1 << 8 {
                     table.assign_cell(
-                        || "spread value",
+                        || "empty spread value",
                         self.t_empty_spread,
                         i as usize,
                         || value_for::<u64, F>(Self::_spread_bits_right(i as u8) as u64),
