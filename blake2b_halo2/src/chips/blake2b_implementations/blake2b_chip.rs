@@ -11,6 +11,7 @@ use crate::chips::xor_chip::XorChip as XorChipTable;
 use ff::PrimeField;
 use halo2_proofs::circuit::{AssignedCell, Layouter, Value};
 use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Fixed, Instance};
+use crate::chips::xor_chip_spread::XorChipSpread;
 
 /// This toggles between optimizations for the sum operation.
 cfg_if::cfg_if! {
@@ -28,7 +29,7 @@ cfg_if::cfg_if! {
 /// This toggles between optimizations for the xor operation.
 cfg_if::cfg_if! {
     if #[cfg(feature = "xor_with_spread")] {
-        type XorChip<F> = XorChipTable<F>;
+        type XorChip<F> = XorChipSpread<F>;
     } else if #[cfg(feature = "xor_with_table")] {
         /// Using xor with a 16-bit lookup table
         type XorChip<F> = XorChipTable<F>;

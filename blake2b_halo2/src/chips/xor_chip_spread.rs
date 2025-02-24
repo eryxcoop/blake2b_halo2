@@ -6,7 +6,7 @@ use crate::chips::xor_chip::XorChip;
 use super::*;
 
 #[derive(Clone, Debug)]
-struct XorChipSpread<F: PrimeField> {
+pub struct XorChipSpread<F: PrimeField> {
     full_number_u64: Column<Advice>,
     limbs: [Column<Advice>; 8],
     extra: Column<Advice>,
@@ -162,7 +162,7 @@ impl<F: PrimeField> XorChipSpread<F> {
                             || "empty spread",
                             columns_in_order[empty_spread_positions[i].1],
                             // We need to subtract 6 since we are in the offset 7 because we already assigned all rows
-                            empty_spread_positions[i].0 - 6,
+                            *offset + empty_spread_positions[i].0 - 6,
                             || value_for::<u16, F>(z_i),
                         ).unwrap();
                     }
