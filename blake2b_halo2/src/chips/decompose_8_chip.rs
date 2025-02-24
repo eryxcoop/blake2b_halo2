@@ -159,9 +159,7 @@ impl<F: PrimeField> Decomposition<F, 8> for Decompose8Chip<F> {
     /// Given a value and a limb index, it returns the value of the limb
     fn get_limb_from(value: Value<F>, limb_number: usize) -> Value<F> {
         value.and_then(|v| {
-            let binding = v.to_repr();
-            let a_bytes = binding.as_ref();
-            Value::known(F::from(a_bytes[limb_number] as u64))
+            auxiliar_functions::get_value_limb_from_field(v, limb_number)
         })
     }
 
