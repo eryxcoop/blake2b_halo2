@@ -1,8 +1,7 @@
 use std::array;
 use halo2_proofs::circuit::AssignedCell;
-use crate::auxiliar_functions::{generate_row_8bits, value_for};
+use crate::auxiliar_functions::{value_for};
 use crate::chips::decompose_8_chip::Decompose8Chip;
-use crate::chips::xor_chip::XorChip;
 use super::*;
 
 #[derive(Clone, Debug)]
@@ -284,7 +283,7 @@ impl<F: PrimeField> XorChipSpread<F> {
         )
     }
 
-    fn _spread_bits_right(mut x: u8) -> u16 {
+    fn _spread_bits_right(x: u8) -> u16 {
         let mut spread = 0;
         for i in 0..8 {
             spread |= ((x & (1 << i)) as u16) << (i + 1);
@@ -292,7 +291,7 @@ impl<F: PrimeField> XorChipSpread<F> {
         spread
     }
 
-    fn _spread_bits_left(mut x: u8) -> u16 {
+    fn _spread_bits_left(x: u8) -> u16 {
         let mut spread = 0;
         for i in 0..8 {
             spread |= ((x & (1 << i)) as u16) << i;

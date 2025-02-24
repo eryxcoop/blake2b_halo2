@@ -7,11 +7,9 @@ use crate::chips::decomposition_trait::Decomposition;
 use crate::chips::generic_limb_rotation_chip::LimbRotationChip;
 use crate::chips::negate_chip::NegateChip;
 use crate::chips::rotate_63_chip::Rotate63Chip;
-use crate::chips::xor_chip::XorChip as XorChipTable;
 use ff::PrimeField;
 use halo2_proofs::circuit::{AssignedCell, Layouter, Value};
 use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Fixed, Instance};
-use crate::chips::xor_chip_spread::XorChipSpread;
 use num_bigint::BigUint;
 
 /// This toggles between optimizations for the sum operation.
@@ -30,9 +28,11 @@ cfg_if::cfg_if! {
 /// This toggles between optimizations for the xor operation.
 cfg_if::cfg_if! {
     if #[cfg(feature = "xor_with_spread")] {
+        use crate::chips::xor_chip_spread::XorChipSpread;
         type XorChip<F> = XorChipSpread<F>;
     } else if #[cfg(feature = "xor_with_table")] {
         /// Using xor with a 16-bit lookup table
+        use crate::chips::xor_chip::XorChip as XorChipTable;
         type XorChip<F> = XorChipTable<F>;
     } else {
         panic!("No feature selected");
@@ -243,6 +243,7 @@ impl<F: PrimeField> Blake2bChip<F> {
     /// The global state corresponds to 8 cells containing 64-bit numbers, which are updated when
     /// some of those words change. A change in a state value is represented by changing the cell
     /// that represent that particular word in the state.
+    #[allow(clippy::too_many_arguments)]
     fn perform_blake2b_iterations(
         &mut self,
         region: &mut Region<F>,
@@ -360,12 +361,13 @@ impl<F: PrimeField> Blake2bChip<F> {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn build_current_block_rows(
         &mut self,
         region: &mut Region<F>,
         offset: &mut usize,
-        input: &Vec<Value<F>>,
-        key: &Vec<Value<F>>,
+        input: &[Value<F>],
+        key: &[Value<F>],
         block_number: usize,
         last_input_block_index: usize,
         is_key_empty: bool,
@@ -388,8 +390,8 @@ impl<F: PrimeField> Blake2bChip<F> {
     }
 
     fn build_values_for_current_block(
-        input: &Vec<Value<F>>,
-        key: &Vec<Value<F>>,
+        input: &[Value<F>],
+        key: &[Value<F>],
         block_number: usize,
         last_input_block_index: usize,
         is_key_empty: bool,
@@ -407,10 +409,9 @@ impl<F: PrimeField> Blake2bChip<F> {
         } else {
             let current_input_block_index =
                 if is_key_empty { block_number } else { block_number - 1 };
-            let result = input[current_input_block_index * BLAKE2B_BLOCK_SIZE
+            input[current_input_block_index * BLAKE2B_BLOCK_SIZE
                 ..(current_input_block_index + 1) * BLAKE2B_BLOCK_SIZE]
-                .to_vec();
-            result
+                .to_vec()
         }
     }
 
@@ -420,6 +421,7 @@ impl<F: PrimeField> Blake2bChip<F> {
         current_block_rows.iter().map(|row| row[0].clone()).collect::<Vec<_>>().try_into().unwrap()
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn compress(
         &mut self,
         region: &mut Region<F>,
@@ -633,9 +635,9 @@ impl<F: PrimeField> Blake2bChip<F> {
         global_state_bytes: [AssignedCell<F, F>; 64],
         output_size: usize,
     ) -> Result<(), Error> {
-        for i in 0..output_size {
+        for (i, global_state_byte_cell) in global_state_bytes.iter().enumerate().take(output_size) {
             layouter.constrain_instance(
-                global_state_bytes[i].cell(),
+                global_state_byte_cell.cell(),
                 self.expected_final_state,
                 i,
             )?;

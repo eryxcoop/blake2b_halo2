@@ -80,7 +80,7 @@ impl<F: PrimeField> Decomposition<F, 8> for Decompose8Chip<F> {
             .ok()?;
 
         //return the full number and the limbs
-        Some(std::iter::once(full_number).chain(limbs.into_iter()).collect())
+        Some(std::iter::once(full_number).chain(limbs).collect())
     }
 
     /// Populates the table for the range check

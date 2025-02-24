@@ -9,11 +9,10 @@ pub struct LimbRotationChip<F: Field> {
     _ph: PhantomData<F>,
 }
 
+/// This chip does not have a gate. It only rotates the limbs of a number to the right and
+/// uses copy constrains to ensure that the rotation is correct.
+/// This chip is used in our circuit to implement 16-bit, 24-bit and 32-bit rotations.
 impl<F: PrimeField> LimbRotationChip<F> {
-    /// This chip does not have a gate. It only rotates the limbs of a number to the right and
-    /// uses copy constrains to ensure that the rotation is correct.
-    /// This chip is used in our circuit to implement 16-bit, 24-bit and 32-bit rotations.
-
     pub fn new() -> Self {
         Self { _ph: PhantomData }
     }
@@ -22,6 +21,12 @@ impl<F: PrimeField> LimbRotationChip<F> {
         [[Value::unknown(); 9]; 2]
     }
 
+    /// This method is meant to receive a valid rotation_trace, and populate the circuit with it
+    /// The rotation trace is a matrix with 2 rows and 9 columns. The rows represent the input
+    /// and output of the rotation, and the columns represent the limbs of each number.
+    /// In the end of the method, the circuit will have the correct constraints to ensure that
+    /// the output is the input rotated to the right by the number of limbs specified in the
+    /// limb_rotations_right parameter.
     pub fn populate_rotation_rows(
         &self,
         layouter: &mut impl Layouter<F>,
@@ -29,12 +34,6 @@ impl<F: PrimeField> LimbRotationChip<F> {
         trace: [[Value<F>; 9]; 2],
         limb_rotations_right: usize,
     ) {
-        /// This method is meant to receive a valid rotation_trace, and populate the circuit with it
-        /// The rotation trace is a matrix with 2 rows and 9 columns. The rows represent the input
-        /// and output of the rotation, and the columns represent the limbs of each number.
-        /// In the end of the method, the circuit will have the correct constraints to ensure that
-        /// the output is the input rotated to the right by the number of limbs specified in the
-        /// limb_rotations_right parameter.
         let _ = layouter.assign_region(
             || format!("rotate {}", limb_rotations_right),
             |mut region| {
@@ -56,6 +55,8 @@ impl<F: PrimeField> LimbRotationChip<F> {
         );
     }
 
+    /// This method receives a value, and copies it to the trace. Then calls another method to
+    /// do the rotation
     pub fn generate_rotation_rows_from_value(
         &self,
         region: &mut Region<F>,
@@ -64,8 +65,6 @@ impl<F: PrimeField> LimbRotationChip<F> {
         input: Value<F>,
         limbs_to_rotate_to_the_right: usize,
     ) -> Result<AssignedCell<F, F>, Error> {
-        /// This method receives a value, and copies it to the trace. Then calls another method to
-        /// do the rotation
         let input_row =
             decompose_chip.generate_row_from_value_and_keep_row(region, input, *offset)?;
         *offset += 1;
@@ -79,6 +78,11 @@ impl<F: PrimeField> LimbRotationChip<F> {
         )
     }
 
+    /// This method receives a row of cells, and rotates the limbs to the right by the number
+    /// specified in the limbs_to_rotate_to_the_right parameter. It then constrains the output
+    /// to be the correct rotation of the input.
+    /// For this method to work, the input_row must be the last row of the trace at the moment
+    /// the method is called
     pub fn generate_rotation_rows_from_input_row(
         &self,
         region: &mut Region<F>,
@@ -87,11 +91,6 @@ impl<F: PrimeField> LimbRotationChip<F> {
         input_row: [AssignedCell<F, F>; 9],
         limbs_to_rotate_to_the_right: usize,
     ) -> Result<AssignedCell<F, F>, Error> {
-        /// This method receives a row of cells, and rotates the limbs to the right by the number
-        /// specified in the limbs_to_rotate_to_the_right parameter. It then constrains the output
-        /// to be the correct rotation of the input.
-        /// For this method to work, the input_row must be the last row of the trace at the moment
-        /// the method is called
         let value = input_row[0].value().copied();
         let result_value = Self::_right_rotation_value(value, limbs_to_rotate_to_the_right);
 
@@ -127,9 +126,8 @@ impl<F: PrimeField> LimbRotationChip<F> {
     }
 
     fn _right_rotation_value(value: Value<F>, limbs_to_rotate: usize) -> Value<F> {
-        let result_value = value.and_then(|input| {
+        value.and_then(|input| {
             Value::known(auxiliar_functions::rotate_right_field_element(input, limbs_to_rotate * 8))
-        });
-        result_value
+        })
     }
 }

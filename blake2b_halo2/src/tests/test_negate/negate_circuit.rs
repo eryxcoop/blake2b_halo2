@@ -2,7 +2,7 @@ use super::*;
 use crate::chips::decompose_8_chip::Decompose8Chip;
 use crate::chips::negate_chip::NegateChip;
 use ff::PrimeField;
-use halo2_proofs::circuit::{AssignedCell, Layouter, SimpleFloorPlanner, Value};
+use halo2_proofs::circuit::{Layouter, SimpleFloorPlanner, Value};
 use halo2_proofs::plonk::{Advice, Circuit, Column, ConstraintSystem, Error, Fixed};
 use std::array;
 use std::marker::PhantomData;
