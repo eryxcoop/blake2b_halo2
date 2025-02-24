@@ -11,6 +11,7 @@ use crate::chips::xor_chip::XorChip;
 use ff::PrimeField;
 use halo2_proofs::circuit::{AssignedCell, Layouter, Value};
 use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Fixed, Instance};
+use num_bigint::BigUint;
 
 /// This toggles between optimizations for the sum operation.
 cfg_if::cfg_if! {
@@ -55,6 +56,7 @@ impl<F: PrimeField> Blake2bChip<F> {
         full_number_u64: Column<Advice>,
         limbs: [Column<Advice>; 8],
     ) -> Self {
+        Self::_enforce_modulus_size();
         cfg_if::cfg_if! {
             if #[cfg(feature = "sum_with_8_limbs")] {
                 /// An extra carry column is needed for the sum operation with 8 limbs.
@@ -167,6 +169,16 @@ impl<F: PrimeField> Blake2bChip<F> {
         assert!(output_size <= 64, "Output size must be between 1 and 64 bytes");
         assert!(output_size > 0, "Output size must be between 1 and 64 bytes");
         assert!(key_size <= 64, "Key size must be between 1 and 64 bytes");
+    }
+
+    /// Enforces the field's modulus to be greater than 2^65, which is a necessary condition for the rot63 gate to be sound.
+    fn _enforce_modulus_size() {
+        let modulus_bytes: Vec<u8> = hex::decode(
+            F::MODULUS.trim_start_matches("0x")
+            ).expect("Modulus is not a valid hex number");
+        let modulus = BigUint::from_bytes_be(&modulus_bytes);
+        let two_pow_65 = BigUint::from(1u128 << 65);
+        assert!(modulus > two_pow_65, "Field modulus must be greater than 2^65");
     }
 
     /// Computes the initial global state of Blake2b. It only depends on the key size and the

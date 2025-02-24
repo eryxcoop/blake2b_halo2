@@ -49,6 +49,7 @@ dependencies = [
  "ff",
  "halo2_proofs",
  "hex",
+ "num-bigint",
  "rand",
  "serde",
  "serde_json",
