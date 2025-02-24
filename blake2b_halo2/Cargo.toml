@@ -11,6 +11,7 @@ halo2_proofs = { git = "https://github.com/input-output-hk/halo2" }
 rand = "0.8"
 hex = "0.4.3"
 cfg-if = "1.0.0"
+num-bigint = "0.4"
 
 [features]
 default = ["sum_with_4_limbs", "xor_with_table"]
