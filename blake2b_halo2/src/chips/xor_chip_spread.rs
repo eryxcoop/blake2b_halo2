@@ -236,7 +236,7 @@ impl<F: PrimeField> XorChipSpread<F> {
                 for i in 0..1 << 8 {
                     table.assign_cell(
                         || "spread value",
-                        self.t_spread,
+                        self.t_empty_spread,
                         i as usize,
                         || value_for::<u64,F>(Self::_spread_bits_right(i as u8) as u64),
                     )?;
