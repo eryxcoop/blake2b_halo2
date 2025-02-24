@@ -11,4 +11,4 @@ pub mod negate_chip;
 pub mod rotate_24_chip;
 pub mod rotate_63_chip;
 pub mod xor_chip;
-mod xor_chip_spread;
+pub mod xor_chip_spread;
