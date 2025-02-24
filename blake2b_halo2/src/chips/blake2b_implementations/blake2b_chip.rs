@@ -7,10 +7,11 @@ use crate::chips::decomposition_trait::Decomposition;
 use crate::chips::generic_limb_rotation_chip::LimbRotationChip;
 use crate::chips::negate_chip::NegateChip;
 use crate::chips::rotate_63_chip::Rotate63Chip;
-use crate::chips::xor_chip::XorChip;
+use crate::chips::xor_chip::XorChip as XorChipTable;
 use ff::PrimeField;
 use halo2_proofs::circuit::{AssignedCell, Layouter, Value};
 use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Fixed, Instance};
+use crate::chips::xor_chip_spread::XorChipSpread;
 
 /// This toggles between optimizations for the sum operation.
 cfg_if::cfg_if! {
@@ -20,6 +21,18 @@ cfg_if::cfg_if! {
     } else if #[cfg(feature = "sum_with_4_limbs")] {
         /// Using 4 limbs for the sum operation.
         type AdditionChip<F> = AdditionMod64Chip<F, 4, 6>;
+    } else {
+        panic!("No feature selected");
+    }
+}
+
+/// This toggles between optimizations for the xor operation.
+cfg_if::cfg_if! {
+    if #[cfg(feature = "xor_with_spread")] {
+        type XorChip<F> = XorChipSpread<F>;
+    } else if #[cfg(feature = "xor_with_table")] {
+        /// Using xor with a 16-bit lookup table
+        type XorChip<F> = XorChipTable<F>;
     } else {
         panic!("No feature selected");
     }
@@ -72,7 +85,16 @@ impl<F: PrimeField> Blake2bChip<F> {
         let decompose_8_chip = Decompose8Chip::configure(meta, full_number_u64, limbs);
         let generic_limb_rotation_chip = LimbRotationChip::new();
         let rotate_63_chip = Rotate63Chip::configure(meta, full_number_u64);
-        let xor_chip = XorChip::configure(meta, limbs);
+        cfg_if::cfg_if! {
+            if #[cfg(feature = "xor_with_spread")] {
+                let xor_chip = XorChip::configure(meta, limbs, full_number_u64, carry);
+            } else if #[cfg(feature = "xor_with_table")] {
+                let xor_chip = XorChip::configure(meta, limbs);
+            } else {
+                panic!("No feature selected");
+            }
+        }
+
         let negate_chip = NegateChip::configure(meta, full_number_u64);
 
         let constants = meta.fixed_column();
@@ -699,7 +721,7 @@ impl<F: PrimeField> Blake2bChip<F> {
         offset: &mut usize,
     ) -> AssignedCell<F, F> {
         self.xor_chip
-            .generate_xor_rows_from_cells(region, offset, lhs, rhs, &mut self.decompose_8_chip)
+            .generate_xor_rows_from_cells_optimized(region, offset, lhs, rhs, &mut self.decompose_8_chip, false)
             .unwrap()[0]
             .clone()
     }
@@ -727,7 +749,7 @@ impl<F: PrimeField> Blake2bChip<F> {
 
     fn xor_copying_one_parameter(&mut self, previous_cell: AssignedCell<F, F>, cell_to_copy: AssignedCell<F, F>, region: &mut Region<F>, offset: &mut usize) -> [AssignedCell<F, F>; 9] {
         self.xor_chip
-            .generate_xor_rows_from_cells_optimized(region, offset, previous_cell, cell_to_copy, &mut self.decompose_8_chip)
+            .generate_xor_rows_from_cells_optimized(region, offset, previous_cell, cell_to_copy, &mut self.decompose_8_chip, true)
             .unwrap()
     }
 
@@ -741,7 +763,7 @@ impl<F: PrimeField> Blake2bChip<F> {
         offset: &mut usize,
     ) -> [AssignedCell<F, F>; 9] {
         self.xor_chip
-            .generate_xor_rows_from_cells(region, offset, lhs, rhs, &mut self.decompose_8_chip)
+            .generate_xor_rows_from_cells_optimized(region, offset, lhs, rhs, &mut self.decompose_8_chip, false)
             .unwrap()
     }
 

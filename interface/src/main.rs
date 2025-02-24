@@ -16,7 +16,10 @@ struct Blake2bInput {
 }
 
 fn main() {
-    let file_content = std::fs::read_to_string("src/inputs.json").expect("Failed to read input file");
+    let workspace_root = concat!(env!("CARGO_MANIFEST_DIR"), "/..");
+    let file_path = format!("{}/interface/src/inputs.json", workspace_root);
+
+    let file_content = std::fs::read_to_string(file_path).expect("Failed to read input file");
     let input: Blake2bInput = serde_json::from_str(&file_content).expect("Failed to parse input");
 
     let (input, key, buffer_out) = run_blake2b(&input.input, &input.key, input.output_size);
