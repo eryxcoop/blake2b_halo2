@@ -155,14 +155,78 @@ fn blake2b_compress(ctx: &mut Blake2bCtx, last: bool) {
     }
 
     for i in 0..12 {
-        b2b_g(0, 4, 8, 12, current_block_words[SIGMA[i][0]], current_block_words[SIGMA[i][1]], &mut accumulative_state);
-        b2b_g(1, 5, 9, 13, current_block_words[SIGMA[i][2]], current_block_words[SIGMA[i][3]], &mut accumulative_state);
-        b2b_g(2, 6, 10, 14, current_block_words[SIGMA[i][4]], current_block_words[SIGMA[i][5]], &mut accumulative_state);
-        b2b_g(3, 7, 11, 15, current_block_words[SIGMA[i][6]], current_block_words[SIGMA[i][7]], &mut accumulative_state);
-        b2b_g(0, 5, 10, 15, current_block_words[SIGMA[i][8]], current_block_words[SIGMA[i][9]], &mut accumulative_state);
-        b2b_g(1, 6, 11, 12, current_block_words[SIGMA[i][10]], current_block_words[SIGMA[i][11]], &mut accumulative_state);
-        b2b_g(2, 7, 8, 13, current_block_words[SIGMA[i][12]], current_block_words[SIGMA[i][13]], &mut accumulative_state);
-        b2b_g(3, 4, 9, 14, current_block_words[SIGMA[i][14]], current_block_words[SIGMA[i][15]], &mut accumulative_state);
+        b2b_g(
+            0,
+            4,
+            8,
+            12,
+            current_block_words[SIGMA[i][0]],
+            current_block_words[SIGMA[i][1]],
+            &mut accumulative_state,
+        );
+        b2b_g(
+            1,
+            5,
+            9,
+            13,
+            current_block_words[SIGMA[i][2]],
+            current_block_words[SIGMA[i][3]],
+            &mut accumulative_state,
+        );
+        b2b_g(
+            2,
+            6,
+            10,
+            14,
+            current_block_words[SIGMA[i][4]],
+            current_block_words[SIGMA[i][5]],
+            &mut accumulative_state,
+        );
+        b2b_g(
+            3,
+            7,
+            11,
+            15,
+            current_block_words[SIGMA[i][6]],
+            current_block_words[SIGMA[i][7]],
+            &mut accumulative_state,
+        );
+        b2b_g(
+            0,
+            5,
+            10,
+            15,
+            current_block_words[SIGMA[i][8]],
+            current_block_words[SIGMA[i][9]],
+            &mut accumulative_state,
+        );
+        b2b_g(
+            1,
+            6,
+            11,
+            12,
+            current_block_words[SIGMA[i][10]],
+            current_block_words[SIGMA[i][11]],
+            &mut accumulative_state,
+        );
+        b2b_g(
+            2,
+            7,
+            8,
+            13,
+            current_block_words[SIGMA[i][12]],
+            current_block_words[SIGMA[i][13]],
+            &mut accumulative_state,
+        );
+        b2b_g(
+            3,
+            4,
+            9,
+            14,
+            current_block_words[SIGMA[i][14]],
+            current_block_words[SIGMA[i][15]],
+            &mut accumulative_state,
+        );
     }
 
     /*for i in 0..16 {

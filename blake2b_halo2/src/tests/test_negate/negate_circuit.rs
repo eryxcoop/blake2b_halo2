@@ -2,7 +2,7 @@ use super::*;
 use crate::chips::decompose_8_chip::Decompose8Chip;
 use crate::chips::negate_chip::NegateChip;
 use ff::PrimeField;
-use halo2_proofs::circuit::{AssignedCell, Layouter, SimpleFloorPlanner, Value};
+use halo2_proofs::circuit::{Layouter, SimpleFloorPlanner, Value};
 use halo2_proofs::plonk::{Advice, Circuit, Column, ConstraintSystem, Error, Fixed};
 use std::array;
 use std::marker::PhantomData;
@@ -61,37 +61,33 @@ impl<F: PrimeField> Circuit<F> for NegateCircuit<F> {
         mut layouter: impl Layouter<F>,
     ) -> Result<(), Error> {
         config.decompose_8_chip.populate_lookup_table(&mut layouter)?;
-        let result = config.negate_chip.generate_rows(
-            &mut layouter,
-            self.value,
-            &mut config.decompose_8_chip,
+
+        layouter.assign_region(
+            || "negate",
+            |mut region| {
+                let mut offset = 0;
+                let result = config.negate_chip.generate_rows(
+                    &mut region,
+                    &mut offset,
+                    self.value,
+                    &mut config.decompose_8_chip,
+                )?;
+                let fixed_cell = region.assign_fixed(
+                    || "assign fixed",
+                    config.fixed_result,
+                    0,
+                    || self.expected_result,
+                )?;
+                region.constrain_equal(result.cell(), fixed_cell.cell())?;
+                Ok(())
+            },
         )?;
 
-        Self::assert_cell_value(&mut layouter, &result, config.fixed_result, self.expected_result)?;
         Ok(())
     }
 }
 
 impl<F: PrimeField> NegateCircuit<F> {
-    fn assert_cell_value(
-        layouter: &mut impl Layouter<F>,
-        cell: &AssignedCell<F, F>,
-        fixed_column: Column<Fixed>,
-        expected_value: Value<F>,
-    ) -> Result<(), Error> {
-        layouter.assign_region(
-            || "fixed",
-            |mut region| {
-
-                let fixed_cell =
-                    region.assign_fixed(|| "assign fixed", fixed_column, 0, || expected_value)?;
-                region.constrain_equal(cell.cell(), fixed_cell.cell())?;
-                Ok(())
-            },
-        )?;
-        Ok(())
-    }
-
     pub fn new_for(value: Value<F>, expected_result: Value<F>) -> Self {
         Self {
             _ph: PhantomData,

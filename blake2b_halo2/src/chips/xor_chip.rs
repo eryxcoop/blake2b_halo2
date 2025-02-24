@@ -2,11 +2,30 @@ use super::*;
 use crate::chips::decompose_8_chip::Decompose8Chip;
 use halo2_proofs::circuit::AssignedCell;
 
+/// This chip handles the xor operation in the trace. Requires a representation in 8-bit limbs
+/// because it utilices a lookup table like this one:
+///
+/// | lhs | rhs | lhs xor rhs |
+/// |  0  |  0  |      0      |
+/// |  0  |  1  |      1      |
+/// ...
+/// | 255 | 255 |      0      |
+///
+/// The table has 2^8 * 2^8 = 2^16 rows, since we need to check all the possible
+/// combinations of 8-bit numbers.
+/// Then, with the help of the Decompose8Chip, the final representation in the trace will be:
+///
+/// | full_number_lhs    | limb_0_lhs    | limb_1_lhs    | ... | limb_7_lhs    |
+/// | full_number_rhs    | limb_0_rhs    | limb_1_rhs    | ... | limb_7_rhs    |
+/// | full_number_result | limb_0_result | limb_1_result | ... | limb_7_result |
 #[derive(Clone, Debug)]
 pub struct XorChip<F: PrimeField> {
+    /// Lookup table columns
     t_xor_left: TableColumn,
     t_xor_right: TableColumn,
     t_xor_out: TableColumn,
+
+    /// Selector for the xor gate
     q_xor: Selector,
     _ph: PhantomData<F>,
 }
@@ -18,6 +37,8 @@ impl<F: PrimeField> XorChip<F> {
         let t_xor_right = meta.lookup_table_column();
         let t_xor_out = meta.lookup_table_column();
 
+        /// We need to perform a lookup for each limb, the 64-bit result will be ensured by the
+        /// Decompose8Chip
         for limb in limbs_8_bits {
             meta.lookup(format!("xor lookup limb {:?}", limb), |meta| {
                 let left: Expression<F> = meta.query_advice(limb, Rotation(0));
@@ -41,14 +62,13 @@ impl<F: PrimeField> XorChip<F> {
         }
     }
 
+    /// Method that populates the lookup table. Must be called only once in the user circuit.
     pub fn populate_xor_lookup_table(
         &mut self,
         layouter: &mut impl Layouter<F>,
     ) -> Result<(), Error> {
-        let table_name = "xor check table";
-
         layouter.assign_table(
-            || table_name,
+            || "xor check table",
             |mut table| {
                 for left in 0..256 {
                     for right in 0..256 {
@@ -80,13 +100,14 @@ impl<F: PrimeField> XorChip<F> {
         Ok(())
     }
 
+    /// Given 3 explicit rows of values, it assigns the full number and the limbs of the operands
+    /// and the result in the trace
     pub fn populate_xor_region(
         &mut self,
         layouter: &mut impl Layouter<F>,
         xor_trace: [[Value<F>; 9]; 3],
         decompose_8_chip: &mut Decompose8Chip<F>,
     ) {
-        // This method receives a trace and just assigns it to the circuit
         let _ = layouter.assign_region(
             || "xor",
             |mut region| {
@@ -105,39 +126,9 @@ impl<F: PrimeField> XorChip<F> {
         );
     }
 
-    pub fn generate_xor_rows_from_cells(
-        &mut self,
-        region: &mut Region<F>,
-        offset: &mut usize,
-        cell_a: AssignedCell<F, F>,
-        cell_b: AssignedCell<F, F>,
-        decompose_8_chip: &mut Decompose8Chip<F>,
-    ) -> Result<[AssignedCell<F, F>; 9], Error> {
-        let value_a = cell_a.value().copied();
-        let value_b = cell_b.value().copied();
-
-        let _ = self.q_xor.enable(region, *offset);
-
-        let result_value = value_a.and_then(|v0| {
-            value_b
-                .and_then(|v1| Value::known(auxiliar_functions::xor_field_elements(v0, v1)))
-        });
-
-        decompose_8_chip.generate_row_from_cell(region, cell_a.clone(), *offset)?;
-        *offset += 1;
-
-        decompose_8_chip.generate_row_from_cell(region, cell_b.clone(), *offset)?;
-        *offset += 1;
-
-        let result_row = decompose_8_chip
-            .generate_row_from_value_and_keep_row(region, result_value, *offset)
-            .unwrap();
-        *offset += 1;
-
-        let result_row_array = result_row.try_into().unwrap();
-        Ok(result_row_array)
-    }
-
+    /// This method generates the xor rows in the trace. If the previous cell in the region is one
+    /// of the operands, it won't be copied. Otherwise, it will be copied from the cell_to_copy,
+    /// generating an extra row in the circuit.
     pub fn generate_xor_rows_from_cells_optimized(
         &mut self,
         region: &mut Region<F>,
@@ -145,26 +136,28 @@ impl<F: PrimeField> XorChip<F> {
         previous_cell: AssignedCell<F, F>,
         cell_to_copy: AssignedCell<F, F>,
         decompose_8_chip: &mut Decompose8Chip<F>,
+        use_previous_cell: bool,
     ) -> Result<[AssignedCell<F, F>; 9], Error> {
-        // This method is intended to be used when one of the addition parameters (previous_cell)
-        // is the last cell that was generated in the circuit. This way, we can avoid generating
-        // the row for the previous_cell again, and just copy the cell_to_copy.
-
         let value_a = previous_cell.value().copied();
         let value_b = cell_to_copy.value().copied();
 
-        let _ = self.q_xor.enable(region, *offset - 1);
+        let difference_offset = if use_previous_cell { 1 } else { 0 };
+        let _ = self.q_xor.enable(region, *offset - difference_offset);
 
         let result_value = value_a.and_then(|v0| {
-            value_b
-                .and_then(|v1| Value::known(auxiliar_functions::xor_field_elements(v0, v1)))
+            value_b.and_then(|v1| Value::known(auxiliar_functions::xor_field_elements(v0, v1)))
         });
 
         decompose_8_chip.generate_row_from_cell(region, cell_to_copy.clone(), *offset)?;
         *offset += 1;
 
-        let result_row = decompose_8_chip
-            .generate_row_from_value_and_keep_row(region, result_value, *offset)?;
+        if !use_previous_cell {
+            decompose_8_chip.generate_row_from_cell(region, previous_cell.clone(), *offset)?;
+            *offset += 1;
+        }
+
+        let result_row =
+            decompose_8_chip.generate_row_from_value_and_keep_row(region, result_value, *offset)?;
         *offset += 1;
 
         let result_row_array = result_row.try_into().unwrap();

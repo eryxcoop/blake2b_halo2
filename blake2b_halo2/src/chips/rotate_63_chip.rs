@@ -9,6 +9,10 @@ pub struct Rotate63Chip<F: Field, const T: usize, const R: usize> {
 
 impl<F: PrimeField, const T: usize, const R: usize> Rotate63Chip<F, T, R> {
     pub fn configure(meta: &mut ConstraintSystem<F>, full_number_u64: Column<Advice>) -> Self {
+        /// The gate that will be used to rotate a number 63 bits to the right
+        /// The gate is defined as:
+        ///    0 = 2 * input_full_number - output_full_number
+        ///                      * (2 * input_full_number - output_full_number - (1 << 64 - 1))
         let q_rot63 = meta.complex_selector();
         meta.create_gate("rotate right 63", |meta| {
             let q_rot63 = meta.query_selector(q_rot63);
@@ -30,16 +34,16 @@ impl<F: PrimeField, const T: usize, const R: usize> Rotate63Chip<F, T, R> {
         }
     }
 
-    pub fn assign_rotation_rows(
+    pub fn populate_rotation_rows(
         &self,
         layouter: &mut impl Layouter<F>,
         decompose_chip: &mut impl Decomposition<F, T>,
         trace: [[Value<F>; R]; 2],
     ) {
+        /// Receives a trace and populates the rows for the rotation of 63 bits to the right
         let _ = layouter.assign_region(
             || "rotate 63",
             |mut region| {
-
                 let first_row = trace[0].to_vec();
                 let second_row = trace[1].to_vec();
                 decompose_chip.populate_row_from_values(&mut region, first_row.clone(), 0);
@@ -57,6 +61,8 @@ impl<F: PrimeField, const T: usize, const R: usize> Rotate63Chip<F, T, R> {
         input_row: [AssignedCell<F, F>; 9],
         decompose_chip: &mut impl Decomposition<F, T>,
     ) -> Result<AssignedCell<F, F>, Error> {
+        /// Receives a row of cells, generates a row for the rotation of 63 bits to the right
+        /// and populates the circuit with it
         let _ = self.q_rot63.enable(region, *offset);
 
         let input_value = input_row[0].value().copied();
@@ -64,8 +70,7 @@ impl<F: PrimeField, const T: usize, const R: usize> Rotate63Chip<F, T, R> {
             Value::known(auxiliar_functions::rotate_right_field_element(input, 63))
         });
 
-        let result_cell =
-            decompose_chip.generate_row_from_value(region, result_value, *offset)?;
+        let result_cell = decompose_chip.generate_row_from_value(region, result_value, *offset)?;
         *offset += 1;
         Ok(result_cell)
     }

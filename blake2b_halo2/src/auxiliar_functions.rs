@@ -2,29 +2,13 @@ use ff::{Field, PrimeField};
 use halo2_proofs::circuit::{AssignedCell, Value};
 use halo2_proofs::halo2curves::bn256::Fr;
 
-pub fn trash() -> Value<Fr> {
-    zero()
-}
 pub fn max_u64() -> Value<Fr> {
     value_for((1u128 << 64) - 1)
 }
 
-pub fn max_u32() -> Value<Fr> {
-    value_for((1u128 << 32) - 1)
-}
 pub fn max_u16() -> Value<Fr> {
     let number = (1u64 << 16) - 1;
     value_for(number)
-}
-
-pub fn max_u24() -> Value<Fr> {
-    value_for((1u64 << 24) - 1)
-}
-pub fn max_u8() -> Value<Fr> {
-    value_for((1u64 << 8) - 1)
-}
-pub fn max_u40() -> Value<Fr> {
-    value_for((1u128 << 40) - 1)
 }
 
 pub fn one() -> Value<Fr> {
@@ -32,20 +16,6 @@ pub fn one() -> Value<Fr> {
 }
 pub fn zero() -> Value<Fr> {
     Value::known(Fr::ZERO)
-}
-
-pub fn spread(mut n: u16) -> u32 {
-    let mut spread: u32 = 0;
-    let mut position: u32 = 0;
-
-    while n != 0 {
-        let bit: u32 = (n & 1u16) as u32;
-        spread |= bit << (2 * position);
-        n >>= 1;
-        position += 1;
-    }
-
-    spread
 }
 
 pub fn value_for<T, F>(number: T) -> Value<F>
@@ -66,6 +36,10 @@ where
     let hi: u64 = (number / (1u128 << 64)) as u64;
     let field_pow64 = F::from(1 << 63) * F::from(2);
     F::from(hi) * field_pow64 + F::from(lo)
+}
+
+pub fn decompose_field_8bit_limbs<F: PrimeField>(number: F) -> [u8; 8] {
+    (0..8).map(|i| get_limb_from_field(number, i)).collect::<Vec<_>>().try_into().unwrap()
 }
 
 pub fn generate_row_8bits<T, F>(number: T) -> [Value<F>; 10]
@@ -114,6 +88,16 @@ pub fn xor_field_elements<F: PrimeField>(a: F, b: F) -> F {
     let b_value = convert_to_u64(b);
 
     F::from(a_value ^ b_value)
+}
+
+pub fn get_value_limb_from_field<F: PrimeField>(field: F, limb_number: usize) -> Value<F> {
+    value_for(get_limb_from_field(field, limb_number))
+}
+
+fn get_limb_from_field<F: PrimeField>(field: F, limb_number: usize) -> u8 {
+    let binding = field.to_repr();
+    let a_bytes = binding.as_ref();
+    a_bytes[limb_number]
 }
 
 pub(crate) fn rotate_right_field_element<F: PrimeField>(

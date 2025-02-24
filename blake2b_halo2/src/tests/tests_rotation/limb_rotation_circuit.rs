@@ -64,7 +64,7 @@ impl<F: PrimeField, const T: usize> Circuit<F> for LimbRotationCircuit<F, T> {
         };
 
         config.decompose_8_chip.populate_lookup_table(&mut layouter)?;
-        config.limb_rotation_chip.assign_rotation_rows(
+        config.limb_rotation_chip.populate_rotation_rows(
             &mut layouter,
             &mut config.decompose_8_chip,
             self.trace,

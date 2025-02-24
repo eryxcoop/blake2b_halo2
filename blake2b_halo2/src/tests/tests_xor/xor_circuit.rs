@@ -6,6 +6,13 @@ use halo2_proofs::plonk::Circuit;
 use std::array;
 use std::marker::PhantomData;
 
+#[derive(Clone)]
+pub struct XorConfig<F: PrimeField> {
+    _ph: PhantomData<F>,
+    xor_chip: XorChip<F>,
+    decompose_8_chip: Decompose8Chip<F>,
+}
+
 pub struct XorCircuit<F: PrimeField> {
     _ph: PhantomData<F>,
     trace: [[Value<F>; 9]; 3],

@@ -2,16 +2,23 @@ use super::*;
 use crate::chips::decomposition_trait::Decomposition;
 use halo2_proofs::circuit::AssignedCell;
 
+/// This chip handles the decomposition of 64-bit numbers into 8-bit limbs in the trace
 #[derive(Clone, Debug)]
 pub struct Decompose16Chip<F: Field> {
+    /// The full number and the limbs are not owned by the chip.
     full_number_u64: Column<Advice>,
+    /// There are 4 limbs of 16 bits each
     limbs: [Column<Advice>; 4],
+
+    /// Selector that turns on the gate that defines if the limbs should add up to the full number
     q_decompose: Selector,
+    /// Table of [0, 2^16) to check if the limb is in the correct range
     t_range: TableColumn,
     _ph: PhantomData<F>,
 }
 
 impl<F: PrimeField> Decomposition<F, 4> for Decompose16Chip<F> {
+    /// The full number and the limbs are not owned by the chip.
     fn configure(
         meta: &mut ConstraintSystem<F>,
         full_number_u64: Column<Advice>,
@@ -20,6 +27,7 @@ impl<F: PrimeField> Decomposition<F, 4> for Decompose16Chip<F> {
         let q_decompose = meta.complex_selector();
         let t_range = meta.lookup_table_column();
 
+        /// Gate that checks if the decomposition is correct
         meta.create_gate("decompose in 16bit words", |meta| {
             let q_decompose = meta.query_selector(q_decompose);
             let full_number = meta.query_advice(full_number_u64, Rotation::cur());
@@ -35,6 +43,7 @@ impl<F: PrimeField> Decomposition<F, 4> for Decompose16Chip<F> {
             ]
         });
 
+        /// Range checks for all the limbs
         for limb in limbs {
             Self::_range_check_for_limb(meta, &limb, &q_decompose, &t_range);
         }
@@ -48,6 +57,7 @@ impl<F: PrimeField> Decomposition<F, 4> for Decompose16Chip<F> {
         }
     }
 
+    /// Given an explicit vector of values, it assigns the full number and the limbs in a row of the trace
     fn populate_row_from_values(
         &mut self,
         region: &mut Region<F>,
@@ -64,11 +74,10 @@ impl<F: PrimeField> Decomposition<F, 4> for Decompose16Chip<F> {
         Some(vec![limb_0, limb_1, limb_2, limb_3])
     }
 
+    /// Populates the table for the range check
     fn populate_lookup_table(&self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
         let lookup_column = self.t_range;
-        Self::_populate_lookup_table(layouter, lookup_column)?;
-
-        Ok(())
+        Self::_populate_lookup_table(layouter, lookup_column)
     }
 
     fn _populate_lookup_table(
@@ -93,6 +102,7 @@ impl<F: PrimeField> Decomposition<F, 4> for Decompose16Chip<F> {
         Ok(())
     }
 
+    /// Given a value of 64 bits, it returns a row with the assigned cells for the full number and the limbs
     fn generate_row_from_value(
         &mut self,
         region: &mut Region<F>,
@@ -111,6 +121,7 @@ impl<F: PrimeField> Decomposition<F, 4> for Decompose16Chip<F> {
         result
     }
 
+    /// Given a value and a limb index, it returns the value of the limb
     fn get_limb_from(value: Value<F>, limb_number: usize) -> Value<F> {
         value.and_then(|v| {
             let binding = v.to_repr();
