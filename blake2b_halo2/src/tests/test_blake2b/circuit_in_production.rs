@@ -18,6 +18,22 @@ fn test_with_real_snark() {
     let input = String::from("0001");
     let out = String::from("1c08798dc641aba9dee435e22519a4729a09b2bfe0ff00ef2dcd8ed6f8a07d15eaf4aee52bbf18ab5608a6190f70b90486c8a7d4873710b1115d3debbb4327b5");
     let key = String::from("");
+
+    test_in_production(input, out, key);
+}
+
+#[test]
+#[should_panic]
+fn test_with_real_snark_negative() {
+    let input = String::from("0001");
+    let out = String::from("2c08798dc641aba9dee435e22519a4729a09b2bfe0ff00ef2dcd8ed6f8a07d15eaf4aee52bbf18ab5608a6190f70b90486c8a7d4873710b1115d3debbb4327b5");
+    let key = String::from("");
+
+    test_in_production(input, out, key);
+}
+
+fn test_in_production(input: String, out: String, key: String) {
+
     let (input_values, input_size, key_values, key_size, expected_output_fields, output_size) =
         prepare_parameters_for_test(&input, &key, &out);
 
@@ -39,7 +55,6 @@ fn test_with_real_snark() {
     ).expect("Proof generation should work");
 
     let proof = transcript.finalize();
-    println!("{:?}\n\n Proof length: {}", proof, proof.len());
 
     let mut transcript = CircuitTranscript::init_from_bytes(&proof[..]);
 
