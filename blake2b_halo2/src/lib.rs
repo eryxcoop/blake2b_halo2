@@ -14,3 +14,4 @@ pub mod circuits;
 
 #[cfg(test)]
 pub mod tests;
+pub mod circuit_runner;

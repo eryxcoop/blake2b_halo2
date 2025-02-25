@@ -2,6 +2,7 @@ use super::*;
 
 use serde::Deserialize;
 use serde_json;
+use crate::circuit_runner::CircuitRunner;
 
 #[derive(Deserialize, Debug)]
 struct TestCase {
@@ -12,14 +13,7 @@ struct TestCase {
 }
 
 pub fn run_test(input: &String, key: &String, expected: &String) {
-    let (input_values, input_size, key_values, key_size, expected_output_fields, output_size) =
-        prepare_parameters_for_test(input, key, expected);
-
-    // TEST
-    let circuit =
-        Blake2bCircuit::<Fr>::new_for(input_values, input_size, key_values, key_size, output_size);
-    let prover = MockProver::run(17, &circuit, vec![expected_output_fields.to_vec()]).unwrap();
-    prover.verify().unwrap();
+    CircuitRunner::mocked_preprocess_inputs_sintesize_prove_and_verify(input, key, expected);
 }
 
 #[test]
@@ -30,7 +24,6 @@ fn test_hashes_in_circuit_one_block() {
         serde_json::from_str(&file_content).expect("Failed to parse JSON");
 
     for (i, case) in test_cases.iter().enumerate() {
-        // Empty key and single block for now
         if !case.key.is_empty() || case.input.len() > 256 {
             continue;
         }
