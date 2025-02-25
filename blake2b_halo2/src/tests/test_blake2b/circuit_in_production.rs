@@ -2,12 +2,12 @@ use super::*;
 use halo2_proofs::{
     halo2curves::bn256::{Bn256, Fr},
     plonk::{
-        create_proof, keygen_pk, keygen_vk_with_k, ProvingKey, VerifyingKey
+        create_proof, keygen_pk, keygen_vk_with_k, prepare, ProvingKey, VerifyingKey
     },
-    poly::kzg::{
+    poly::{commitment::Guard, kzg::{
         params::ParamsKZG,
         KZGCommitmentScheme,
-    },
+    }},
     transcript::{CircuitTranscript, Transcript},
 };
 
@@ -40,4 +40,15 @@ fn test_with_real_snark() {
 
     let proof = transcript.finalize();
     println!("{:?}\n\n Proof length: {}", proof, proof.len());
+
+    let mut transcript = CircuitTranscript::init_from_bytes(&proof[..]);
+
+    assert!(prepare::<Fr, KZGCommitmentScheme<Bn256>, _>(
+        pk.get_vk(),
+        &[&[&expected_output_fields]],
+        &mut transcript,
+    )
+    .unwrap()
+    .verify(&params.verifier_params())
+    .is_ok());
 }
