@@ -29,7 +29,6 @@ impl CircuitRunner {
             output_size) = Self::prepare_parameters_for_test(input, key, expected);
 
         let circuit = Self::create_circuit_for_inputs(input_values, input_size, key_values, key_size, output_size);
-
         let prover = Self::mock_prove_with_public_inputs(expected_output_fields.to_vec(), circuit);
         Self::verify_mock_prover(prover);
     }
@@ -40,6 +39,10 @@ impl CircuitRunner {
 
     pub fn mock_prove_with_public_inputs(expected_output_fields: Vec<Fr>, circuit: Blake2bCircuit<Fr>) -> MockProver<Fr> {
         MockProver::run(17, &circuit, vec![expected_output_fields]).unwrap()
+    }
+
+    pub fn mock_prove_with_public_inputs_ref(expected_output_fields: &Vec<Fr>, circuit: &Blake2bCircuit<Fr>) -> MockProver<Fr> {
+        MockProver::run(17, circuit, vec![expected_output_fields.clone()]).unwrap()
     }
 
     pub fn create_circuit_for_inputs(input_values: Vec<Value<Fr>>, input_size: usize, key_values: Vec<Value<Fr>>, key_size: usize, output_size: usize) -> Blake2bCircuit<Fr> {

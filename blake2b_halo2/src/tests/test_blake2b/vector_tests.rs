@@ -18,10 +18,7 @@ pub fn run_test(input: &String, key: &String, expected: &String) {
 
 #[test]
 fn test_hashes_in_circuit_one_block() {
-    let file_content = std::fs::read_to_string("../rust_implementation/test_vector.json")
-        .expect("Failed to read file");
-    let test_cases: Vec<TestCase> =
-        serde_json::from_str(&file_content).expect("Failed to parse JSON");
+    let test_cases = obtain_test_cases();
 
     for (i, case) in test_cases.iter().enumerate() {
         if !case.key.is_empty() || case.input.len() > 256 {
@@ -35,10 +32,7 @@ fn test_hashes_in_circuit_one_block() {
 
 #[test]
 fn test_hashes_in_circuit_more_than_one_block() {
-    let file_content = std::fs::read_to_string("../rust_implementation/test_vector.json")
-        .expect("Failed to read file");
-    let test_cases: Vec<TestCase> =
-        serde_json::from_str(&file_content).expect("Failed to parse JSON");
+    let test_cases = obtain_test_cases();
 
     for (i, case) in test_cases.iter().enumerate() {
         if !case.key.is_empty() || case.input.len() <= 256 {
@@ -52,10 +46,7 @@ fn test_hashes_in_circuit_more_than_one_block() {
 
 #[test]
 fn test_hashes_in_circuit_with_key() {
-    let file_content = std::fs::read_to_string("../rust_implementation/test_vector.json")
-        .expect("Failed to read file");
-    let test_cases: Vec<TestCase> =
-        serde_json::from_str(&file_content).expect("Failed to parse JSON");
+    let test_cases = obtain_test_cases();
 
     for (i, case) in test_cases.iter().enumerate() {
         if case.key.is_empty() {
@@ -70,4 +61,12 @@ fn test_hashes_in_circuit_with_key() {
         println!("Running test case {}", i);
         run_test(&case.input, &case.key, &case.out);
     }
+}
+
+fn obtain_test_cases() -> Vec<TestCase> {
+    let file_content = std::fs::read_to_string("../rust_implementation/test_vector.json")
+        .expect("Failed to read file");
+    let test_cases: Vec<TestCase> =
+        serde_json::from_str(&file_content).expect("Failed to parse JSON");
+    test_cases
 }
