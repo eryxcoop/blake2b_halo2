@@ -1,5 +1,5 @@
 use ff::{Field, PrimeField};
-use halo2_proofs::circuit::Value;
+use halo2_proofs::circuit::{AssignedCell, Value};
 use halo2_proofs::halo2curves::bn256::Fr;
 
 pub fn max_u64() -> Value<Fr> {

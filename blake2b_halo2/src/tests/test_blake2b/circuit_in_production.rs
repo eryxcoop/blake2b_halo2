@@ -20,7 +20,9 @@ fn test_with_real_snark() {
     let key = String::from("");
     let (input_values, input_size, key_values, key_size, expected_output_fields, output_size) =
         prepare_parameters_for_test(&input, &key, &out);
+
     let circuit: Blake2bCircuit<Fr> = Blake2bCircuit::new_for(input_values, input_size, key_values, key_size, output_size);
+
     let params = ParamsKZG::<Bn256>::unsafe_setup(17, &mut rand::thread_rng());
     let vk: VerifyingKey<Fr, KZGCommitmentScheme<Bn256>> = keygen_vk_with_k(&params, &circuit, 17).expect("Verifying key should be created");
     let pk: ProvingKey<Fr, KZGCommitmentScheme<Bn256>>= keygen_pk(vk.clone(), &circuit).expect("Proving key should be created");
