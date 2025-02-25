@@ -2,10 +2,23 @@ use halo2_proofs::dev::MockProver;
 use halo2_proofs::halo2curves::bn256::Fr;
 use halo2_proofs::plonk::Circuit;
 use crate::circuits::blake2b_circuit::Blake2bCircuit;
+use halo2_proofs::{
+    halo2curves::bn256::{Bn256},
+    plonk::{
+        create_proof, keygen_pk, keygen_vk_with_k, prepare, ProvingKey, VerifyingKey
+    },
+    poly::{commitment::Guard, kzg::{
+        params::ParamsKZG,
+        KZGCommitmentScheme,
+    }},
+    transcript::{CircuitTranscript, Transcript},
+};
 use super::*;
 
 
 pub struct CircuitRunner;
+
+/// Circuit runner methods for Mock Prover
 impl CircuitRunner {
     pub fn mocked_preprocess_inputs_sintesize_prove_and_verify(input: &String, key: &String, expected: &String) {
         let (input_values,
@@ -16,7 +29,8 @@ impl CircuitRunner {
             output_size) = Self::prepare_parameters_for_test(input, key, expected);
 
         let circuit = Self::create_circuit_for_inputs(input_values, input_size, key_values, key_size, output_size);
-        let prover = Self::mock_prove_with_public_inputs(expected_output_fields, circuit);
+
+        let prover = Self::mock_prove_with_public_inputs(expected_output_fields.to_vec(), circuit);
         Self::verify_mock_prover(prover);
     }
 
@@ -24,11 +38,11 @@ impl CircuitRunner {
         prover.verify().unwrap()
     }
 
-    pub fn mock_prove_with_public_inputs(expected_output_fields: [Fr; 64], circuit: impl Circuit<Fr>) -> MockProver<Fr> {
-        MockProver::run(17, &circuit, vec![expected_output_fields.to_vec()]).unwrap()
+    pub fn mock_prove_with_public_inputs(expected_output_fields: Vec<Fr>, circuit: Blake2bCircuit<Fr>) -> MockProver<Fr> {
+        MockProver::run(17, &circuit, vec![expected_output_fields]).unwrap()
     }
 
-    pub fn create_circuit_for_inputs(input_values: Vec<Value<Fr>>, input_size: usize, key_values: Vec<Value<Fr>>, key_size: usize, output_size: usize) -> impl Circuit<Fr> {
+    pub fn create_circuit_for_inputs(input_values: Vec<Value<Fr>>, input_size: usize, key_values: Vec<Value<Fr>>, key_size: usize, output_size: usize) -> Blake2bCircuit<Fr> {
         Blake2bCircuit::<Fr>::new_for(input_values, input_size, key_values, key_size, output_size)
     }
 
@@ -57,6 +71,48 @@ impl CircuitRunner {
         let output_block_size = output.len() / 2; // Amount of bytes
         let output_bytes = hex::decode(output).expect("Invalid hex string");
         (output_bytes.try_into().unwrap(), output_block_size)
+    }
+}
+
+/// Circuit runner methods for Real Prover
+impl CircuitRunner {
+    pub fn real_preprocess_inputs_sintesize_prove_and_verify(input: String, out: String, key: String) {
+        let (input_values,
+            input_size,
+            key_values,
+            key_size,
+            expected_output_fields,
+            output_size) = Self::prepare_parameters_for_test(&input, &key, &out);
+
+        let circuit: Blake2bCircuit<Fr> = Self::create_circuit_for_inputs(input_values, input_size, key_values, key_size, output_size);
+
+        let params = ParamsKZG::<Bn256>::unsafe_setup(17, &mut rand::thread_rng());
+        let vk: VerifyingKey<Fr, KZGCommitmentScheme<Bn256>> = keygen_vk_with_k(&params, &circuit, 17).expect("Verifying key should be created");
+        let pk: ProvingKey<Fr, KZGCommitmentScheme<Bn256>>= keygen_pk(vk.clone(), &circuit).expect("Proving key should be created");
+
+
+        let mut transcript = CircuitTranscript::init();
+        create_proof(
+            &params,
+            &pk,
+            &[circuit],
+            &[&[&expected_output_fields]],
+            rand::thread_rng(),
+            &mut transcript,
+        ).expect("Proof generation should work");
+
+        let proof = transcript.finalize();
+
+        let mut transcript = CircuitTranscript::init_from_bytes(&proof[..]);
+
+        assert!(prepare::<Fr, KZGCommitmentScheme<Bn256>, _>(
+            pk.get_vk(),
+            &[&[&expected_output_fields]],
+            &mut transcript,
+        )
+            .unwrap()
+            .verify(&params.verifier_params())
+            .is_ok());
     }
 }
 

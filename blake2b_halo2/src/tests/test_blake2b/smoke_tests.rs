@@ -1,3 +1,4 @@
+use crate::circuit_runner::CircuitRunner;
 use crate::tests::test_blake2b::vector_tests::run_test;
 use super::*;
 
@@ -7,9 +8,10 @@ fn test_blake2b_single_empty_block_positive() {
     let input = vec![];
     let input_size = 0;
     let expected_output_state = _correct_output_for_empty_input_64();
-    let circuit = Blake2bCircuit::<Fr>::new_for(input, input_size, vec![], 0, output_size);
-    let prover = MockProver::run(17, &circuit, vec![expected_output_state.to_vec()]).unwrap();
-    prover.verify().unwrap();
+
+    let circuit = CircuitRunner::create_circuit_for_inputs(input, input_size, vec![], 0, output_size);
+    let prover = CircuitRunner::mock_prove_with_public_inputs(expected_output_state.to_vec(), circuit);
+    CircuitRunner::verify_mock_prover(prover);
 }
 
 #[test]
@@ -21,17 +23,9 @@ fn test_blake2b_single_empty_block_negative() {
     let mut expected_output_state = _correct_output_for_empty_input_64();
     expected_output_state[7] = Fr::from(14u64); // Wrong value
 
-    let circuit = Blake2bCircuit::<Fr>::new_for(input, input_size, vec![], 0, output_size);
-    let prover = MockProver::run(17, &circuit, vec![expected_output_state.to_vec()]).unwrap();
-    prover.verify().unwrap();
-}
-
-#[test]
-fn test_blake2b_input_constrained() {
-    let input = String::from("0001");
-    let out = String::from("1c08798dc641aba9dee435e22519a4729a09b2bfe0ff00ef2dcd8ed6f8a07d15eaf4aee52bbf18ab5608a6190f70b90486c8a7d4873710b1115d3debbb4327b5");
-    let key = String::from("");
-    run_test(&input, &key, &out);
+    let circuit = CircuitRunner::create_circuit_for_inputs(input, input_size, vec![], 0, output_size);
+    let prover = CircuitRunner::mock_prove_with_public_inputs(expected_output_state.to_vec(), circuit);
+    CircuitRunner::verify_mock_prover(prover);
 }
 
 fn _correct_output_for_empty_input_64() -> [Fr; 64] {

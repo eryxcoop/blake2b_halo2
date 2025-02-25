@@ -1,3 +1,4 @@
+use crate::circuit_runner::CircuitRunner;
 use super::*;
 
 #[test]
@@ -5,11 +6,11 @@ use super::*;
 fn test_blake2b_circuit_should_receive_an_key_length_less_or_equal_64() {
     let input = vec![];
     let input_size = 0;
-    let key = vec![value_for(0u64); 65];
+    let key: Vec<Value<Fr>> = vec![value_for(0u64); 65];
     let key_size = 65;
 
     let expected_output_state = [Fr::ZERO; 65];
-    let circuit = Blake2bCircuit::<Fr>::new_for(input, input_size, key, key_size, 64);
-    let prover = MockProver::run(17, &circuit, vec![expected_output_state.to_vec()]).unwrap();
-    prover.verify().unwrap();
+    let circuit = CircuitRunner::create_circuit_for_inputs(input, input_size, key, key_size, 64);
+    let prover = CircuitRunner::mock_prove_with_public_inputs(expected_output_state.to_vec(), circuit);
+    CircuitRunner::verify_mock_prover(prover);
 }
