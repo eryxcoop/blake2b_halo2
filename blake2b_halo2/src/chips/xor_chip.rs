@@ -133,8 +133,8 @@ impl<F: PrimeField> XorChip<F> {
         &mut self,
         region: &mut Region<F>,
         offset: &mut usize,
-        previous_cell: AssignedCell<F, F>,
-        cell_to_copy: AssignedCell<F, F>,
+        previous_cell: &AssignedCell<F, F>,
+        cell_to_copy: &AssignedCell<F, F>,
         decompose_8_chip: &mut Decompose8Chip<F>,
         use_previous_cell: bool,
     ) -> Result<[AssignedCell<F, F>; 9], Error> {
@@ -148,11 +148,11 @@ impl<F: PrimeField> XorChip<F> {
             value_b.and_then(|v1| Value::known(auxiliar_functions::xor_field_elements(v0, v1)))
         });
 
-        decompose_8_chip.generate_row_from_cell(region, cell_to_copy.clone(), *offset)?;
+        decompose_8_chip.generate_row_from_cell(region, cell_to_copy, *offset)?;
         *offset += 1;
 
         if !use_previous_cell {
-            decompose_8_chip.generate_row_from_cell(region, previous_cell.clone(), *offset)?;
+            decompose_8_chip.generate_row_from_cell(region, previous_cell, *offset)?;
             *offset += 1;
         }
 

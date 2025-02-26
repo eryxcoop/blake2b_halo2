@@ -36,7 +36,7 @@ impl<F: PrimeField> NegateChip<F> {
         &mut self,
         region: &mut Region<F>,
         offset: &mut usize,
-        input: AssignedCell<F, F>,
+        input: &AssignedCell<F, F>,
         decompose_chip: &mut Decompose8Chip<F>,
     ) -> Result<AssignedCell<F, F>, Error> {
         let value = input.value().copied();

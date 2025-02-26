@@ -231,10 +231,10 @@ impl<F: PrimeField> Blake2bChip<F> {
         Self::constrain_initial_state(region, &global_state, iv_constants)?;
 
         // state[0] = state[0] ^ 0x01010000 ^ (key.len() << 8) as u64 ^ outlen as u64;
-        global_state[0] = self.xor(global_state[0].clone(), init_const_state_0, region, offset);
-        global_state[0] = self.xor(global_state[0].clone(), output_size_constant, region, offset);
+        global_state[0] = self.xor(&global_state[0], &init_const_state_0, region, offset);
+        global_state[0] = self.xor(&global_state[0], &output_size_constant, region, offset);
         global_state[0] =
-            self.xor(global_state[0].clone(), key_size_constant_shifted, region, offset);
+            self.xor(&global_state[0], &key_size_constant_shifted, region, offset);
         Ok(global_state)
     }
 
@@ -308,7 +308,7 @@ impl<F: PrimeField> Blake2bChip<F> {
                     region,
                     zeros_amount_for_input_padding,
                     &current_block_rows,
-                    zero_constant_cell.clone(),
+                    &zero_constant_cell,
                 )?;
             }
             /// Padding for the key block, in all cases that it exists. It is always the first block.
@@ -319,7 +319,7 @@ impl<F: PrimeField> Blake2bChip<F> {
                     region,
                     zeros_amount_for_key_padding,
                     &current_block_rows,
-                    zero_constant_cell.clone(),
+                    &zero_constant_cell,
                 )?;
             }
 
@@ -442,11 +442,11 @@ impl<F: PrimeField> Blake2bChip<F> {
         let processed_bytes_count_cell =
             self.new_row_from_value(processed_bytes_count, region, row_offset)?;
         state[12] =
-            self.xor(state[12].clone(), processed_bytes_count_cell.clone(), region, row_offset);
+            self.xor(&state[12], &processed_bytes_count_cell, region, row_offset);
         // accumulative_state[13] ^= ctx.processed_bytes_count[1]; This is 0 so we ignore it
 
         if is_last_block {
-            state[14] = self.not(state[14].clone(), region, row_offset);
+            state[14] = self.not(&state[14], region, row_offset);
         }
 
         for i in 0..12 {
@@ -469,10 +469,10 @@ impl<F: PrimeField> Blake2bChip<F> {
         let mut global_state_bytes = Vec::new();
         for i in 0..8 {
             global_state[i] =
-                self.xor(global_state[i].clone(), state[i].clone(), region, row_offset);
+                self.xor(&global_state[i], &state[i], region, row_offset);
             let row = self.xor_with_full_rows(
-                global_state[i].clone(),
-                state[i + 8].clone(),
+                &global_state[i],
+                &state[i + 8],
                 region,
                 row_offset,
             );
@@ -505,33 +505,33 @@ impl<F: PrimeField> Blake2bChip<F> {
         let y = current_block_words[sigma_odd].clone();
 
         // v[a] = ((v[a] as u128 + v[b] as u128 + x as u128) % (1 << 64)) as u64;
-        let a_plus_b = self.add(v_a, v_b.clone(), region, offset);
-        let a = self.add_copying_one_parameter(a_plus_b, x, region, offset);
+        let a_plus_b = self.add(&v_a, &v_b, region, offset);
+        let a = self.add_copying_one_parameter(&a_plus_b, &x, region, offset);
 
         // v[d] = rotr_64(v[d] ^ v[a], 32);
-        let d_xor_a = self.xor_for_mix(a.clone(), v_d.clone(), region, offset);
+        let d_xor_a = self.xor_for_mix(&a, &v_d, region, offset);
         let d = self.rotate_right_32(d_xor_a, region, offset);
 
         // v[c] = ((v[c] as u128 + v[d] as u128) % (1 << 64)) as u64;
-        let c = self.add_copying_one_parameter(d.clone(), v_c, region, offset);
+        let c = self.add_copying_one_parameter(&d, &v_c, region, offset);
 
         // v[b] = rotr_64(v[b] ^ v[c], 24);
-        let b_xor_c = self.xor_for_mix(c.clone(), v_b, region, offset);
+        let b_xor_c = self.xor_for_mix(&c, &v_b, region, offset);
         let b = self.rotate_right_24(b_xor_c, region, offset);
 
         // v[a] = ((v[a] as u128 + v[b] as u128 + y as u128) % (1 << 64)) as u64;
-        let a_plus_b = self.add_copying_one_parameter(b.clone(), a.clone(), region, offset);
-        let a = self.add_copying_one_parameter(a_plus_b, y, region, offset);
+        let a_plus_b = self.add_copying_one_parameter(&b, &a, region, offset);
+        let a = self.add_copying_one_parameter(&a_plus_b, &y, region, offset);
 
         // v[d] = rotr_64(v[d] ^ v[a], 16);
-        let d_xor_a = self.xor_for_mix(a.clone(), d.clone(), region, offset);
+        let d_xor_a = self.xor_for_mix(&a, &d, region, offset);
         let d = self.rotate_right_16(d_xor_a, region, offset);
 
         // v[c] = ((v[c] as u128 + v[d] as u128) % (1 << 64)) as u64;
-        let c = self.add_copying_one_parameter(d.clone(), c.clone(), region, offset);
+        let c = self.add_copying_one_parameter(&d, &c, region, offset);
 
         // v[b] = rotr_64(v[b] ^ v[c], 63);
-        let b_xor_c = self.xor_for_mix(c.clone(), b.clone(), region, offset);
+        let b_xor_c = self.xor_for_mix(&c, &b, region, offset);
         let b = self.rotate_right_63(b_xor_c, region, offset);
 
         state[a_] = a;
@@ -609,7 +609,7 @@ impl<F: PrimeField> Blake2bChip<F> {
         region: &mut Region<F>,
         zeros_amount: usize,
         current_block_rows: &[Vec<AssignedCell<F, F>>; 16],
-        zero_constant_cell: AssignedCell<F, F>,
+        zero_constant_cell: &AssignedCell<F, F>,
     ) -> Result<(), Error> {
         let mut constrained_padding_cells = 0;
         for row in (0..16).rev() {
@@ -727,8 +727,8 @@ impl<F: PrimeField> Blake2bChip<F> {
     /// These are the methods that call primitive operation chips
     fn add(
         &mut self,
-        lhs: AssignedCell<F, F>,
-        rhs: AssignedCell<F, F>,
+        lhs: &AssignedCell<F, F>,
+        rhs: &AssignedCell<F, F>,
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> AssignedCell<F, F> {
@@ -751,8 +751,8 @@ impl<F: PrimeField> Blake2bChip<F> {
     /// a convenience method for that in the case of the sum operation.
     fn add_copying_one_parameter(
         &mut self,
-        previous_cell: AssignedCell<F, F>,
-        cell_to_copy: AssignedCell<F, F>,
+        previous_cell: &AssignedCell<F, F>,
+        cell_to_copy: &AssignedCell<F, F>,
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> AssignedCell<F, F> {
@@ -773,7 +773,7 @@ impl<F: PrimeField> Blake2bChip<F> {
 
     fn not(
         &mut self,
-        input_cell: AssignedCell<F, F>,
+        input_cell: &AssignedCell<F, F>,
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> AssignedCell<F, F> {
@@ -784,8 +784,8 @@ impl<F: PrimeField> Blake2bChip<F> {
 
     fn xor(
         &mut self,
-        lhs: AssignedCell<F, F>,
-        rhs: AssignedCell<F, F>,
+        lhs: &AssignedCell<F, F>,
+        rhs: &AssignedCell<F, F>,
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> AssignedCell<F, F> {
@@ -806,8 +806,8 @@ impl<F: PrimeField> Blake2bChip<F> {
     /// a convenience method for that in the case of the xor operation.
     fn xor_for_mix(
         &mut self,
-        previous_cell: AssignedCell<F, F>,
-        cell_to_copy: AssignedCell<F, F>,
+        previous_cell: &AssignedCell<F, F>,
+        cell_to_copy: &AssignedCell<F, F>,
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> [AssignedCell<F, F>; 9] {
@@ -825,8 +825,8 @@ impl<F: PrimeField> Blake2bChip<F> {
 
     fn xor_copying_one_parameter(
         &mut self,
-        previous_cell: AssignedCell<F, F>,
-        cell_to_copy: AssignedCell<F, F>,
+        previous_cell: &AssignedCell<F, F>,
+        cell_to_copy: &AssignedCell<F, F>,
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> [AssignedCell<F, F>; 9] {
@@ -846,8 +846,8 @@ impl<F: PrimeField> Blake2bChip<F> {
     /// need it to constrain the result.
     fn xor_with_full_rows(
         &mut self,
-        lhs: AssignedCell<F, F>,
-        rhs: AssignedCell<F, F>,
+        lhs: &AssignedCell<F, F>,
+        rhs: &AssignedCell<F, F>,
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> [AssignedCell<F, F>; 9] {

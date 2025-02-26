@@ -146,7 +146,7 @@ impl<F: PrimeField> Decomposition<F, 8> for Decompose8Chip<F> {
     fn generate_row_from_cell(
         &mut self,
         region: &mut Region<F>,
-        cell: AssignedCell<F, F>,
+        cell: &AssignedCell<F, F>,
         offset: usize,
     ) -> Result<Vec<AssignedCell<F, F>>, Error> {
         let value = cell.value().copied();
