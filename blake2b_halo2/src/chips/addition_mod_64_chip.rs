@@ -95,19 +95,19 @@ impl<F: PrimeField, const T: usize, const R: usize> AdditionMod64Chip<F, T, R> {
         &mut self,
         region: &mut Region<F>,
         offset: &mut usize,
-        cell_a: AssignedCell<F, F>,
-        cell_b: AssignedCell<F, F>,
+        cell_a: &AssignedCell<F, F>,
+        cell_b: &AssignedCell<F, F>,
         decompose_chip: &mut impl Decomposition<F, T>,
     ) -> Result<[AssignedCell<F, F>; 2], Error> {
         /// This method receives two cells, and generates the rows for the addition of their values.
         /// We copy the values of the cells to the trace, and then calculate the result and carry
         /// of the addition and write it in a third row.
-        let (result_value, carry_value) = Self::_calculate_result_and_carry(&cell_a, &cell_b);
+        let (result_value, carry_value) = Self::_calculate_result_and_carry(cell_a, cell_b);
 
         let _ = self.q_add.enable(region, *offset);
-        decompose_chip.generate_row_from_cell(region, cell_a.clone(), *offset)?; // 2
+        decompose_chip.generate_row_from_cell(region, cell_a, *offset)?; // 2
         *offset += 1;
-        decompose_chip.generate_row_from_cell(region, cell_b.clone(), *offset)?; // 3
+        decompose_chip.generate_row_from_cell(region, cell_b, *offset)?; // 3
         *offset += 1;
         let result_cell = decompose_chip.generate_row_from_value(region, result_value, *offset)?; // 4
         let carry_cell = region.assign_advice(|| "carry", self.carry, *offset, || carry_value)?;
@@ -119,18 +119,18 @@ impl<F: PrimeField, const T: usize, const R: usize> AdditionMod64Chip<F, T, R> {
         &mut self,
         region: &mut Region<F>,
         offset: &mut usize,
-        previous_cell: AssignedCell<F, F>,
-        cell_to_copy: AssignedCell<F, F>,
+        previous_cell: &AssignedCell<F, F>,
+        cell_to_copy: &AssignedCell<F, F>,
         decompose_chip: &mut impl Decomposition<F, T>,
     ) -> Result<[AssignedCell<F, F>; 2], Error> {
         /// This method is intended to be used when one of the addition parameters (previous_cell)
         /// is the last cell that was generated in the circuit. This way, we can avoid generating
         /// the row for the previous_cell again, and just copy the cell_to_copy.
         let (result_value, carry_value) =
-            Self::_calculate_result_and_carry(&previous_cell, &cell_to_copy);
+            Self::_calculate_result_and_carry(previous_cell, cell_to_copy);
 
         let _ = self.q_add.enable(region, *offset - 1);
-        decompose_chip.generate_row_from_cell(region, cell_to_copy.clone(), *offset)?; // 3
+        decompose_chip.generate_row_from_cell(region, cell_to_copy, *offset)?;
         *offset += 1;
         let result_cell = decompose_chip.generate_row_from_value(region, result_value, *offset)?; // 4
         let carry_cell = region.assign_advice(|| "carry", self.carry, *offset, || carry_value)?;
