@@ -5,3 +5,6 @@ members = [
     "interface",
     "rust_implementation",
 ]
+
+[profile.bench]
+lto = "fat"

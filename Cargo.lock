@@ -73,6 +73,7 @@ dependencies = [
  "hex",
  "num-bigint",
  "rand",
+ "rust_implementation",
  "serde",
  "serde_json",
 ]
