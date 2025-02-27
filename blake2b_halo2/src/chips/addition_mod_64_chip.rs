@@ -2,6 +2,9 @@ use super::*;
 use auxiliar_functions::field_for;
 use halo2_proofs::circuit::AssignedCell;
 
+pub type AdditionChipWith8Limbs<F> = AdditionMod64Chip<F, 8, 10>;
+pub type AdditionChipWith4Limbs<F> = AdditionMod64Chip<F, 4, 6>;
+
 #[derive(Clone, Debug)]
 pub struct AdditionMod64Chip<F: Field, const T: usize, const R: usize> {
     /// This chip uses two generics, T and R.

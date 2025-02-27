@@ -1,6 +1,6 @@
 use super::*;
 use crate::auxiliar_functions::{value_for};
-use crate::chips::addition_mod_64_chip::AdditionMod64Chip;
+use crate::chips::addition_mod_64_chip::{AdditionChipWith8Limbs};
 use crate::chips::decompose_8_chip::Decompose8Chip;
 use crate::chips::decomposition_trait::Decomposition;
 use crate::chips::generic_limb_rotation_chip::LimbRotationChip;
@@ -12,7 +12,7 @@ use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Fixed, Instance};
 use num_bigint::BigUint;
 use crate::chips::xor_chip::XorChip;
 
-type AdditionChip<F> = AdditionMod64Chip<F, 8, 10>;
+type AdditionChip<F> = AdditionChipWith8Limbs<F>;
 const BLAKE2B_BLOCK_SIZE: usize = 128;
 
 /// This is the main chip for the Blake2b hash function. It is responsible for the entire hash computation.
@@ -46,7 +46,7 @@ impl<F: PrimeField> Blake2bChipB<F> {
 
         /// An extra carry column is needed for the sum operation with 8 limbs.
         let carry = meta.advice_column();
-        let addition_chip = AdditionMod64Chip::<F, 8, 10>::configure(meta, full_number_u64, carry);
+        let addition_chip = AdditionChipWith8Limbs::<F>::configure(meta, full_number_u64, carry);
 
         let decompose_8_chip = Decompose8Chip::configure(meta, full_number_u64, limbs);
         let generic_limb_rotation_chip = LimbRotationChip::new();
