@@ -1,3 +1,5 @@
+#![allow(unused_doc_comments)]
+
 use std::marker::PhantomData;
 
 use halo2_proofs::{circuit::Layouter, plonk::ConstraintSystem};

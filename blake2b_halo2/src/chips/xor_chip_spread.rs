@@ -38,6 +38,7 @@ impl<F: PrimeField> XorChipSpread<F> {
             let q_xor = meta.query_selector(q_xor);
             let mut grid: [[Expression<F>; 10]; 6] =
                 array::from_fn(|_| array::from_fn(|_| Expression::Constant(F::ZERO)));
+            #[allow(clippy::needless_range_loop)]
             for row in 0..6 {
                 for col in 0..10 {
                     grid[row][col] = meta.query_advice(columns[col], Rotation(row as i32 - 5));
@@ -45,7 +46,7 @@ impl<F: PrimeField> XorChipSpread<F> {
             }
             let z_expr = empty_spread_positions
                 .iter()
-                .map(|&(row, col)| &grid[row as usize][col as usize])
+                .map(|&(row, col)| &grid[row][col])
                 .collect::<Vec<_>>();
 
             vec![
@@ -230,6 +231,7 @@ impl<F: PrimeField> XorChipSpread<F> {
         original_rotation: i32,
         spread_rotation: i32,
     ) {
+        #[allow(clippy::needless_range_loop)]
         for i in 1..9 {
             meta.lookup("spread", |meta| {
                 let q_xor = meta.query_selector(q_xor);

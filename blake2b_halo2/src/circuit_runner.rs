@@ -12,6 +12,8 @@ use halo2_proofs::{
 };
 use super::*;
 
+type Blake2bCircuitInputs = (Vec<Value<Fr>>, usize, Vec<Value<Fr>>, usize, [Fr; 64], usize);
+
 pub struct CircuitRunner;
 
 /// Circuit runner methods for Mock Prover
@@ -47,10 +49,10 @@ impl CircuitRunner {
     }
 
     pub fn mock_prove_with_public_inputs_ref(
-        expected_output_fields: &Vec<Fr>,
+        expected_output_fields: &[Fr],
         circuit: &Blake2bCircuit<Fr>,
     ) -> MockProver<Fr> {
-        MockProver::run(17, circuit, vec![expected_output_fields.clone()]).unwrap()
+        MockProver::run(17, circuit, vec![expected_output_fields.to_vec()]).unwrap()
     }
 
     pub fn create_circuit_for_inputs(
@@ -67,7 +69,7 @@ impl CircuitRunner {
         input: &String,
         key: &String,
         expected: &String,
-    ) -> (Vec<Value<Fr>>, usize, Vec<Value<Fr>>, usize, [Fr; 64], usize) {
+    ) -> Blake2bCircuitInputs {
         // INPUT
         let input_size = input.len() / 2; // Amount of bytes
         let input_bytes = hex::decode(input).expect("Invalid hex string");

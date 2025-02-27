@@ -12,6 +12,7 @@ pub struct LimbRotationChip<F: Field> {
 /// This chip does not have a gate. It only rotates the limbs of a number to the right and
 /// uses copy constrains to ensure that the rotation is correct.
 /// This chip is used in our circuit to implement 16-bit, 24-bit and 32-bit rotations.
+#[allow(clippy::new_without_default)]
 impl<F: PrimeField> LimbRotationChip<F> {
     pub fn new() -> Self {
         Self { _ph: PhantomData }
@@ -98,6 +99,7 @@ impl<F: PrimeField> LimbRotationChip<F> {
             decompose_chip.generate_row_from_value_and_keep_row(region, result_value, *offset)?;
         *offset += 1;
 
+        #[allow(clippy::unnecessary_fallible_conversions)]
         Self::_constrain_result_with_input_row(
             region,
             &(input_row.try_into().unwrap()),
@@ -109,6 +111,7 @@ impl<F: PrimeField> LimbRotationChip<F> {
         Ok(result_cell)
     }
 
+    #[allow(clippy::ptr_arg)]
     fn _constrain_result_with_input_row(
         region: &mut Region<F>,
         input_row: &Vec<AssignedCell<F, F>>,

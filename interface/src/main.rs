@@ -62,9 +62,9 @@ fn main() {
     );
 }
 
-fn run_blake2b(input: &String, key: &String, output_size: usize) -> (Vec<u8>, Vec<u8>, Vec<u8>) {
-    let mut input_message = rust_implementation::hex_to_bytes(input.as_str());
-    let mut key = rust_implementation::hex_to_bytes(key.as_str());
+fn run_blake2b(input: &str, key: &str, output_size: usize) -> (Vec<u8>, Vec<u8>, Vec<u8>) {
+    let mut input_message = rust_implementation::hex_to_bytes(input);
+    let mut key = rust_implementation::hex_to_bytes(key);
     let mut buffer_out: Vec<u8> = vec![0; output_size];
 
     let _ = rust_implementation::blake2b(&mut buffer_out, &mut key, &mut input_message);
@@ -88,9 +88,7 @@ fn run_blake2b_halo2(
     let expected_output_fields: Vec<Fr> = expected_output
         .iter()
         .map(|x| Fr::from(*x as u64))
-        .collect::<Vec<_>>()
-        .try_into()
-        .unwrap();
+        .collect::<Vec<_>>();
 
     // KEY
     let key_size = key_bytes.len();
@@ -116,10 +114,10 @@ fn compute_k(amount_of_blocks: usize) -> u32 {
     f64::from(value).log2().ceil() as u32
 }
 
-fn amount_of_blocks(input: &Vec<u8>, key: &Vec<u8>) -> usize {
-    if key.len() == 0 {
+fn amount_of_blocks(input: &[u8], key: &[u8]) -> usize {
+    if key.is_empty() {
         (input.len() as f64 / 128f64).ceil() as usize
-    } else if input.len() == 0 {
+    } else if input.is_empty() {
         1
     } else {
         input.len() / 128 + 1

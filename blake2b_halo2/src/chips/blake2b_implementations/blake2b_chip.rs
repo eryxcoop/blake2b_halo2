@@ -137,8 +137,8 @@ impl<F: PrimeField> Blake2bChip<F> {
         output_size: usize,
         input_size: usize,
         key_size: usize,
-        input: &Vec<Value<F>>,
-        key: &Vec<Value<F>>,
+        input: &[Value<F>],
+        key: &[Value<F>],
     ) -> Result<(), Error> {
         Self::_enforce_input_sizes(output_size, key_size);
 
@@ -249,8 +249,8 @@ impl<F: PrimeField> Blake2bChip<F> {
         advice_offset: &mut usize,
         constants_offset: &mut usize,
         input_size: usize,
-        input: &Vec<Value<F>>,
-        key: &Vec<Value<F>>,
+        input: &[Value<F>],
+        key: &[Value<F>],
         iv_constants: &[AssignedCell<F, F>; 8],
         global_state: &mut [AssignedCell<F, F>; 8],
     ) -> Result<[AssignedCell<F, F>; 64], Error> {

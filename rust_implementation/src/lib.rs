@@ -74,7 +74,7 @@ impl Blake2bCtx {
 
 // Hash Function
 
-pub fn blake2b(out: &mut Vec<u8>, key: &mut Vec<u8>, input_message: &mut Vec<u8>) -> i32 {
+pub fn blake2b(out: &mut [u8], key: &mut [u8], input_message: &mut [u8]) -> i32 {
     if out.is_empty() || out.len() > 64 || key.len() > 64 {
         panic!("Illegal input parameters")
     }
@@ -149,6 +149,7 @@ fn blake2b_compress(ctx: &mut Blake2bCtx, last: bool) {
         accumulative_state[14] = !accumulative_state[14]
     }
 
+    #[allow(clippy::needless_range_loop)]
     for i in 0..16 {
         // This simply formats the 128 bytes of the buffer in 16 u64
         current_block_words[i] = b2b_get64(&ctx.iteration_buffer[8 * i..8 * i + 8]);
@@ -249,6 +250,8 @@ fn blake2b_final(ctx: &mut Blake2bCtx, out: &mut [u8]) {
         ctx.buffer_pointer += 1;
     }
     blake2b_compress(ctx, true);
+
+    #[allow(clippy::needless_range_loop)]
     for i in 0..out.len() {
         out[i] = ((ctx.state[i >> 3] >> (8 * (i & 7))) & 0xFF) as u8;
     }
