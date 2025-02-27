@@ -2,11 +2,12 @@ use super::*;
 use halo2_proofs::circuit::SimpleFloorPlanner;
 use halo2_proofs::plonk::Circuit;
 use std::array;
-use crate::chips::blake2b_implementations::blake2b_chip::Blake2bChip;
+use crate::chips::blake2b_implementations::blake2b_chip_optimization::Blake2bChipOptimization;
 
 /// This is an example circuit of how you should use the Blake2b chip.
-pub struct Blake2bCircuit<F: Field> {
+pub struct Blake2bCircuit<F: PrimeField, OptimizationChip: Blake2bChipOptimization<F>> {
     _ph: PhantomData<F>,
+    _ph2: PhantomData<OptimizationChip>,
     /// The input and the key should be unknown for the verifier.
     input: Vec<Value<F>>,
     key: Vec<Value<F>>,
@@ -17,14 +18,14 @@ pub struct Blake2bCircuit<F: Field> {
 }
 
 #[derive(Clone)]
-pub struct Blake2bConfig<F: PrimeField> {
+pub struct Blake2bConfig<F: PrimeField, OptimizationChip: Blake2bChipOptimization<F>> {
     _ph: PhantomData<F>,
     /// The chip that will be used to compute the hash. We only need this.
-    blake2b_table16_chip: Blake2bChip<F>,
+    blake2b_chip: OptimizationChip,
 }
 
-impl<F: PrimeField> Circuit<F> for Blake2bCircuit<F> {
-    type Config = Blake2bConfig<F>;
+impl<F: PrimeField, OptimizationChip: Blake2bChipOptimization<F>> Circuit<F> for Blake2bCircuit<F, OptimizationChip> {
+    type Config = Blake2bConfig<F, OptimizationChip>;
     type FloorPlanner = SimpleFloorPlanner;
 
     fn without_witnesses(&self) -> Self {
@@ -33,6 +34,7 @@ impl<F: PrimeField> Circuit<F> for Blake2bCircuit<F> {
         let output_size = self.output_size;
         Self {
             _ph: PhantomData,
+            _ph2: PhantomData,
             input: vec![Value::unknown(); input_size],
             input_size,
             key: vec![Value::unknown(); key_size],
@@ -52,11 +54,11 @@ impl<F: PrimeField> Circuit<F> for Blake2bCircuit<F> {
         }
 
         /// We need to provide the chip with the advice columns that it will use.
-        let blake2b_table16_chip = Blake2bChip::configure(meta, full_number_u64, limbs);
+        let blake2b_chip = OptimizationChip::configure(meta, full_number_u64, limbs);
 
         Self::Config {
             _ph: PhantomData,
-            blake2b_table16_chip,
+            blake2b_chip,
         }
     }
 
@@ -68,8 +70,8 @@ impl<F: PrimeField> Circuit<F> for Blake2bCircuit<F> {
     ) -> Result<(), Error> {
         /// The initialization function should be called before the hash computation. For many hash
         /// computations it should be called only once.
-        config.blake2b_table16_chip.initialize_with(&mut layouter);
-        config.blake2b_table16_chip.compute_blake2b_hash_for_inputs(
+        config.blake2b_chip.initialize_with(&mut layouter);
+        config.blake2b_chip.compute_blake2b_hash_for_inputs(
             &mut layouter,
             self.output_size,
             self.input_size,
@@ -80,7 +82,7 @@ impl<F: PrimeField> Circuit<F> for Blake2bCircuit<F> {
     }
 }
 
-impl<F: PrimeField> Blake2bCircuit<F> {
+impl<F: PrimeField, OptimizationChip: Blake2bChipOptimization<F>> Blake2bCircuit<F, OptimizationChip> {
     pub fn new_for(
         input: Vec<Value<F>>,
         input_size: usize,
@@ -90,6 +92,7 @@ impl<F: PrimeField> Blake2bCircuit<F> {
     ) -> Self {
         Self {
             _ph: PhantomData,
+            _ph2: PhantomData,
             input,
             input_size,
             key,
