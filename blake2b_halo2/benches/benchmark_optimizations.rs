@@ -11,20 +11,35 @@ fn criterion_benchmark(c: &mut Criterion) {
     group.sample_size(20);
     group.measurement_time(Duration::from_secs(60));
 
-    for amount_of_blocks in 0..5 {
+    for amount_of_blocks in 1..5 {
         group.throughput(Throughput::Bytes(amount_of_blocks));
         let (input, input_size, output_size, key_size, key, expected_output_state) =
             _random_input_for_desired_blocks(amount_of_blocks as usize);
 
-        let circuit =
-            CircuitRunner::create_circuit_for_inputs(input, input_size, key, key_size, output_size);
-        let func =
-            || CircuitRunner::mock_prove_with_public_inputs_ref(&expected_output_state, &circuit);
+        let circuit_a = CircuitRunner::create_circuit_for_inputs_optimization_a(input.clone(), input_size, key.clone(), key_size, output_size);
+        let func_a = || CircuitRunner::mock_prove_with_public_inputs_ref(&expected_output_state, &circuit_a);
+
+        let circuit_b = CircuitRunner::create_circuit_for_inputs_optimization_b(input.clone(), input_size, key.clone(), key_size, output_size);
+        let func_b = || CircuitRunner::mock_prove_with_public_inputs_ref(&expected_output_state, &circuit_b);
+
+        let circuit_c = CircuitRunner::create_circuit_for_inputs_optimization_c(input, input_size, key, key_size, output_size);
+        let func_c = || CircuitRunner::mock_prove_with_public_inputs_ref(&expected_output_state, &circuit_c);
+
 
         group.bench_with_input(
-            BenchmarkId::from_parameter(amount_of_blocks),
+            BenchmarkId::new("Optimization A", amount_of_blocks),
             &amount_of_blocks,
-            |b, &_size| b.iter(func),
+            |b, &_size| b.iter(func_a),
+        );
+        group.bench_with_input(
+            BenchmarkId::new("Optimization B", amount_of_blocks),
+            &amount_of_blocks,
+            |b, &_size| b.iter(func_b),
+        );
+        group.bench_with_input(
+            BenchmarkId::new("Optimization C", amount_of_blocks),
+            &amount_of_blocks,
+            |b, &_size| b.iter(func_c),
         );
     }
     group.finish()

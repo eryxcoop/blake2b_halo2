@@ -15,6 +15,7 @@ use crate::chips::blake2b_implementations::blake2b_chip::Blake2bChip;
 use crate::chips::blake2b_implementations::blake2b_chip_a::Blake2bChipA;
 use crate::chips::blake2b_implementations::blake2b_chip_b::Blake2bChipB;
 use crate::chips::blake2b_implementations::blake2b_chip_c::Blake2bChipC;
+use crate::chips::blake2b_implementations::blake2b_chip_optimization::Blake2bChipOptimization;
 
 type Blake2bCircuit<F> = Blake2bCircuitGeneric<F, Blake2bChip<F>>;
 type Blake2bCircuitInputs = (Vec<Value<Fr>>, usize, Vec<Value<Fr>>, usize, [Fr; 64], usize);
@@ -53,9 +54,9 @@ impl CircuitRunner {
         MockProver::run(17, &circuit, vec![expected_output_fields]).unwrap()
     }
 
-    pub fn mock_prove_with_public_inputs_ref(
+    pub fn mock_prove_with_public_inputs_ref<OptimizationChip: Blake2bChipOptimization<Fr>>(
         expected_output_fields: &[Fr],
-        circuit: &Blake2bCircuit<Fr>,
+        circuit: &Blake2bCircuitGeneric<Fr, OptimizationChip>,
     ) -> MockProver<Fr> {
         MockProver::run(17, circuit, vec![expected_output_fields.to_vec()]).unwrap()
     }
