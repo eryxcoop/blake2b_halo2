@@ -1,5 +1,4 @@
 use super::*;
-use crate::chips::decompose_8_chip::Decompose8Chip;
 
 mod tests_xor_with_generated_trace;
 mod tests_xor_with_processed_trace;

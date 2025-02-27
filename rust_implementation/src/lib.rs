@@ -60,7 +60,7 @@ struct Blake2bCtx {
 }
 
 impl Blake2bCtx {
-    fn new(key: &mut Vec<u8>, outlen: usize) -> Self {
+    fn new(key: &mut [u8], outlen: usize) -> Self {
         let mut state: [u64; 8] = BLAKE2B_IV;
         state[0] = state[0] ^ 0x01010000 ^ (key.len() << 8) as u64 ^ outlen as u64;
         Self {
@@ -116,8 +116,8 @@ fn b2b_g(a: usize, b: usize, c: usize, d: usize, x: u64, y: u64, state: &mut [u6
     state[b] = rotr_64(state[b] ^ state[c], 63);
 }
 
-fn blake2b_update(ctx: &mut Blake2bCtx, input: &mut Vec<u8>) {
-    for i in 0..input.len() {
+fn blake2b_update(ctx: &mut Blake2bCtx, input: &mut [u8]) {
+    for byte in input {
         const BUFFER_SIZE: u64 = 128;
         if ctx.buffer_pointer == BUFFER_SIZE as usize {
             ctx.processed_bytes_count[0] += BUFFER_SIZE;
@@ -127,7 +127,7 @@ fn blake2b_update(ctx: &mut Blake2bCtx, input: &mut Vec<u8>) {
             blake2b_compress(ctx, false);
             ctx.buffer_pointer = 0;
         }
-        ctx.iteration_buffer[ctx.buffer_pointer] = input[i];
+        ctx.iteration_buffer[ctx.buffer_pointer] = *byte;
         ctx.buffer_pointer += 1;
     }
 }
@@ -237,7 +237,7 @@ fn blake2b_compress(ctx: &mut Blake2bCtx, last: bool) {
     }
 }
 
-fn blake2b_final(ctx: &mut Blake2bCtx, out: &mut Vec<u8>) {
+fn blake2b_final(ctx: &mut Blake2bCtx, out: &mut [u8]) {
     ctx.processed_bytes_count[0] += ctx.buffer_pointer as u64;
 
     if ctx.processed_bytes_count[0] < ctx.buffer_pointer as u64 {

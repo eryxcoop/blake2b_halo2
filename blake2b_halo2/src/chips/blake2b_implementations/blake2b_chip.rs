@@ -815,6 +815,7 @@ impl<F: PrimeField> Blake2bChip<F> {
         }
     }
 
+    #[allow(dead_code)]
     fn xor_copying_one_parameter(
         &mut self,
         previous_cell: &AssignedCell<F, F>,

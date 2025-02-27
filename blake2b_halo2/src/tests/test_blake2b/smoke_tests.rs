@@ -1,5 +1,4 @@
 use crate::circuit_runner::CircuitRunner;
-use crate::tests::test_blake2b::vector_tests::run_test;
 use super::*;
 
 #[test]

@@ -1,6 +1,5 @@
 use halo2_proofs::dev::MockProver;
 use halo2_proofs::halo2curves::bn256::Fr;
-use halo2_proofs::plonk::Circuit;
 use crate::circuits::blake2b_circuit::Blake2bCircuit;
 use halo2_proofs::{
     halo2curves::bn256::{Bn256},
