@@ -4,31 +4,34 @@ use halo2_proofs::plonk::Circuit;
 use crate::circuits::blake2b_circuit::Blake2bCircuit;
 use halo2_proofs::{
     halo2curves::bn256::{Bn256},
-    plonk::{
-        create_proof, keygen_pk, keygen_vk_with_k, prepare, ProvingKey, VerifyingKey
+    plonk::{create_proof, keygen_pk, keygen_vk_with_k, prepare, ProvingKey, VerifyingKey},
+    poly::{
+        commitment::Guard,
+        kzg::{params::ParamsKZG, KZGCommitmentScheme},
     },
-    poly::{commitment::Guard, kzg::{
-        params::ParamsKZG,
-        KZGCommitmentScheme,
-    }},
     transcript::{CircuitTranscript, Transcript},
 };
 use super::*;
-
 
 pub struct CircuitRunner;
 
 /// Circuit runner methods for Mock Prover
 impl CircuitRunner {
-    pub fn mocked_preprocess_inputs_sintesize_prove_and_verify(input: &String, key: &String, expected: &String) {
-        let (input_values,
+    pub fn mocked_preprocess_inputs_sintesize_prove_and_verify(
+        input: &String,
+        key: &String,
+        expected: &String,
+    ) {
+        let (input_values, input_size, key_values, key_size, expected_output_fields, output_size) =
+            Self::prepare_parameters_for_test(input, key, expected);
+
+        let circuit = Self::create_circuit_for_inputs(
+            input_values,
             input_size,
             key_values,
             key_size,
-            expected_output_fields,
-            output_size) = Self::prepare_parameters_for_test(input, key, expected);
-
-        let circuit = Self::create_circuit_for_inputs(input_values, input_size, key_values, key_size, output_size);
+            output_size,
+        );
         let prover = Self::mock_prove_with_public_inputs(expected_output_fields.to_vec(), circuit);
         Self::verify_mock_prover(prover);
     }
@@ -37,19 +40,35 @@ impl CircuitRunner {
         prover.verify().unwrap()
     }
 
-    pub fn mock_prove_with_public_inputs(expected_output_fields: Vec<Fr>, circuit: Blake2bCircuit<Fr>) -> MockProver<Fr> {
+    pub fn mock_prove_with_public_inputs(
+        expected_output_fields: Vec<Fr>,
+        circuit: Blake2bCircuit<Fr>,
+    ) -> MockProver<Fr> {
         MockProver::run(17, &circuit, vec![expected_output_fields]).unwrap()
     }
 
-    pub fn mock_prove_with_public_inputs_ref(expected_output_fields: &Vec<Fr>, circuit: &Blake2bCircuit<Fr>) -> MockProver<Fr> {
+    pub fn mock_prove_with_public_inputs_ref(
+        expected_output_fields: &Vec<Fr>,
+        circuit: &Blake2bCircuit<Fr>,
+    ) -> MockProver<Fr> {
         MockProver::run(17, circuit, vec![expected_output_fields.clone()]).unwrap()
     }
 
-    pub fn create_circuit_for_inputs(input_values: Vec<Value<Fr>>, input_size: usize, key_values: Vec<Value<Fr>>, key_size: usize, output_size: usize) -> Blake2bCircuit<Fr> {
+    pub fn create_circuit_for_inputs(
+        input_values: Vec<Value<Fr>>,
+        input_size: usize,
+        key_values: Vec<Value<Fr>>,
+        key_size: usize,
+        output_size: usize,
+    ) -> Blake2bCircuit<Fr> {
         Blake2bCircuit::<Fr>::new_for(input_values, input_size, key_values, key_size, output_size)
     }
 
-    pub fn prepare_parameters_for_test(input: &String, key: &String, expected: &String) -> (Vec<Value<Fr>>, usize, Vec<Value<Fr>>, usize, [Fr; 64], usize) {
+    pub fn prepare_parameters_for_test(
+        input: &String,
+        key: &String,
+        expected: &String,
+    ) -> (Vec<Value<Fr>>, usize, Vec<Value<Fr>>, usize, [Fr; 64], usize) {
         // INPUT
         let input_size = input.len() / 2; // Amount of bytes
         let input_bytes = hex::decode(input).expect("Invalid hex string");
@@ -58,8 +77,12 @@ impl CircuitRunner {
 
         // OUTPUT
         let (expected_output, output_size) = Self::formed_output_block_for(expected);
-        let expected_output_fields: [Fr; 64] =
-            expected_output.iter().map(|x| Fr::from(*x as u64)).collect::<Vec<_>>().try_into().unwrap();
+        let expected_output_fields: [Fr; 64] = expected_output
+            .iter()
+            .map(|x| Fr::from(*x as u64))
+            .collect::<Vec<_>>()
+            .try_into()
+            .unwrap();
 
         // KEY
         let key_size = key.len() / 2; // Amount of bytes
@@ -79,20 +102,27 @@ impl CircuitRunner {
 
 /// Circuit runner methods for Real Prover
 impl CircuitRunner {
-    pub fn real_preprocess_inputs_sintesize_prove_and_verify(input: String, out: String, key: String) {
-        let (input_values,
+    pub fn real_preprocess_inputs_sintesize_prove_and_verify(
+        input: String,
+        out: String,
+        key: String,
+    ) {
+        let (input_values, input_size, key_values, key_size, expected_output_fields, output_size) =
+            Self::prepare_parameters_for_test(&input, &key, &out);
+
+        let circuit: Blake2bCircuit<Fr> = Self::create_circuit_for_inputs(
+            input_values,
             input_size,
             key_values,
             key_size,
-            expected_output_fields,
-            output_size) = Self::prepare_parameters_for_test(&input, &key, &out);
-
-        let circuit: Blake2bCircuit<Fr> = Self::create_circuit_for_inputs(input_values, input_size, key_values, key_size, output_size);
+            output_size,
+        );
 
         let params = ParamsKZG::<Bn256>::unsafe_setup(17, &mut rand::thread_rng());
-        let vk: VerifyingKey<Fr, KZGCommitmentScheme<Bn256>> = keygen_vk_with_k(&params, &circuit, 17).expect("Verifying key should be created");
-        let pk: ProvingKey<Fr, KZGCommitmentScheme<Bn256>>= keygen_pk(vk.clone(), &circuit).expect("Proving key should be created");
-
+        let vk: VerifyingKey<Fr, KZGCommitmentScheme<Bn256>> =
+            keygen_vk_with_k(&params, &circuit, 17).expect("Verifying key should be created");
+        let pk: ProvingKey<Fr, KZGCommitmentScheme<Bn256>> =
+            keygen_pk(vk.clone(), &circuit).expect("Proving key should be created");
 
         let mut transcript = CircuitTranscript::init();
         create_proof(
@@ -102,7 +132,8 @@ impl CircuitRunner {
             &[&[&expected_output_fields]],
             rand::thread_rng(),
             &mut transcript,
-        ).expect("Proof generation should work");
+        )
+        .expect("Proof generation should work");
 
         let proof = transcript.finalize();
 
@@ -113,9 +144,8 @@ impl CircuitRunner {
             &[&[&expected_output_fields]],
             &mut transcript,
         )
-            .unwrap()
-            .verify(&params.verifier_params())
-            .is_ok());
+        .unwrap()
+        .verify(&params.verifier_params())
+        .is_ok());
     }
 }
-

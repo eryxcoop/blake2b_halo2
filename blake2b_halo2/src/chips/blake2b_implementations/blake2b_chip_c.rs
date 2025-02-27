@@ -11,7 +11,6 @@ use halo2_proofs::circuit::{AssignedCell, Layouter, Value};
 use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Fixed, Instance};
 use num_bigint::BigUint;
 
-
 type AdditionChip<F> = AdditionMod64Chip<F, 8, 10>;
 
 use crate::chips::xor_chip_spread::XorChipSpread;
@@ -188,8 +187,7 @@ impl<F: PrimeField> Blake2bChipC<F> {
         // state[0] = state[0] ^ 0x01010000 ^ (key.len() << 8) as u64 ^ outlen as u64;
         global_state[0] = self.xor(&global_state[0], &init_const_state_0, region, offset);
         global_state[0] = self.xor(&global_state[0], &output_size_constant, region, offset);
-        global_state[0] =
-            self.xor(&global_state[0], &key_size_constant_shifted, region, offset);
+        global_state[0] = self.xor(&global_state[0], &key_size_constant_shifted, region, offset);
         Ok(global_state)
     }
 
@@ -396,8 +394,7 @@ impl<F: PrimeField> Blake2bChipC<F> {
         // accumulative_state[12] ^= processed_bytes_count
         let processed_bytes_count_cell =
             self.new_row_from_value(processed_bytes_count, region, row_offset)?;
-        state[12] =
-            self.xor(&state[12], &processed_bytes_count_cell, region, row_offset);
+        state[12] = self.xor(&state[12], &processed_bytes_count_cell, region, row_offset);
         // accumulative_state[13] ^= ctx.processed_bytes_count[1]; This is 0 so we ignore it
 
         if is_last_block {
@@ -423,14 +420,8 @@ impl<F: PrimeField> Blake2bChipC<F> {
 
         let mut global_state_bytes = Vec::new();
         for i in 0..8 {
-            global_state[i] =
-                self.xor(&global_state[i], &state[i], region, row_offset);
-            let row = self.xor_with_full_rows(
-                &global_state[i],
-                &state[i + 8],
-                region,
-                row_offset,
-            );
+            global_state[i] = self.xor(&global_state[i], &state[i], region, row_offset);
+            let row = self.xor_with_full_rows(&global_state[i], &state[i + 8], region, row_offset);
             global_state_bytes.extend_from_slice(&row[1..]);
             global_state[i] = row[0].clone();
         }
@@ -684,7 +675,8 @@ impl<F: PrimeField> Blake2bChipC<F> {
     ) -> AssignedCell<F, F> {
         self.addition_chip
             .generate_addition_rows_from_cells(region, offset, lhs, rhs, &mut self.decompose_8_chip)
-            .unwrap()[0].clone()
+            .unwrap()[0]
+            .clone()
     }
 
     /// Sometimes we can reutilice an output row to be the input row of the next operation. This is
@@ -697,8 +689,15 @@ impl<F: PrimeField> Blake2bChipC<F> {
         offset: &mut usize,
     ) -> AssignedCell<F, F> {
         self.addition_chip
-            .generate_addition_rows_from_cells_optimized(region, offset, previous_cell, cell_to_copy, &mut self.decompose_8_chip)
-            .unwrap()[0].clone()
+            .generate_addition_rows_from_cells_optimized(
+                region,
+                offset,
+                previous_cell,
+                cell_to_copy,
+                &mut self.decompose_8_chip,
+            )
+            .unwrap()[0]
+            .clone()
     }
 
     fn not(

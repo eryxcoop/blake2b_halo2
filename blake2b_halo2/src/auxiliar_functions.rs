@@ -110,4 +110,3 @@ pub(crate) fn rotate_right_field_element<F: PrimeField>(
         | ((value_to_rotate as u128) << (64 - rotation_degree));
     F::from(rotated_value as u64)
 }
-

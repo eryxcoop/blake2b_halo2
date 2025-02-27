@@ -13,20 +13,26 @@ fn criterion_benchmark(c: &mut Criterion) {
 
     for amount_of_blocks in 0..5 {
         group.throughput(Throughput::Bytes(amount_of_blocks));
-        let (input, input_size, output_size, key_size, key,
-            expected_output_state) = _random_input_for_desired_blocks(amount_of_blocks as usize);
+        let (input, input_size, output_size, key_size, key, expected_output_state) =
+            _random_input_for_desired_blocks(amount_of_blocks as usize);
 
-        let circuit = CircuitRunner::create_circuit_for_inputs(input, input_size, key, key_size, output_size);
-        let func = || CircuitRunner::mock_prove_with_public_inputs_ref(&expected_output_state, &circuit);
+        let circuit =
+            CircuitRunner::create_circuit_for_inputs(input, input_size, key, key_size, output_size);
+        let func =
+            || CircuitRunner::mock_prove_with_public_inputs_ref(&expected_output_state, &circuit);
 
-        group.bench_with_input(BenchmarkId::from_parameter(amount_of_blocks), &amount_of_blocks, |b, &_size| {
-            b.iter(func)
-        });
+        group.bench_with_input(
+            BenchmarkId::from_parameter(amount_of_blocks),
+            &amount_of_blocks,
+            |b, &_size| b.iter(func),
+        );
     }
     group.finish()
 }
 
-fn _random_input_for_desired_blocks(amount_of_blocks: usize) -> (Vec<Value<Fr>>, usize, usize, usize, Vec<Value<Fr>>, Vec<Fr>) {
+fn _random_input_for_desired_blocks(
+    amount_of_blocks: usize,
+) -> (Vec<Value<Fr>>, usize, usize, usize, Vec<Value<Fr>>, Vec<Fr>) {
     let mut rng = rand::thread_rng();
     let input_size = amount_of_blocks * 128;
 
@@ -40,7 +46,8 @@ fn _random_input_for_desired_blocks(amount_of_blocks: usize) -> (Vec<Value<Fr>>,
     // Values for calling the Halo2 algorithm
     let output_size = 1;
     let expected_output = vec![Fr::from(buffer_out[0] as u64)];
-    let mut input_values: Vec<Value<Fr>> = random_inputs.iter().map(|x| value_for(*x as u64)).collect();
+    let mut input_values: Vec<Value<Fr>> =
+        random_inputs.iter().map(|x| value_for(*x as u64)).collect();
     let key_size = 0;
     let key_values: Vec<Value<Fr>> = vec![];
 
