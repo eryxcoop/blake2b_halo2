@@ -7,11 +7,11 @@ use rand::Rng;
 use blake2b_halo2::auxiliar_functions::value_for;
 
 fn criterion_benchmark(c: &mut Criterion) {
-    let mut group = c.benchmark_group("Single optimization");
-    group.sample_size(20);
+    let mut group = c.benchmark_group("optimization comparison");
+    group.sample_size(10);
     group.measurement_time(Duration::from_secs(60));
 
-    for amount_of_blocks in 1..5 {
+    for amount_of_blocks in [1,5,10,15,20,25,30] {
         group.throughput(Throughput::Bytes(amount_of_blocks));
         let (input, input_size, output_size, key_size, key, expected_output_state) =
             _random_input_for_desired_blocks(amount_of_blocks as usize);
