@@ -1,72 +1,71 @@
 use std::time::Duration;
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+use criterion::{criterion_group, criterion_main, BatchSize, BenchmarkGroup, BenchmarkId, Criterion, Throughput};
+use criterion::measurement::WallTime;
 use halo2_proofs::circuit::Value;
 use halo2_proofs::halo2curves::bn256::Fr;
-use blake2b_halo2::circuit_runner::CircuitRunner;
+use blake2b_halo2::circuit_runner::{Blake2bCircuitInputs, CircuitRunner};
 use rand::Rng;
 use blake2b_halo2::auxiliar_functions::value_for;
+use blake2b_halo2::chips::blake2b_implementations::blake2b_chip_a::Blake2bChipA;
+use blake2b_halo2::chips::blake2b_implementations::blake2b_chip_b::Blake2bChipB;
+use blake2b_halo2::chips::blake2b_implementations::blake2b_chip_c::Blake2bChipC;
+use blake2b_halo2::chips::blake2b_implementations::blake2b_chip_optimization::Blake2bChipOptimization;
 
 fn criterion_benchmark(c: &mut Criterion) {
-    let mut group = c.benchmark_group("optimization comparison");
-    group.sample_size(10);
+    let mut group = c.benchmark_group("optimization_comparison_");
+    group.sample_size(30);
     group.measurement_time(Duration::from_secs(60));
 
-    for amount_of_blocks in [1,5,10,15,20,25,30] {
-        group.throughput(Throughput::Bytes(amount_of_blocks));
-        let (input, input_size, output_size, key_size, key, expected_output_state) =
-            _random_input_for_desired_blocks(amount_of_blocks as usize);
+    for amount_of_blocks in [1usize,5,10,15,20] {
+        group.throughput(Throughput::Bytes(amount_of_blocks as u64));
 
-        let circuit_a = CircuitRunner::create_circuit_for_inputs_optimization_a(input.clone(), input_size, key.clone(), key_size, output_size);
-        let func_a = || CircuitRunner::mock_prove_with_public_inputs_ref(&expected_output_state, &circuit_a);
-
-        let circuit_b = CircuitRunner::create_circuit_for_inputs_optimization_b(input.clone(), input_size, key.clone(), key_size, output_size);
-        let func_b = || CircuitRunner::mock_prove_with_public_inputs_ref(&expected_output_state, &circuit_b);
-
-        let circuit_c = CircuitRunner::create_circuit_for_inputs_optimization_c(input, input_size, key, key_size, output_size);
-        let func_c = || CircuitRunner::mock_prove_with_public_inputs_ref(&expected_output_state, &circuit_c);
-
-
-        group.bench_with_input(
-            BenchmarkId::new("Optimization A", amount_of_blocks),
-            &amount_of_blocks,
-            |b, &_size| b.iter(func_a),
-        );
-        group.bench_with_input(
-            BenchmarkId::new("Optimization B", amount_of_blocks),
-            &amount_of_blocks,
-            |b, &_size| b.iter(func_b),
-        );
-        group.bench_with_input(
-            BenchmarkId::new("Optimization C", amount_of_blocks),
-            &amount_of_blocks,
-            |b, &_size| b.iter(func_c),
-        );
+        benchmark_optimization_with_amount_of_blocks::<Blake2bChipA<Fr>>(&mut group, amount_of_blocks, "A");
+        benchmark_optimization_with_amount_of_blocks::<Blake2bChipB<Fr>>(&mut group, amount_of_blocks, "B");
+        benchmark_optimization_with_amount_of_blocks::<Blake2bChipC<Fr>>(&mut group, amount_of_blocks, "C");
     }
     group.finish()
 }
 
+fn benchmark_optimization_with_amount_of_blocks<OptimizationChip: Blake2bChipOptimization<Fr>>(
+    group: &mut BenchmarkGroup<WallTime>,
+    amount_of_blocks: usize,
+    optimization_name: &str)
+{
+    group.bench_function(
+        BenchmarkId::new(optimization_name, amount_of_blocks),
+        |b| b.iter_batched(
+            || {
+                let ci = _random_input_for_desired_blocks(amount_of_blocks);
+                let circuit = CircuitRunner::create_circuit_for_inputs_optimization::<OptimizationChip>(ci.clone());
+                (circuit, ci.4)
+            },
+            |(circuit, expected)| CircuitRunner::mock_prove_with_public_inputs_ref(&expected, &circuit),
+            BatchSize::SmallInput
+        ),
+    );
+}
+
 fn _random_input_for_desired_blocks(
     amount_of_blocks: usize,
-) -> (Vec<Value<Fr>>, usize, usize, usize, Vec<Value<Fr>>, Vec<Fr>) {
+) -> Blake2bCircuitInputs {
     let mut rng = rand::thread_rng();
-    let input_size = amount_of_blocks * 128;
 
-    // Bytes for calling the Rust algorithm
+    let input_size = amount_of_blocks * 128;
+    const OUTPUT_SIZE: usize = 64;
     let mut random_inputs: Vec<u8> = (0..input_size).map(|_| rng.gen_range(0..=255)).collect();
     let mut key_u8: Vec<u8> = vec![];
-    let mut buffer_out = vec![0u8; 1];
+    let mut buffer_out = vec![0u8; OUTPUT_SIZE];
 
     rust_implementation::blake2b(&mut buffer_out, &mut key_u8, &mut random_inputs);
 
-    // Values for calling the Halo2 algorithm
-    let output_size = 1;
-    let expected_output = vec![Fr::from(buffer_out[0] as u64)];
-    let mut input_values: Vec<Value<Fr>> =
+    let expected_output_: Vec<Fr> = buffer_out.iter().map(|byte| Fr::from(*byte as u64)).collect();
+    let expected_output: [Fr; OUTPUT_SIZE] = expected_output_.try_into().unwrap();
+    let input_values: Vec<Value<Fr>> =
         random_inputs.iter().map(|x| value_for(*x as u64)).collect();
     let key_size = 0;
     let key_values: Vec<Value<Fr>> = vec![];
 
-    (input_values, input_size, output_size, key_size, key_values, expected_output)
+    (input_values, input_size, key_values, key_size, expected_output, OUTPUT_SIZE)
 }
 
 criterion_group!(benches, criterion_benchmark);
