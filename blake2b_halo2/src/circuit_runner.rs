@@ -18,7 +18,7 @@ use crate::chips::blake2b_implementations::blake2b_chip_c::Blake2bChipC;
 use crate::chips::blake2b_implementations::blake2b_chip_optimization::Blake2bChipOptimization;
 
 type Blake2bCircuit<F> = Blake2bCircuitGeneric<F, Blake2bChip<F>>;
-type Blake2bCircuitInputs = (Vec<Value<Fr>>, usize, Vec<Value<Fr>>, usize, [Fr; 64], usize);
+pub type Blake2bCircuitInputs = (Vec<Value<Fr>>, usize, Vec<Value<Fr>>, usize, [Fr; 64], usize);
 
 pub struct CircuitRunner;
 
@@ -71,34 +71,19 @@ impl CircuitRunner {
         Blake2bCircuit::<Fr>::new_for(input_values, input_size, key_values, key_size, output_size)
     }
 
-    pub fn create_circuit_for_inputs_optimization_a(
-        input_values: Vec<Value<Fr>>,
-        input_size: usize,
-        key_values: Vec<Value<Fr>>,
-        key_size: usize,
-        output_size: usize,
-    ) -> Blake2bCircuitGeneric<Fr, Blake2bChipA<Fr>> {
-        Blake2bCircuitGeneric::<Fr, Blake2bChipA<Fr>>::new_for(input_values, input_size, key_values, key_size, output_size)
+    pub fn create_circuit_for_inputs_optimization_a(ci: Blake2bCircuitInputs)
+            -> Blake2bCircuitGeneric<Fr, Blake2bChipA<Fr>> {
+        Blake2bCircuitGeneric::<Fr, Blake2bChipA<Fr>>::new_for(ci.0, ci.1, ci.2, ci.3, ci.5)
     }
 
-    pub fn create_circuit_for_inputs_optimization_b(
-        input_values: Vec<Value<Fr>>,
-        input_size: usize,
-        key_values: Vec<Value<Fr>>,
-        key_size: usize,
-        output_size: usize,
-    ) -> Blake2bCircuitGeneric<Fr, Blake2bChipB<Fr>> {
-        Blake2bCircuitGeneric::<Fr, Blake2bChipB<Fr>>::new_for(input_values, input_size, key_values, key_size, output_size)
+    pub fn create_circuit_for_inputs_optimization_b(ci: Blake2bCircuitInputs)
+            -> Blake2bCircuitGeneric<Fr, Blake2bChipB<Fr>> {
+        Blake2bCircuitGeneric::<Fr, Blake2bChipB<Fr>>::new_for(ci.0, ci.1, ci.2, ci.3, ci.5)
     }
 
-    pub fn create_circuit_for_inputs_optimization_c(
-        input_values: Vec<Value<Fr>>,
-        input_size: usize,
-        key_values: Vec<Value<Fr>>,
-        key_size: usize,
-        output_size: usize,
-    ) -> Blake2bCircuitGeneric<Fr, Blake2bChipC<Fr>> {
-        Blake2bCircuitGeneric::<Fr, Blake2bChipC<Fr>>::new_for(input_values, input_size, key_values, key_size, output_size)
+    pub fn create_circuit_for_inputs_optimization_c(ci: Blake2bCircuitInputs)
+            -> Blake2bCircuitGeneric<Fr, Blake2bChipC<Fr>> {
+        Blake2bCircuitGeneric::<Fr, Blake2bChipC<Fr>>::new_for(ci.0, ci.1, ci.2, ci.3, ci.5)
     }
 
     pub fn prepare_parameters_for_test(
