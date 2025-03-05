@@ -67,7 +67,7 @@ impl<F: PrimeField, const T: usize, const R: usize> AdditionMod64Config<F, T, R>
         &mut self,
         layouter: &mut impl Layouter<F>,
         addition_trace: [[Value<F>; R]; 3],
-        decompose_chip: &mut impl Decomposition<F, T>,
+        decompose_config: &mut impl Decomposition<F, T>,
     ) -> Result<(), Error>{
 
         layouter.assign_region(
@@ -79,19 +79,19 @@ impl<F: PrimeField, const T: usize, const R: usize> AdditionMod64Config<F, T, R>
                     &mut region,
                     addition_trace[0].to_vec(),
                     0,
-                    decompose_chip,
+                    decompose_config,
                 )?;
                 self.populate_row_from_values(
                     &mut region,
                     addition_trace[1].to_vec(),
                     1,
-                    decompose_chip,
+                    decompose_config,
                 )?;
                 self.populate_row_from_values(
                     &mut region,
                     addition_trace[2].to_vec(),
                     2,
-                    decompose_chip,
+                    decompose_config,
                 )
             },
         )?;
@@ -107,16 +107,16 @@ impl<F: PrimeField, const T: usize, const R: usize> AdditionMod64Config<F, T, R>
         offset: &mut usize,
         cell_a: &AssignedCell<F, F>,
         cell_b: &AssignedCell<F, F>,
-        decompose_chip: &mut impl Decomposition<F, T>,
+        decompose_config: &mut impl Decomposition<F, T>,
     ) -> Result<[AssignedCell<F, F>; 2], Error> {
         let (result_value, carry_value) = Self::calculate_result_and_carry(cell_a.value(), cell_b.value());
 
         self.q_add.enable(region, *offset)?;
-        decompose_chip.generate_row_from_cell(region, cell_a, *offset)?;
+        decompose_config.generate_row_from_cell(region, cell_a, *offset)?;
         *offset += 1;
-        decompose_chip.generate_row_from_cell(region, cell_b, *offset)?;
+        decompose_config.generate_row_from_cell(region, cell_b, *offset)?;
         *offset += 1;
-        let result_cell = decompose_chip.generate_row_from_value(region, result_value, *offset)?;
+        let result_cell = decompose_config.generate_row_from_value(region, result_value, *offset)?;
         let carry_cell = region.assign_advice(|| "carry", self.carry, *offset, || carry_value)?;
         *offset += 1;
         Ok([result_cell, carry_cell])
@@ -131,15 +131,15 @@ impl<F: PrimeField, const T: usize, const R: usize> AdditionMod64Config<F, T, R>
         offset: &mut usize,
         previous_cell: &AssignedCell<F, F>,
         cell_to_copy: &AssignedCell<F, F>,
-        decompose_chip: &mut impl Decomposition<F, T>,
+        decompose_config: &mut impl Decomposition<F, T>,
     ) -> Result<[AssignedCell<F, F>; 2], Error> {
         let (result_value, carry_value) =
             Self::calculate_result_and_carry(previous_cell.value(), cell_to_copy.value());
 
         self.q_add.enable(region, *offset - 1)?;
-        decompose_chip.generate_row_from_cell(region, cell_to_copy, *offset)?;
+        decompose_config.generate_row_from_cell(region, cell_to_copy, *offset)?;
         *offset += 1;
-        let result_cell = decompose_chip.generate_row_from_value(region, result_value, *offset)?;
+        let result_cell = decompose_config.generate_row_from_value(region, result_value, *offset)?;
         let carry_cell = region.assign_advice(|| "carry", self.carry, *offset, || carry_value)?;
         *offset += 1;
         Ok([result_cell, carry_cell])
@@ -164,9 +164,9 @@ impl<F: PrimeField, const T: usize, const R: usize> AdditionMod64Config<F, T, R>
         region: &mut Region<F>,
         row: Vec<Value<F>>,
         offset: usize,
-        decompose_chip: &mut impl Decomposition<F, T>,
+        decompose_config: &mut impl Decomposition<F, T>,
     ) -> Result<(), Error> {
-        decompose_chip.populate_row_from_values(region, row.clone(), offset)?;
+        decompose_config.populate_row_from_values(region, row.clone(), offset)?;
         region.assign_advice(|| "carry", self.carry, offset, || row[R - 1])?;
         Ok(())
     }

@@ -1,5 +1,5 @@
 use super::*;
-use crate::chips::decompose_8_chip::Decompose8Chip;
+use crate::chips::decompose_8::Decompose8Config;
 use crate::chips::generic_limb_rotation_chip::LimbRotationChip;
 use ff::PrimeField;
 use halo2_proofs::circuit::SimpleFloorPlanner;
@@ -40,7 +40,7 @@ impl<F: PrimeField, const T: usize> Circuit<F> for LimbRotationCircuit<F, T> {
             column
         });
 
-        let decompose_8_chip = Decompose8Chip::configure(meta, full_number_u64, limbs);
+        let decompose_8_chip = Decompose8Config::configure(meta, full_number_u64, limbs);
 
         let limb_rotation_chip = LimbRotationChip::new();
 

@@ -1,7 +1,7 @@
 use std::array;
 use halo2_proofs::circuit::AssignedCell;
 use crate::auxiliar_functions::{value_for};
-use crate::chips::decompose_8_chip::Decompose8Chip;
+use crate::chips::decompose_8::Decompose8Config;
 use super::*;
 
 #[derive(Clone, Debug)]
@@ -133,7 +133,7 @@ impl<F: PrimeField> XorChipSpread<F> {
         offset: &mut usize,
         previous_cell: &AssignedCell<F, F>,
         cell_to_copy: &AssignedCell<F, F>,
-        decompose_8_chip: &mut Decompose8Chip<F>,
+        decompose_8_chip: &mut Decompose8Config<F>,
         use_previous_cell: bool,
     ) -> Result<[AssignedCell<F, F>; 9], Error> {
         let value_lhs = previous_cell.value().copied();

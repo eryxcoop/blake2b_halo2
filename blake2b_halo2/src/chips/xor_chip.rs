@@ -1,5 +1,5 @@
 use super::*;
-use crate::chips::decompose_8_chip::Decompose8Chip;
+use crate::chips::decompose_8::Decompose8Config;
 use halo2_proofs::circuit::AssignedCell;
 
 /// This chip handles the xor operation in the trace. Requires a representation in 8-bit limbs
@@ -106,7 +106,7 @@ impl<F: PrimeField> XorChip<F> {
         &mut self,
         layouter: &mut impl Layouter<F>,
         xor_trace: [[Value<F>; 9]; 3],
-        decompose_8_chip: &mut Decompose8Chip<F>,
+        decompose_8_chip: &mut Decompose8Config<F>,
     ) -> Result<(), Error> {
         layouter.assign_region(
             || "xor",
@@ -136,7 +136,7 @@ impl<F: PrimeField> XorChip<F> {
         offset: &mut usize,
         previous_cell: &AssignedCell<F, F>,
         cell_to_copy: &AssignedCell<F, F>,
-        decompose_8_chip: &mut Decompose8Chip<F>,
+        decompose_8_chip: &mut Decompose8Config<F>,
         use_previous_cell: bool,
     ) -> Result<[AssignedCell<F, F>; 9], Error> {
         let value_a = previous_cell.value().copied();

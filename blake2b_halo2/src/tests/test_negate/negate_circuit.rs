@@ -1,5 +1,5 @@
 use super::*;
-use crate::chips::decompose_8_chip::Decompose8Chip;
+use crate::chips::decompose_8::Decompose8Config;
 use crate::chips::negate_chip::NegateChip;
 use ff::PrimeField;
 use halo2_proofs::circuit::{Layouter, SimpleFloorPlanner, Value};
@@ -17,7 +17,7 @@ pub struct NegateCircuit<F: PrimeField> {
 pub struct NegateCircuitConfig<F: PrimeField> {
     _ph: PhantomData<F>,
     negate_chip: NegateChip<F>,
-    decompose_8_chip: Decompose8Chip<F>,
+    decompose_8_chip: Decompose8Config<F>,
     fixed_result: Column<Fixed>,
 }
 
@@ -38,7 +38,7 @@ impl<F: PrimeField> Circuit<F> for NegateCircuit<F> {
         let full_number_u64 = meta.advice_column();
         let limbs: [Column<Advice>; 8] = array::from_fn(|_| meta.advice_column());
 
-        let decompose_8_chip = Decompose8Chip::configure(meta, full_number_u64, limbs);
+        let decompose_8_chip = Decompose8Config::configure(meta, full_number_u64, limbs);
 
         let negate_chip = NegateChip::<F>::configure(meta, full_number_u64);
 

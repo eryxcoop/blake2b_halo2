@@ -1,11 +1,10 @@
 use super::*;
 use halo2_proofs::circuit::AssignedCell;
 
-/// This chip handles the decomposition of 64-bit numbers into 8-bit limbs in the trace
-// Same - this is the config. Please change it across the rest of the codebase.
+/// This config handles the decomposition of 64-bit numbers into 8-bit limbs in the trace
 #[derive(Clone, Debug)]
-pub struct Decompose8Chip<F: PrimeField> {
-    /// The full number and the limbs are not owned by the chip.
+pub struct Decompose8Config<F: PrimeField> {
+    /// The full number and the limbs are not owned by the config.
     full_number_u64: Column<Advice>,
     /// There are 8 limbs of 8 bits each
     limbs: [Column<Advice>; 8],
@@ -17,13 +16,13 @@ pub struct Decompose8Chip<F: PrimeField> {
     _ph: PhantomData<F>,
 }
 
-impl<F: PrimeField> Decomposition<F, 8> for Decompose8Chip<F> {
+impl<F: PrimeField> Decomposition<F, 8> for Decompose8Config<F> {
     const LIMB_SIZE: usize = 8;
     fn range_table_column(&self) -> TableColumn {
         self.t_range
     }
 
-    /// The full number and the limbs are not owned by the chip.
+    /// The full number and the limbs are not owned by the config.
     fn configure(
         meta: &mut ConstraintSystem<F>,
         full_number_u64: Column<Advice>,

@@ -1,5 +1,5 @@
 use super::*;
-use crate::chips::decompose_8_chip::Decompose8Chip;
+use crate::chips::decompose_8::Decompose8Config;
 use ff::{Field, PrimeField};
 use halo2_proofs::circuit::{AssignedCell, Layouter, Value};
 use std::marker::PhantomData;
@@ -31,7 +31,7 @@ impl<F: PrimeField> LimbRotationChip<F> {
     pub fn populate_rotation_rows(
         &self,
         layouter: &mut impl Layouter<F>,
-        decompose_chip: &mut Decompose8Chip<F>,
+        decompose_chip: &mut Decompose8Config<F>,
         trace: [[Value<F>; 9]; 2],
         limb_rotations_right: usize,
     ) -> Result<(), Error> {

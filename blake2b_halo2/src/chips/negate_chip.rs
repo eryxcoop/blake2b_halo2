@@ -1,6 +1,6 @@
 use super::*;
 use crate::auxiliar_functions::field_for;
-use crate::chips::decompose_8_chip::Decompose8Chip;
+use crate::chips::decompose_8::Decompose8Config;
 use halo2_proofs::circuit::AssignedCell;
 
 #[derive(Clone, Debug)]
@@ -37,7 +37,7 @@ impl<F: PrimeField> NegateChip<F> {
         region: &mut Region<F>,
         offset: &mut usize,
         input: &AssignedCell<F, F>,
-        decompose_chip: &mut Decompose8Chip<F>,
+        decompose_chip: &mut Decompose8Config<F>,
     ) -> Result<AssignedCell<F, F>, Error> {
         let value = input.value().copied();
         self.generate_rows(region, offset, value, decompose_chip)
@@ -50,7 +50,7 @@ impl<F: PrimeField> NegateChip<F> {
         region: &mut Region<F>,
         offset: &mut usize,
         value: Value<F>,
-        decompose_chip: &mut Decompose8Chip<F>,
+        decompose_chip: &mut Decompose8Config<F>,
     ) -> Result<AssignedCell<F, F>, Error> {
         self.q_negate.enable(region, *offset)?;
         let result_value =

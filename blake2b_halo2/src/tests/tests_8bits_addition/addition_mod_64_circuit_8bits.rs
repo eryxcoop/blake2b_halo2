@@ -1,5 +1,5 @@
 use super::*;
-use crate::chips::decompose_8_chip::Decompose8Chip;
+use crate::chips::decompose_8::Decompose8Config;
 use halo2_proofs::circuit::SimpleFloorPlanner;
 use halo2_proofs::plonk::Circuit;
 use std::array;
@@ -11,8 +11,8 @@ pub struct AdditionMod64Circuit8Bits<F: Field> {
 
 #[derive(Clone, Debug)]
 pub struct AdditionMod64Config8Bits<F: PrimeField + Clone> {
-    sum_8bits_chip: AdditionConfigWith8Limbs<F>,
-    decompose_8_chip: Decompose8Chip<F>,
+    sum_8bits_config: AdditionConfigWith8Limbs<F>,
+    decompose_8_config: Decompose8Config<F>,
     _ph: PhantomData<F>,
 }
 
@@ -33,14 +33,14 @@ impl<F: PrimeField> Circuit<F> for AdditionMod64Circuit8Bits<F> {
         let limbs: [Column<Advice>; 8] = array::from_fn(|_| meta.advice_column());
         let carry = meta.advice_column();
 
-        let decompose_8_chip = Decompose8Chip::configure(meta, full_number_u64, limbs);
+        let decompose_8_config = Decompose8Config::configure(meta, full_number_u64, limbs);
 
-        let sum_8bits_chip = AdditionConfigWith8Limbs::<F>::configure(meta, full_number_u64, carry);
+        let sum_8bits_config = AdditionConfigWith8Limbs::<F>::configure(meta, full_number_u64, carry);
 
         Self::Config {
             _ph: PhantomData,
-            decompose_8_chip,
-            sum_8bits_chip,
+            decompose_8_config,
+            sum_8bits_config,
         }
     }
 
@@ -50,11 +50,11 @@ impl<F: PrimeField> Circuit<F> for AdditionMod64Circuit8Bits<F> {
         mut config: Self::Config,
         mut layouter: impl Layouter<F>,
     ) -> Result<(), Error> {
-        config.decompose_8_chip.populate_lookup_table(&mut layouter)?;
-        config.sum_8bits_chip.populate_addition_rows(
+        config.decompose_8_config.populate_lookup_table(&mut layouter)?;
+        config.sum_8bits_config.populate_addition_rows(
             &mut layouter,
             self.trace,
-            &mut config.decompose_8_chip,
+            &mut config.decompose_8_config,
         )?;
         Ok(())
     }
