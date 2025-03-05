@@ -12,16 +12,16 @@ use blake2b_halo2::chips::blake2b_implementations::blake2b_chip_c::Blake2bChipC;
 use blake2b_halo2::chips::blake2b_implementations::blake2b_chip_optimization::Blake2bChipOptimization;
 
 fn criterion_benchmark(c: &mut Criterion) {
-    let mut group = c.benchmark_group("optimization_comparison_");
+    let mut group = c.benchmark_group("optimization_comparison");
     group.sample_size(30);
     group.measurement_time(Duration::from_secs(60));
 
     for amount_of_blocks in [1usize,5,10,15,20] {
         group.throughput(Throughput::Bytes(amount_of_blocks as u64));
 
-        benchmark_optimization_with_amount_of_blocks::<Blake2bChipA<Fr>>(&mut group, amount_of_blocks, "A");
-        benchmark_optimization_with_amount_of_blocks::<Blake2bChipB<Fr>>(&mut group, amount_of_blocks, "B");
-        benchmark_optimization_with_amount_of_blocks::<Blake2bChipC<Fr>>(&mut group, amount_of_blocks, "C");
+        benchmark_optimization_with_amount_of_blocks::<Blake2bChipA<Fr>>(&mut group, amount_of_blocks, "opt_4_limbs");
+        benchmark_optimization_with_amount_of_blocks::<Blake2bChipB<Fr>>(&mut group, amount_of_blocks, "opt_recycle");
+        benchmark_optimization_with_amount_of_blocks::<Blake2bChipC<Fr>>(&mut group, amount_of_blocks, "opt_spread");
     }
     group.finish()
 }
