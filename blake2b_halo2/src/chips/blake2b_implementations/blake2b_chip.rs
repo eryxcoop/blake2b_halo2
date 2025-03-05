@@ -1,6 +1,5 @@
 use super::*;
 use crate::auxiliar_functions::{value_for};
-use crate::chips::addition_mod_64_chip::AdditionMod64Chip;
 use crate::chips::decompose_16_chip::Decompose16Chip;
 use crate::chips::decompose_8_chip::Decompose8Chip;
 use crate::chips::decomposition_trait::Decomposition;
@@ -17,10 +16,12 @@ use crate::chips::blake2b_implementations::blake2b_chip_optimization::Blake2bChi
 cfg_if::cfg_if! {
     if #[cfg(feature = "sum_with_8_limbs")] {
         /// Using 8 limbs for the sum operation.
-        type AdditionChip<F> = AdditionMod64Chip<F, 8, 10>;
+        use crate::chips::addition_mod_64_chip::{AdditionChipWith8Limbs};
+        type AdditionChip<F> = AdditionChipWith8Limbs<F>;
     } else if #[cfg(feature = "sum_with_4_limbs")] {
         /// Using 4 limbs for the sum operation.
-        type AdditionChip<F> = AdditionMod64Chip<F, 4, 6>;
+        use crate::chips::addition_mod_64_chip::{AdditionChipWith4Limbs};
+        type AdditionChip<F> = AdditionChipWith4Limbs<F>;
     } else {
         panic!("No feature selected");
     }
@@ -75,9 +76,9 @@ impl <F: PrimeField> Blake2bChipOptimization<F> for Blake2bChip<F> {
             if #[cfg(feature = "sum_with_8_limbs")] {
                 /// An extra carry column is needed for the sum operation with 8 limbs.
                 let carry = meta.advice_column();
-                let addition_chip = AdditionMod64Chip::<F, 8, 10>::configure(meta, full_number_u64, carry);
+                let addition_chip = AdditionChipWith8Limbs::<F>::configure(meta, full_number_u64, carry);
             } else if #[cfg(feature = "sum_with_4_limbs")] {
-                let addition_chip = AdditionMod64Chip::<F, 4, 6>::configure(meta, full_number_u64, limbs[4]);
+                let addition_chip = AdditionChipWith4Limbs::<F>::configure(meta, full_number_u64, limbs[4]);
             } else {
                 panic!("No feature selected");
             }

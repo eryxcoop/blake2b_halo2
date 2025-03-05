@@ -1,6 +1,6 @@
 use super::*;
 use crate::auxiliar_functions::{value_for};
-use crate::chips::addition_mod_64_chip::AdditionMod64Chip;
+use crate::chips::addition_mod_64_chip::{AdditionChipWith4Limbs};
 use crate::chips::decompose_16_chip::Decompose16Chip;
 use crate::chips::decompose_8_chip::Decompose8Chip;
 use crate::chips::decomposition_trait::Decomposition;
@@ -14,7 +14,7 @@ use num_bigint::BigUint;
 use crate::chips::blake2b_implementations::blake2b_chip_optimization::Blake2bChipOptimization;
 use crate::chips::xor_chip::XorChip;
 
-type AdditionChip<F> = AdditionMod64Chip<F, 4, 6>;
+type AdditionChip<F> = AdditionChipWith4Limbs<F>;
 
 const BLAKE2B_BLOCK_SIZE: usize = 128;
 
@@ -47,8 +47,7 @@ impl <F: PrimeField> Blake2bChipOptimization<F> for Blake2bChipA<F> {
         limbs: [Column<Advice>; 8],
     ) -> Self {
         Self::_enforce_modulus_size();
-        let addition_chip =
-            AdditionMod64Chip::<F, 4, 6>::configure(meta, full_number_u64, limbs[4]);
+        let addition_chip = AdditionChipWith4Limbs::<F>::configure(meta, full_number_u64, limbs[4]);
         let decompose_16_chip =
             Decompose16Chip::configure(meta, full_number_u64, limbs[0..4].try_into().unwrap());
         let decompose_8_chip = Decompose8Chip::configure(meta, full_number_u64, limbs);

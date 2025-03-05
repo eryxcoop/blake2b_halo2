@@ -1,6 +1,6 @@
 use super::*;
 use crate::auxiliar_functions::{value_for};
-use crate::chips::addition_mod_64_chip::AdditionMod64Chip;
+use crate::chips::addition_mod_64_chip::{AdditionChipWith8Limbs};
 use crate::chips::decompose_8_chip::Decompose8Chip;
 use crate::chips::decomposition_trait::Decomposition;
 use crate::chips::generic_limb_rotation_chip::LimbRotationChip;
@@ -12,7 +12,7 @@ use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Fixed, Instance};
 use num_bigint::BigUint;
 use crate::chips::blake2b_implementations::blake2b_chip_optimization::Blake2bChipOptimization;
 
-type AdditionChip<F> = AdditionMod64Chip<F, 8, 10>;
+type AdditionChip<F> = AdditionChipWith8Limbs<F>;
 
 use crate::chips::xor_chip_spread::XorChipSpread;
 type XorChip<F> = XorChipSpread<F>;
@@ -50,7 +50,7 @@ impl <F: PrimeField> Blake2bChipOptimization<F> for Blake2bChipC<F> {
 
         /// An extra carry column is needed for the sum operation with 8 limbs.
         let carry = meta.advice_column();
-        let addition_chip = AdditionMod64Chip::<F, 8, 10>::configure(meta, full_number_u64, carry);
+        let addition_chip = AdditionChip::<F>::configure(meta, full_number_u64, carry);
 
         let decompose_8_chip = Decompose8Chip::configure(meta, full_number_u64, limbs);
         let generic_limb_rotation_chip = LimbRotationChip::new();
