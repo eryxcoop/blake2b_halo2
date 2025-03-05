@@ -6,6 +6,10 @@ use halo2_proofs::poly::Rotation;
 /// This trait enables indistinct decomposition of a number into a set of limbs.
 /// T is the amount of limbs that the number will be decomposed into.
 pub trait Decomposition<F: PrimeField, const T: usize> {
+    const LIMB_SIZE: usize;
+
+    fn range_table_column(&self) -> TableColumn;
+
     fn configure(
         meta: &mut ConstraintSystem<F>,
         full_number_u64: Column<Advice>,
@@ -19,14 +23,25 @@ pub trait Decomposition<F: PrimeField, const T: usize> {
         offset: usize,
     ) -> Result<Vec<AssignedCell<F, F>>, Error>;
 
-    fn populate_lookup_table(&self, layouter: &mut impl Layouter<F>) -> Result<(), Error>;
+    /// Populates the table for the range check
+    fn populate_lookup_table(&self, layouter: &mut impl Layouter<F>) -> Result<(), Error>{
+        layouter.assign_table(
+            || format!("range {}-bit check table", Self::LIMB_SIZE),
+            |mut table| {
+                for i in 0..1 << Self::LIMB_SIZE {
+                    table.assign_cell(
+                        || "value",
+                        self.range_table_column(),
+                        i,
+                        || Value::known(F::from(i as u64)),
+                    )?;
+                }
+                Ok(())
+            },
+        )
+    }
 
-    fn _populate_lookup_table(
-        layouter: &mut impl Layouter<F>,
-        lookup_column: TableColumn,
-    ) -> Result<(), Error>;
-
-    fn _range_check_for_limb(
+    fn range_check_for_limb(
         meta: &mut ConstraintSystem<F>,
         limb: &Column<Advice>,
         q_decompose: &Selector,

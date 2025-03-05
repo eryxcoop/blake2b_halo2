@@ -16,7 +16,7 @@ pub trait Blake2bChipOptimization<F: PrimeField>: Clone {
         limbs: [Column<Advice>; 8],
     ) -> Self;
 
-    fn initialize_with(&mut self, layouter: &mut impl Layouter<F>);
+    fn initialize_with(&mut self, layouter: &mut impl Layouter<F>) -> Result<(), Error>;
 
     fn compute_blake2b_hash_for_inputs(
         &mut self,

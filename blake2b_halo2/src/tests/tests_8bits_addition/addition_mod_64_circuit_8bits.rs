@@ -55,7 +55,7 @@ impl<F: PrimeField> Circuit<F> for AdditionMod64Circuit8Bits<F> {
             &mut layouter,
             self.trace,
             &mut config.decompose_8_chip,
-        );
+        )?;
         Ok(())
     }
 }

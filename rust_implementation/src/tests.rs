@@ -29,7 +29,7 @@ fn run_test(input: &str, key: &str, expected: &str) {
     let mut buffer_out: Vec<u8> = Vec::new();
     buffer_out.resize(expected_out.len(), 0);
 
-    let _ = blake2b(&mut buffer_out, &mut key, &mut input_message);
+    blake2b(&mut buffer_out, &mut key, &mut input_message);
 
     assert_eq!(
         buffer_out, expected_out,

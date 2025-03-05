@@ -35,7 +35,7 @@ fn benchmark_optimization_with_amount_of_blocks<OptimizationChip: Blake2bChipOpt
         BenchmarkId::new(optimization_name, amount_of_blocks),
         |b| b.iter_batched(
             || {
-                let ci = _random_input_for_desired_blocks(amount_of_blocks);
+                let ci = random_input_for_desired_blocks(amount_of_blocks);
                 let circuit = CircuitRunner::create_circuit_for_inputs_optimization::<OptimizationChip>(ci.clone());
                 (circuit, ci.4)
             },
@@ -45,7 +45,7 @@ fn benchmark_optimization_with_amount_of_blocks<OptimizationChip: Blake2bChipOpt
     );
 }
 
-fn _random_input_for_desired_blocks(
+fn random_input_for_desired_blocks(
     amount_of_blocks: usize,
 ) -> Blake2bCircuitInputs {
     let mut rng = rand::thread_rng();

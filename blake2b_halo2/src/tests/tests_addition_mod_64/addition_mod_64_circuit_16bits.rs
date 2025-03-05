@@ -62,7 +62,7 @@ impl<F: PrimeField> Circuit<F> for AdditionMod64Circuit16Bits<F> {
             &mut layouter,
             self.trace,
             &mut config.decompose_16_chip,
-        );
+        )?;
         Ok(())
     }
 }

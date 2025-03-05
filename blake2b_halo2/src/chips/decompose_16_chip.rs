@@ -18,6 +18,11 @@ pub struct Decompose16Chip<F: Field> {
 }
 
 impl<F: PrimeField> Decomposition<F, 4> for Decompose16Chip<F> {
+    const LIMB_SIZE: usize = 16;
+    fn range_table_column(&self) -> TableColumn {
+        self.t_range
+    }
+
     /// The full number and the limbs are not owned by the chip.
     fn configure(
         meta: &mut ConstraintSystem<F>,
@@ -45,7 +50,7 @@ impl<F: PrimeField> Decomposition<F, 4> for Decompose16Chip<F> {
 
         /// Range checks for all the limbs
         for limb in limbs {
-            Self::_range_check_for_limb(meta, &limb, &q_decompose, &t_range);
+            Self::range_check_for_limb(meta, &limb, &q_decompose, &t_range);
         }
 
         Self {
@@ -64,45 +69,14 @@ impl<F: PrimeField> Decomposition<F, 4> for Decompose16Chip<F> {
         row: Vec<Value<F>>,
         offset: usize,
     ) -> Result<Vec<AssignedCell<F, F>>, Error> {
-        let _ = self.q_decompose.enable(region, offset);
-        // This is very practice - I cannot think of a single scenario were you want to ignore a
-        // result, and its all over the code. Please change it across the whole code-base. Errors
-        // must be propagated.
-        let _ = region.assign_advice(|| "full number", self.full_number_u64, offset, || row[0])?;
+        self.q_decompose.enable(region, offset)?;
+        region.assign_advice(|| "full number", self.full_number_u64, offset, || row[0])?;
         let limb_0 = region.assign_advice(|| "limb0", self.limbs[0], offset, || row[1])?;
         let limb_1 = region.assign_advice(|| "limb1", self.limbs[1], offset, || row[2])?;
         let limb_2 = region.assign_advice(|| "limb2", self.limbs[2], offset, || row[3])?;
         let limb_3 = region.assign_advice(|| "limb3", self.limbs[3], offset, || row[4])?;
 
         Ok(vec![limb_0, limb_1, limb_2, limb_3])
-    }
-
-    /// Populates the table for the range check
-    fn populate_lookup_table(&self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
-        let lookup_column = self.t_range;
-        Self::_populate_lookup_table(layouter, lookup_column)
-    }
-
-    fn _populate_lookup_table(
-        layouter: &mut impl Layouter<F>,
-        lookup_column: TableColumn,
-    ) -> Result<(), Error> {
-        layouter.assign_table(
-            || "range 16bit check table",
-            |mut table| {
-                // assign the table
-                for i in 0..1 << 16 {
-                    table.assign_cell(
-                        || "value",
-                        lookup_column,
-                        i,
-                        || Value::known(F::from(i as u64)),
-                    )?;
-                }
-                Ok(())
-            },
-        )?;
-        Ok(())
     }
 
     /// Given a value of 64 bits, it returns a row with the assigned cells for the full number and the limbs
@@ -112,14 +86,14 @@ impl<F: PrimeField> Decomposition<F, 4> for Decompose16Chip<F> {
         value: Value<F>,
         offset: usize,
     ) -> Result<AssignedCell<F, F>, Error> {
-        let _ = self.q_decompose.enable(region, offset);
+        self.q_decompose.enable(region, offset)?;
         let result = region.assign_advice(|| "full number", self.full_number_u64, offset, || value);
 
         let limbs: [Value<F>; 4] =
             (0..4).map(|i| Self::get_limb_from(value, i)).collect::<Vec<_>>().try_into().unwrap();
 
         for (i, limb) in limbs.iter().enumerate() {
-            let _ = region.assign_advice(|| format!("limb{}", i), self.limbs[i], offset, || *limb);
+            region.assign_advice(|| format!("limb{}", i), self.limbs[i], offset, || *limb)?;
         }
         result
     }

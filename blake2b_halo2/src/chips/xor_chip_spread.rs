@@ -30,9 +30,9 @@ impl<F: PrimeField> XorChipSpread<F> {
         let t_spread = meta.lookup_table_column();
         let t_empty_spread = meta.lookup_table_column();
 
-        let columns = Self::_columns_in_order(full_number_u64, limbs, extra);
+        let columns = Self::columns_in_order(full_number_u64, limbs, extra);
 
-        let empty_spread_positions: [(usize, usize); 8] = Self::_empty_spread_positions();
+        let empty_spread_positions: [(usize, usize); 8] = Self::empty_spread_positions();
 
         meta.create_gate("xor with spread", |meta| {
             let q_xor = meta.query_selector(q_xor);
@@ -86,13 +86,13 @@ impl<F: PrimeField> XorChipSpread<F> {
         });
 
         // Lookup spread lhs
-        Self::_lookup_spread_rows(meta, q_xor, t_range, t_spread, columns, -5, -3);
+        Self::lookup_spread_rows(meta, q_xor, t_range, t_spread, columns, -5, -3);
 
         // Lookup spread rhs
-        Self::_lookup_spread_rows(meta, q_xor, t_range, t_spread, columns, -4, -2);
+        Self::lookup_spread_rows(meta, q_xor, t_range, t_spread, columns, -4, -2);
 
         // Lookup spread result
-        Self::_lookup_spread_rows(meta, q_xor, t_range, t_spread, columns, 0, -1);
+        Self::lookup_spread_rows(meta, q_xor, t_range, t_spread, columns, 0, -1);
 
         // Lookup empty spread
         for (row, column_index) in empty_spread_positions.iter() {
@@ -122,8 +122,8 @@ impl<F: PrimeField> XorChipSpread<F> {
         &mut self,
         layouter: &mut impl Layouter<F>,
     ) -> Result<(), Error> {
-        self._populate_spread_table(layouter)?;
-        self._populate_empty_spread_table(layouter)?;
+        self.populate_spread_table(layouter)?;
+        self.populate_empty_spread_table(layouter)?;
         Ok(())
     }
 
@@ -140,30 +140,30 @@ impl<F: PrimeField> XorChipSpread<F> {
         let value_rhs = cell_to_copy.value().copied();
 
         if !use_previous_cell {
-            decompose_8_chip.generate_row_from_cell(region, previous_cell, *offset).unwrap();
+            decompose_8_chip.generate_row_from_cell(region, previous_cell, *offset)?;
             *offset += 1;
         }
 
-        decompose_8_chip.generate_row_from_cell(region, cell_to_copy, *offset).unwrap();
+        decompose_8_chip.generate_row_from_cell(region, cell_to_copy, *offset)?;
         *offset += 1;
 
-        self._populate_spread_limbs_of(region, offset, value_lhs);
+        self.populate_spread_limbs_of(region, offset, value_lhs);
         *offset += 1;
 
-        self._populate_spread_limbs_of(region, offset, value_rhs);
+        self.populate_spread_limbs_of(region, offset, value_rhs);
         *offset += 1;
 
         let value_result = value_lhs.and_then(|v0| {
             value_rhs.and_then(|v1| Value::known(auxiliar_functions::xor_field_elements(v0, v1)))
         });
 
-        self._populate_spread_limbs_of(region, offset, value_result);
+        self.populate_spread_limbs_of(region, offset, value_result);
         *offset += 1;
 
         let result_row =
-            decompose_8_chip.generate_row_from_value_and_keep_row(region, value_result, *offset).unwrap();
+            decompose_8_chip.generate_row_from_value_and_keep_row(region, value_result, *offset)?;
 
-        let _ = self.q_xor.enable(region, *offset);
+        self.q_xor.enable(region, *offset)?;
         *offset += 1;
 
         value_lhs.and_then(|lhs| {
@@ -173,13 +173,13 @@ impl<F: PrimeField> XorChipSpread<F> {
                     let rhs_limb_values = auxiliar_functions::decompose_field_8bit_limbs(rhs);
                     let result_limb_values = auxiliar_functions::decompose_field_8bit_limbs(result);
 
-                    let empty_spread_positions = Self::_empty_spread_positions();
+                    let empty_spread_positions = Self::empty_spread_positions();
                     let columns_in_order =
-                        Self::_columns_in_order(self.full_number_u64, self.limbs, self.extra);
+                        Self::columns_in_order(self.full_number_u64, self.limbs, self.extra);
                     for i in 0..8 {
-                        let z_i = Self::_spread_bits_left(lhs_limb_values[i])
-                            + Self::_spread_bits_left(rhs_limb_values[i])
-                            - Self::_spread_bits_left(result_limb_values[i]);
+                        let z_i = Self::spread_bits_left(lhs_limb_values[i])
+                            + Self::spread_bits_left(rhs_limb_values[i])
+                            - Self::spread_bits_left(result_limb_values[i]);
 
                         region
                             .assign_advice(
@@ -200,7 +200,7 @@ impl<F: PrimeField> XorChipSpread<F> {
         Ok(result_row.try_into().unwrap())
     }
 
-    fn _populate_spread_limbs_of(
+    fn populate_spread_limbs_of(
         &mut self,
         region: &mut Region<F>,
         offset: &mut usize,
@@ -214,7 +214,7 @@ impl<F: PrimeField> XorChipSpread<F> {
                         || "lhs limb",
                         self.limbs[i],
                         *offset,
-                        || value_for::<u16, F>(Self::_spread_bits_left(*limb)),
+                        || value_for::<u16, F>(Self::spread_bits_left(*limb)),
                     )
                     .unwrap();
             }
@@ -222,7 +222,7 @@ impl<F: PrimeField> XorChipSpread<F> {
         });
     }
 
-    fn _lookup_spread_rows(
+    fn lookup_spread_rows(
         meta: &mut ConstraintSystem<F>,
         q_xor: Selector,
         t_range: TableColumn,
@@ -245,7 +245,7 @@ impl<F: PrimeField> XorChipSpread<F> {
         }
     }
 
-    fn _populate_spread_table(&self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
+    fn populate_spread_table(&self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
         layouter.assign_table(
             || "xor spread table",
             |mut table| {
@@ -260,7 +260,7 @@ impl<F: PrimeField> XorChipSpread<F> {
                         || "spread value",
                         self.t_spread,
                         i,
-                        || value_for::<u64, F>(Self::_spread_bits_left(i as u8) as u64),
+                        || value_for::<u64, F>(Self::spread_bits_left(i as u8) as u64),
                     )?;
                 }
                 Ok(())
@@ -268,7 +268,7 @@ impl<F: PrimeField> XorChipSpread<F> {
         )
     }
 
-    fn _populate_empty_spread_table(&self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
+    fn populate_empty_spread_table(&self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
         layouter.assign_table(
             || "xor empty spread table",
             |mut table| {
@@ -277,7 +277,7 @@ impl<F: PrimeField> XorChipSpread<F> {
                         || "empty spread value",
                         self.t_empty_spread,
                         i as usize,
-                        || value_for::<u64, F>(Self::_spread_bits_right(i as u8) as u64),
+                        || value_for::<u64, F>(Self::spread_bits_right(i as u8) as u64),
                     )?;
                 }
                 Ok(())
@@ -285,7 +285,7 @@ impl<F: PrimeField> XorChipSpread<F> {
         )
     }
 
-    fn _spread_bits_right(x: u8) -> u16 {
+    fn spread_bits_right(x: u8) -> u16 {
         let mut spread = 0;
         for i in 0..8 {
             spread |= ((x & (1 << i)) as u16) << (i + 1);
@@ -293,7 +293,7 @@ impl<F: PrimeField> XorChipSpread<F> {
         spread
     }
 
-    fn _spread_bits_left(x: u8) -> u16 {
+    fn spread_bits_left(x: u8) -> u16 {
         let mut spread = 0;
         for i in 0..8 {
             spread |= ((x & (1 << i)) as u16) << i;
@@ -301,11 +301,11 @@ impl<F: PrimeField> XorChipSpread<F> {
         spread
     }
 
-    fn _empty_spread_positions() -> [(usize, usize); 8] {
+    fn empty_spread_positions() -> [(usize, usize); 8] {
         [(2, 0), (3, 0), (4, 0), (1, 9), (2, 9), (3, 9), (4, 9), (5, 9)]
     }
 
-    fn _columns_in_order(
+    fn columns_in_order(
         full_number_u64: Column<Advice>,
         limbs: [Column<Advice>; 8],
         extra: Column<Advice>,

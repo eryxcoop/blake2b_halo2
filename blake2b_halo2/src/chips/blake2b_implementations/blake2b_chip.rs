@@ -71,7 +71,7 @@ impl <F: PrimeField> Blake2bChipOptimization<F> for Blake2bChip<F> {
         full_number_u64: Column<Advice>,
         limbs: [Column<Advice>; 8],
     ) -> Self {
-        Self::_enforce_modulus_size();
+        Self::enforce_modulus_size();
         cfg_if::cfg_if! {
             if #[cfg(feature = "sum_with_8_limbs")] {
                 /// An extra carry column is needed for the sum operation with 8 limbs.
@@ -122,14 +122,15 @@ impl <F: PrimeField> Blake2bChipOptimization<F> for Blake2bChip<F> {
 
     /// This method initializes the chip with the necessary lookup tables. It should be called once
     /// before the hash computation.
-    fn initialize_with(&mut self, layouter: &mut impl Layouter<F>) {
-        self._populate_lookup_table_8(layouter);
-        self._populate_xor_lookup_table(layouter);
+    fn initialize_with(&mut self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
+        self.populate_lookup_table_8(layouter)?;
+        self.populate_xor_lookup_table(layouter)?;
         cfg_if::cfg_if! {
             if #[cfg(feature = "sum_with_4_limbs")] {
-                self._populate_lookup_table_16(layouter);
+                self.populate_lookup_table_16(layouter)?;
             }
         }
+        Ok(())
     }
 
     /// This is the main method of the chip. It computes the Blake2b hash for the given inputs.
@@ -142,7 +143,7 @@ impl <F: PrimeField> Blake2bChipOptimization<F> for Blake2bChip<F> {
         input: &[Value<F>],
         key: &[Value<F>],
     ) -> Result<(), Error> {
-        Self::_enforce_input_sizes(output_size, key_size);
+        Self::enforce_input_sizes(output_size, key_size);
 
         /// All the computation is performed inside a single region. Some optimizations take advantage
         /// of this fact, since we want to avoid copying cells between regions.
@@ -203,14 +204,14 @@ impl <F: PrimeField> Blake2bChipOptimization<F> for Blake2bChip<F> {
 
 impl<F: PrimeField> Blake2bChip<F> {
     /// Enforces the output and key sizes.
-    fn _enforce_input_sizes(output_size: usize, key_size: usize) {
+    fn enforce_input_sizes(output_size: usize, key_size: usize) {
         assert!(output_size <= 64, "Output size must be between 1 and 64 bytes");
         assert!(output_size > 0, "Output size must be between 1 and 64 bytes");
         assert!(key_size <= 64, "Key size must be between 1 and 64 bytes");
     }
 
     /// Enforces the field's modulus to be greater than 2^65, which is a necessary condition for the rot63 gate to be sound.
-    fn _enforce_modulus_size() {
+    fn enforce_modulus_size() {
         let modulus_bytes: Vec<u8> = hex::decode(F::MODULUS.trim_start_matches("0x"))
             .expect("Modulus is not a valid hex number");
         let modulus = BigUint::from_bytes_be(&modulus_bytes);
@@ -235,9 +236,9 @@ impl<F: PrimeField> Blake2bChip<F> {
         Self::constrain_initial_state(region, &global_state, iv_constants)?;
 
         // state[0] = state[0] ^ 0x01010000 ^ (key.len() << 8) as u64 ^ outlen as u64;
-        global_state[0] = self.xor(&global_state[0], &init_const_state_0, region, offset);
-        global_state[0] = self.xor(&global_state[0], &output_size_constant, region, offset);
-        global_state[0] = self.xor(&global_state[0], &key_size_constant_shifted, region, offset);
+        global_state[0] = self.xor(&global_state[0], &init_const_state_0, region, offset)?;
+        global_state[0] = self.xor(&global_state[0], &output_size_constant, region, offset)?;
+        global_state[0] = self.xor(&global_state[0], &key_size_constant_shifted, region, offset)?;
         Ok(global_state)
     }
 
@@ -444,7 +445,7 @@ impl<F: PrimeField> Blake2bChip<F> {
         // accumulative_state[12] ^= processed_bytes_count
         let processed_bytes_count_cell =
             self.new_row_from_value(processed_bytes_count, region, row_offset)?;
-        state[12] = self.xor(&state[12], &processed_bytes_count_cell, region, row_offset);
+        state[12] = self.xor(&state[12], &processed_bytes_count_cell, region, row_offset)?;
         // accumulative_state[13] ^= ctx.processed_bytes_count[1]; This is 0 so we ignore it
 
         if is_last_block {
@@ -470,7 +471,7 @@ impl<F: PrimeField> Blake2bChip<F> {
 
         let mut global_state_bytes = Vec::new();
         for i in 0..8 {
-            global_state[i] = self.xor(&global_state[i], &state[i], region, row_offset);
+            global_state[i] = self.xor(&global_state[i], &state[i], region, row_offset)?;
             let row = self.xor_with_full_rows(&global_state[i], &state[i + 8], region, row_offset);
             global_state_bytes.extend_from_slice(&row[1..]);
             global_state[i] = row[0].clone();
@@ -501,7 +502,7 @@ impl<F: PrimeField> Blake2bChip<F> {
         let y = current_block_words[sigma_odd].clone();
 
         // v[a] = ((v[a] as u128 + v[b] as u128 + x as u128) % (1 << 64)) as u64;
-        let a_plus_b = self.add(&v_a, &v_b, region, offset);
+        let a_plus_b = self.add(&v_a, &v_b, region, offset)?;
         let a = self.add_copying_one_parameter(&a_plus_b, &x, region, offset);
 
         // v[d] = rotr_64(v[d] ^ v[a], 32);
@@ -707,17 +708,17 @@ impl<F: PrimeField> Blake2bChip<F> {
 
     // Populate tables
 
-    fn _populate_lookup_table_8(&mut self, layouter: &mut impl Layouter<F>) {
-        let _ = self.decompose_8_chip.populate_lookup_table(layouter);
+    fn populate_lookup_table_8(&mut self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
+        self.decompose_8_chip.populate_lookup_table(layouter)
     }
 
     #[allow(dead_code)]
-    fn _populate_lookup_table_16(&mut self, layouter: &mut impl Layouter<F>) {
-        let _ = self.decompose_16_chip.populate_lookup_table(layouter);
+    fn populate_lookup_table_16(&mut self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
+        self.decompose_16_chip.populate_lookup_table(layouter)
     }
 
-    fn _populate_xor_lookup_table(&mut self, layouter: &mut impl Layouter<F>) {
-        let _ = self.xor_chip.populate_xor_lookup_table(layouter);
+    fn populate_xor_lookup_table(&mut self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
+        self.xor_chip.populate_xor_lookup_table(layouter)
     }
 
     /// These are the methods that call primitive operation chips
@@ -727,16 +728,14 @@ impl<F: PrimeField> Blake2bChip<F> {
         rhs: &AssignedCell<F, F>,
         region: &mut Region<F>,
         offset: &mut usize,
-    ) -> AssignedCell<F, F> {
+    ) -> Result<AssignedCell<F, F>, Error> {
         cfg_if::cfg_if! {
             if #[cfg(feature = "sum_with_8_limbs")] {
-                self.addition_chip
-                    .generate_addition_rows_from_cells(region, offset, lhs, rhs, &mut self.decompose_8_chip)
-                    .unwrap()[0].clone()
+                let addition_cell = self.addition_chip.generate_addition_rows_from_cells(region, offset, lhs, rhs, &mut self.decompose_8_chip)?[0].clone();
+                Ok(addition_cell)
             } else if #[cfg(feature = "sum_with_4_limbs")] {
-                self.addition_chip
-                    .generate_addition_rows_from_cells(region, offset, lhs, rhs, &mut self.decompose_16_chip)
-                    .unwrap()[0].clone()
+                let addition_cell = self.addition_chip.generate_addition_rows_from_cells(region, offset, lhs, rhs, &mut self.decompose_16_chip)?[0].clone();
+                Ok(addition_cell)
             } else {
                 panic!("No feature selected");
             }
@@ -784,8 +783,8 @@ impl<F: PrimeField> Blake2bChip<F> {
         rhs: &AssignedCell<F, F>,
         region: &mut Region<F>,
         offset: &mut usize,
-    ) -> AssignedCell<F, F> {
-        self.xor_chip
+    ) -> Result<AssignedCell<F, F>, Error> {
+        let full_number_cell = self.xor_chip
             .generate_xor_rows_from_cells_optimized(
                 region,
                 offset,
@@ -793,9 +792,8 @@ impl<F: PrimeField> Blake2bChip<F> {
                 rhs,
                 &mut self.decompose_8_chip,
                 false,
-            )
-            .unwrap()[0]
-            .clone()
+            )?[0].clone();
+        Ok(full_number_cell)
     }
 
     /// Sometimes we can reutilice an output row to be the input row of the next operation. This is

@@ -43,6 +43,8 @@ impl<F: PrimeField> NegateChip<F> {
         self.generate_rows(region, offset, value, decompose_chip)
     }
 
+    /// Receives a value, generates a row for that value and generates the row for the negation
+    /// of the value
     pub fn generate_rows(
         &mut self,
         region: &mut Region<F>,
@@ -50,9 +52,7 @@ impl<F: PrimeField> NegateChip<F> {
         value: Value<F>,
         decompose_chip: &mut Decompose8Chip<F>,
     ) -> Result<AssignedCell<F, F>, Error> {
-        /// Receives a value, generates a row for that value and generates the row for the negation
-        /// of the value
-        let _ = self.q_negate.enable(region, *offset);
+        self.q_negate.enable(region, *offset)?;
         let result_value =
             value.and_then(|v0| Value::known(F::from(((1u128 << 64) - 1) as u64) - v0));
         decompose_chip.generate_row_from_value(region, value, *offset)?;

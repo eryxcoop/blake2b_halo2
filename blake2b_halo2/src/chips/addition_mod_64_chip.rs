@@ -9,13 +9,13 @@ pub type AdditionChipWith4Limbs<F> = AdditionMod64Chip<F, 4, 6>;
 // Rather than the 'Chip' we refer to this as the 'Configuration', as you are only specifying
 // columns. See here https://github.com/midnightntwrk/midnight-circuits/blob/main/src/hash/sha256/table11/range16.rs#L27
 // Then the chip contains the config (possibly different configs, or even other chips).
+/// This config uses two generics, T and R.
+/// T is used to define the number of limbs we will use to represent numbers in the trace
+/// (it will be 4 for 16b limbs or 8 for 8b limbs)
+///
+/// R is used to define the total number of columns in the trace.
+/// It will allways be T + 2 (full number and carry)
 pub struct AdditionMod64Chip<F: Field, const T: usize, const R: usize> {
-    /// This chip uses two generics, T and R.
-    /// T is used to define the number of limbs we will use to represent numbers in the trace
-    /// (it will be 4 for 16b limbs or 8 for 8b limbs)
-    ///
-    /// R is used to define the total number of columns in the trace.
-    /// It will allways be T + 2 (full number and carry)
     carry: Column<Advice>,
     q_add: Selector,
     _ph: PhantomData<F>,
@@ -38,7 +38,6 @@ impl<F: PrimeField, const T: usize, const R: usize> AdditionMod64Chip<F, T, R> {
             let q_add = meta.query_selector(q_add);
             let full_number_x = meta.query_advice(full_number_u64, Rotation(0));
             let full_number_y = meta.query_advice(full_number_u64, Rotation(1));
-            // Keep in mind that rotations are not free.
             let full_number_result = meta.query_advice(full_number_u64, Rotation(2));
             let carry = meta.query_advice(carry, Rotation(2));
 
@@ -57,51 +56,51 @@ impl<F: PrimeField, const T: usize, const R: usize> AdditionMod64Chip<F, T, R> {
         }
     }
 
+    /// This method is meant to receive a valid addition_trace, and populate the circuit with it
+    /// The addition trace is a matrix with 3 rows and R columns. The rows represent the two
+    /// parameters of the addition and its result.
+    /// Each row has the following format:
+    ///    [full_number, limb_0, ..., limb_R-2, carry]
+    /// Note that the carry value is not used in the parameters of the addition, but it is used
+    /// to calculate its result.
     pub fn populate_addition_rows(
         &mut self,
         layouter: &mut impl Layouter<F>,
         addition_trace: [[Value<F>; R]; 3],
         decompose_chip: &mut impl Decomposition<F, T>,
-    ) {
-        // These docs should be the docs of the function, and shouldn't be inside the function.
-        //       \/
-        /// This method is meant to receive a valid addition_trace, and populate the circuit with it
-        /// The addition trace is a matrix with 3 rows and R columns. The rows represent the two
-        /// parameters of the addition and its result.
-        /// Each row has the following format:
-        ///    [full_number, limb_1, ..., limb_R-2, carry]
-        /// Note that the carry value is not used in the parameters of the addition, but it is used
-        /// to calculate its result.
-        let _ = layouter.assign_region(
+    ) -> Result<(), Error>{
+
+        layouter.assign_region(
             || "decompose",
             |mut region| {
-                // This is wrong - you are using 'let _' because the compiler is saying that the
-                // result must be used. Here you are not using it, you are just ignoring. You
-                // need to _use_ the result (e.g. with ?).
                 self.q_add.enable(&mut region, 0)?;
 
-                self._populate_row_from_values(
+                self.populate_row_from_values(
                     &mut region,
                     addition_trace[0].to_vec(),
                     0,
                     decompose_chip,
                 )?;
-                self._populate_row_from_values(
+                self.populate_row_from_values(
                     &mut region,
                     addition_trace[1].to_vec(),
                     1,
                     decompose_chip,
                 )?;
-                self._populate_row_from_values(
+                self.populate_row_from_values(
                     &mut region,
                     addition_trace[2].to_vec(),
                     2,
                     decompose_chip,
                 )
             },
-        );
+        )?;
+        Ok(())
     }
 
+    /// This method receives two cells, and generates the rows for the addition of their values.
+    /// We copy the values of the cells to the trace, and then calculate the result and carry
+    /// of the addition and write it in a third row.
     pub fn generate_addition_rows_from_cells(
         &mut self,
         region: &mut Region<F>,
@@ -110,22 +109,22 @@ impl<F: PrimeField, const T: usize, const R: usize> AdditionMod64Chip<F, T, R> {
         cell_b: &AssignedCell<F, F>,
         decompose_chip: &mut impl Decomposition<F, T>,
     ) -> Result<[AssignedCell<F, F>; 2], Error> {
-        /// This method receives two cells, and generates the rows for the addition of their values.
-        /// We copy the values of the cells to the trace, and then calculate the result and carry
-        /// of the addition and write it in a third row.
-        let (result_value, carry_value) = Self::_calculate_result_and_carry(cell_a, cell_b);
+        let (result_value, carry_value) = Self::calculate_result_and_carry(cell_a.value(), cell_b.value());
 
         self.q_add.enable(region, *offset)?;
-        decompose_chip.generate_row_from_cell(region, cell_a, *offset)?; // 2
+        decompose_chip.generate_row_from_cell(region, cell_a, *offset)?;
         *offset += 1;
-        decompose_chip.generate_row_from_cell(region, cell_b, *offset)?; // 3
+        decompose_chip.generate_row_from_cell(region, cell_b, *offset)?;
         *offset += 1;
-        let result_cell = decompose_chip.generate_row_from_value(region, result_value, *offset)?; // 4
+        let result_cell = decompose_chip.generate_row_from_value(region, result_value, *offset)?;
         let carry_cell = region.assign_advice(|| "carry", self.carry, *offset, || carry_value)?;
-        *offset += 1; // 5
+        *offset += 1;
         Ok([result_cell, carry_cell])
     }
 
+    /// This method is intended to be used when one of the addition parameters (previous_cell)
+    /// is the last cell that was generated in the circuit. This way, we can avoid generating
+    /// the row for the previous_cell again, and just copy the cell_to_copy.
     pub fn generate_addition_rows_from_cells_optimized(
         &mut self,
         region: &mut Region<F>,
@@ -134,35 +133,23 @@ impl<F: PrimeField, const T: usize, const R: usize> AdditionMod64Chip<F, T, R> {
         cell_to_copy: &AssignedCell<F, F>,
         decompose_chip: &mut impl Decomposition<F, T>,
     ) -> Result<[AssignedCell<F, F>; 2], Error> {
-        /// This method is intended to be used when one of the addition parameters (previous_cell)
-        /// is the last cell that was generated in the circuit. This way, we can avoid generating
-        /// the row for the previous_cell again, and just copy the cell_to_copy.
         let (result_value, carry_value) =
-            Self::_calculate_result_and_carry(previous_cell, cell_to_copy);
+            Self::calculate_result_and_carry(previous_cell.value(), cell_to_copy.value());
 
         self.q_add.enable(region, *offset - 1)?;
         decompose_chip.generate_row_from_cell(region, cell_to_copy, *offset)?;
         *offset += 1;
-        let result_cell = decompose_chip.generate_row_from_value(region, result_value, *offset)?; // 4
+        let result_cell = decompose_chip.generate_row_from_value(region, result_value, *offset)?;
         let carry_cell = region.assign_advice(|| "carry", self.carry, *offset, || carry_value)?;
-        *offset += 1; // 5
+        *offset += 1;
         Ok([result_cell, carry_cell])
     }
 
-    // Its also weird to have functions have the '_' prefix. AFAIK in rust that means that the
-    // function is not used.
-    //
-    // Also, these type of functions where you loose the link between the input and output,
-    // you should document it very clearly. The circuit should now constrain that the output is
-    // indeed a sum and carry (I believe that is done in a gate, but you must specify it in the
-    // docs). Maybe a suggestion is that the function signature directly takes Value<F>, like that
-    // it is _clear_ that you are not doing anything in-circuit.
-    fn _calculate_result_and_carry(
-        cell_a: &AssignedCell<F, F>,
-        cell_b: &AssignedCell<F, F>,
+    fn calculate_result_and_carry(
+        lhs: Value<&F>,
+        rhs: Value<&F>,
     ) -> (Value<F>, Value<F>) {
-        // this can be simplified
-        let [result_value, carry_value] = cell_a.value().zip(cell_b.value()).map(|(a, b)| {
+        let [result_value, carry_value] = lhs.zip(rhs).map(|(a, b)| {
             [
                 auxiliar_functions::sum_mod_64(*a, *b),
                 auxiliar_functions::carry_mod_64(*a, *b)
@@ -172,18 +159,15 @@ impl<F: PrimeField, const T: usize, const R: usize> AdditionMod64Chip<F, T, R> {
         (result_value, carry_value)
     }
 
-    fn _populate_row_from_values(
+    fn populate_row_from_values(
         &mut self,
         region: &mut Region<F>,
         row: Vec<Value<F>>,
         offset: usize,
         decompose_chip: &mut impl Decomposition<F, T>,
     ) -> Result<(), Error> {
-        // What happens if this is 'None'? You are not handling errors.
         decompose_chip.populate_row_from_values(region, row.clone(), offset)?;
-        // Again, this is wrong. You cannot simply ignore the result.
         region.assign_advice(|| "carry", self.carry, offset, || row[R - 1])?;
-
         Ok(())
     }
 }

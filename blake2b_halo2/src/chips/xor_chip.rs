@@ -107,23 +107,24 @@ impl<F: PrimeField> XorChip<F> {
         layouter: &mut impl Layouter<F>,
         xor_trace: [[Value<F>; 9]; 3],
         decompose_8_chip: &mut Decompose8Chip<F>,
-    ) {
-        let _ = layouter.assign_region(
+    ) -> Result<(), Error> {
+        layouter.assign_region(
             || "xor",
             |mut region| {
-                let _ = self.q_xor.enable(&mut region, 0);
+                self.q_xor.enable(&mut region, 0)?;
 
                 let first_row = xor_trace[0].to_vec();
                 let second_row = xor_trace[1].to_vec();
                 let third_row = xor_trace[2].to_vec();
 
-                decompose_8_chip.populate_row_from_values(&mut region, first_row, 0);
-                decompose_8_chip.populate_row_from_values(&mut region, second_row, 1);
-                decompose_8_chip.populate_row_from_values(&mut region, third_row, 2);
+                decompose_8_chip.populate_row_from_values(&mut region, first_row, 0)?;
+                decompose_8_chip.populate_row_from_values(&mut region, second_row, 1)?;
+                decompose_8_chip.populate_row_from_values(&mut region, third_row, 2)?;
 
                 Ok(())
             },
-        );
+        )?;
+        Ok(())
     }
 
     /// This method generates the xor rows in the trace. If the previous cell in the region is one
@@ -142,7 +143,7 @@ impl<F: PrimeField> XorChip<F> {
         let value_b = cell_to_copy.value().copied();
 
         let difference_offset = if use_previous_cell { 1 } else { 0 };
-        let _ = self.q_xor.enable(region, *offset - difference_offset);
+        self.q_xor.enable(region, *offset - difference_offset)?;
 
         let result_value = value_a.and_then(|v0| {
             value_b.and_then(|v1| Value::known(auxiliar_functions::xor_field_elements(v0, v1)))

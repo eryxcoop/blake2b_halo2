@@ -70,7 +70,7 @@ impl<F: PrimeField, OptimizationChip: Blake2bChipOptimization<F>> Circuit<F> for
     ) -> Result<(), Error> {
         /// The initialization function should be called before the hash computation. For many hash
         /// computations it should be called only once.
-        config.blake2b_chip.initialize_with(&mut layouter);
+        config.blake2b_chip.initialize_with(&mut layouter)?;
         config.blake2b_chip.compute_blake2b_hash_for_inputs(
             &mut layouter,
             self.output_size,

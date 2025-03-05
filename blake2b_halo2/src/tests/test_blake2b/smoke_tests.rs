@@ -6,7 +6,7 @@ fn test_blake2b_single_empty_block_positive() {
     let output_size = 64;
     let input = vec![];
     let input_size = 0;
-    let expected_output_state = _correct_output_for_empty_input_64();
+    let expected_output_state = correct_output_for_empty_input_64();
 
     let circuit =
         CircuitRunner::create_circuit_for_inputs(input, input_size, vec![], 0, output_size);
@@ -21,7 +21,7 @@ fn test_blake2b_single_empty_block_negative() {
     let output_size = 64;
     let input = vec![];
     let input_size = 0;
-    let mut expected_output_state = _correct_output_for_empty_input_64();
+    let mut expected_output_state = correct_output_for_empty_input_64();
     expected_output_state[7] = Fr::from(14u64); // Wrong value
 
     let circuit =
@@ -31,7 +31,7 @@ fn test_blake2b_single_empty_block_negative() {
     CircuitRunner::verify_mock_prover(prover);
 }
 
-fn _correct_output_for_empty_input_64() -> [Fr; 64] {
+fn correct_output_for_empty_input_64() -> [Fr; 64] {
     [
         Fr::from(120),
         Fr::from(106),

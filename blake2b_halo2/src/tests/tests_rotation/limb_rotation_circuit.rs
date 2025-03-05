@@ -69,8 +69,6 @@ impl<F: PrimeField, const T: usize> Circuit<F> for LimbRotationCircuit<F, T> {
             &mut config.decompose_8_chip,
             self.trace,
             limbs_to_rotate_to_the_right,
-        );
-
-        Ok(())
+        )
     }
 }

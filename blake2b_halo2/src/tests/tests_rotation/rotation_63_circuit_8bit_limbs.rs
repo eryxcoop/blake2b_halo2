@@ -57,8 +57,6 @@ impl<F: PrimeField> Circuit<F> for Rotation63Circuit8bitLimbs<F> {
             &mut layouter,
             &mut config.decompose_8_chip.clone(),
             self.trace,
-        );
-
-        Ok(())
+        )
     }
 }

@@ -65,8 +65,6 @@ impl<F: PrimeField> Circuit<F> for XorCircuit<F> {
             &mut layouter,
             self.trace,
             &mut config.decompose_8_chip,
-        );
-
-        Ok(())
+        )
     }
 }

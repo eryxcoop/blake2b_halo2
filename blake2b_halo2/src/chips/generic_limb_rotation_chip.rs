@@ -34,18 +34,16 @@ impl<F: PrimeField> LimbRotationChip<F> {
         decompose_chip: &mut Decompose8Chip<F>,
         trace: [[Value<F>; 9]; 2],
         limb_rotations_right: usize,
-    ) {
-        let _ = layouter.assign_region(
+    ) -> Result<(), Error> {
+        layouter.assign_region(
             || format!("rotate {}", limb_rotations_right),
             |mut region| {
                 let first_row = decompose_chip
-                    .populate_row_from_values(&mut region, trace[0].to_vec(), 0)
-                    .unwrap();
+                    .populate_row_from_values(&mut region, trace[0].to_vec(), 0)?;
                 let second_row = decompose_chip
-                    .populate_row_from_values(&mut region, trace[1].to_vec(), 1)
-                    .unwrap();
+                    .populate_row_from_values(&mut region, trace[1].to_vec(), 1)?;
 
-                Self::_constrain_result_with_input_row(
+                Self::constrain_result_with_input_row(
                     &mut region,
                     &first_row,
                     &second_row,
@@ -53,7 +51,8 @@ impl<F: PrimeField> LimbRotationChip<F> {
                 )?;
                 Ok(())
             },
-        );
+        )?;
+        Ok(())
     }
 
     /// This method receives a value, and copies it to the trace. Then calls another method to
@@ -93,14 +92,14 @@ impl<F: PrimeField> LimbRotationChip<F> {
         limbs_to_rotate_to_the_right: usize,
     ) -> Result<AssignedCell<F, F>, Error> {
         let value = input_row[0].value().copied();
-        let result_value = Self::_right_rotation_value(value, limbs_to_rotate_to_the_right);
+        let result_value = Self::right_rotation_value(value, limbs_to_rotate_to_the_right);
 
         let result_row =
             decompose_chip.generate_row_from_value_and_keep_row(region, result_value, *offset)?;
         *offset += 1;
 
         #[allow(clippy::unnecessary_fallible_conversions)]
-        Self::_constrain_result_with_input_row(
+        Self::constrain_result_with_input_row(
             region,
             &(input_row.try_into().unwrap()),
             &result_row,
@@ -112,7 +111,7 @@ impl<F: PrimeField> LimbRotationChip<F> {
     }
 
     #[allow(clippy::ptr_arg)]
-    fn _constrain_result_with_input_row(
+    fn constrain_result_with_input_row(
         region: &mut Region<F>,
         input_row: &Vec<AssignedCell<F, F>>,
         result_row: &Vec<AssignedCell<F, F>>,
@@ -128,7 +127,7 @@ impl<F: PrimeField> LimbRotationChip<F> {
         Ok(())
     }
 
-    fn _right_rotation_value(value: Value<F>, limbs_to_rotate: usize) -> Value<F> {
+    fn right_rotation_value(value: Value<F>, limbs_to_rotate: usize) -> Value<F> {
         value.and_then(|input| {
             Value::known(auxiliar_functions::rotate_right_field_element(input, limbs_to_rotate * 8))
         })

@@ -18,6 +18,11 @@ pub struct Decompose8Chip<F: PrimeField> {
 }
 
 impl<F: PrimeField> Decomposition<F, 8> for Decompose8Chip<F> {
+    const LIMB_SIZE: usize = 8;
+    fn range_table_column(&self) -> TableColumn {
+        self.t_range
+    }
+
     /// The full number and the limbs are not owned by the chip.
     fn configure(
         meta: &mut ConstraintSystem<F>,
@@ -49,7 +54,7 @@ impl<F: PrimeField> Decomposition<F, 8> for Decompose8Chip<F> {
 
         /// Range checks for all the limbs
         for limb in limbs {
-            Self::_range_check_for_limb(meta, &limb, &q_decompose, &t_range);
+            Self::range_check_for_limb(meta, &limb, &q_decompose, &t_range);
         }
 
         Self {
@@ -70,11 +75,7 @@ impl<F: PrimeField> Decomposition<F, 8> for Decompose8Chip<F> {
     ) -> Result<Vec<AssignedCell<F, F>>, Error> {
         self.q_decompose.enable(region, offset)?;
         let full_number = region
-            .assign_advice(|| "full number", self.full_number_u64, offset, || row[0])
-            // Please, minimise the use of unwrap. It is bad practice to panic at runtime. Just
-            // use 'unwrap' if you know it will never fail, e.g. when converting a vector to its
-            // corresponding array. Adapt in rest of the codebase.
-            .unwrap();
+            .assign_advice(|| "full number", self.full_number_u64, offset, || row[0])?;
 
         let limbs = (0..8)
             .map(|i| {
@@ -84,33 +85,6 @@ impl<F: PrimeField> Decomposition<F, 8> for Decompose8Chip<F> {
 
         //return the full number and the limbs
         Ok(std::iter::once(full_number).chain(limbs).collect())
-    }
-
-    /// Populates the table for the range check
-    fn populate_lookup_table(&self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
-        let lookup_column = self.t_range;
-        Self::_populate_lookup_table(layouter, lookup_column)
-    }
-
-    fn _populate_lookup_table(
-        layouter: &mut impl Layouter<F>,
-        lookup_column: TableColumn,
-    ) -> Result<(), Error> {
-        layouter.assign_table(
-            || "range 8bit check table",
-            |mut table| {
-                // assign the table
-                for i in 0..1 << 8 {
-                    table.assign_cell(
-                        || "value",
-                        lookup_column,
-                        i,
-                        || Value::known(F::from(i as u64)),
-                    )?;
-                }
-                Ok(())
-            },
-        )
     }
 
     /// Given a value of 64 bits, it returns a row with the assigned cells for the full number and the limbs
@@ -153,7 +127,6 @@ impl<F: PrimeField> Decomposition<F, 8> for Decompose8Chip<F> {
         offset: usize,
     ) -> Result<Vec<AssignedCell<F, F>>, Error> {
         let value = cell.value().copied();
-
         let new_cells = self.generate_row_from_value_and_keep_row(region, value, offset)?;
         // This seems very dangerous, and food for bugs. `generate_row_from_value_and_keep_row`
         // should be properly document (I think I made this comment somewhere else in the code base)
@@ -166,7 +139,11 @@ impl<F: PrimeField> Decomposition<F, 8> for Decompose8Chip<F> {
         value.and_then(|v| auxiliar_functions::get_value_limb_from_field(v, limb_number))
     }
 
-    /// Convenience method for generating a row from a value and keeping the full row
+    /// Convenience method for generating a row from a value and keeping the full row.
+    /// Given a Value, we might want to use it as an operand in the circuit, and sometimes we need
+    /// to establish constraints over the result's limbs. That's why we need a way to retrieve the
+    /// full row that was created from that value. An example of this could be the Generic Limb
+    /// Rotation Operation, where we need to establish copy constraints over the rotated limbs.
     fn generate_row_from_value_and_keep_row(
         &mut self,
         region: &mut Region<F>,

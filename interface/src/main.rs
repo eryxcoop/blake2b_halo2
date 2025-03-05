@@ -68,7 +68,7 @@ fn run_blake2b(input: &str, key: &str, output_size: usize) -> (Vec<u8>, Vec<u8>,
     let mut key = rust_implementation::hex_to_bytes(key);
     let mut buffer_out: Vec<u8> = vec![0; output_size];
 
-    let _ = rust_implementation::blake2b(&mut buffer_out, &mut key, &mut input_message);
+    rust_implementation::blake2b(&mut buffer_out, &mut key, &mut input_message);
     (input_message, key, buffer_out)
 }
 
