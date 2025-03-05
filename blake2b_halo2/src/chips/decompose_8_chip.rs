@@ -2,6 +2,7 @@ use super::*;
 use halo2_proofs::circuit::AssignedCell;
 
 /// This chip handles the decomposition of 64-bit numbers into 8-bit limbs in the trace
+// Same - this is the config. Please change it across the rest of the codebase.
 #[derive(Clone, Debug)]
 pub struct Decompose8Chip<F: PrimeField> {
     /// The full number and the limbs are not owned by the chip.
@@ -66,21 +67,23 @@ impl<F: PrimeField> Decomposition<F, 8> for Decompose8Chip<F> {
         region: &mut Region<F>,
         row: Vec<Value<F>>,
         offset: usize,
-    ) -> Option<Vec<AssignedCell<F, F>>> {
-        let _ = self.q_decompose.enable(region, offset);
+    ) -> Result<Vec<AssignedCell<F, F>>, Error> {
+        self.q_decompose.enable(region, offset)?;
         let full_number = region
             .assign_advice(|| "full number", self.full_number_u64, offset, || row[0])
+            // Please, minimise the use of unwrap. It is bad practice to panic at runtime. Just
+            // use 'unwrap' if you know it will never fail, e.g. when converting a vector to its
+            // corresponding array. Adapt in rest of the codebase.
             .unwrap();
 
         let limbs = (0..8)
             .map(|i| {
                 region.assign_advice(|| format!("limb{}", i), self.limbs[i], offset, || row[i + 1])
             })
-            .collect::<Result<Vec<_>, _>>()
-            .ok()?;
+            .collect::<Result<Vec<_>, _>>()?;
 
         //return the full number and the limbs
-        Some(std::iter::once(full_number).chain(limbs).collect())
+        Ok(std::iter::once(full_number).chain(limbs).collect())
     }
 
     /// Populates the table for the range check
@@ -152,6 +155,8 @@ impl<F: PrimeField> Decomposition<F, 8> for Decompose8Chip<F> {
         let value = cell.value().copied();
 
         let new_cells = self.generate_row_from_value_and_keep_row(region, value, offset)?;
+        // This seems very dangerous, and food for bugs. `generate_row_from_value_and_keep_row`
+        // should be properly document (I think I made this comment somewhere else in the code base)
         region.constrain_equal(cell.cell(), new_cells[0].cell())?;
         Ok(new_cells)
     }
@@ -168,7 +173,7 @@ impl<F: PrimeField> Decomposition<F, 8> for Decompose8Chip<F> {
         value: Value<F>,
         offset: usize,
     ) -> Result<Vec<AssignedCell<F, F>>, Error> {
-        let _ = self.q_decompose.enable(region, offset);
+        self.q_decompose.enable(region, offset)?;
         let full_number_cell =
             region.assign_advice(|| "full number", self.full_number_u64, offset, || value)?;
 

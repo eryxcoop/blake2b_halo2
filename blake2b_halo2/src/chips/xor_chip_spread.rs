@@ -140,11 +140,11 @@ impl<F: PrimeField> XorChipSpread<F> {
         let value_rhs = cell_to_copy.value().copied();
 
         if !use_previous_cell {
-            decompose_8_chip.generate_row_from_cell(region, previous_cell, *offset)?;
+            decompose_8_chip.generate_row_from_cell(region, previous_cell, *offset).unwrap();
             *offset += 1;
         }
 
-        decompose_8_chip.generate_row_from_cell(region, cell_to_copy, *offset)?;
+        decompose_8_chip.generate_row_from_cell(region, cell_to_copy, *offset).unwrap();
         *offset += 1;
 
         self._populate_spread_limbs_of(region, offset, value_lhs);
@@ -161,7 +161,7 @@ impl<F: PrimeField> XorChipSpread<F> {
         *offset += 1;
 
         let result_row =
-            decompose_8_chip.generate_row_from_value_and_keep_row(region, value_result, *offset)?;
+            decompose_8_chip.generate_row_from_value_and_keep_row(region, value_result, *offset).unwrap();
 
         let _ = self.q_xor.enable(region, *offset);
         *offset += 1;

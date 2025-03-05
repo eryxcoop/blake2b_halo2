@@ -25,6 +25,7 @@ const BLAKE2B_BLOCK_SIZE: usize = 128;
 /// one less column (the carry column). This is because the addition chip of 8 bits uses 10 columns
 /// (the maximum amount of columns any chip uses) and the addition chip of 4 bits uses 6 columns.
 /// It also computes xor with a table that precomputes all the possible 8-bit operands.
+// This is a config (formed by other configs) - see our codebase for examples.
 #[derive(Clone, Debug)]
 pub struct Blake2bChipA<F: PrimeField> {
     /// Decomposition chips
@@ -745,6 +746,7 @@ impl<F: PrimeField> Blake2bChipA<F> {
                 &mut self.decompose_8_chip,
                 false,
             )
+            // No unwraps please
             .unwrap()[0]
             .clone()
     }

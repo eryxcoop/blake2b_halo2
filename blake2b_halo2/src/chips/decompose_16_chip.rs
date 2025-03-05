@@ -63,15 +63,18 @@ impl<F: PrimeField> Decomposition<F, 4> for Decompose16Chip<F> {
         region: &mut Region<F>,
         row: Vec<Value<F>>,
         offset: usize,
-    ) -> Option<Vec<AssignedCell<F, F>>> {
+    ) -> Result<Vec<AssignedCell<F, F>>, Error> {
         let _ = self.q_decompose.enable(region, offset);
-        let _ = region.assign_advice(|| "full number", self.full_number_u64, offset, || row[0]);
-        let limb_0 = region.assign_advice(|| "limb0", self.limbs[0], offset, || row[1]).ok()?;
-        let limb_1 = region.assign_advice(|| "limb1", self.limbs[1], offset, || row[2]).ok()?;
-        let limb_2 = region.assign_advice(|| "limb2", self.limbs[2], offset, || row[3]).ok()?;
-        let limb_3 = region.assign_advice(|| "limb3", self.limbs[3], offset, || row[4]).ok()?;
+        // This is very practice - I cannot think of a single scenario were you want to ignore a
+        // result, and its all over the code. Please change it across the whole code-base. Errors
+        // must be propagated.
+        let _ = region.assign_advice(|| "full number", self.full_number_u64, offset, || row[0])?;
+        let limb_0 = region.assign_advice(|| "limb0", self.limbs[0], offset, || row[1])?;
+        let limb_1 = region.assign_advice(|| "limb1", self.limbs[1], offset, || row[2])?;
+        let limb_2 = region.assign_advice(|| "limb2", self.limbs[2], offset, || row[3])?;
+        let limb_3 = region.assign_advice(|| "limb3", self.limbs[3], offset, || row[4])?;
 
-        Some(vec![limb_0, limb_1, limb_2, limb_3])
+        Ok(vec![limb_0, limb_1, limb_2, limb_3])
     }
 
     /// Populates the table for the range check

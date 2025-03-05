@@ -17,7 +17,7 @@ pub trait Decomposition<F: PrimeField, const T: usize> {
         region: &mut Region<F>,
         row: Vec<Value<F>>,
         offset: usize,
-    ) -> Option<Vec<AssignedCell<F, F>>>;
+    ) -> Result<Vec<AssignedCell<F, F>>, Error>;
 
     fn populate_lookup_table(&self, layouter: &mut impl Layouter<F>) -> Result<(), Error>;
 
