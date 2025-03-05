@@ -59,3 +59,12 @@ Those tests use the same test vector than the plain Rust implementation. Running
 To test the auxiliar chips:
 
 ```cargo test --release -- --skip test_hashes_in_circuit_```
+
+# Benchmarking
+Right now, benchmarks are produced on the branch ```multiple-optimization-benches```. Just go to that branch and run 
+
+```cargo bench```
+
+The report should be found in ```/target/criterion/optimization_comparison/report/index.html```. 
+
+Alternatively, you can find our own generated benchmark in ```/blake2b_halo2/benches/report/index.html```. 
