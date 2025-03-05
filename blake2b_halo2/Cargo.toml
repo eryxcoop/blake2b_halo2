@@ -22,11 +22,14 @@ name = "benchmark_optimizations"
 harness = false
 
 [features]
-default = ["sum_with_4_limbs", "xor_with_table"]
+default = [] # No default features to avoid undesired behaviour
 
 sum_with_8_limbs = []
 sum_with_4_limbs = []
 
 xor_with_table = []
 xor_with_spread = []
-# xor_with_spread requires sum_with_8_limbs
+
+opt_4_limbs = ["sum_with_4_limbs", "xor_with_table"]
+opt_recycle = ["sum_with_8_limbs", "xor_with_table"]
+opt_spread  = ["sum_with_8_limbs", "xor_with_spread"]
