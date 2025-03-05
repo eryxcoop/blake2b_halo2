@@ -1,5 +1,5 @@
 use super::*;
-use crate::chips::addition_mod_64_chip::{AdditionChipWith4Limbs};
+use crate::chips::addition_mod_64::{AdditionConfigWith4Limbs};
 use crate::chips::decompose_16_chip::Decompose16Chip;
 use halo2_proofs::circuit::SimpleFloorPlanner;
 use halo2_proofs::plonk::Circuit;
@@ -7,7 +7,7 @@ use std::array;
 
 #[derive(Clone)]
 pub struct AdditionMod64Config16Bits<F: Field> {
-    addition_mod_64_chip: AdditionChipWith4Limbs<F>,
+    addition_mod_64_chip: AdditionConfigWith4Limbs<F>,
     decompose_16_chip: Decompose16Chip<F>,
 }
 
@@ -43,7 +43,7 @@ impl<F: PrimeField> Circuit<F> for AdditionMod64Circuit16Bits<F> {
 
         let decompose_16_chip = Decompose16Chip::configure(meta, full_number_u64, limbs);
         let addition_mod_64_chip =
-            AdditionChipWith4Limbs::<F>::configure(meta, full_number_u64, carry);
+            AdditionConfigWith4Limbs::<F>::configure(meta, full_number_u64, carry);
 
         Self::Config {
             addition_mod_64_chip,

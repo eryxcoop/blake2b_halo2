@@ -16,12 +16,12 @@ use crate::chips::blake2b_implementations::blake2b_chip_optimization::Blake2bChi
 cfg_if::cfg_if! {
     if #[cfg(feature = "sum_with_8_limbs")] {
         /// Using 8 limbs for the sum operation.
-        use crate::chips::addition_mod_64_chip::{AdditionChipWith8Limbs};
-        type AdditionChip<F> = AdditionChipWith8Limbs<F>;
+        use crate::chips::addition_mod_64::{AdditionConfigWith8Limbs};
+        type AdditionConfig<F> = AdditionConfigWith8Limbs<F>;
     } else if #[cfg(feature = "sum_with_4_limbs")] {
         /// Using 4 limbs for the sum operation.
-        use crate::chips::addition_mod_64_chip::{AdditionChipWith4Limbs};
-        type AdditionChip<F> = AdditionChipWith4Limbs<F>;
+        use crate::chips::addition_mod_64::{AdditionConfigWith4Limbs};
+        type AdditionConfig<F> = AdditionConfigWith4Limbs<F>;
     } else {
         panic!("No feature selected");
     }
@@ -51,7 +51,7 @@ pub struct Blake2bChip<F: PrimeField> {
     decompose_8_chip: Decompose8Chip<F>,
     decompose_16_chip: Decompose16Chip<F>,
     /// Base oprerations chips
-    addition_chip: AdditionChip<F>,
+    addition_chip: AdditionConfig<F>,
     generic_limb_rotation_chip: LimbRotationChip<F>,
     rotate_63_chip: Rotate63Chip<F, 8, 9>,
     xor_chip: XorChip<F>,
@@ -76,9 +76,9 @@ impl <F: PrimeField> Blake2bChipOptimization<F> for Blake2bChip<F> {
             if #[cfg(feature = "sum_with_8_limbs")] {
                 /// An extra carry column is needed for the sum operation with 8 limbs.
                 let carry = meta.advice_column();
-                let addition_chip = AdditionChipWith8Limbs::<F>::configure(meta, full_number_u64, carry);
+                let addition_config = AdditionConfigWith8Limbs::<F>::configure(meta, full_number_u64, carry);
             } else if #[cfg(feature = "sum_with_4_limbs")] {
-                let addition_chip = AdditionChipWith4Limbs::<F>::configure(meta, full_number_u64, limbs[4]);
+                let addition_config = AdditionConfigWith4Limbs::<F>::configure(meta, full_number_u64, limbs[4]);
             } else {
                 panic!("No feature selected");
             }
@@ -108,7 +108,7 @@ impl <F: PrimeField> Blake2bChipOptimization<F> for Blake2bChip<F> {
         meta.enable_equality(expected_final_state);
 
         Self {
-            addition_chip,
+            addition_chip: addition_config,
             decompose_8_chip,
             decompose_16_chip,
             generic_limb_rotation_chip,

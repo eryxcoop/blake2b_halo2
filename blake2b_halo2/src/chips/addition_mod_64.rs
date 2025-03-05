@@ -2,8 +2,8 @@ use super::*;
 use auxiliar_functions::field_for;
 use halo2_proofs::circuit::AssignedCell;
 
-pub type AdditionChipWith8Limbs<F> = AdditionMod64Chip<F, 8, 10>;
-pub type AdditionChipWith4Limbs<F> = AdditionMod64Chip<F, 4, 6>;
+pub type AdditionConfigWith8Limbs<F> = AdditionMod64Config<F, 8, 10>;
+pub type AdditionConfigWith4Limbs<F> = AdditionMod64Config<F, 4, 6>;
 
 #[derive(Clone, Debug)]
 // Rather than the 'Chip' we refer to this as the 'Configuration', as you are only specifying
@@ -15,13 +15,13 @@ pub type AdditionChipWith4Limbs<F> = AdditionMod64Chip<F, 4, 6>;
 ///
 /// R is used to define the total number of columns in the trace.
 /// It will allways be T + 2 (full number and carry)
-pub struct AdditionMod64Chip<F: Field, const T: usize, const R: usize> {
+pub struct AdditionMod64Config<F: Field, const T: usize, const R: usize> {
     carry: Column<Advice>,
     q_add: Selector,
     _ph: PhantomData<F>,
 }
 
-impl<F: PrimeField, const T: usize, const R: usize> AdditionMod64Chip<F, T, R> {
+impl<F: PrimeField, const T: usize, const R: usize> AdditionMod64Config<F, T, R> {
     pub fn configure(
         meta: &mut ConstraintSystem<F>,
         full_number_u64: Column<Advice>,
