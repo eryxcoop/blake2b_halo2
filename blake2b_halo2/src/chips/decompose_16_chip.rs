@@ -4,7 +4,7 @@ use halo2_proofs::circuit::AssignedCell;
 
 /// This chip handles the decomposition of 64-bit numbers into 8-bit limbs in the trace
 #[derive(Clone, Debug)]
-pub struct Decompose16Chip<F: Field> {
+pub struct Decompose16Config<F: Field> {
     /// The full number and the limbs are not owned by the chip.
     full_number_u64: Column<Advice>,
     /// There are 4 limbs of 16 bits each
@@ -17,7 +17,7 @@ pub struct Decompose16Chip<F: Field> {
     _ph: PhantomData<F>,
 }
 
-impl<F: PrimeField> Decomposition<F, 4> for Decompose16Chip<F> {
+impl<F: PrimeField> Decomposition<F, 4> for Decompose16Config<F> {
     const LIMB_SIZE: usize = 16;
     fn range_table_column(&self) -> TableColumn {
         self.t_range

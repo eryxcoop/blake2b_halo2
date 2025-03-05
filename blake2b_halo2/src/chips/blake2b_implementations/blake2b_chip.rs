@@ -1,6 +1,6 @@
 use super::*;
 use crate::auxiliar_functions::{value_for};
-use crate::chips::decompose_16_chip::Decompose16Chip;
+use crate::chips::decompose_16_chip::Decompose16Config;
 use crate::chips::decompose_8::Decompose8Config;
 use crate::chips::decomposition_trait::Decomposition;
 use crate::chips::generic_limb_rotation_chip::LimbRotationChip;
@@ -49,7 +49,7 @@ const BLAKE2B_BLOCK_SIZE: usize = 128;
 pub struct Blake2bChip<F: PrimeField> {
     /// Decomposition chips
     decompose_8_chip: Decompose8Config<F>,
-    decompose_16_chip: Decompose16Chip<F>,
+    decompose_16_chip: Decompose16Config<F>,
     /// Base oprerations chips
     addition_chip: AdditionConfig<F>,
     generic_limb_rotation_chip: LimbRotationChip<F>,
@@ -85,7 +85,7 @@ impl <F: PrimeField> Blake2bChipOptimization<F> for Blake2bChip<F> {
         }
 
         let decompose_16_chip =
-            Decompose16Chip::configure(meta, full_number_u64, limbs[0..4].try_into().unwrap());
+            Decompose16Config::configure(meta, full_number_u64, limbs[0..4].try_into().unwrap());
         let decompose_8_chip = Decompose8Config::configure(meta, full_number_u64, limbs);
         let generic_limb_rotation_chip = LimbRotationChip::new();
         let rotate_63_chip = Rotate63Chip::configure(meta, full_number_u64);
