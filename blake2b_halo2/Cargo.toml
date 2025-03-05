@@ -14,7 +14,7 @@ cfg-if = "1.0.0"
 num-bigint = "0.4"
 
 [dev-dependencies]
-criterion = { version = "0.5", features = ["html_reports"] }
+criterion = { version = "0.5.1", features = ["html_reports", "csv_output"] }
 rust_implementation = { path = "../rust_implementation" }
 
 [[bench]]

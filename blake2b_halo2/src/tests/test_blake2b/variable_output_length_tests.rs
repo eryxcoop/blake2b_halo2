@@ -1,3 +1,4 @@
+use crate::circuit_runner::CircuitRunner;
 use super::*;
 
 #[test]
@@ -6,9 +7,7 @@ fn test_blake2b_circuit_can_verify_an_output_of_length_1() {
     let input = vec![];
     let input_size = 0;
     let expected_output_state = _correct_output_for_empty_input_1();
-    let circuit = Blake2bCircuit::<Fr>::new_for(input, input_size, vec![], 0, output_size);
-    let prover = MockProver::run(17, &circuit, vec![expected_output_state.to_vec()]).unwrap();
-    prover.verify().unwrap();
+    _run_test(output_size, input, input_size, expected_output_state);
 }
 
 #[test]
@@ -19,9 +18,7 @@ fn test_blake2b_circuit_can_verify_an_output_of_length_1_negative() {
     let input_size = 0;
     let mut expected_output_state = _correct_output_for_empty_input_1();
     expected_output_state[0] = Fr::from(14u64); // Wrong value
-    let circuit = Blake2bCircuit::<Fr>::new_for(input, input_size, vec![], 0, output_size);
-    let prover = MockProver::run(17, &circuit, vec![expected_output_state.to_vec()]).unwrap();
-    prover.verify().unwrap();
+    _run_test(output_size, input, input_size, expected_output_state);
 }
 
 #[test]
@@ -30,9 +27,7 @@ fn test_blake2b_circuit_can_verify_an_output_of_length_32() {
     let input = vec![];
     let input_size = 0;
     let expected_output_state = _correct_output_for_empty_input_32();
-    let circuit = Blake2bCircuit::<Fr>::new_for(input, input_size, vec![], 0, output_size);
-    let prover = MockProver::run(17, &circuit, vec![expected_output_state.to_vec()]).unwrap();
-    prover.verify().unwrap();
+    _run_test(output_size, input, input_size, expected_output_state);
 }
 
 #[test]
@@ -43,9 +38,7 @@ fn test_blake2b_circuit_can_verify_an_output_of_length_32_negative() {
     let input_size = 0;
     let mut expected_output_state = _correct_output_for_empty_input_32();
     expected_output_state[0] = Fr::from(15u64); // Wrong value
-    let circuit = Blake2bCircuit::<Fr>::new_for(input, input_size, vec![], 0, output_size);
-    let prover = MockProver::run(17, &circuit, vec![expected_output_state.to_vec()]).unwrap();
-    prover.verify().unwrap();
+    _run_test(output_size, input, input_size, expected_output_state);
 }
 
 #[test]
@@ -55,9 +48,7 @@ fn test_blake2b_circuit_should_receive_an_output_length_less_or_equal_64() {
     let input = vec![];
     let input_size = 0;
     let expected_output_state = [Fr::ZERO; 65];
-    let circuit = Blake2bCircuit::<Fr>::new_for(input, input_size, vec![], 0, output_size);
-    let prover = MockProver::run(17, &circuit, vec![expected_output_state.to_vec()]).unwrap();
-    prover.verify().unwrap();
+    _run_test(output_size, input, input_size, expected_output_state);
 }
 
 #[test]
@@ -67,9 +58,15 @@ fn test_blake2b_circuit_should_receive_an_output_length_bigger_or_equal_1() {
     let input = vec![];
     let input_size = 0;
     let expected_output_state = [Fr::ZERO; 65];
-    let circuit = Blake2bCircuit::<Fr>::new_for(input, input_size, vec![], 0, output_size);
-    let prover = MockProver::run(17, &circuit, vec![expected_output_state.to_vec()]).unwrap();
-    prover.verify().unwrap();
+    _run_test(output_size, input, input_size, expected_output_state);
+}
+
+fn _run_test<const OUT_SIZE: usize>(output_size: usize, input: Vec<Value<Fr>>, input_size: usize, expected_output_state: [Fr; OUT_SIZE]) {
+    let circuit =
+        CircuitRunner::create_circuit_for_inputs(input, input_size, vec![], 0, output_size);
+    let prover =
+        CircuitRunner::mock_prove_with_public_inputs(expected_output_state.to_vec(), circuit);
+    CircuitRunner::verify_mock_prover(prover);
 }
 
 fn _correct_output_for_empty_input_1() -> [Fr; 1] {

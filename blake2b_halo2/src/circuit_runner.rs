@@ -1,6 +1,7 @@
+use super::*;
 use halo2_proofs::dev::MockProver;
 use halo2_proofs::halo2curves::bn256::Fr;
-use crate::circuits::blake2b_circuit::Blake2bCircuit;
+use crate::circuits::blake2b_circuit::Blake2bCircuit as Blake2bCircuitGeneric;
 use halo2_proofs::{
     halo2curves::bn256::{Bn256},
     plonk::{create_proof, keygen_pk, keygen_vk_with_k, prepare, ProvingKey, VerifyingKey},
@@ -10,9 +11,11 @@ use halo2_proofs::{
     },
     transcript::{CircuitTranscript, Transcript},
 };
-use super::*;
+use crate::chips::blake2b_implementations::blake2b_chip::Blake2bChip;
+use crate::chips::blake2b_implementations::blake2b_chip_optimization::Blake2bChipOptimization;
 
-type Blake2bCircuitInputs = (Vec<Value<Fr>>, usize, Vec<Value<Fr>>, usize, [Fr; 64], usize);
+type Blake2bCircuit<F> = Blake2bCircuitGeneric<F, Blake2bChip<F>>;
+pub type Blake2bCircuitInputs = (Vec<Value<Fr>>, usize, Vec<Value<Fr>>, usize, [Fr; 64], usize);
 
 pub struct CircuitRunner;
 
@@ -48,9 +51,9 @@ impl CircuitRunner {
         MockProver::run(17, &circuit, vec![expected_output_fields]).unwrap()
     }
 
-    pub fn mock_prove_with_public_inputs_ref(
+    pub fn mock_prove_with_public_inputs_ref<OptimizationChip: Blake2bChipOptimization<Fr>>(
         expected_output_fields: &[Fr],
-        circuit: &Blake2bCircuit<Fr>,
+        circuit: &Blake2bCircuitGeneric<Fr, OptimizationChip>,
     ) -> MockProver<Fr> {
         MockProver::run(17, circuit, vec![expected_output_fields.to_vec()]).unwrap()
     }
@@ -63,6 +66,11 @@ impl CircuitRunner {
         output_size: usize,
     ) -> Blake2bCircuit<Fr> {
         Blake2bCircuit::<Fr>::new_for(input_values, input_size, key_values, key_size, output_size)
+    }
+
+    pub fn create_circuit_for_inputs_optimization<OptimizationChip: Blake2bChipOptimization<Fr>>(ci: Blake2bCircuitInputs)
+            -> Blake2bCircuitGeneric<Fr, OptimizationChip> {
+        Blake2bCircuitGeneric::<Fr, OptimizationChip>::new_for(ci.0, ci.1, ci.2, ci.3, ci.5)
     }
 
     pub fn prepare_parameters_for_test(

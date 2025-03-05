@@ -11,6 +11,7 @@ use ff::PrimeField;
 use halo2_proofs::circuit::{AssignedCell, Layouter, Value};
 use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Fixed, Instance};
 use num_bigint::BigUint;
+use crate::chips::blake2b_implementations::blake2b_chip_optimization::Blake2bChipOptimization;
 use crate::chips::xor_chip::XorChip;
 
 type AdditionChip<F> = AdditionChipWith4Limbs<F>;
@@ -36,11 +37,11 @@ pub struct Blake2bChipA<F: PrimeField> {
     expected_final_state: Column<Instance>,
 }
 
-impl<F: PrimeField> Blake2bChipA<F> {
+impl <F: PrimeField> Blake2bChipOptimization<F> for Blake2bChipA<F> {
     /// The chip does not own the advice columns it utilizes. It is the responsibility of the caller
     /// to provide them. This gives flexibility to the caller to use the same advice columns for
     /// multiple purposes.
-    pub fn configure(
+    fn configure(
         meta: &mut ConstraintSystem<F>,
         full_number_u64: Column<Advice>,
         limbs: [Column<Advice>; 8],
@@ -77,14 +78,14 @@ impl<F: PrimeField> Blake2bChipA<F> {
 
     /// This method initializes the chip with the necessary lookup tables. It should be called once
     /// before the hash computation.
-    pub fn initialize_with(&mut self, layouter: &mut impl Layouter<F>) {
+    fn initialize_with(&mut self, layouter: &mut impl Layouter<F>) {
         self._populate_lookup_table_8(layouter);
         self._populate_xor_lookup_table(layouter);
         self._populate_lookup_table_16(layouter);
     }
 
     /// This is the main method of the chip. It computes the Blake2b hash for the given inputs.
-    pub fn compute_blake2b_hash_for_inputs(
+    fn compute_blake2b_hash_for_inputs(
         &mut self,
         layouter: &mut impl Layouter<F>,
         output_size: usize,
@@ -150,7 +151,9 @@ impl<F: PrimeField> Blake2bChipA<F> {
             output_size,
         )
     }
+}
 
+impl<F: PrimeField> Blake2bChipA<F> {
     /// Enforces the output and key sizes.
     fn _enforce_input_sizes(output_size: usize, key_size: usize) {
         assert!(output_size <= 64, "Output size must be between 1 and 64 bytes");
