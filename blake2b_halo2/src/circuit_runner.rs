@@ -129,10 +129,8 @@ impl CircuitRunner {
         );
 
         let params = ParamsKZG::<Bn256>::unsafe_setup(17, &mut rand::thread_rng());
-        let vk: VerifyingKey<Fr, KZGCommitmentScheme<Bn256>> =
-            keygen_vk_with_k(&params, &circuit, 17).expect("Verifying key should be created");
-        let pk: ProvingKey<Fr, KZGCommitmentScheme<Bn256>> =
-            keygen_pk(vk.clone(), &circuit).expect("Proving key should be created");
+        let vk: VerifyingKey<Fr, KZGCommitmentScheme<Bn256>> = Self::create_vk(&circuit, &params);
+        let pk: ProvingKey<Fr, KZGCommitmentScheme<Bn256>> = Self::create_pk(&circuit, vk);
 
         let mut transcript = CircuitTranscript::init();
         create_proof(
@@ -144,7 +142,6 @@ impl CircuitRunner {
             &mut transcript,
         )
         .expect("Proof generation should work");
-
         let proof = transcript.finalize();
 
         let mut transcript = CircuitTranscript::init_from_bytes(&proof[..]);
@@ -157,5 +154,13 @@ impl CircuitRunner {
         .unwrap()
         .verify(&params.verifier_params())
         .is_ok());
+    }
+
+    fn create_pk(circuit: &Blake2bCircuit<Fr>, vk: VerifyingKey<Fr, KZGCommitmentScheme<Bn256>>) -> ProvingKey<Fr, KZGCommitmentScheme<Bn256>> {
+        keygen_pk(vk.clone(), circuit).expect("Proving key should be created")
+    }
+
+    fn create_vk(circuit: &Blake2bCircuit<Fr>, params: &ParamsKZG<Bn256>) -> VerifyingKey<Fr, KZGCommitmentScheme<Bn256>> {
+        keygen_vk_with_k(params, circuit, 17).expect("Verifying key should be created")
     }
 }
