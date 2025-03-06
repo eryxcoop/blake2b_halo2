@@ -6,9 +6,6 @@ pub type AdditionConfigWith8Limbs<F> = AdditionMod64Config<F, 8, 10>;
 pub type AdditionConfigWith4Limbs<F> = AdditionMod64Config<F, 4, 6>;
 
 #[derive(Clone, Debug)]
-// Rather than the 'Chip' we refer to this as the 'Configuration', as you are only specifying
-// columns. See here https://github.com/midnightntwrk/midnight-circuits/blob/main/src/hash/sha256/table11/range16.rs#L27
-// Then the chip contains the config (possibly different configs, or even other chips).
 /// This config uses two generics, T and R.
 /// T is used to define the number of limbs we will use to represent numbers in the trace
 /// (it will be 4 for 16b limbs or 8 for 8b limbs)
@@ -97,34 +94,13 @@ impl<F: PrimeField, const T: usize, const R: usize> AdditionMod64Config<F, T, R>
         )?;
         Ok(())
     }
-
     /// This method receives two cells, and generates the rows for the addition of their values.
     /// We copy the values of the cells to the trace, and then calculate the result and carry
     /// of the addition and write it in a third row.
-    pub fn generate_addition_rows_from_cells(
-        &mut self,
-        region: &mut Region<F>,
-        offset: &mut usize,
-        cell_a: &AssignedCell<F, F>,
-        cell_b: &AssignedCell<F, F>,
-        decompose_config: &mut impl Decomposition<F, T>,
-    ) -> Result<[AssignedCell<F, F>; 2], Error> {
-        let (result_value, carry_value) = Self::calculate_result_and_carry(cell_a.value(), cell_b.value());
-
-        self.q_add.enable(region, *offset)?;
-        decompose_config.generate_row_from_cell(region, cell_a, *offset)?;
-        *offset += 1;
-        decompose_config.generate_row_from_cell(region, cell_b, *offset)?;
-        *offset += 1;
-        let result_cell = decompose_config.generate_row_from_value(region, result_value, *offset)?;
-        let carry_cell = region.assign_advice(|| "carry", self.carry, *offset, || carry_value)?;
-        *offset += 1;
-        Ok([result_cell, carry_cell])
-    }
-
-    /// This method is intended to be used when one of the addition parameters (previous_cell)
-    /// is the last cell that was generated in the circuit. This way, we can avoid generating
-    /// the row for the previous_cell again, and just copy the cell_to_copy.
+    ///
+    /// When one of the addition parameters (previous_cell)
+    /// is the last cell that was generated in the circuit, by setting the use_last_cell_as_first_operand
+    /// to true we can avoid generating the row for the previous_cell again, and just copy the cell_to_copy.
     pub fn generate_addition_rows_from_cells_optimized(
         &mut self,
         region: &mut Region<F>,
@@ -132,13 +108,19 @@ impl<F: PrimeField, const T: usize, const R: usize> AdditionMod64Config<F, T, R>
         previous_cell: &AssignedCell<F, F>,
         cell_to_copy: &AssignedCell<F, F>,
         decompose_config: &mut impl Decomposition<F, T>,
+        use_last_cell_as_first_operand: bool,
     ) -> Result<[AssignedCell<F, F>; 2], Error> {
-        let (result_value, carry_value) =
-            Self::calculate_result_and_carry(previous_cell.value(), cell_to_copy.value());
+        let (result_value, carry_value) = Self::calculate_result_and_carry(previous_cell.value(), cell_to_copy.value());
+        let offset_to_enable = *offset - if use_last_cell_as_first_operand {1} else {0};
+        self.q_add.enable(region, offset_to_enable)?;
 
-        self.q_add.enable(region, *offset - 1)?;
         decompose_config.generate_row_from_cell(region, cell_to_copy, *offset)?;
         *offset += 1;
+        if !use_last_cell_as_first_operand {
+            decompose_config.generate_row_from_cell(region, previous_cell, *offset)?;
+            *offset += 1;
+        }
+
         let result_cell = decompose_config.generate_row_from_value(region, result_value, *offset)?;
         let carry_cell = region.assign_advice(|| "carry", self.carry, *offset, || carry_value)?;
         *offset += 1;

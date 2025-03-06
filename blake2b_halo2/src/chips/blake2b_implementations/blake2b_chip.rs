@@ -731,10 +731,10 @@ impl<F: PrimeField> Blake2bChip<F> {
     ) -> Result<AssignedCell<F, F>, Error> {
         cfg_if::cfg_if! {
             if #[cfg(feature = "sum_with_8_limbs")] {
-                let addition_cell = self.addition_config.generate_addition_rows_from_cells(region, offset, lhs, rhs, &mut self.decompose_8_config)?[0].clone();
+                let addition_cell = self.addition_config.generate_addition_rows_from_cells_optimized(region, offset, lhs, rhs, &mut self.decompose_8_config, false)?[0].clone();
                 Ok(addition_cell)
             } else if #[cfg(feature = "sum_with_4_limbs")] {
-                let addition_cell = self.addition_config.generate_addition_rows_from_cells(region, offset, lhs, rhs, &mut self.decompose_16_config)?[0].clone();
+                let addition_cell = self.addition_config.generate_addition_rows_from_cells_optimized(region, offset, lhs, rhs, &mut self.decompose_16_config, false)?[0].clone();
                 Ok(addition_cell)
             } else {
                 panic!("No feature selected");
@@ -754,11 +754,11 @@ impl<F: PrimeField> Blake2bChip<F> {
         cfg_if::cfg_if! {
             if #[cfg(feature = "sum_with_8_limbs")] {
                 self.addition_config
-                    .generate_addition_rows_from_cells_optimized(region, offset, previous_cell, cell_to_copy, &mut self.decompose_8_config)
+                    .generate_addition_rows_from_cells_optimized(region, offset, previous_cell, cell_to_copy, &mut self.decompose_8_config, true)
                     .unwrap()[0].clone()
             } else if #[cfg(feature = "sum_with_4_limbs")] {
                 self.addition_config
-                    .generate_addition_rows_from_cells_optimized(region, offset, previous_cell, cell_to_copy, &mut self.decompose_16_config)
+                    .generate_addition_rows_from_cells_optimized(region, offset, previous_cell, cell_to_copy, &mut self.decompose_16_config, true)
                     .unwrap()[0].clone()
             } else {
                 panic!("No feature selected");
