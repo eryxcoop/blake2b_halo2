@@ -6,9 +6,9 @@ use halo2_proofs::halo2curves::bn256::Fr;
 use blake2b_halo2::circuit_runner::{Blake2bCircuitInputs, CircuitRunner};
 use rand::Rng;
 use blake2b_halo2::auxiliar_functions::value_for;
-use blake2b_halo2::chips::blake2b_implementations::blake2b_chip_a::Blake2bChipOpt4Limbs;
-use blake2b_halo2::chips::blake2b_implementations::blake2b_chip_b::Blake2bChipOptRecycle;
-use blake2b_halo2::chips::blake2b_implementations::blake2b_chip_c::Blake2bChipOptSpread;
+use blake2b_halo2::chips::blake2b_implementations::blake2b_chip_opt_4_limbs::Blake2bChipOpt4Limbs;
+use blake2b_halo2::chips::blake2b_implementations::blake2b_chip_opt_recycle::Blake2bChipOptRecycle;
+use blake2b_halo2::chips::blake2b_implementations::blake2b_chip_opt_spread::Blake2bChipOptSpread;
 use blake2b_halo2::chips::blake2b_implementations::blake2b_instructions::Blake2bInstructions;
 
 fn criterion_benchmark(c: &mut Criterion) {
