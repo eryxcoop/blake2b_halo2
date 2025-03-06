@@ -61,7 +61,12 @@ fn test_blake2b_circuit_should_receive_an_output_length_bigger_or_equal_1() {
     run_variable_output_length_test(output_size, input, input_size, expected_output_state);
 }
 
-fn run_variable_output_length_test<const OUT_SIZE: usize>(output_size: usize, input: Vec<Value<Fr>>, input_size: usize, expected_output_state: [Fr; OUT_SIZE]) {
+fn run_variable_output_length_test<const OUT_SIZE: usize>(
+    output_size: usize,
+    input: Vec<Value<Fr>>,
+    input_size: usize,
+    expected_output_state: [Fr; OUT_SIZE],
+) {
     let circuit =
         CircuitRunner::create_circuit_for_inputs(input, input_size, vec![], 0, output_size);
     let prover =

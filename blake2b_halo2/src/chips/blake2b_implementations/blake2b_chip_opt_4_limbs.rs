@@ -5,7 +5,6 @@
 /// one less column (the carry column). This is because the addition chip of 8 bits uses 10 columns
 /// (the maximum amount of columns any chip uses) and the addition chip of 4 bits uses 6 columns.
 /// It also computes xor with a table that precomputes all the possible 8-bit operands.
-
 use super::*;
 use crate::auxiliar_functions::{value_for};
 use crate::chips::decompose_16::Decompose16Config;
@@ -19,7 +18,6 @@ use halo2_proofs::circuit::{AssignedCell, Layouter, Value};
 use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Fixed, Instance};
 use num_bigint::BigUint;
 use crate::chips::blake2b_implementations::blake2b_instructions::Blake2bInstructions;
-
 
 use crate::chips::addition_mod_64::{AdditionConfigWith4Limbs};
 use crate::chips::xor_table::XorTableConfig;
@@ -47,7 +45,7 @@ pub struct Blake2bChipOpt4Limbs<F: PrimeField> {
     expected_final_state: Column<Instance>,
 }
 
-impl <F: PrimeField> Blake2bInstructions<F> for Blake2bChipOpt4Limbs<F> {
+impl<F: PrimeField> Blake2bInstructions<F> for Blake2bChipOpt4Limbs<F> {
     /// The chip does not own the advice columns it utilizes. It is the responsibility of the caller
     /// to provide them. This gives flexibility to the caller to use the same advice columns for
     /// multiple purposes.
@@ -57,7 +55,8 @@ impl <F: PrimeField> Blake2bInstructions<F> for Blake2bChipOpt4Limbs<F> {
         limbs: [Column<Advice>; 8],
     ) -> Self {
         Self::enforce_modulus_size();
-        let addition_config = AdditionConfigWith4Limbs::<F>::configure(meta, full_number_u64, limbs[4]);
+        let addition_config =
+            AdditionConfigWith4Limbs::<F>::configure(meta, full_number_u64, limbs[4]);
 
         let decompose_16_config =
             Decompose16Config::configure(meta, full_number_u64, limbs[0..4].try_into().unwrap());
@@ -692,7 +691,15 @@ impl<F: PrimeField> Blake2bChipOpt4Limbs<F> {
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<AssignedCell<F, F>, Error> {
-        let addition_cell = self.addition_config.generate_addition_rows_from_cells_optimized(region, offset, lhs, rhs, &mut self.decompose_16_config, false)?[0].clone();
+        let addition_cell = self.addition_config.generate_addition_rows_from_cells_optimized(
+            region,
+            offset,
+            lhs,
+            rhs,
+            &mut self.decompose_16_config,
+            false,
+        )?[0]
+            .clone();
         Ok(addition_cell)
     }
 
@@ -706,8 +713,16 @@ impl<F: PrimeField> Blake2bChipOpt4Limbs<F> {
         offset: &mut usize,
     ) -> AssignedCell<F, F> {
         self.addition_config
-            .generate_addition_rows_from_cells_optimized(region, offset, previous_cell, cell_to_copy, &mut self.decompose_16_config, true)
-            .unwrap()[0].clone()
+            .generate_addition_rows_from_cells_optimized(
+                region,
+                offset,
+                previous_cell,
+                cell_to_copy,
+                &mut self.decompose_16_config,
+                true,
+            )
+            .unwrap()[0]
+            .clone()
     }
 
     fn not(
@@ -728,15 +743,15 @@ impl<F: PrimeField> Blake2bChipOpt4Limbs<F> {
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<AssignedCell<F, F>, Error> {
-        let full_number_cell = self.xor_config
-            .generate_xor_rows_from_cells_optimized(
-                region,
-                offset,
-                lhs,
-                rhs,
-                &mut self.decompose_8_config,
-                false,
-            )?[0].clone();
+        let full_number_cell = self.xor_config.generate_xor_rows_from_cells_optimized(
+            region,
+            offset,
+            lhs,
+            rhs,
+            &mut self.decompose_8_config,
+            false,
+        )?[0]
+            .clone();
         Ok(full_number_cell)
     }
 

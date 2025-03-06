@@ -1,6 +1,5 @@
 use super::*;
 
-
 /// We have a single chip holding 3 optimizations, which is Blake2bChip. That chip uses features to
 /// switch between different optimizations.
 /// In order to benchmark the 3 optimizations at the same time, we decided to unfold that chip

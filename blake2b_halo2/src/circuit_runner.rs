@@ -68,8 +68,9 @@ impl CircuitRunner {
         Blake2bCircuit::<Fr>::new_for(input_values, input_size, key_values, key_size, output_size)
     }
 
-    pub fn create_circuit_for_inputs_optimization<OptimizationChip: Blake2bInstructions<Fr>>(ci: Blake2bCircuitInputs)
-                                                                                             -> Blake2bCircuitGeneric<Fr, OptimizationChip> {
+    pub fn create_circuit_for_inputs_optimization<OptimizationChip: Blake2bInstructions<Fr>>(
+        ci: Blake2bCircuitInputs,
+    ) -> Blake2bCircuitGeneric<Fr, OptimizationChip> {
         Blake2bCircuitGeneric::<Fr, OptimizationChip>::new_for(ci.0, ci.1, ci.2, ci.3, ci.5)
     }
 

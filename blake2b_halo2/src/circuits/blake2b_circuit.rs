@@ -24,7 +24,9 @@ pub struct Blake2bConfig<F: PrimeField, OptimizationChip: Blake2bInstructions<F>
     blake2b_chip: OptimizationChip,
 }
 
-impl<F: PrimeField, OptimizationChip: Blake2bInstructions<F>> Circuit<F> for Blake2bCircuit<F, OptimizationChip> {
+impl<F: PrimeField, OptimizationChip: Blake2bInstructions<F>> Circuit<F>
+    for Blake2bCircuit<F, OptimizationChip>
+{
     type Config = Blake2bConfig<F, OptimizationChip>;
     type FloorPlanner = SimpleFloorPlanner;
 

@@ -2,7 +2,6 @@
 /// It contains all the necessary chips and some extra columns.
 ///
 /// This optimization uses addition with 8 limbs and computes xor with a spread table of 8-bits.
-
 use super::*;
 use crate::auxiliar_functions::{value_for};
 use crate::chips::decompose_16::Decompose16Config;
@@ -43,7 +42,7 @@ pub struct Blake2bChipOptSpread<F: PrimeField> {
     expected_final_state: Column<Instance>,
 }
 
-impl <F: PrimeField> Blake2bInstructions<F> for Blake2bChipOptSpread<F> {
+impl<F: PrimeField> Blake2bInstructions<F> for Blake2bChipOptSpread<F> {
     /// The chip does not own the advice columns it utilizes. It is the responsibility of the caller
     /// to provide them. This gives flexibility to the caller to use the same advice columns for
     /// multiple purposes.
@@ -54,9 +53,9 @@ impl <F: PrimeField> Blake2bInstructions<F> for Blake2bChipOptSpread<F> {
     ) -> Self {
         Self::enforce_modulus_size();
 
-            let carry = meta.advice_column();
-            let addition_config = AdditionConfigWith8Limbs::<F>::configure(meta, full_number_u64, carry);
-
+        let carry = meta.advice_column();
+        let addition_config =
+            AdditionConfigWith8Limbs::<F>::configure(meta, full_number_u64, carry);
 
         let decompose_16_config =
             Decompose16Config::configure(meta, full_number_u64, limbs[0..4].try_into().unwrap());
@@ -64,8 +63,7 @@ impl <F: PrimeField> Blake2bInstructions<F> for Blake2bChipOptSpread<F> {
         let generic_limb_rotation_config = LimbRotationConfig::new();
         let rotate_63_config = Rotate63Config::configure(meta, full_number_u64);
 
-                let xor_config = XorConfig::configure(meta, limbs, full_number_u64, carry);
-
+        let xor_config = XorConfig::configure(meta, limbs, full_number_u64, carry);
 
         let negate_config = NegateConfig::configure(meta, full_number_u64);
 
@@ -691,10 +689,16 @@ impl<F: PrimeField> Blake2bChipOptSpread<F> {
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<AssignedCell<F, F>, Error> {
-
-                let addition_cell = self.addition_config.generate_addition_rows_from_cells_optimized(region, offset, lhs, rhs, &mut self.decompose_8_config, false)?[0].clone();
-                Ok(addition_cell)
-
+        let addition_cell = self.addition_config.generate_addition_rows_from_cells_optimized(
+            region,
+            offset,
+            lhs,
+            rhs,
+            &mut self.decompose_8_config,
+            false,
+        )?[0]
+            .clone();
+        Ok(addition_cell)
     }
 
     /// Sometimes we can reutilice an output row to be the input row of the next operation. This is
@@ -706,11 +710,17 @@ impl<F: PrimeField> Blake2bChipOptSpread<F> {
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> AssignedCell<F, F> {
-
-                self.addition_config
-                    .generate_addition_rows_from_cells_optimized(region, offset, previous_cell, cell_to_copy, &mut self.decompose_8_config, true)
-                    .unwrap()[0].clone()
-
+        self.addition_config
+            .generate_addition_rows_from_cells_optimized(
+                region,
+                offset,
+                previous_cell,
+                cell_to_copy,
+                &mut self.decompose_8_config,
+                true,
+            )
+            .unwrap()[0]
+            .clone()
     }
 
     fn not(
@@ -731,15 +741,15 @@ impl<F: PrimeField> Blake2bChipOptSpread<F> {
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<AssignedCell<F, F>, Error> {
-        let full_number_cell = self.xor_config
-            .generate_xor_rows_from_cells_optimized(
-                region,
-                offset,
-                lhs,
-                rhs,
-                &mut self.decompose_8_config,
-                false,
-            )?[0].clone();
+        let full_number_cell = self.xor_config.generate_xor_rows_from_cells_optimized(
+            region,
+            offset,
+            lhs,
+            rhs,
+            &mut self.decompose_8_config,
+            false,
+        )?[0]
+            .clone();
         Ok(full_number_cell)
     }
 
@@ -752,9 +762,7 @@ impl<F: PrimeField> Blake2bChipOptSpread<F> {
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> [AssignedCell<F, F>; 9] {
-
-                self.xor_copying_one_parameter(previous_cell, cell_to_copy, region, offset)
-
+        self.xor_copying_one_parameter(previous_cell, cell_to_copy, region, offset)
     }
 
     #[allow(dead_code)]

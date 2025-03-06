@@ -65,8 +65,7 @@ impl<F: PrimeField, const T: usize, const R: usize> AdditionMod64Config<F, T, R>
         layouter: &mut impl Layouter<F>,
         addition_trace: [[Value<F>; R]; 3],
         decompose_config: &mut impl Decomposition<F, T>,
-    ) -> Result<(), Error>{
-
+    ) -> Result<(), Error> {
         layouter.assign_region(
             || "decompose",
             |mut region| {
@@ -110,8 +109,9 @@ impl<F: PrimeField, const T: usize, const R: usize> AdditionMod64Config<F, T, R>
         decompose_config: &mut impl Decomposition<F, T>,
         use_last_cell_as_first_operand: bool,
     ) -> Result<[AssignedCell<F, F>; 2], Error> {
-        let (result_value, carry_value) = Self::calculate_result_and_carry(previous_cell.value(), cell_to_copy.value());
-        let offset_to_enable = *offset - if use_last_cell_as_first_operand {1} else {0};
+        let (result_value, carry_value) =
+            Self::calculate_result_and_carry(previous_cell.value(), cell_to_copy.value());
+        let offset_to_enable = *offset - if use_last_cell_as_first_operand { 1 } else { 0 };
         self.q_add.enable(region, offset_to_enable)?;
 
         decompose_config.generate_row_from_cell(region, cell_to_copy, *offset)?;
@@ -121,22 +121,20 @@ impl<F: PrimeField, const T: usize, const R: usize> AdditionMod64Config<F, T, R>
             *offset += 1;
         }
 
-        let result_cell = decompose_config.generate_row_from_value(region, result_value, *offset)?;
+        let result_cell =
+            decompose_config.generate_row_from_value(region, result_value, *offset)?;
         let carry_cell = region.assign_advice(|| "carry", self.carry, *offset, || carry_value)?;
         *offset += 1;
         Ok([result_cell, carry_cell])
     }
 
-    fn calculate_result_and_carry(
-        lhs: Value<&F>,
-        rhs: Value<&F>,
-    ) -> (Value<F>, Value<F>) {
-        let [result_value, carry_value] = lhs.zip(rhs).map(|(a, b)| {
-            [
-                auxiliar_functions::sum_mod_64(*a, *b),
-                auxiliar_functions::carry_mod_64(*a, *b)
-            ]
-        }).transpose_array();
+    fn calculate_result_and_carry(lhs: Value<&F>, rhs: Value<&F>) -> (Value<F>, Value<F>) {
+        let [result_value, carry_value] = lhs
+            .zip(rhs)
+            .map(|(a, b)| {
+                [auxiliar_functions::sum_mod_64(*a, *b), auxiliar_functions::carry_mod_64(*a, *b)]
+            })
+            .transpose_array();
 
         (result_value, carry_value)
     }

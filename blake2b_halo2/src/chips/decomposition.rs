@@ -24,7 +24,7 @@ pub trait Decomposition<F: PrimeField, const T: usize> {
     ) -> Result<Vec<AssignedCell<F, F>>, Error>;
 
     /// Populates the table for the range check
-    fn populate_lookup_table(&self, layouter: &mut impl Layouter<F>) -> Result<(), Error>{
+    fn populate_lookup_table(&self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
         layouter.assign_table(
             || format!("range {}-bit check table", Self::LIMB_SIZE),
             |mut table| {

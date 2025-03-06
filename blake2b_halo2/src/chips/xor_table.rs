@@ -157,8 +157,11 @@ impl<F: PrimeField> XorTableConfig<F> {
             *offset += 1;
         }
 
-        let result_row =
-            decompose_8_config.generate_row_from_value_and_keep_row(region, result_value, *offset)?;
+        let result_row = decompose_8_config.generate_row_from_value_and_keep_row(
+            region,
+            result_value,
+            *offset,
+        )?;
         *offset += 1;
 
         let result_row_array = result_row.try_into().unwrap();

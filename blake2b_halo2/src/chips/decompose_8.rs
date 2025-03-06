@@ -73,8 +73,8 @@ impl<F: PrimeField> Decomposition<F, 8> for Decompose8Config<F> {
         offset: usize,
     ) -> Result<Vec<AssignedCell<F, F>>, Error> {
         self.q_decompose.enable(region, offset)?;
-        let full_number = region
-            .assign_advice(|| "full number", self.full_number_u64, offset, || row[0])?;
+        let full_number =
+            region.assign_advice(|| "full number", self.full_number_u64, offset, || row[0])?;
 
         let limbs = (0..8)
             .map(|i| {

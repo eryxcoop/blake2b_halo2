@@ -3,7 +3,6 @@
 ///
 /// This optimization uses addition with 8 limbs and computes xor with a table that precomputes
 /// all the possible 8-bit operands.
-
 use super::*;
 use crate::auxiliar_functions::{value_for};
 use crate::chips::decompose_16::Decompose16Config;
@@ -44,7 +43,7 @@ pub struct Blake2bChipOptRecycle<F: PrimeField> {
     expected_final_state: Column<Instance>,
 }
 
-impl <F: PrimeField> Blake2bInstructions<F> for Blake2bChipOptRecycle<F> {
+impl<F: PrimeField> Blake2bInstructions<F> for Blake2bChipOptRecycle<F> {
     /// The chip does not own the advice columns it utilizes. It is the responsibility of the caller
     /// to provide them. This gives flexibility to the caller to use the same advice columns for
     /// multiple purposes.
@@ -56,8 +55,8 @@ impl <F: PrimeField> Blake2bInstructions<F> for Blake2bChipOptRecycle<F> {
         Self::enforce_modulus_size();
 
         let carry = meta.advice_column();
-        let addition_config = AdditionConfigWith8Limbs::<F>::configure(meta, full_number_u64, carry);
-
+        let addition_config =
+            AdditionConfigWith8Limbs::<F>::configure(meta, full_number_u64, carry);
 
         let decompose_16_config =
             Decompose16Config::configure(meta, full_number_u64, limbs[0..4].try_into().unwrap());
@@ -691,7 +690,15 @@ impl<F: PrimeField> Blake2bChipOptRecycle<F> {
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<AssignedCell<F, F>, Error> {
-        let addition_cell = self.addition_config.generate_addition_rows_from_cells_optimized(region, offset, lhs, rhs, &mut self.decompose_8_config, false)?[0].clone();
+        let addition_cell = self.addition_config.generate_addition_rows_from_cells_optimized(
+            region,
+            offset,
+            lhs,
+            rhs,
+            &mut self.decompose_8_config,
+            false,
+        )?[0]
+            .clone();
         Ok(addition_cell)
     }
 
@@ -705,8 +712,16 @@ impl<F: PrimeField> Blake2bChipOptRecycle<F> {
         offset: &mut usize,
     ) -> AssignedCell<F, F> {
         self.addition_config
-            .generate_addition_rows_from_cells_optimized(region, offset, previous_cell, cell_to_copy, &mut self.decompose_8_config, true)
-            .unwrap()[0].clone()
+            .generate_addition_rows_from_cells_optimized(
+                region,
+                offset,
+                previous_cell,
+                cell_to_copy,
+                &mut self.decompose_8_config,
+                true,
+            )
+            .unwrap()[0]
+            .clone()
     }
 
     fn not(
@@ -727,15 +742,15 @@ impl<F: PrimeField> Blake2bChipOptRecycle<F> {
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<AssignedCell<F, F>, Error> {
-        let full_number_cell = self.xor_config
-            .generate_xor_rows_from_cells_optimized(
-                region,
-                offset,
-                lhs,
-                rhs,
-                &mut self.decompose_8_config,
-                false,
-            )?[0].clone();
+        let full_number_cell = self.xor_config.generate_xor_rows_from_cells_optimized(
+            region,
+            offset,
+            lhs,
+            rhs,
+            &mut self.decompose_8_config,
+            false,
+        )?[0]
+            .clone();
         Ok(full_number_cell)
     }
 

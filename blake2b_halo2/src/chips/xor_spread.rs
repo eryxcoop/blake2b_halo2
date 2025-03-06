@@ -160,8 +160,11 @@ impl<F: PrimeField> XorSpreadConfig<F> {
         self.populate_spread_limbs_of(region, offset, value_result);
         *offset += 1;
 
-        let result_row =
-            decompose_8_config.generate_row_from_value_and_keep_row(region, value_result, *offset)?;
+        let result_row = decompose_8_config.generate_row_from_value_and_keep_row(
+            region,
+            value_result,
+            *offset,
+        )?;
 
         self.q_xor.enable(region, *offset)?;
         *offset += 1;

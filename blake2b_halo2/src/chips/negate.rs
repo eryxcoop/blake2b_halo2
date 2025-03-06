@@ -58,7 +58,8 @@ impl<F: PrimeField> NegateConfig<F> {
             value.and_then(|v0| Value::known(F::from(((1u128 << 64) - 1) as u64) - v0));
         decompose_config.generate_row_from_value(region, value, *offset)?;
         *offset += 1;
-        let result_cell = decompose_config.generate_row_from_value(region, result_value, *offset)?;
+        let result_cell =
+            decompose_config.generate_row_from_value(region, result_value, *offset)?;
         *offset += 1;
         Ok(result_cell)
     }

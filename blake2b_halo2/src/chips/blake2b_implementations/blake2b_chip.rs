@@ -62,7 +62,7 @@ pub struct Blake2bChip<F: PrimeField> {
     expected_final_state: Column<Instance>,
 }
 
-impl <F: PrimeField> Blake2bInstructions<F> for Blake2bChip<F> {
+impl<F: PrimeField> Blake2bInstructions<F> for Blake2bChip<F> {
     /// The chip does not own the advice columns it utilizes. It is the responsibility of the caller
     /// to provide them. This gives flexibility to the caller to use the same advice columns for
     /// multiple purposes.
@@ -784,15 +784,15 @@ impl<F: PrimeField> Blake2bChip<F> {
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<AssignedCell<F, F>, Error> {
-        let full_number_cell = self.xor_config
-            .generate_xor_rows_from_cells_optimized(
-                region,
-                offset,
-                lhs,
-                rhs,
-                &mut self.decompose_8_config,
-                false,
-            )?[0].clone();
+        let full_number_cell = self.xor_config.generate_xor_rows_from_cells_optimized(
+            region,
+            offset,
+            lhs,
+            rhs,
+            &mut self.decompose_8_config,
+            false,
+        )?[0]
+            .clone();
         Ok(full_number_cell)
     }
 

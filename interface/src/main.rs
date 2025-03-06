@@ -1,3 +1,4 @@
+use blake2b_halo2::chips::blake2b_implementations::blake2b_chip::Blake2bChip;
 use blake2b_halo2::circuits::blake2b_circuit::Blake2bCircuit;
 use halo2_proofs::circuit::Value;
 use halo2_proofs::dev::cost_model::{from_circuit_to_cost_model_options, CostOptions};
@@ -5,7 +6,6 @@ use halo2_proofs::dev::MockProver;
 use halo2_proofs::halo2curves::bn256::Fr;
 use serde::Deserialize;
 use std::cmp::max;
-use blake2b_halo2::chips::blake2b_implementations::blake2b_chip::Blake2bChip;
 
 #[derive(Deserialize, Debug)]
 struct Blake2bInput {
@@ -99,8 +99,13 @@ fn run_blake2b_halo2(
         .collect::<Vec<_>>();
 
     // TEST
-    let circuit =
-        Blake2bCircuit::<Fr, Blake2bChip<Fr>>::new_for(input_values, input_size, key_values, key_size, output_size);
+    let circuit = Blake2bCircuit::<Fr, Blake2bChip<Fr>>::new_for(
+        input_values,
+        input_size,
+        key_values,
+        key_size,
+        output_size,
+    );
 
     let k = compute_k(amount_of_blocks(&input_bytes, &key_bytes));
     let options = from_circuit_to_cost_model_options(Some(k), &circuit, 1);
