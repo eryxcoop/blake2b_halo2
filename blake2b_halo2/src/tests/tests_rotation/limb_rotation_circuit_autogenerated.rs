@@ -93,7 +93,7 @@ impl<F: PrimeField, const T: usize> Circuit<F> for LimbRotationCircuitAutogenera
                         limbs_to_rotate_to_the_right,
                     )?;
 
-                // Check that the calculation was performed correctly by the limb rotation chip
+                // Check that the calculation was performed correctly by the limb rotation config
                 let fixed_cell = region.assign_fixed(
                     || "assign expected result",
                     config.fixed,

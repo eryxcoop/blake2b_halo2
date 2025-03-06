@@ -9,8 +9,8 @@ use std::marker::PhantomData;
 #[derive(Clone)]
 pub struct XorConfig<F: PrimeField> {
     _ph: PhantomData<F>,
-    xor_chip: XorTableConfig<F>,
-    decompose_8_chip: Decompose8Config<F>,
+    xor_config: XorTableConfig<F>,
+    decompose_8_config: Decompose8Config<F>,
 }
 
 pub struct XorCircuit<F: PrimeField> {
@@ -42,13 +42,13 @@ impl<F: PrimeField> Circuit<F> for XorCircuit<F> {
         let full_number_u64 = meta.advice_column();
         let limbs_8_bits: [Column<Advice>; 8] = array::from_fn(|_| meta.advice_column());
 
-        let decompose_8_chip = Decompose8Config::configure(meta, full_number_u64, limbs_8_bits);
-        let xor_chip = XorTableConfig::configure(meta, limbs_8_bits);
+        let decompose_8_config = Decompose8Config::configure(meta, full_number_u64, limbs_8_bits);
+        let xor_config = XorTableConfig::configure(meta, limbs_8_bits);
 
         Self::Config {
             _ph: PhantomData,
-            xor_chip,
-            decompose_8_chip,
+            xor_config,
+            decompose_8_config,
         }
     }
 
@@ -58,13 +58,13 @@ impl<F: PrimeField> Circuit<F> for XorCircuit<F> {
         mut config: Self::Config,
         mut layouter: impl Layouter<F>,
     ) -> Result<(), Error> {
-        config.decompose_8_chip.populate_lookup_table(&mut layouter)?;
+        config.decompose_8_config.populate_lookup_table(&mut layouter)?;
 
-        config.xor_chip.populate_xor_lookup_table(&mut layouter)?;
-        config.xor_chip.populate_xor_region(
+        config.xor_config.populate_xor_lookup_table(&mut layouter)?;
+        config.xor_config.populate_xor_region(
             &mut layouter,
             self.trace,
-            &mut config.decompose_8_chip,
+            &mut config.decompose_8_config,
         )
     }
 }

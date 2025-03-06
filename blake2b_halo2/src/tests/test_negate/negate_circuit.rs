@@ -16,8 +16,8 @@ pub struct NegateCircuit<F: PrimeField> {
 #[derive(Clone)]
 pub struct NegateCircuitConfig<F: PrimeField> {
     _ph: PhantomData<F>,
-    negate_chip: NegateConfig<F>,
-    decompose_8_chip: Decompose8Config<F>,
+    negate_config: NegateConfig<F>,
+    decompose_8_config: Decompose8Config<F>,
     fixed_result: Column<Fixed>,
 }
 
@@ -38,9 +38,8 @@ impl<F: PrimeField> Circuit<F> for NegateCircuit<F> {
         let full_number_u64 = meta.advice_column();
         let limbs: [Column<Advice>; 8] = array::from_fn(|_| meta.advice_column());
 
-        let decompose_8_chip = Decompose8Config::configure(meta, full_number_u64, limbs);
-
-        let negate_chip = NegateConfig::<F>::configure(meta, full_number_u64);
+        let decompose_8_config = Decompose8Config::configure(meta, full_number_u64, limbs);
+        let negate_config = NegateConfig::<F>::configure(meta, full_number_u64);
 
         let fixed_result = meta.fixed_column();
         meta.enable_equality(full_number_u64);
@@ -48,8 +47,8 @@ impl<F: PrimeField> Circuit<F> for NegateCircuit<F> {
 
         Self::Config {
             _ph: PhantomData,
-            negate_chip,
-            decompose_8_chip,
+            negate_config,
+            decompose_8_config,
             fixed_result,
         }
     }
@@ -60,17 +59,17 @@ impl<F: PrimeField> Circuit<F> for NegateCircuit<F> {
         mut config: Self::Config,
         mut layouter: impl Layouter<F>,
     ) -> Result<(), Error> {
-        config.decompose_8_chip.populate_lookup_table(&mut layouter)?;
+        config.decompose_8_config.populate_lookup_table(&mut layouter)?;
 
         layouter.assign_region(
             || "negate",
             |mut region| {
                 let mut offset = 0;
-                let result = config.negate_chip.generate_rows(
+                let result = config.negate_config.generate_rows(
                     &mut region,
                     &mut offset,
                     self.value,
-                    &mut config.decompose_8_chip,
+                    &mut config.decompose_8_config,
                 )?;
                 let fixed_cell = region.assign_fixed(
                     || "assign fixed",

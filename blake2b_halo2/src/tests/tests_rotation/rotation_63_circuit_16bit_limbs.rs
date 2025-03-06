@@ -9,8 +9,8 @@ use std::marker::PhantomData;
 #[derive(Clone)]
 pub struct Rotation63Config16bitLimbs<F: Field> {
     _ph: PhantomData<F>,
-    rotation_63_chip: Rotate63Config<F, 4, 5>,
-    decompose_16_chip: Decompose16Config<F>,
+    rotation_63_config: Rotate63Config<F, 4, 5>,
+    decompose_16_config: Decompose16Config<F>,
 }
 
 pub struct Rotation63Circuit16bitLimbs<F: Field> {
@@ -42,14 +42,13 @@ impl<F: PrimeField> Circuit<F> for Rotation63Circuit16bitLimbs<F> {
         let full_number_u64 = meta.advice_column();
         let limbs_4_bits: [Column<Advice>; 4] = array::from_fn(|_| meta.advice_column());
 
-        let decompose_16_chip = Decompose16Config::configure(meta, full_number_u64, limbs_4_bits);
-
-        let rotation_63_chip = Rotate63Config::configure(meta, full_number_u64);
+        let decompose_16_config = Decompose16Config::configure(meta, full_number_u64, limbs_4_bits);
+        let rotation_63_config = Rotate63Config::configure(meta, full_number_u64);
 
         Self::Config {
             _ph: PhantomData,
-            decompose_16_chip,
-            rotation_63_chip,
+            decompose_16_config,
+            rotation_63_config,
         }
     }
 
@@ -59,10 +58,10 @@ impl<F: PrimeField> Circuit<F> for Rotation63Circuit16bitLimbs<F> {
         config: Self::Config,
         mut layouter: impl Layouter<F>,
     ) -> Result<(), Error> {
-        config.decompose_16_chip.populate_lookup_table(&mut layouter)?;
-        config.rotation_63_chip.populate_rotation_rows(
+        config.decompose_16_config.populate_lookup_table(&mut layouter)?;
+        config.rotation_63_config.populate_rotation_rows(
             &mut layouter,
-            &mut config.decompose_16_chip.clone(),
+            &mut config.decompose_16_config.clone(),
             self.trace,
         )
     }

@@ -35,14 +35,13 @@ impl<F: PrimeField> Circuit<F> for Rotation63Circuit8bitLimbs<F> {
         let full_number_u64 = meta.advice_column();
         let limbs_8_bits: [Column<Advice>; 8] = array::from_fn(|_| meta.advice_column());
 
-        let decompose_8_chip = Decompose8Config::configure(meta, full_number_u64, limbs_8_bits);
-
-        let rotation_63_chip = Rotate63Config::configure(meta, full_number_u64);
+        let decompose_8_config = Decompose8Config::configure(meta, full_number_u64, limbs_8_bits);
+        let rotation_63_config = Rotate63Config::configure(meta, full_number_u64);
 
         Self::Config {
             _ph: PhantomData,
-            decompose_8_chip,
-            rotation_63_chip,
+            decompose_8_config,
+            rotation_63_config,
         }
     }
 
@@ -52,10 +51,10 @@ impl<F: PrimeField> Circuit<F> for Rotation63Circuit8bitLimbs<F> {
         config: Self::Config,
         mut layouter: impl Layouter<F>,
     ) -> Result<(), Error> {
-        config.decompose_8_chip.populate_lookup_table(&mut layouter)?;
-        config.rotation_63_chip.populate_rotation_rows(
+        config.decompose_8_config.populate_lookup_table(&mut layouter)?;
+        config.rotation_63_config.populate_rotation_rows(
             &mut layouter,
-            &mut config.decompose_8_chip.clone(),
+            &mut config.decompose_8_config.clone(),
             self.trace,
         )
     }
