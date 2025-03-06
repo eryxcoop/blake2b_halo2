@@ -5,12 +5,12 @@ use crate::chips::decompose_8::Decompose8Config;
 use super::*;
 
 #[derive(Clone, Debug)]
-pub struct XorChipSpread<F: PrimeField> {
+pub struct XorSpreadConfig<F: PrimeField> {
     full_number_u64: Column<Advice>,
     limbs: [Column<Advice>; 8],
     extra: Column<Advice>,
 
-    t_range: TableColumn, // TODO: unify with Decompose8Chip
+    t_range: TableColumn, // TODO: unify with Decompose8Config
     t_spread: TableColumn,
     t_empty_spread: TableColumn,
 
@@ -18,7 +18,7 @@ pub struct XorChipSpread<F: PrimeField> {
     _ph: PhantomData<F>,
 }
 
-impl<F: PrimeField> XorChipSpread<F> {
+impl<F: PrimeField> XorSpreadConfig<F> {
     pub fn configure(
         meta: &mut ConstraintSystem<F>,
         limbs: [Column<Advice>; 8],
@@ -133,18 +133,18 @@ impl<F: PrimeField> XorChipSpread<F> {
         offset: &mut usize,
         previous_cell: &AssignedCell<F, F>,
         cell_to_copy: &AssignedCell<F, F>,
-        decompose_8_chip: &mut Decompose8Config<F>,
+        decompose_8_config: &mut Decompose8Config<F>,
         use_previous_cell: bool,
     ) -> Result<[AssignedCell<F, F>; 9], Error> {
         let value_lhs = previous_cell.value().copied();
         let value_rhs = cell_to_copy.value().copied();
 
         if !use_previous_cell {
-            decompose_8_chip.generate_row_from_cell(region, previous_cell, *offset)?;
+            decompose_8_config.generate_row_from_cell(region, previous_cell, *offset)?;
             *offset += 1;
         }
 
-        decompose_8_chip.generate_row_from_cell(region, cell_to_copy, *offset)?;
+        decompose_8_config.generate_row_from_cell(region, cell_to_copy, *offset)?;
         *offset += 1;
 
         self.populate_spread_limbs_of(region, offset, value_lhs);
@@ -161,7 +161,7 @@ impl<F: PrimeField> XorChipSpread<F> {
         *offset += 1;
 
         let result_row =
-            decompose_8_chip.generate_row_from_value_and_keep_row(region, value_result, *offset)?;
+            decompose_8_config.generate_row_from_value_and_keep_row(region, value_result, *offset)?;
 
         self.q_xor.enable(region, *offset)?;
         *offset += 1;

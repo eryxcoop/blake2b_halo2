@@ -1,11 +1,11 @@
 use super::*;
-use crate::chips::decomposition_trait::Decomposition;
+use crate::chips::decomposition::Decomposition;
 use halo2_proofs::circuit::AssignedCell;
 
-/// This chip handles the decomposition of 64-bit numbers into 8-bit limbs in the trace
+/// This config handles the decomposition of 64-bit numbers into 16-bit limbs in the trace
 #[derive(Clone, Debug)]
 pub struct Decompose16Config<F: Field> {
-    /// The full number and the limbs are not owned by the chip.
+    /// The full number and the limbs are not owned by the config.
     full_number_u64: Column<Advice>,
     /// There are 4 limbs of 16 bits each
     limbs: [Column<Advice>; 4],
@@ -23,7 +23,7 @@ impl<F: PrimeField> Decomposition<F, 4> for Decompose16Config<F> {
         self.t_range
     }
 
-    /// The full number and the limbs are not owned by the chip.
+    /// The full number and the limbs are not owned by the config.
     fn configure(
         meta: &mut ConstraintSystem<F>,
         full_number_u64: Column<Advice>,

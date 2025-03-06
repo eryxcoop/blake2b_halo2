@@ -12,7 +12,7 @@ use halo2_proofs::{
     transcript::{CircuitTranscript, Transcript},
 };
 use crate::chips::blake2b_implementations::blake2b_chip::Blake2bChip;
-use crate::chips::blake2b_implementations::blake2b_chip_optimization::Blake2bChipOptimization;
+use crate::chips::blake2b_implementations::blake2b_instructions::Blake2bInstructions;
 
 type Blake2bCircuit<F> = Blake2bCircuitGeneric<F, Blake2bChip<F>>;
 pub type Blake2bCircuitInputs = (Vec<Value<Fr>>, usize, Vec<Value<Fr>>, usize, [Fr; 64], usize);
@@ -51,7 +51,7 @@ impl CircuitRunner {
         MockProver::run(17, &circuit, vec![expected_output_fields]).unwrap()
     }
 
-    pub fn mock_prove_with_public_inputs_ref<OptimizationChip: Blake2bChipOptimization<Fr>>(
+    pub fn mock_prove_with_public_inputs_ref<OptimizationChip: Blake2bInstructions<Fr>>(
         expected_output_fields: &[Fr],
         circuit: &Blake2bCircuitGeneric<Fr, OptimizationChip>,
     ) -> MockProver<Fr> {
@@ -68,8 +68,8 @@ impl CircuitRunner {
         Blake2bCircuit::<Fr>::new_for(input_values, input_size, key_values, key_size, output_size)
     }
 
-    pub fn create_circuit_for_inputs_optimization<OptimizationChip: Blake2bChipOptimization<Fr>>(ci: Blake2bCircuitInputs)
-            -> Blake2bCircuitGeneric<Fr, OptimizationChip> {
+    pub fn create_circuit_for_inputs_optimization<OptimizationChip: Blake2bInstructions<Fr>>(ci: Blake2bCircuitInputs)
+                                                                                             -> Blake2bCircuitGeneric<Fr, OptimizationChip> {
         Blake2bCircuitGeneric::<Fr, OptimizationChip>::new_for(ci.0, ci.1, ci.2, ci.3, ci.5)
     }
 

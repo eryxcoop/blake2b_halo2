@@ -1,6 +1,6 @@
 use super::*;
 use crate::chips::decompose_8::Decompose8Config;
-use crate::chips::xor_chip::XorChip;
+use crate::chips::xor_table::XorTableConfig;
 use halo2_proofs::circuit::SimpleFloorPlanner;
 use halo2_proofs::plonk::Circuit;
 use std::array;
@@ -9,7 +9,7 @@ use std::marker::PhantomData;
 #[derive(Clone)]
 pub struct XorConfig<F: PrimeField> {
     _ph: PhantomData<F>,
-    xor_chip: XorChip<F>,
+    xor_chip: XorTableConfig<F>,
     decompose_8_chip: Decompose8Config<F>,
 }
 
@@ -34,7 +34,7 @@ impl<F: PrimeField> Circuit<F> for XorCircuit<F> {
     fn without_witnesses(&self) -> Self {
         Self {
             _ph: PhantomData,
-            trace: XorChip::unknown_trace(),
+            trace: XorTableConfig::unknown_trace(),
         }
     }
 
@@ -43,7 +43,7 @@ impl<F: PrimeField> Circuit<F> for XorCircuit<F> {
         let limbs_8_bits: [Column<Advice>; 8] = array::from_fn(|_| meta.advice_column());
 
         let decompose_8_chip = Decompose8Config::configure(meta, full_number_u64, limbs_8_bits);
-        let xor_chip = XorChip::configure(meta, limbs_8_bits);
+        let xor_chip = XorTableConfig::configure(meta, limbs_8_bits);
 
         Self::Config {
             _ph: PhantomData,

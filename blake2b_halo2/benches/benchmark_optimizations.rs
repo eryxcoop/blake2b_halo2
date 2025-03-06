@@ -9,7 +9,7 @@ use blake2b_halo2::auxiliar_functions::value_for;
 use blake2b_halo2::chips::blake2b_implementations::blake2b_chip_a::Blake2bChipA;
 use blake2b_halo2::chips::blake2b_implementations::blake2b_chip_b::Blake2bChipB;
 use blake2b_halo2::chips::blake2b_implementations::blake2b_chip_c::Blake2bChipC;
-use blake2b_halo2::chips::blake2b_implementations::blake2b_chip_optimization::Blake2bChipOptimization;
+use blake2b_halo2::chips::blake2b_implementations::blake2b_instructions::Blake2bInstructions;
 
 fn criterion_benchmark(c: &mut Criterion) {
     let mut group = c.benchmark_group("optimization_comparison");
@@ -26,7 +26,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     group.finish()
 }
 
-fn benchmark_optimization_with_amount_of_blocks<OptimizationChip: Blake2bChipOptimization<Fr>>(
+fn benchmark_optimization_with_amount_of_blocks<OptimizationChip: Blake2bInstructions<Fr>>(
     group: &mut BenchmarkGroup<WallTime>,
     amount_of_blocks: usize,
     optimization_name: &str)

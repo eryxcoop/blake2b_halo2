@@ -9,7 +9,7 @@ use super::*;
 /// this without duplicated code.
 ///
 /// This is the trait that groups the 4 chips.
-pub trait Blake2bChipOptimization<F: PrimeField>: Clone {
+pub trait Blake2bInstructions<F: PrimeField>: Clone {
     fn configure(
         meta: &mut ConstraintSystem<F>,
         full_number_u64: Column<Advice>,

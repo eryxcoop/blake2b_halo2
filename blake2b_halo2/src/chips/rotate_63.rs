@@ -1,13 +1,15 @@
 use super::*;
 use halo2_proofs::circuit::AssignedCell;
 
+/// This config handles the 63-right-bit rotation of a 64-bit number, which is the same as the
+/// 1-bit rotation to the left.
 #[derive(Clone, Debug)]
-pub struct Rotate63Chip<F: Field, const T: usize, const R: usize> {
+pub struct Rotate63Config<F: Field, const T: usize, const R: usize> {
     q_rot63: Selector,
     _ph: PhantomData<F>,
 }
 
-impl<F: PrimeField, const T: usize, const R: usize> Rotate63Chip<F, T, R> {
+impl<F: PrimeField, const T: usize, const R: usize> Rotate63Config<F, T, R> {
     pub fn configure(meta: &mut ConstraintSystem<F>, full_number_u64: Column<Advice>) -> Self {
         let q_rot63 = meta.complex_selector();
         /// The gate that will be used to rotate a number 63 bits to the right
@@ -38,7 +40,7 @@ impl<F: PrimeField, const T: usize, const R: usize> Rotate63Chip<F, T, R> {
     pub fn populate_rotation_rows(
         &self,
         layouter: &mut impl Layouter<F>,
-        decompose_chip: &mut impl Decomposition<F, T>,
+        decompose_config: &mut impl Decomposition<F, T>,
         trace: [[Value<F>; R]; 2],
     ) -> Result<(), Error> {
         layouter.assign_region(
@@ -46,8 +48,8 @@ impl<F: PrimeField, const T: usize, const R: usize> Rotate63Chip<F, T, R> {
             |mut region| {
                 let first_row = trace[0].to_vec();
                 let second_row = trace[1].to_vec();
-                decompose_chip.populate_row_from_values(&mut region, first_row.clone(), 0)?;
-                decompose_chip.populate_row_from_values(&mut region, second_row.clone(), 1)?;
+                decompose_config.populate_row_from_values(&mut region, first_row.clone(), 0)?;
+                decompose_config.populate_row_from_values(&mut region, second_row.clone(), 1)?;
                 self.q_rot63.enable(&mut region, 1)
             },
         )?;
@@ -61,7 +63,7 @@ impl<F: PrimeField, const T: usize, const R: usize> Rotate63Chip<F, T, R> {
         region: &mut Region<F>,
         offset: &mut usize,
         input_row: [AssignedCell<F, F>; 9],
-        decompose_chip: &mut impl Decomposition<F, T>,
+        decompose_config: &mut impl Decomposition<F, T>,
     ) -> Result<AssignedCell<F, F>, Error> {
         self.q_rot63.enable(region, *offset)?;
 
@@ -70,7 +72,7 @@ impl<F: PrimeField, const T: usize, const R: usize> Rotate63Chip<F, T, R> {
             Value::known(auxiliar_functions::rotate_right_field_element(input, 63))
         });
 
-        let result_cell = decompose_chip.generate_row_from_value(region, result_value, *offset)?;
+        let result_cell = decompose_config.generate_row_from_value(region, result_value, *offset)?;
         *offset += 1;
         Ok(result_cell)
     }

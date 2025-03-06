@@ -4,7 +4,7 @@ use std::marker::PhantomData;
 
 use halo2_proofs::{circuit::Layouter, plonk::ConstraintSystem};
 
-use crate::chips::decomposition_trait::Decomposition;
+use crate::chips::decomposition::Decomposition;
 use ff::{Field, PrimeField};
 use halo2_proofs::circuit::{Region, Value};
 use halo2_proofs::plonk::{Advice, Column, Error, Expression, Selector, TableColumn};

@@ -1,6 +1,6 @@
 use super::*;
-use crate::chips::decompose_16_chip::Decompose16Config;
-use crate::chips::rotate_63_chip::Rotate63Chip;
+use crate::chips::decompose_16::Decompose16Config;
+use crate::chips::rotate_63::Rotate63Config;
 use halo2_proofs::circuit::SimpleFloorPlanner;
 use halo2_proofs::plonk::Circuit;
 use std::array;
@@ -9,7 +9,7 @@ use std::marker::PhantomData;
 #[derive(Clone)]
 pub struct Rotation63Config16bitLimbs<F: Field> {
     _ph: PhantomData<F>,
-    rotation_63_chip: Rotate63Chip<F, 4, 5>,
+    rotation_63_chip: Rotate63Config<F, 4, 5>,
     decompose_16_chip: Decompose16Config<F>,
 }
 
@@ -34,7 +34,7 @@ impl<F: PrimeField> Circuit<F> for Rotation63Circuit16bitLimbs<F> {
     fn without_witnesses(&self) -> Self {
         Self {
             _ph: PhantomData,
-            trace: Rotate63Chip::<F, 4, 5>::unknown_trace(),
+            trace: Rotate63Config::<F, 4, 5>::unknown_trace(),
         }
     }
 
@@ -44,7 +44,7 @@ impl<F: PrimeField> Circuit<F> for Rotation63Circuit16bitLimbs<F> {
 
         let decompose_16_chip = Decompose16Config::configure(meta, full_number_u64, limbs_4_bits);
 
-        let rotation_63_chip = Rotate63Chip::configure(meta, full_number_u64);
+        let rotation_63_chip = Rotate63Config::configure(meta, full_number_u64);
 
         Self::Config {
             _ph: PhantomData,

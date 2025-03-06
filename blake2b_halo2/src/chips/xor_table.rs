@@ -2,7 +2,7 @@ use super::*;
 use crate::chips::decompose_8::Decompose8Config;
 use halo2_proofs::circuit::AssignedCell;
 
-/// This chip handles the xor operation in the trace. Requires a representation in 8-bit limbs
+/// This config handles the xor operation in the trace. Requires a representation in 8-bit limbs
 /// because it utilices a lookup table like this one:
 ///
 /// | lhs | rhs | lhs xor rhs |
@@ -13,13 +13,13 @@ use halo2_proofs::circuit::AssignedCell;
 ///
 /// The table has 2^8 * 2^8 = 2^16 rows, since we need to check all the possible
 /// combinations of 8-bit numbers.
-/// Then, with the help of the Decompose8Chip, the final representation in the trace will be:
+/// Then, with the help of the Decompose8Config, the final representation in the trace will be:
 ///
 /// | full_number_lhs    | limb_0_lhs    | limb_1_lhs    | ... | limb_7_lhs    |
 /// | full_number_rhs    | limb_0_rhs    | limb_1_rhs    | ... | limb_7_rhs    |
 /// | full_number_result | limb_0_result | limb_1_result | ... | limb_7_result |
 #[derive(Clone, Debug)]
-pub struct XorChip<F: PrimeField> {
+pub struct XorTableConfig<F: PrimeField> {
     /// Lookup table columns
     t_xor_left: TableColumn,
     t_xor_right: TableColumn,
@@ -30,7 +30,7 @@ pub struct XorChip<F: PrimeField> {
     _ph: PhantomData<F>,
 }
 
-impl<F: PrimeField> XorChip<F> {
+impl<F: PrimeField> XorTableConfig<F> {
     pub fn configure(meta: &mut ConstraintSystem<F>, limbs_8_bits: [Column<Advice>; 8]) -> Self {
         let q_xor = meta.complex_selector();
         let t_xor_left = meta.lookup_table_column();
@@ -38,7 +38,7 @@ impl<F: PrimeField> XorChip<F> {
         let t_xor_out = meta.lookup_table_column();
 
         /// We need to perform a lookup for each limb, the 64-bit result will be ensured by the
-        /// Decompose8Chip
+        /// Decompose8Config
         for limb in limbs_8_bits {
             meta.lookup(format!("xor lookup limb {:?}", limb), |meta| {
                 let left: Expression<F> = meta.query_advice(limb, Rotation(0));
@@ -106,7 +106,7 @@ impl<F: PrimeField> XorChip<F> {
         &mut self,
         layouter: &mut impl Layouter<F>,
         xor_trace: [[Value<F>; 9]; 3],
-        decompose_8_chip: &mut Decompose8Config<F>,
+        decompose_8_config: &mut Decompose8Config<F>,
     ) -> Result<(), Error> {
         layouter.assign_region(
             || "xor",
@@ -117,9 +117,9 @@ impl<F: PrimeField> XorChip<F> {
                 let second_row = xor_trace[1].to_vec();
                 let third_row = xor_trace[2].to_vec();
 
-                decompose_8_chip.populate_row_from_values(&mut region, first_row, 0)?;
-                decompose_8_chip.populate_row_from_values(&mut region, second_row, 1)?;
-                decompose_8_chip.populate_row_from_values(&mut region, third_row, 2)?;
+                decompose_8_config.populate_row_from_values(&mut region, first_row, 0)?;
+                decompose_8_config.populate_row_from_values(&mut region, second_row, 1)?;
+                decompose_8_config.populate_row_from_values(&mut region, third_row, 2)?;
 
                 Ok(())
             },
@@ -136,7 +136,7 @@ impl<F: PrimeField> XorChip<F> {
         offset: &mut usize,
         previous_cell: &AssignedCell<F, F>,
         cell_to_copy: &AssignedCell<F, F>,
-        decompose_8_chip: &mut Decompose8Config<F>,
+        decompose_8_config: &mut Decompose8Config<F>,
         use_previous_cell: bool,
     ) -> Result<[AssignedCell<F, F>; 9], Error> {
         let value_a = previous_cell.value().copied();
@@ -149,16 +149,16 @@ impl<F: PrimeField> XorChip<F> {
             value_b.and_then(|v1| Value::known(auxiliar_functions::xor_field_elements(v0, v1)))
         });
 
-        decompose_8_chip.generate_row_from_cell(region, cell_to_copy, *offset)?;
+        decompose_8_config.generate_row_from_cell(region, cell_to_copy, *offset)?;
         *offset += 1;
 
         if !use_previous_cell {
-            decompose_8_chip.generate_row_from_cell(region, previous_cell, *offset)?;
+            decompose_8_config.generate_row_from_cell(region, previous_cell, *offset)?;
             *offset += 1;
         }
 
         let result_row =
-            decompose_8_chip.generate_row_from_value_and_keep_row(region, result_value, *offset)?;
+            decompose_8_config.generate_row_from_value_and_keep_row(region, result_value, *offset)?;
         *offset += 1;
 
         let result_row_array = result_row.try_into().unwrap();

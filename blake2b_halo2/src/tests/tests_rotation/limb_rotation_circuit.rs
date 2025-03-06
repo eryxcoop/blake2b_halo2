@@ -1,6 +1,6 @@
 use super::*;
 use crate::chips::decompose_8::Decompose8Config;
-use crate::chips::generic_limb_rotation_chip::LimbRotationChip;
+use crate::chips::generic_limb_rotation::LimbRotationConfig;
 use ff::PrimeField;
 use halo2_proofs::circuit::SimpleFloorPlanner;
 use halo2_proofs::plonk::Circuit;
@@ -22,13 +22,13 @@ impl<F: PrimeField, const T: usize> LimbRotationCircuit<F, T> {
 }
 
 impl<F: PrimeField, const T: usize> Circuit<F> for LimbRotationCircuit<F, T> {
-    type Config = LimbRotationConfig<F>;
+    type Config = LimbRotationCircuitConfig<F>;
     type FloorPlanner = SimpleFloorPlanner;
 
     fn without_witnesses(&self) -> Self {
         Self {
             _ph: PhantomData,
-            trace: LimbRotationChip::unknown_trace(),
+            trace: LimbRotationConfig::unknown_trace(),
         }
     }
 
@@ -40,14 +40,13 @@ impl<F: PrimeField, const T: usize> Circuit<F> for LimbRotationCircuit<F, T> {
             column
         });
 
-        let decompose_8_chip = Decompose8Config::configure(meta, full_number_u64, limbs);
-
-        let limb_rotation_chip = LimbRotationChip::new();
+        let decompose_8_config = Decompose8Config::configure(meta, full_number_u64, limbs);
+        let limb_rotation_config = LimbRotationConfig::new();
 
         Self::Config {
             _ph: PhantomData,
-            decompose_8_chip,
-            limb_rotation_chip,
+            decompose_8_config,
+            limb_rotation_config,
         }
     }
 
@@ -63,10 +62,10 @@ impl<F: PrimeField, const T: usize> Circuit<F> for LimbRotationCircuit<F, T> {
             _ => panic!("Unexpected Rotation"),
         };
 
-        config.decompose_8_chip.populate_lookup_table(&mut layouter)?;
-        config.limb_rotation_chip.populate_rotation_rows(
+        config.decompose_8_config.populate_lookup_table(&mut layouter)?;
+        config.limb_rotation_config.populate_rotation_rows(
             &mut layouter,
-            &mut config.decompose_8_chip,
+            &mut config.decompose_8_config,
             self.trace,
             limbs_to_rotate_to_the_right,
         )

@@ -1,16 +1,16 @@
 use super::*;
 use crate::auxiliar_functions::{value_for};
-use crate::chips::decompose_16_chip::Decompose16Config;
+use crate::chips::decompose_16::Decompose16Config;
 use crate::chips::decompose_8::Decompose8Config;
-use crate::chips::decomposition_trait::Decomposition;
-use crate::chips::generic_limb_rotation_chip::LimbRotationChip;
-use crate::chips::negate_chip::NegateChip;
-use crate::chips::rotate_63_chip::Rotate63Chip;
+use crate::chips::decomposition::Decomposition;
+use crate::chips::generic_limb_rotation::LimbRotationConfig;
+use crate::chips::negate::NegateConfig;
+use crate::chips::rotate_63::Rotate63Config;
 use ff::PrimeField;
 use halo2_proofs::circuit::{AssignedCell, Layouter, Value};
 use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Fixed, Instance};
 use num_bigint::BigUint;
-use crate::chips::blake2b_implementations::blake2b_chip_optimization::Blake2bChipOptimization;
+use crate::chips::blake2b_implementations::blake2b_instructions::Blake2bInstructions;
 
 /// This toggles between optimizations for the sum operation.
 cfg_if::cfg_if! {
@@ -30,12 +30,12 @@ cfg_if::cfg_if! {
 /// This toggles between optimizations for the xor operation.
 cfg_if::cfg_if! {
     if #[cfg(feature = "xor_with_spread")] {
-        use crate::chips::xor_chip_spread::XorChipSpread;
-        type XorChip<F> = XorChipSpread<F>;
+        use crate::chips::xor_spread::XorSpreadConfig;
+        type XorConfig<F> = XorSpreadConfig<F>;
     } else if #[cfg(feature = "xor_with_table")] {
         /// Using xor with a 16-bit lookup table
-        use crate::chips::xor_chip::XorChip as XorChipTable;
-        type XorChip<F> = XorChipTable<F>;
+        use crate::chips::xor_table::XorTableConfig;
+        type XorConfig<F> = XorTableConfig<F>;
     } else {
         panic!("No feature selected");
     }
@@ -44,25 +44,25 @@ cfg_if::cfg_if! {
 const BLAKE2B_BLOCK_SIZE: usize = 128;
 
 /// This is the main chip for the Blake2b hash function. It is responsible for the entire hash computation.
-/// It contains all the necessary chips and some extra columns.
+/// It contains all the necessary configurations and some extra columns.
 #[derive(Clone, Debug)]
 pub struct Blake2bChip<F: PrimeField> {
-    /// Decomposition chips
-    decompose_8_chip: Decompose8Config<F>,
-    decompose_16_chip: Decompose16Config<F>,
-    /// Base oprerations chips
-    addition_chip: AdditionConfig<F>,
-    generic_limb_rotation_chip: LimbRotationChip<F>,
-    rotate_63_chip: Rotate63Chip<F, 8, 9>,
-    xor_chip: XorChip<F>,
-    negate_chip: NegateChip<F>,
+    /// Decomposition configs
+    decompose_8_config: Decompose8Config<F>,
+    decompose_16_config: Decompose16Config<F>,
+    /// Base oprerations configs
+    addition_config: AdditionConfig<F>,
+    generic_limb_rotation_config: LimbRotationConfig<F>,
+    rotate_63_config: Rotate63Config<F, 8, 9>,
+    xor_config: XorConfig<F>,
+    negate_config: NegateConfig<F>,
     /// Column for constants of Blake2b
     constants: Column<Fixed>,
     /// Column for the expected final state of the hash
     expected_final_state: Column<Instance>,
 }
 
-impl <F: PrimeField> Blake2bChipOptimization<F> for Blake2bChip<F> {
+impl <F: PrimeField> Blake2bInstructions<F> for Blake2bChip<F> {
     /// The chip does not own the advice columns it utilizes. It is the responsibility of the caller
     /// to provide them. This gives flexibility to the caller to use the same advice columns for
     /// multiple purposes.
@@ -84,22 +84,22 @@ impl <F: PrimeField> Blake2bChipOptimization<F> for Blake2bChip<F> {
             }
         }
 
-        let decompose_16_chip =
+        let decompose_16_config =
             Decompose16Config::configure(meta, full_number_u64, limbs[0..4].try_into().unwrap());
-        let decompose_8_chip = Decompose8Config::configure(meta, full_number_u64, limbs);
-        let generic_limb_rotation_chip = LimbRotationChip::new();
-        let rotate_63_chip = Rotate63Chip::configure(meta, full_number_u64);
+        let decompose_8_config = Decompose8Config::configure(meta, full_number_u64, limbs);
+        let generic_limb_rotation_config = LimbRotationConfig::new();
+        let rotate_63_config = Rotate63Config::configure(meta, full_number_u64);
         cfg_if::cfg_if! {
             if #[cfg(feature = "xor_with_spread")] {
-                let xor_chip = XorChip::configure(meta, limbs, full_number_u64, carry);
+                let xor_config = XorConfig::configure(meta, limbs, full_number_u64, carry);
             } else if #[cfg(feature = "xor_with_table")] {
-                let xor_chip = XorChip::configure(meta, limbs);
+                let xor_config = XorConfig::configure(meta, limbs);
             } else {
                 panic!("No feature selected");
             }
         }
 
-        let negate_chip = NegateChip::configure(meta, full_number_u64);
+        let negate_config = NegateConfig::configure(meta, full_number_u64);
 
         let constants = meta.fixed_column();
         meta.enable_equality(constants);
@@ -108,13 +108,13 @@ impl <F: PrimeField> Blake2bChipOptimization<F> for Blake2bChip<F> {
         meta.enable_equality(expected_final_state);
 
         Self {
-            addition_chip: addition_config,
-            decompose_8_chip,
-            decompose_16_chip,
-            generic_limb_rotation_chip,
-            rotate_63_chip,
-            xor_chip,
-            negate_chip,
+            addition_config,
+            decompose_8_config,
+            decompose_16_config,
+            generic_limb_rotation_config,
+            rotate_63_config,
+            xor_config,
+            negate_config,
             constants,
             expected_final_state,
         }
@@ -578,7 +578,7 @@ impl<F: PrimeField> Blake2bChip<F> {
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<Vec<AssignedCell<F, F>>, Error> {
-        let ret = self.decompose_8_chip.generate_row_from_bytes(region, bytes, *offset);
+        let ret = self.decompose_8_config.generate_row_from_bytes(region, bytes, *offset);
         *offset += 1;
         ret
     }
@@ -589,7 +589,7 @@ impl<F: PrimeField> Blake2bChip<F> {
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<AssignedCell<F, F>, Error> {
-        let ret = self.decompose_8_chip.generate_row_from_value(region, value, *offset);
+        let ret = self.decompose_8_config.generate_row_from_value(region, value, *offset);
         *offset += 1;
         ret
     }
@@ -709,19 +709,19 @@ impl<F: PrimeField> Blake2bChip<F> {
     // Populate tables
 
     fn populate_lookup_table_8(&mut self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
-        self.decompose_8_chip.populate_lookup_table(layouter)
+        self.decompose_8_config.populate_lookup_table(layouter)
     }
 
     #[allow(dead_code)]
     fn populate_lookup_table_16(&mut self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
-        self.decompose_16_chip.populate_lookup_table(layouter)
+        self.decompose_16_config.populate_lookup_table(layouter)
     }
 
     fn populate_xor_lookup_table(&mut self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
-        self.xor_chip.populate_xor_lookup_table(layouter)
+        self.xor_config.populate_xor_lookup_table(layouter)
     }
 
-    /// These are the methods that call primitive operation chips
+    /// These are the methods that call primitive operations
     fn add(
         &mut self,
         lhs: &AssignedCell<F, F>,
@@ -731,10 +731,10 @@ impl<F: PrimeField> Blake2bChip<F> {
     ) -> Result<AssignedCell<F, F>, Error> {
         cfg_if::cfg_if! {
             if #[cfg(feature = "sum_with_8_limbs")] {
-                let addition_cell = self.addition_chip.generate_addition_rows_from_cells(region, offset, lhs, rhs, &mut self.decompose_8_chip)?[0].clone();
+                let addition_cell = self.addition_config.generate_addition_rows_from_cells(region, offset, lhs, rhs, &mut self.decompose_8_config)?[0].clone();
                 Ok(addition_cell)
             } else if #[cfg(feature = "sum_with_4_limbs")] {
-                let addition_cell = self.addition_chip.generate_addition_rows_from_cells(region, offset, lhs, rhs, &mut self.decompose_16_chip)?[0].clone();
+                let addition_cell = self.addition_config.generate_addition_rows_from_cells(region, offset, lhs, rhs, &mut self.decompose_16_config)?[0].clone();
                 Ok(addition_cell)
             } else {
                 panic!("No feature selected");
@@ -753,12 +753,12 @@ impl<F: PrimeField> Blake2bChip<F> {
     ) -> AssignedCell<F, F> {
         cfg_if::cfg_if! {
             if #[cfg(feature = "sum_with_8_limbs")] {
-                self.addition_chip
-                    .generate_addition_rows_from_cells_optimized(region, offset, previous_cell, cell_to_copy, &mut self.decompose_8_chip)
+                self.addition_config
+                    .generate_addition_rows_from_cells_optimized(region, offset, previous_cell, cell_to_copy, &mut self.decompose_8_config)
                     .unwrap()[0].clone()
             } else if #[cfg(feature = "sum_with_4_limbs")] {
-                self.addition_chip
-                    .generate_addition_rows_from_cells_optimized(region, offset, previous_cell, cell_to_copy, &mut self.decompose_16_chip)
+                self.addition_config
+                    .generate_addition_rows_from_cells_optimized(region, offset, previous_cell, cell_to_copy, &mut self.decompose_16_config)
                     .unwrap()[0].clone()
             } else {
                 panic!("No feature selected");
@@ -772,8 +772,8 @@ impl<F: PrimeField> Blake2bChip<F> {
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> AssignedCell<F, F> {
-        self.negate_chip
-            .generate_rows_from_cell(region, offset, input_cell, &mut self.decompose_8_chip)
+        self.negate_config
+            .generate_rows_from_cell(region, offset, input_cell, &mut self.decompose_8_config)
             .unwrap()
     }
 
@@ -784,13 +784,13 @@ impl<F: PrimeField> Blake2bChip<F> {
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<AssignedCell<F, F>, Error> {
-        let full_number_cell = self.xor_chip
+        let full_number_cell = self.xor_config
             .generate_xor_rows_from_cells_optimized(
                 region,
                 offset,
                 lhs,
                 rhs,
-                &mut self.decompose_8_chip,
+                &mut self.decompose_8_config,
                 false,
             )?[0].clone();
         Ok(full_number_cell)
@@ -825,13 +825,13 @@ impl<F: PrimeField> Blake2bChip<F> {
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> [AssignedCell<F, F>; 9] {
-        self.xor_chip
+        self.xor_config
             .generate_xor_rows_from_cells_optimized(
                 region,
                 offset,
                 previous_cell,
                 cell_to_copy,
-                &mut self.decompose_8_chip,
+                &mut self.decompose_8_config,
                 true,
             )
             .unwrap()
@@ -846,13 +846,13 @@ impl<F: PrimeField> Blake2bChip<F> {
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> [AssignedCell<F, F>; 9] {
-        self.xor_chip
+        self.xor_config
             .generate_xor_rows_from_cells_optimized(
                 region,
                 offset,
                 lhs,
                 rhs,
-                &mut self.decompose_8_chip,
+                &mut self.decompose_8_config,
                 false,
             )
             .unwrap()
@@ -864,12 +864,12 @@ impl<F: PrimeField> Blake2bChip<F> {
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> AssignedCell<F, F> {
-        self.rotate_63_chip
+        self.rotate_63_config
             .generate_rotation_rows_from_cells(
                 region,
                 offset,
                 input_row,
-                &mut self.decompose_8_chip,
+                &mut self.decompose_8_config,
             )
             .unwrap()
     }
@@ -880,11 +880,11 @@ impl<F: PrimeField> Blake2bChip<F> {
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> AssignedCell<F, F> {
-        self.generic_limb_rotation_chip
+        self.generic_limb_rotation_config
             .generate_rotation_rows_from_input_row(
                 region,
                 offset,
-                &mut self.decompose_8_chip,
+                &mut self.decompose_8_config,
                 input_row,
                 2,
             )
@@ -897,11 +897,11 @@ impl<F: PrimeField> Blake2bChip<F> {
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> AssignedCell<F, F> {
-        self.generic_limb_rotation_chip
+        self.generic_limb_rotation_config
             .generate_rotation_rows_from_input_row(
                 region,
                 offset,
-                &mut self.decompose_8_chip,
+                &mut self.decompose_8_config,
                 input_row,
                 3,
             )
@@ -914,11 +914,11 @@ impl<F: PrimeField> Blake2bChip<F> {
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> AssignedCell<F, F> {
-        self.generic_limb_rotation_chip
+        self.generic_limb_rotation_config
             .generate_rotation_rows_from_input_row(
                 region,
                 offset,
-                &mut self.decompose_8_chip,
+                &mut self.decompose_8_config,
                 input_row,
                 4,
             )

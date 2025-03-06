@@ -2,10 +2,10 @@ use super::*;
 use halo2_proofs::circuit::SimpleFloorPlanner;
 use halo2_proofs::plonk::Circuit;
 use std::array;
-use crate::chips::blake2b_implementations::blake2b_chip_optimization::Blake2bChipOptimization;
+use crate::chips::blake2b_implementations::blake2b_instructions::Blake2bInstructions;
 
 /// This is an example circuit of how you should use the Blake2b chip.
-pub struct Blake2bCircuit<F: PrimeField, OptimizationChip: Blake2bChipOptimization<F>> {
+pub struct Blake2bCircuit<F: PrimeField, OptimizationChip: Blake2bInstructions<F>> {
     _ph: PhantomData<F>,
     _ph2: PhantomData<OptimizationChip>,
     /// The input and the key should be unknown for the verifier.
@@ -18,13 +18,13 @@ pub struct Blake2bCircuit<F: PrimeField, OptimizationChip: Blake2bChipOptimizati
 }
 
 #[derive(Clone)]
-pub struct Blake2bConfig<F: PrimeField, OptimizationChip: Blake2bChipOptimization<F>> {
+pub struct Blake2bConfig<F: PrimeField, OptimizationChip: Blake2bInstructions<F>> {
     _ph: PhantomData<F>,
     /// The chip that will be used to compute the hash. We only need this.
     blake2b_chip: OptimizationChip,
 }
 
-impl<F: PrimeField, OptimizationChip: Blake2bChipOptimization<F>> Circuit<F> for Blake2bCircuit<F, OptimizationChip> {
+impl<F: PrimeField, OptimizationChip: Blake2bInstructions<F>> Circuit<F> for Blake2bCircuit<F, OptimizationChip> {
     type Config = Blake2bConfig<F, OptimizationChip>;
     type FloorPlanner = SimpleFloorPlanner;
 
@@ -82,7 +82,7 @@ impl<F: PrimeField, OptimizationChip: Blake2bChipOptimization<F>> Circuit<F> for
     }
 }
 
-impl<F: PrimeField, OptimizationChip: Blake2bChipOptimization<F>> Blake2bCircuit<F, OptimizationChip> {
+impl<F: PrimeField, OptimizationChip: Blake2bInstructions<F>> Blake2bCircuit<F, OptimizationChip> {
     pub fn new_for(
         input: Vec<Value<F>>,
         input_size: usize,

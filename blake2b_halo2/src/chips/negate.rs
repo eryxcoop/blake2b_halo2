@@ -3,13 +3,14 @@ use crate::auxiliar_functions::field_for;
 use crate::chips::decompose_8::Decompose8Config;
 use halo2_proofs::circuit::AssignedCell;
 
+/// This config handles the bitwise negation of a 64-bit number.
 #[derive(Clone, Debug)]
-pub struct NegateChip<F: Field> {
+pub struct NegateConfig<F: Field> {
     q_negate: Selector,
     _ph: PhantomData<F>,
 }
 
-impl<F: PrimeField> NegateChip<F> {
+impl<F: PrimeField> NegateConfig<F> {
     pub fn configure(meta: &mut ConstraintSystem<F>, full_number_u64: Column<Advice>) -> Self {
         let q_negate = meta.complex_selector();
 
@@ -37,10 +38,10 @@ impl<F: PrimeField> NegateChip<F> {
         region: &mut Region<F>,
         offset: &mut usize,
         input: &AssignedCell<F, F>,
-        decompose_chip: &mut Decompose8Config<F>,
+        decompose_config: &mut Decompose8Config<F>,
     ) -> Result<AssignedCell<F, F>, Error> {
         let value = input.value().copied();
-        self.generate_rows(region, offset, value, decompose_chip)
+        self.generate_rows(region, offset, value, decompose_config)
     }
 
     /// Receives a value, generates a row for that value and generates the row for the negation
@@ -50,14 +51,14 @@ impl<F: PrimeField> NegateChip<F> {
         region: &mut Region<F>,
         offset: &mut usize,
         value: Value<F>,
-        decompose_chip: &mut Decompose8Config<F>,
+        decompose_config: &mut Decompose8Config<F>,
     ) -> Result<AssignedCell<F, F>, Error> {
         self.q_negate.enable(region, *offset)?;
         let result_value =
             value.and_then(|v0| Value::known(F::from(((1u128 << 64) - 1) as u64) - v0));
-        decompose_chip.generate_row_from_value(region, value, *offset)?;
+        decompose_config.generate_row_from_value(region, value, *offset)?;
         *offset += 1;
-        let result_cell = decompose_chip.generate_row_from_value(region, result_value, *offset)?;
+        let result_cell = decompose_config.generate_row_from_value(region, result_value, *offset)?;
         *offset += 1;
         Ok(result_cell)
     }

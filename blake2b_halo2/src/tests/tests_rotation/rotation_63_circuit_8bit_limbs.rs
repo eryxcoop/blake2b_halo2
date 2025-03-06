@@ -1,6 +1,6 @@
 use super::*;
 use crate::chips::decompose_8::Decompose8Config;
-use crate::chips::rotate_63_chip::Rotate63Chip;
+use crate::chips::rotate_63::Rotate63Config;
 use halo2_proofs::circuit::SimpleFloorPlanner;
 use halo2_proofs::plonk::Circuit;
 use std::array;
@@ -27,7 +27,7 @@ impl<F: PrimeField> Circuit<F> for Rotation63Circuit8bitLimbs<F> {
     fn without_witnesses(&self) -> Self {
         Self {
             _ph: PhantomData,
-            trace: Rotate63Chip::<F, 8, 9>::unknown_trace(),
+            trace: Rotate63Config::<F, 8, 9>::unknown_trace(),
         }
     }
 
@@ -37,7 +37,7 @@ impl<F: PrimeField> Circuit<F> for Rotation63Circuit8bitLimbs<F> {
 
         let decompose_8_chip = Decompose8Config::configure(meta, full_number_u64, limbs_8_bits);
 
-        let rotation_63_chip = Rotate63Chip::configure(meta, full_number_u64);
+        let rotation_63_chip = Rotate63Config::configure(meta, full_number_u64);
 
         Self::Config {
             _ph: PhantomData,

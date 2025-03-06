@@ -1,6 +1,6 @@
 use super::*;
 use crate::chips::decompose_8::Decompose8Config;
-use crate::chips::negate_chip::NegateChip;
+use crate::chips::negate::NegateConfig;
 use ff::PrimeField;
 use halo2_proofs::circuit::{Layouter, SimpleFloorPlanner, Value};
 use halo2_proofs::plonk::{Advice, Circuit, Column, ConstraintSystem, Error, Fixed};
@@ -16,7 +16,7 @@ pub struct NegateCircuit<F: PrimeField> {
 #[derive(Clone)]
 pub struct NegateCircuitConfig<F: PrimeField> {
     _ph: PhantomData<F>,
-    negate_chip: NegateChip<F>,
+    negate_chip: NegateConfig<F>,
     decompose_8_chip: Decompose8Config<F>,
     fixed_result: Column<Fixed>,
 }
@@ -40,7 +40,7 @@ impl<F: PrimeField> Circuit<F> for NegateCircuit<F> {
 
         let decompose_8_chip = Decompose8Config::configure(meta, full_number_u64, limbs);
 
-        let negate_chip = NegateChip::<F>::configure(meta, full_number_u64);
+        let negate_chip = NegateConfig::<F>::configure(meta, full_number_u64);
 
         let fixed_result = meta.fixed_column();
         meta.enable_equality(full_number_u64);
