@@ -64,10 +64,10 @@ To test the auxiliar chips:
 ```cargo test --release --features blake2b_halo2/opt_recycle -- --skip test_hashes_in_circuit_```
 
 # Benchmarking
-Right now, benchmarks are produced on the branch ```multiple-optimization-benches```. Just go to that branch and run 
+Just run
 
 ```cargo bench --features blake2b_halo2/opt_recycle```
 
 The report should be found in ```/target/criterion/optimization_comparison/report/index.html```. 
 
-Alternatively, you can find our own generated benchmark in ```/blake2b_halo2/benches/report/index.html```. 
+Alternatively, you can find our own generated report in ```/blake2b_halo2/benches/report/index.html```. 
