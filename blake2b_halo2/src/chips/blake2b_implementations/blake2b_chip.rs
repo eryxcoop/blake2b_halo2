@@ -23,7 +23,7 @@ cfg_if::cfg_if! {
         use crate::chips::addition_mod_64::{AdditionConfigWith4Limbs};
         type AdditionConfig<F> = AdditionConfigWith4Limbs<F>;
     } else {
-        panic!("No feature selected");
+        compile_error!("No feature selected");
     }
 }
 
@@ -37,7 +37,7 @@ cfg_if::cfg_if! {
         use crate::chips::xor_table::XorTableConfig;
         type XorConfig<F> = XorTableConfig<F>;
     } else {
-        panic!("No feature selected");
+        compile_error!("No feature selected");
     }
 }
 
@@ -80,7 +80,7 @@ impl <F: PrimeField> Blake2bInstructions<F> for Blake2bChip<F> {
             } else if #[cfg(feature = "sum_with_4_limbs")] {
                 let addition_config = AdditionConfigWith4Limbs::<F>::configure(meta, full_number_u64, limbs[4]);
             } else {
-                panic!("No feature selected");
+                compile_error!("No feature selected");
             }
         }
 
@@ -95,7 +95,7 @@ impl <F: PrimeField> Blake2bInstructions<F> for Blake2bChip<F> {
             } else if #[cfg(feature = "xor_with_table")] {
                 let xor_config = XorConfig::configure(meta, limbs);
             } else {
-                panic!("No feature selected");
+                compile_error!("No feature selected");
             }
         }
 
@@ -737,7 +737,7 @@ impl<F: PrimeField> Blake2bChip<F> {
                 let addition_cell = self.addition_config.generate_addition_rows_from_cells_optimized(region, offset, lhs, rhs, &mut self.decompose_16_config, false)?[0].clone();
                 Ok(addition_cell)
             } else {
-                panic!("No feature selected");
+                compile_error!("No feature selected");
             }
         }
     }
@@ -761,7 +761,7 @@ impl<F: PrimeField> Blake2bChip<F> {
                     .generate_addition_rows_from_cells_optimized(region, offset, previous_cell, cell_to_copy, &mut self.decompose_16_config, true)
                     .unwrap()[0].clone()
             } else {
-                panic!("No feature selected");
+                compile_error!("No feature selected");
             }
         }
     }
@@ -812,7 +812,7 @@ impl<F: PrimeField> Blake2bChip<F> {
             } else if #[cfg(feature = "sum_with_4_limbs")] {
                 self.xor_with_full_rows(previous_cell, cell_to_copy, region, offset)
             } else {
-                panic!("No feature selected");
+                compile_error!("No feature selected");
             }
         }
     }

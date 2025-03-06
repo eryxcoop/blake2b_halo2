@@ -29,15 +29,15 @@ Just fill the ```src/inputs.json``` file with the message, key and desired outpu
 
 To try the optimization 'opt_4_limbs': 
 
-```cargo run --release --features blake2b_halo2/opt_4_limbs```
+```cargo run --release --no-default-features --features blake2b_halo2/opt_4_limbs```
 
 To try the optimization 'opt_recycle':
 
-```cargo run --release --features blake2b_halo2/opt_recycle```
+```cargo run --release --no-default-features --features blake2b_halo2/opt_recycle```
 
 To try the optimization 'opt_spread':
 
-```cargo run --release --features blake2b_halo2/opt_spread```
+```cargo run --release --no-default-features --features blake2b_halo2/opt_spread```
 
 
 # Running the tests
@@ -46,15 +46,15 @@ We have unit tests for all our auxiliar chips and the vector tests for the Blake
 
 To test the optimization 'opt_4_limbs':
 
-```cargo test --release --features opt_4_limbs test_hashes_in_circuit_```
+```cargo test --release --no-default-features --features opt_4_limbs test_hashes_in_circuit_```
 
 To test the optimization 'opt_recycle':
 
-```cargo test --release --features opt_recycle test_hashes_in_circuit_```
+```cargo test --release --no-default-features --features opt_recycle test_hashes_in_circuit_```
 
 To test the optimization 'opt_spread':
 
-```cargo test --release --features opt_spread test_hashes_in_circuit_```
+```cargo test --release --no-default-features --features opt_spread test_hashes_in_circuit_```
 
 
 Those tests use the same test vector than the plain Rust implementation. Running the above tests can take some time since there are 512 tests in the test vector, and each one repeats all the static procedures (like creating big lookup tables), but it shouldn't take more than 2 minutes in release mode.

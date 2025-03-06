@@ -22,7 +22,7 @@ name = "benchmark_optimizations"
 harness = false
 
 [features]
-default = [] # No default features to avoid undesired behaviour
+default = ["opt_4_limbs"] # No default features to avoid undesired behaviour
 
 sum_with_8_limbs = []
 sum_with_4_limbs = []

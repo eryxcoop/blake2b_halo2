@@ -6,9 +6,9 @@ use halo2_proofs::halo2curves::bn256::Fr;
 use blake2b_halo2::circuit_runner::{Blake2bCircuitInputs, CircuitRunner};
 use rand::Rng;
 use blake2b_halo2::auxiliar_functions::value_for;
-use blake2b_halo2::chips::blake2b_implementations::blake2b_chip_a::Blake2bChipA;
-use blake2b_halo2::chips::blake2b_implementations::blake2b_chip_b::Blake2bChipB;
-use blake2b_halo2::chips::blake2b_implementations::blake2b_chip_c::Blake2bChipC;
+use blake2b_halo2::chips::blake2b_implementations::blake2b_chip_a::Blake2bChipOpt4Limbs;
+use blake2b_halo2::chips::blake2b_implementations::blake2b_chip_b::Blake2bChipOptRecycle;
+use blake2b_halo2::chips::blake2b_implementations::blake2b_chip_c::Blake2bChipOptSpread;
 use blake2b_halo2::chips::blake2b_implementations::blake2b_instructions::Blake2bInstructions;
 
 fn criterion_benchmark(c: &mut Criterion) {
@@ -19,9 +19,9 @@ fn criterion_benchmark(c: &mut Criterion) {
     for amount_of_blocks in [1usize,5,10,15,20] {
         group.throughput(Throughput::Bytes(amount_of_blocks as u64));
 
-        benchmark_optimization_with_amount_of_blocks::<Blake2bChipA<Fr>>(&mut group, amount_of_blocks, "opt_4_limbs");
-        benchmark_optimization_with_amount_of_blocks::<Blake2bChipB<Fr>>(&mut group, amount_of_blocks, "opt_recycle");
-        benchmark_optimization_with_amount_of_blocks::<Blake2bChipC<Fr>>(&mut group, amount_of_blocks, "opt_spread");
+        benchmark_optimization_with_amount_of_blocks::<Blake2bChipOpt4Limbs<Fr>>(&mut group, amount_of_blocks, "opt_4_limbs");
+        benchmark_optimization_with_amount_of_blocks::<Blake2bChipOptRecycle<Fr>>(&mut group, amount_of_blocks, "opt_recycle");
+        benchmark_optimization_with_amount_of_blocks::<Blake2bChipOptSpread<Fr>>(&mut group, amount_of_blocks, "opt_spread");
     }
     group.finish()
 }
