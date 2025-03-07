@@ -17,12 +17,12 @@ criterion_main!(proof);
 
 pub fn benchmark_proof_generation(c: &mut Criterion) {
     let mut group = c.benchmark_group("proof");
-    group.sample_size(10);
+    group.sample_size(sample_size());
     group.measurement_time(Duration::from_secs(1000));
 
     let params = ParamsKZG::<Bn256>::unsafe_setup(17, &mut rand::thread_rng());
 
-    for amount_of_blocks in [1usize, 5, 10, 15, 20] {
+    for amount_of_blocks in benchmarking_block_sizes() {
         group.throughput(Throughput::Bytes(amount_of_blocks as u64));
 
         benchmark_proof::<Blake2bChipOpt4Limbs<Fr>>(&params, &mut group, amount_of_blocks, "opt_4_limbs");
