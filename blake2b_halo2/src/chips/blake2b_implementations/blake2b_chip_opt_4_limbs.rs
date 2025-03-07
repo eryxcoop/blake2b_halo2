@@ -6,7 +6,7 @@
 /// (the maximum amount of columns any chip uses) and the addition chip of 4 bits uses 6 columns.
 /// It also computes xor with a table that precomputes all the possible 8-bit operands.
 use super::*;
-use crate::auxiliar_functions::{value_for};
+use crate::auxiliar_functions::value_for;
 use crate::chips::decompose_16::Decompose16Config;
 use crate::chips::decompose_8::Decompose8Config;
 use crate::chips::decomposition::Decomposition;
@@ -19,7 +19,7 @@ use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Fixed, Instance};
 use num_bigint::BigUint;
 use crate::chips::blake2b_implementations::blake2b_instructions::Blake2bInstructions;
 
-use crate::chips::addition_mod_64::{AdditionConfigWith4Limbs};
+use crate::chips::addition_mod_64::AdditionConfigWith4Limbs;
 use crate::chips::xor_table::XorTableConfig;
 type AdditionConfig<F> = AdditionConfigWith4Limbs<F>;
 type XorConfig<F> = XorTableConfig<F>;

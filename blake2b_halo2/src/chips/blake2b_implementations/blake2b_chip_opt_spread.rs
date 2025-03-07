@@ -3,7 +3,7 @@
 ///
 /// This optimization uses addition with 8 limbs and computes xor with a spread table of 8-bits.
 use super::*;
-use crate::auxiliar_functions::{value_for};
+use crate::auxiliar_functions::value_for;
 use crate::chips::decompose_16::Decompose16Config;
 use crate::chips::decompose_8::Decompose8Config;
 use crate::chips::decomposition::Decomposition;
@@ -15,7 +15,7 @@ use halo2_proofs::circuit::{AssignedCell, Layouter, Value};
 use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Fixed, Instance};
 use num_bigint::BigUint;
 use crate::chips::blake2b_implementations::blake2b_instructions::Blake2bInstructions;
-use crate::chips::addition_mod_64::{AdditionConfigWith8Limbs};
+use crate::chips::addition_mod_64::AdditionConfigWith8Limbs;
 use crate::chips::xor_spread::XorSpreadConfig;
 
 type AdditionConfig<F> = AdditionConfigWith8Limbs<F>;
