@@ -5,6 +5,7 @@ use std::array;
 use crate::chips::blake2b_implementations::blake2b_instructions::Blake2bInstructions;
 
 /// This is an example circuit of how you should use the Blake2b chip.
+#[derive(Clone)]
 pub struct Blake2bCircuit<F: PrimeField, OptimizationChip: Blake2bInstructions<F>> {
     _ph: PhantomData<F>,
     _ph2: PhantomData<OptimizationChip>,
