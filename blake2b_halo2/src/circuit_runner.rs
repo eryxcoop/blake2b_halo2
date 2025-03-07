@@ -11,6 +11,7 @@ use halo2_proofs::{
     },
     transcript::{CircuitTranscript, Transcript},
 };
+use halo2_proofs::plonk::Circuit;
 use crate::chips::blake2b_implementations::blake2b_chip::Blake2bChip;
 use crate::chips::blake2b_implementations::blake2b_instructions::Blake2bInstructions;
 
