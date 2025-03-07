@@ -1,5 +1,4 @@
 use criterion::{criterion_group, criterion_main, BatchSize, BenchmarkGroup, BenchmarkId, Criterion, Throughput};
-use std::time::Duration;
 use blake2b_halo2::chips::blake2b_implementations::blake2b_chip_opt_4_limbs::Blake2bChipOpt4Limbs;
 use halo2_proofs::halo2curves::bn256::Fr;
 use blake2b_halo2::chips::blake2b_implementations::blake2b_chip_opt_recycle::Blake2bChipOptRecycle;
@@ -16,10 +15,9 @@ criterion_main!(mocked_prover);
 
 pub fn benchmark_mocked_proving(c: &mut Criterion) {
     let mut group = c.benchmark_group("optimization_comparison");
-    group.sample_size(30);
-    group.measurement_time(Duration::from_secs(60));
+    configure_group(&mut group);
 
-    for amount_of_blocks in [1usize, 5, 10, 15, 20] {
+    for amount_of_blocks in benchmarking_block_sizes() {
         group.throughput(Throughput::Bytes(amount_of_blocks as u64));
 
         benchmark_optimization_with_amount_of_blocks::<Blake2bChipOpt4Limbs<Fr>>(

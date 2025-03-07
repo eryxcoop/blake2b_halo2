@@ -1,5 +1,4 @@
 use criterion::{criterion_group, criterion_main, BenchmarkGroup, BenchmarkId, Criterion, Throughput};
-use std::time::Duration;
 use halo2_proofs::poly::kzg::params::ParamsKZG;
 use halo2_proofs::halo2curves::bn256::{Bn256, Fr};
 use blake2b_halo2::chips::blake2b_implementations::blake2b_chip_opt_4_limbs::Blake2bChipOpt4Limbs;
@@ -17,8 +16,7 @@ criterion_main!(pk);
 
 pub fn benchmark_proving_key_generation(c: &mut Criterion) {
     let mut group = c.benchmark_group("proving_key");
-    group.sample_size(sample_size());
-    group.measurement_time(Duration::from_secs(1000));
+    configure_group(&mut group);
 
     let params = ParamsKZG::<Bn256>::unsafe_setup(17, &mut rand::thread_rng());
 
