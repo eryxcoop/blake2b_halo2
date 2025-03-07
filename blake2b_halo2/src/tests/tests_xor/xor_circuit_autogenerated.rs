@@ -1,5 +1,5 @@
 use super::*;
-use crate::chips::decompose_8::Decompose8Config;
+use crate::base_operations::decompose_8::Decompose8Config;
 use halo2_proofs::circuit::SimpleFloorPlanner;
 use halo2_proofs::plonk::{Circuit, Fixed};
 use std::array;
@@ -7,10 +7,10 @@ use std::marker::PhantomData;
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "xor_with_spread")] {
-        use crate::chips::xor_spread::XorSpreadConfig;
+        use crate::base_operations::xor_spread::XorSpreadConfig;
         type XorConfig<F> = XorSpreadConfig<F>;
     } else if #[cfg(feature = "xor_with_table")] {
-        use crate::chips::xor_table::XorTableConfig;
+        use crate::base_operations::xor_table::XorTableConfig;
         type XorConfig<F> = XorTableConfig<F>;
     } else {
         compile_error!("No feature selected");

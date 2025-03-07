@@ -1,5 +1,5 @@
 use super::*;
-use crate::chips::decompose_8::Decompose8Config;
+use crate::base_operations::decompose_8::Decompose8Config;
 use ff::{Field, PrimeField};
 use halo2_proofs::circuit::{AssignedCell, Layouter, Value};
 use std::marker::PhantomData;

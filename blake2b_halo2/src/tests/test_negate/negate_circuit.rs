@@ -1,6 +1,6 @@
 use super::*;
-use crate::chips::decompose_8::Decompose8Config;
-use crate::chips::negate::NegateConfig;
+use crate::base_operations::decompose_8::Decompose8Config;
+use crate::base_operations::negate::NegateConfig;
 use ff::PrimeField;
 use halo2_proofs::circuit::{Layouter, SimpleFloorPlanner, Value};
 use halo2_proofs::plonk::{Advice, Circuit, Column, ConstraintSystem, Error, Fixed};

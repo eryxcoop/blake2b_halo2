@@ -5,22 +5,22 @@
 /// one less column (the carry column). This is because the addition chip of 8 bits uses 10 columns
 /// (the maximum amount of columns any chip uses) and the addition chip of 4 bits uses 6 columns.
 /// It also computes xor with a table that precomputes all the possible 8-bit operands.
-use super::*;
+use crate::blake2b::*;
 use crate::auxiliar_functions::value_for;
-use crate::chips::decompose_16::Decompose16Config;
-use crate::chips::decompose_8::Decompose8Config;
-use crate::chips::decomposition::Decomposition;
-use crate::chips::generic_limb_rotation::LimbRotationConfig;
-use crate::chips::negate::NegateConfig;
-use crate::chips::rotate_63::Rotate63Config;
+use crate::base_operations::decompose_16::Decompose16Config;
+use crate::base_operations::decompose_8::Decompose8Config;
+use crate::base_operations::decomposition::Decomposition;
+use crate::base_operations::generic_limb_rotation::LimbRotationConfig;
+use crate::base_operations::negate::NegateConfig;
+use crate::base_operations::rotate_63::Rotate63Config;
 use ff::PrimeField;
 use halo2_proofs::circuit::{AssignedCell, Layouter, Value};
 use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Fixed, Instance};
 use num_bigint::BigUint;
-use crate::chips::blake2b_implementations::blake2b_instructions::Blake2bInstructions;
+use crate::blake2b::blake2b_instructions::Blake2bInstructions;
 
-use crate::chips::addition_mod_64::AdditionConfigWith4Limbs;
-use crate::chips::xor_table::XorTableConfig;
+use crate::base_operations::addition_mod_64::AdditionConfigWith4Limbs;
+use crate::base_operations::xor_table::XorTableConfig;
 type AdditionConfig<F> = AdditionConfigWith4Limbs<F>;
 type XorConfig<F> = XorTableConfig<F>;
 

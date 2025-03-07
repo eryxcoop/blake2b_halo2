@@ -1,5 +1,5 @@
 use super::*;
-use crate::chips::decomposition::Decomposition;
+use crate::base_operations::decomposition::Decomposition;
 use halo2_proofs::circuit::AssignedCell;
 
 /// This config handles the decomposition of 64-bit numbers into 16-bit limbs in the trace

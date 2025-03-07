@@ -1,7 +1,5 @@
 use super::*;
 
-pub mod blake2b_implementations;
-
 pub mod addition_mod_64;
 pub mod decompose_16;
 pub mod decompose_8;

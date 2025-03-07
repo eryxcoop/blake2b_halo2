@@ -1,6 +1,6 @@
 use super::*;
-use crate::chips::decompose_8::Decompose8Config;
-use crate::chips::xor_table::XorTableConfig;
+use crate::base_operations::decompose_8::Decompose8Config;
+use crate::base_operations::xor_table::XorTableConfig;
 use halo2_proofs::circuit::SimpleFloorPlanner;
 use halo2_proofs::plonk::Circuit;
 use std::array;

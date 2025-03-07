@@ -1,33 +1,52 @@
-/// This is the main chip for the Blake2b hash function. It is responsible for the entire hash computation.
-/// It contains all the necessary chips and some extra columns.
-///
-/// This optimization uses addition with 8 limbs and computes xor with a table that precomputes
-/// all the possible 8-bit operands.
-use super::*;
-use crate::auxiliar_functions::value_for;
-use crate::chips::decompose_16::Decompose16Config;
-use crate::chips::decompose_8::Decompose8Config;
-use crate::chips::decomposition::Decomposition;
-use crate::chips::generic_limb_rotation::LimbRotationConfig;
-use crate::chips::negate::NegateConfig;
-use crate::chips::rotate_63::Rotate63Config;
+use crate::blake2b::*;
+use crate::auxiliar_functions::{value_for};
+use crate::base_operations::decompose_16::Decompose16Config;
+use crate::base_operations::decompose_8::Decompose8Config;
+use crate::base_operations::decomposition::Decomposition;
+use crate::base_operations::generic_limb_rotation::LimbRotationConfig;
+use crate::base_operations::negate::NegateConfig;
+use crate::base_operations::rotate_63::Rotate63Config;
 use ff::PrimeField;
 use halo2_proofs::circuit::{AssignedCell, Layouter, Value};
 use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Fixed, Instance};
 use num_bigint::BigUint;
-use crate::chips::blake2b_implementations::blake2b_instructions::Blake2bInstructions;
-use crate::chips::addition_mod_64::AdditionConfigWith8Limbs;
-use crate::chips::xor_table::XorTableConfig;
+use crate::blake2b::blake2b_instructions::Blake2bInstructions;
 
-type AdditionConfig<F> = AdditionConfigWith8Limbs<F>;
-type XorConfig<F> = XorTableConfig<F>;
+/// This toggles between optimizations for the sum operation.
+cfg_if::cfg_if! {
+    if #[cfg(feature = "sum_with_8_limbs")] {
+        /// Using 8 limbs for the sum operation.
+        use crate::base_operations::addition_mod_64::{AdditionConfigWith8Limbs};
+        type AdditionConfig<F> = AdditionConfigWith8Limbs<F>;
+    } else if #[cfg(feature = "sum_with_4_limbs")] {
+        /// Using 4 limbs for the sum operation.
+        use crate::base_operations::addition_mod_64::{AdditionConfigWith4Limbs};
+        type AdditionConfig<F> = AdditionConfigWith4Limbs<F>;
+    } else {
+        compile_error!("No feature selected");
+    }
+}
+
+/// This toggles between optimizations for the xor operation.
+cfg_if::cfg_if! {
+    if #[cfg(feature = "xor_with_spread")] {
+        use crate::base_operations::xor_spread::XorSpreadConfig;
+        type XorConfig<F> = XorSpreadConfig<F>;
+    } else if #[cfg(feature = "xor_with_table")] {
+        /// Using xor with a 16-bit lookup table
+        use crate::base_operations::xor_table::XorTableConfig;
+        type XorConfig<F> = XorTableConfig<F>;
+    } else {
+        compile_error!("No feature selected");
+    }
+}
 
 const BLAKE2B_BLOCK_SIZE: usize = 128;
 
 /// This is the main chip for the Blake2b hash function. It is responsible for the entire hash computation.
 /// It contains all the necessary configurations and some extra columns.
 #[derive(Clone, Debug)]
-pub struct Blake2bChipOptRecycle<F: PrimeField> {
+pub struct Blake2bChip<F: PrimeField> {
     /// Decomposition configs
     decompose_8_config: Decompose8Config<F>,
     decompose_16_config: Decompose16Config<F>,
@@ -43,7 +62,7 @@ pub struct Blake2bChipOptRecycle<F: PrimeField> {
     expected_final_state: Column<Instance>,
 }
 
-impl<F: PrimeField> Blake2bInstructions<F> for Blake2bChipOptRecycle<F> {
+impl<F: PrimeField> Blake2bInstructions<F> for Blake2bChip<F> {
     /// The chip does not own the advice columns it utilizes. It is the responsibility of the caller
     /// to provide them. This gives flexibility to the caller to use the same advice columns for
     /// multiple purposes.
@@ -53,18 +72,32 @@ impl<F: PrimeField> Blake2bInstructions<F> for Blake2bChipOptRecycle<F> {
         limbs: [Column<Advice>; 8],
     ) -> Self {
         Self::enforce_modulus_size();
-
-        let carry = meta.advice_column();
-        let addition_config =
-            AdditionConfigWith8Limbs::<F>::configure(meta, full_number_u64, carry);
+        cfg_if::cfg_if! {
+            if #[cfg(feature = "sum_with_8_limbs")] {
+                /// An extra carry column is needed for the sum operation with 8 limbs.
+                let carry = meta.advice_column();
+                let addition_config = AdditionConfigWith8Limbs::<F>::configure(meta, full_number_u64, carry);
+            } else if #[cfg(feature = "sum_with_4_limbs")] {
+                let addition_config = AdditionConfigWith4Limbs::<F>::configure(meta, full_number_u64, limbs[4]);
+            } else {
+                compile_error!("No feature selected");
+            }
+        }
 
         let decompose_16_config =
             Decompose16Config::configure(meta, full_number_u64, limbs[0..4].try_into().unwrap());
         let decompose_8_config = Decompose8Config::configure(meta, full_number_u64, limbs);
         let generic_limb_rotation_config = LimbRotationConfig::new();
         let rotate_63_config = Rotate63Config::configure(meta, full_number_u64);
-
-        let xor_config = XorConfig::configure(meta, limbs);
+        cfg_if::cfg_if! {
+            if #[cfg(feature = "xor_with_spread")] {
+                let xor_config = XorConfig::configure(meta, limbs, full_number_u64, carry);
+            } else if #[cfg(feature = "xor_with_table")] {
+                let xor_config = XorConfig::configure(meta, limbs);
+            } else {
+                compile_error!("No feature selected");
+            }
+        }
 
         let negate_config = NegateConfig::configure(meta, full_number_u64);
 
@@ -91,7 +124,13 @@ impl<F: PrimeField> Blake2bInstructions<F> for Blake2bChipOptRecycle<F> {
     /// before the hash computation.
     fn initialize_with(&mut self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
         self.populate_lookup_table_8(layouter)?;
-        self.populate_xor_lookup_table(layouter)
+        self.populate_xor_lookup_table(layouter)?;
+        cfg_if::cfg_if! {
+            if #[cfg(feature = "sum_with_4_limbs")] {
+                self.populate_lookup_table_16(layouter)?;
+            }
+        }
+        Ok(())
     }
 
     /// This is the main method of the chip. It computes the Blake2b hash for the given inputs.
@@ -163,7 +202,7 @@ impl<F: PrimeField> Blake2bInstructions<F> for Blake2bChipOptRecycle<F> {
     }
 }
 
-impl<F: PrimeField> Blake2bChipOptRecycle<F> {
+impl<F: PrimeField> Blake2bChip<F> {
     /// Enforces the output and key sizes.
     fn enforce_input_sizes(output_size: usize, key_size: usize) {
         assert!(output_size <= 64, "Output size must be between 1 and 64 bytes");
@@ -690,16 +729,17 @@ impl<F: PrimeField> Blake2bChipOptRecycle<F> {
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<AssignedCell<F, F>, Error> {
-        let addition_cell = self.addition_config.generate_addition_rows_from_cells_optimized(
-            region,
-            offset,
-            lhs,
-            rhs,
-            &mut self.decompose_8_config,
-            false,
-        )?[0]
-            .clone();
-        Ok(addition_cell)
+        cfg_if::cfg_if! {
+            if #[cfg(feature = "sum_with_8_limbs")] {
+                let addition_cell = self.addition_config.generate_addition_rows_from_cells_optimized(region, offset, lhs, rhs, &mut self.decompose_8_config, false)?[0].clone();
+                Ok(addition_cell)
+            } else if #[cfg(feature = "sum_with_4_limbs")] {
+                let addition_cell = self.addition_config.generate_addition_rows_from_cells_optimized(region, offset, lhs, rhs, &mut self.decompose_16_config, false)?[0].clone();
+                Ok(addition_cell)
+            } else {
+                compile_error!("No feature selected");
+            }
+        }
     }
 
     /// Sometimes we can reutilice an output row to be the input row of the next operation. This is
@@ -711,17 +751,19 @@ impl<F: PrimeField> Blake2bChipOptRecycle<F> {
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> AssignedCell<F, F> {
-        self.addition_config
-            .generate_addition_rows_from_cells_optimized(
-                region,
-                offset,
-                previous_cell,
-                cell_to_copy,
-                &mut self.decompose_8_config,
-                true,
-            )
-            .unwrap()[0]
-            .clone()
+        cfg_if::cfg_if! {
+            if #[cfg(feature = "sum_with_8_limbs")] {
+                self.addition_config
+                    .generate_addition_rows_from_cells_optimized(region, offset, previous_cell, cell_to_copy, &mut self.decompose_8_config, true)
+                    .unwrap()[0].clone()
+            } else if #[cfg(feature = "sum_with_4_limbs")] {
+                self.addition_config
+                    .generate_addition_rows_from_cells_optimized(region, offset, previous_cell, cell_to_copy, &mut self.decompose_16_config, true)
+                    .unwrap()[0].clone()
+            } else {
+                compile_error!("No feature selected");
+            }
+        }
     }
 
     fn not(
@@ -763,7 +805,16 @@ impl<F: PrimeField> Blake2bChipOptRecycle<F> {
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> [AssignedCell<F, F>; 9] {
-        self.xor_copying_one_parameter(previous_cell, cell_to_copy, region, offset)
+        cfg_if::cfg_if! {
+            if #[cfg(feature = "sum_with_8_limbs")] {
+                // This feature is only used in the optimization where the sum is with 8 limbs
+                self.xor_copying_one_parameter(previous_cell, cell_to_copy, region, offset)
+            } else if #[cfg(feature = "sum_with_4_limbs")] {
+                self.xor_with_full_rows(previous_cell, cell_to_copy, region, offset)
+            } else {
+                compile_error!("No feature selected");
+            }
+        }
     }
 
     #[allow(dead_code)]

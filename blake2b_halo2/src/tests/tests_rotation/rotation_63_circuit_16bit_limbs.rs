@@ -1,6 +1,6 @@
 use super::*;
-use crate::chips::decompose_16::Decompose16Config;
-use crate::chips::rotate_63::Rotate63Config;
+use crate::base_operations::decompose_16::Decompose16Config;
+use crate::base_operations::rotate_63::Rotate63Config;
 use halo2_proofs::circuit::SimpleFloorPlanner;
 use halo2_proofs::plonk::Circuit;
 use std::array;

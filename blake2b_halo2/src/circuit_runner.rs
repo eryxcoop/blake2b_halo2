@@ -1,7 +1,7 @@
 use super::*;
 use halo2_proofs::dev::MockProver;
 use halo2_proofs::halo2curves::bn256::Fr;
-use crate::circuits::blake2b_circuit::Blake2bCircuit as Blake2bCircuitGeneric;
+use crate::blake2b::blake2b_circuit::Blake2bCircuit as Blake2bCircuitGeneric;
 use halo2_proofs::{
     halo2curves::bn256::{Bn256},
     plonk::{create_proof, keygen_pk, keygen_vk_with_k, prepare, ProvingKey, VerifyingKey},
@@ -12,8 +12,8 @@ use halo2_proofs::{
     transcript::{CircuitTranscript, Transcript},
 };
 
-use crate::chips::blake2b_implementations::blake2b_chip::Blake2bChip;
-use crate::chips::blake2b_implementations::blake2b_instructions::Blake2bInstructions;
+use crate::blake2b::chips::blake2b_chip::Blake2bChip;
+use crate::blake2b::blake2b_instructions::Blake2bInstructions;
 
 type Blake2bCircuit<F> = Blake2bCircuitGeneric<F, Blake2bChip<F>>;
 pub type Blake2bCircuitInputs = (Vec<Value<Fr>>, usize, Vec<Value<Fr>>, usize, [Fr; 64], usize);

@@ -1,5 +1,5 @@
 use super::*;
-use crate::chips::decompose_8::Decompose8Config;
+use crate::base_operations::decompose_8::Decompose8Config;
 use halo2_proofs::circuit::AssignedCell;
 
 /// This config handles the xor operation in the trace. Requires a representation in 8-bit limbs

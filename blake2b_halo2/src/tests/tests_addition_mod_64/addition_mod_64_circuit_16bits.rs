@@ -1,6 +1,6 @@
 use super::*;
-use crate::chips::addition_mod_64::{AdditionConfigWith4Limbs};
-use crate::chips::decompose_16::Decompose16Config;
+use crate::base_operations::addition_mod_64::{AdditionConfigWith4Limbs};
+use crate::base_operations::decompose_16::Decompose16Config;
 use halo2_proofs::circuit::SimpleFloorPlanner;
 use halo2_proofs::plonk::Circuit;
 use std::array;

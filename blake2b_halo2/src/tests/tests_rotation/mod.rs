@@ -1,7 +1,7 @@
 use super::*;
-use crate::chips::decompose_8::Decompose8Config;
-use crate::chips::generic_limb_rotation::LimbRotationConfig;
-use crate::chips::rotate_63::Rotate63Config;
+use crate::base_operations::decompose_8::Decompose8Config;
+use crate::base_operations::generic_limb_rotation::LimbRotationConfig;
+use crate::base_operations::rotate_63::Rotate63Config;
 
 mod rotation_63_circuit_16bit_limbs;
 #[cfg(test)]

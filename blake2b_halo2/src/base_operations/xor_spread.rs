@@ -1,7 +1,7 @@
 use std::array;
 use halo2_proofs::circuit::AssignedCell;
 use crate::auxiliar_functions::value_for;
-use crate::chips::decompose_8::Decompose8Config;
+use crate::base_operations::decompose_8::Decompose8Config;
 use super::*;
 
 #[derive(Clone, Debug)]

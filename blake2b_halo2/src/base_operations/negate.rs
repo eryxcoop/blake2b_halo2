@@ -1,6 +1,6 @@
 use super::*;
 use crate::auxiliar_functions::field_for;
-use crate::chips::decompose_8::Decompose8Config;
+use crate::base_operations::decompose_8::Decompose8Config;
 use halo2_proofs::circuit::AssignedCell;
 
 /// This config handles the bitwise negation of a 64-bit number.

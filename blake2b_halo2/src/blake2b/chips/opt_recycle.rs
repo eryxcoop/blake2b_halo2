@@ -1,32 +1,33 @@
 /// This is the main chip for the Blake2b hash function. It is responsible for the entire hash computation.
 /// It contains all the necessary chips and some extra columns.
 ///
-/// This optimization uses addition with 8 limbs and computes xor with a spread table of 8-bits.
-use super::*;
+/// This optimization uses addition with 8 limbs and computes xor with a table that precomputes
+/// all the possible 8-bit operands.
+use crate::blake2b::*;
 use crate::auxiliar_functions::value_for;
-use crate::chips::decompose_16::Decompose16Config;
-use crate::chips::decompose_8::Decompose8Config;
-use crate::chips::decomposition::Decomposition;
-use crate::chips::generic_limb_rotation::LimbRotationConfig;
-use crate::chips::negate::NegateConfig;
-use crate::chips::rotate_63::Rotate63Config;
+use crate::base_operations::decompose_16::Decompose16Config;
+use crate::base_operations::decompose_8::Decompose8Config;
+use crate::base_operations::decomposition::Decomposition;
+use crate::base_operations::generic_limb_rotation::LimbRotationConfig;
+use crate::base_operations::negate::NegateConfig;
+use crate::base_operations::rotate_63::Rotate63Config;
 use ff::PrimeField;
 use halo2_proofs::circuit::{AssignedCell, Layouter, Value};
 use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Fixed, Instance};
 use num_bigint::BigUint;
-use crate::chips::blake2b_implementations::blake2b_instructions::Blake2bInstructions;
-use crate::chips::addition_mod_64::AdditionConfigWith8Limbs;
-use crate::chips::xor_spread::XorSpreadConfig;
+use crate::blake2b::blake2b_instructions::Blake2bInstructions;
+use crate::base_operations::addition_mod_64::AdditionConfigWith8Limbs;
+use crate::base_operations::xor_table::XorTableConfig;
 
 type AdditionConfig<F> = AdditionConfigWith8Limbs<F>;
-type XorConfig<F> = XorSpreadConfig<F>;
+type XorConfig<F> = XorTableConfig<F>;
 
 const BLAKE2B_BLOCK_SIZE: usize = 128;
 
 /// This is the main chip for the Blake2b hash function. It is responsible for the entire hash computation.
 /// It contains all the necessary configurations and some extra columns.
 #[derive(Clone, Debug)]
-pub struct Blake2bChipOptSpread<F: PrimeField> {
+pub struct Blake2bChipOptRecycle<F: PrimeField> {
     /// Decomposition configs
     decompose_8_config: Decompose8Config<F>,
     decompose_16_config: Decompose16Config<F>,
@@ -42,7 +43,7 @@ pub struct Blake2bChipOptSpread<F: PrimeField> {
     expected_final_state: Column<Instance>,
 }
 
-impl<F: PrimeField> Blake2bInstructions<F> for Blake2bChipOptSpread<F> {
+impl<F: PrimeField> Blake2bInstructions<F> for Blake2bChipOptRecycle<F> {
     /// The chip does not own the advice columns it utilizes. It is the responsibility of the caller
     /// to provide them. This gives flexibility to the caller to use the same advice columns for
     /// multiple purposes.
@@ -63,7 +64,7 @@ impl<F: PrimeField> Blake2bInstructions<F> for Blake2bChipOptSpread<F> {
         let generic_limb_rotation_config = LimbRotationConfig::new();
         let rotate_63_config = Rotate63Config::configure(meta, full_number_u64);
 
-        let xor_config = XorConfig::configure(meta, limbs, full_number_u64, carry);
+        let xor_config = XorConfig::configure(meta, limbs);
 
         let negate_config = NegateConfig::configure(meta, full_number_u64);
 
@@ -162,7 +163,7 @@ impl<F: PrimeField> Blake2bInstructions<F> for Blake2bChipOptSpread<F> {
     }
 }
 
-impl<F: PrimeField> Blake2bChipOptSpread<F> {
+impl<F: PrimeField> Blake2bChipOptRecycle<F> {
     /// Enforces the output and key sizes.
     fn enforce_input_sizes(output_size: usize, key_size: usize) {
         assert!(output_size <= 64, "Output size must be between 1 and 64 bytes");
