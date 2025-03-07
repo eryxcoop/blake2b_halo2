@@ -12,7 +12,6 @@ use halo2_proofs::poly::Rotation;
 
 pub mod auxiliar_functions;
 pub mod base_operations;
-pub mod circuits;
 
 #[cfg(test)]
 pub mod tests;
