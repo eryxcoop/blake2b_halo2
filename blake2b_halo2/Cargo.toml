@@ -18,7 +18,19 @@ criterion = { version = "0.5.1", features = ["html_reports", "csv_output"] }
 rust_implementation = { path = "../rust_implementation" }
 
 [[bench]]
-name = "benchmark_optimizations"
+name = "mocked_proving"
+harness = false
+
+[[bench]]
+name = "pk_generation"
+harness = false
+
+[[bench]]
+name = "vk_generation"
+harness = false
+
+[[bench]]
+name = "proof_generation"
 harness = false
 
 [features]

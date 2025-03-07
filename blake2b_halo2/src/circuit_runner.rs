@@ -131,18 +131,7 @@ impl CircuitRunner {
         let params = ParamsKZG::<Bn256>::unsafe_setup(17, &mut rand::thread_rng());
         let vk: VerifyingKey<Fr, KZGCommitmentScheme<Bn256>> = Self::create_vk(&circuit, &params);
         let pk: ProvingKey<Fr, KZGCommitmentScheme<Bn256>> = Self::create_pk(&circuit, vk);
-
-        let mut transcript = CircuitTranscript::init();
-        create_proof(
-            &params,
-            &pk,
-            &[circuit],
-            &[&[&expected_output_fields]],
-            rand::thread_rng(),
-            &mut transcript,
-        )
-        .expect("Proof generation should work");
-        let proof = transcript.finalize();
+        let proof = Self::create_proof(&expected_output_fields, circuit, &params, &pk);
 
         let mut transcript = CircuitTranscript::init_from_bytes(&proof[..]);
 
@@ -156,11 +145,31 @@ impl CircuitRunner {
         .is_ok());
     }
 
-    fn create_pk(circuit: &Blake2bCircuit<Fr>, vk: VerifyingKey<Fr, KZGCommitmentScheme<Bn256>>) -> ProvingKey<Fr, KZGCommitmentScheme<Bn256>> {
+    pub fn create_proof<OptimizationChip: Blake2bInstructions<Fr>>(
+        expected_output_fields: &[Fr],
+        circuit: Blake2bCircuitGeneric<Fr, OptimizationChip>,
+        params: &ParamsKZG<Bn256>,
+        pk: &ProvingKey<Fr, KZGCommitmentScheme<Bn256>>) -> Vec<u8>
+    {
+        let mut transcript = CircuitTranscript::init();
+        create_proof(
+            params,
+            &pk,
+            &[circuit],
+            &[&[&expected_output_fields]],
+            rand::thread_rng(),
+            &mut transcript,
+        )
+            .expect("Proof generation should work");
+        let proof = transcript.finalize();
+        proof
+    }
+
+    pub fn create_pk<OptimizationChip: Blake2bInstructions<Fr>>(circuit: &Blake2bCircuitGeneric<Fr, OptimizationChip>, vk: VerifyingKey<Fr, KZGCommitmentScheme<Bn256>>) -> ProvingKey<Fr, KZGCommitmentScheme<Bn256>> {
         keygen_pk(vk.clone(), circuit).expect("Proving key should be created")
     }
 
-    fn create_vk(circuit: &Blake2bCircuit<Fr>, params: &ParamsKZG<Bn256>) -> VerifyingKey<Fr, KZGCommitmentScheme<Bn256>> {
+    pub fn create_vk<OptimizationChip: Blake2bInstructions<Fr>>(circuit: &Blake2bCircuitGeneric<Fr, OptimizationChip>, params: &ParamsKZG<Bn256>) -> VerifyingKey<Fr, KZGCommitmentScheme<Bn256>> {
         keygen_vk_with_k(params, circuit, 17).expect("Verifying key should be created")
     }
 }
