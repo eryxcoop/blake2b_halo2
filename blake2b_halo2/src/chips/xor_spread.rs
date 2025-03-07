@@ -49,40 +49,17 @@ impl<F: PrimeField> XorSpreadConfig<F> {
                 .map(|&(row, col)| &grid[row][col])
                 .collect::<Vec<_>>();
 
-            vec![
-                q_xor.clone()
-                    * (grid[2][1].clone() + grid[3][1].clone()
-                        - grid[4][1].clone()
-                        - z_expr[0].clone()),
-                q_xor.clone()
-                    * (grid[2][2].clone() + grid[3][2].clone()
-                        - grid[4][2].clone()
-                        - z_expr[1].clone()),
-                q_xor.clone()
-                    * (grid[2][3].clone() + grid[3][3].clone()
-                        - grid[4][3].clone()
-                        - z_expr[2].clone()),
-                q_xor.clone()
-                    * (grid[2][4].clone() + grid[3][4].clone()
-                        - grid[4][4].clone()
-                        - z_expr[3].clone()),
-                q_xor.clone()
-                    * (grid[2][5].clone() + grid[3][5].clone()
-                        - grid[4][5].clone()
-                        - z_expr[4].clone()),
-                q_xor.clone()
-                    * (grid[2][6].clone() + grid[3][6].clone()
-                        - grid[4][6].clone()
-                        - z_expr[5].clone()),
-                q_xor.clone()
-                    * (grid[2][7].clone() + grid[3][7].clone()
-                        - grid[4][7].clone()
-                        - z_expr[6].clone()),
-                q_xor.clone()
-                    * (grid[2][8].clone() + grid[3][8].clone()
-                        - grid[4][8].clone()
-                        - z_expr[7].clone()),
-            ]
+            let mut gates = vec![];
+            for i in 0..8 {
+                gates.push(
+                    q_xor.clone()
+                    * (grid[2][i+1].clone() + grid[3][i+1].clone()
+                        - grid[4][i+1].clone()
+                        - z_expr[i].clone()),
+                );
+            }
+
+            gates
         });
 
         // Lookup spread lhs
