@@ -7,7 +7,7 @@ use blake2b_halo2::auxiliar_functions::value_for;
 use blake2b_halo2::circuit_runner::Blake2bCircuitInputs;
 
 pub fn benchmarking_block_sizes() -> Vec<usize> {
-    vec![1/*, 5, 10, 20*/]
+    vec![1, 5, 10, 20]
 }
 
 pub fn sample_size() -> usize {
