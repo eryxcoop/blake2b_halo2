@@ -4,7 +4,7 @@ use halo2_proofs::halo2curves::bn256::{Bn256, Fr};
 use blake2b_halo2::blake2b::chips::opt_4_limbs::Blake2bChipOpt4Limbs;
 use blake2b_halo2::blake2b::chips::opt_recycle::Blake2bChipOptRecycle;
 use blake2b_halo2::blake2b::chips::opt_spread::Blake2bChipOptSpread;
-use blake2b_halo2::blake2b::blake2b_instructions::Blake2bInstructions;
+use blake2b_halo2::blake2b::instructions::Blake2bInstructions;
 use criterion::measurement::WallTime;
 use blake2b_halo2::circuit_runner::CircuitRunner;
 

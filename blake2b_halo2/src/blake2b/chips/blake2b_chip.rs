@@ -11,7 +11,7 @@ use halo2_proofs::circuit::{AssignedCell, Layouter, Value};
 use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Fixed, Instance};
 use num_bigint::BigUint;
 use crate::base_operations::xor::Xor;
-use crate::blake2b::blake2b_instructions::Blake2bInstructions;
+use crate::blake2b::instructions::Blake2bInstructions;
 
 /// This toggles between optimizations for the sum operation.
 cfg_if::cfg_if! {
@@ -72,7 +72,16 @@ impl<F: PrimeField> Blake2bInstructions<F> for Blake2bChip<F> {
         full_number_u64: Column<Advice>,
         limbs: [Column<Advice>; 8],
     ) -> Self {
-        Self::enforce_modulus_size();
+        /// Generic config
+        let (decompose_16_config,
+            decompose_8_config,
+            generic_limb_rotation_config,
+            rotate_63_config,
+            negate_config,
+            constants,
+            expected_final_state) = Self::generic_configure(meta, full_number_u64, limbs);
+
+        /// Optimization config
         cfg_if::cfg_if! {
             if #[cfg(feature = "sum_with_8_limbs")] {
                 /// An extra carry column is needed for the sum operation with 8 limbs.
@@ -85,11 +94,6 @@ impl<F: PrimeField> Blake2bInstructions<F> for Blake2bChip<F> {
             }
         }
 
-        let decompose_16_config =
-            Decompose16Config::configure(meta, full_number_u64, limbs[0..4].try_into().unwrap());
-        let decompose_8_config = Decompose8Config::configure(meta, full_number_u64, limbs);
-        let generic_limb_rotation_config = LimbRotationConfig::new();
-        let rotate_63_config = Rotate63Config::configure(meta, full_number_u64);
         cfg_if::cfg_if! {
             if #[cfg(feature = "xor_with_spread")] {
                 let xor_config = XorConfig::configure(meta, limbs, full_number_u64, carry);
@@ -99,14 +103,6 @@ impl<F: PrimeField> Blake2bInstructions<F> for Blake2bChip<F> {
                 compile_error!("No feature selected");
             }
         }
-
-        let negate_config = NegateConfig::configure(meta, full_number_u64);
-
-        let constants = meta.fixed_column();
-        meta.enable_equality(constants);
-
-        let expected_final_state = meta.instance_column();
-        meta.enable_equality(expected_final_state);
 
         Self {
             addition_config,
@@ -124,8 +120,7 @@ impl<F: PrimeField> Blake2bInstructions<F> for Blake2bChip<F> {
     /// This method initializes the chip with the necessary lookup tables. It should be called once
     /// before the hash computation.
     fn initialize_with(&mut self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
-        self.populate_lookup_table_8(layouter)?;
-        self.populate_xor_lookup_table(layouter)?;
+        self.generic_initialize_with(layouter)?;
         cfg_if::cfg_if! {
             if #[cfg(feature = "sum_with_4_limbs")] {
                 self.populate_lookup_table_16(layouter)?;
@@ -204,6 +199,31 @@ impl<F: PrimeField> Blake2bInstructions<F> for Blake2bChip<F> {
 }
 
 impl<F: PrimeField> Blake2bChip<F> {
+    fn generic_configure(meta: &mut ConstraintSystem<F>, full_number_u64: Column<Advice>, limbs: [Column<Advice>; 8]) -> (Decompose16Config<F>, Decompose8Config<F>, LimbRotationConfig<F>, Rotate63Config<F, 8, 9>, NegateConfig<F>, Column<Fixed>, Column<Instance>) {
+        Self::enforce_modulus_size();
+        let decompose_16_config =
+            Decompose16Config::configure(meta, full_number_u64, limbs[0..4].try_into().unwrap());
+        let decompose_8_config = Decompose8Config::configure(meta, full_number_u64, limbs);
+        let generic_limb_rotation_config = LimbRotationConfig::new();
+        let rotate_63_config = Rotate63Config::configure(meta, full_number_u64);
+
+
+        let negate_config = NegateConfig::configure(meta, full_number_u64);
+
+        let constants = meta.fixed_column();
+        meta.enable_equality(constants);
+
+        let expected_final_state = meta.instance_column();
+        meta.enable_equality(expected_final_state);
+        (decompose_16_config, decompose_8_config, generic_limb_rotation_config, rotate_63_config, negate_config, constants, expected_final_state)
+    }
+
+    fn generic_initialize_with(&mut self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
+        self.populate_lookup_table_8(layouter)?;
+        self.populate_xor_lookup_table(layouter)?;
+        Ok(())
+    }
+
     /// Enforces the output and key sizes.
     fn enforce_input_sizes(output_size: usize, key_size: usize) {
         assert!(output_size <= 64, "Output size must be between 1 and 64 bytes");
@@ -709,13 +729,13 @@ impl<F: PrimeField> Blake2bChip<F> {
 
     // Populate tables
 
-    fn populate_lookup_table_8(&mut self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
-        self.decompose_8_config.populate_lookup_table(layouter)
-    }
-
     #[allow(dead_code)]
     fn populate_lookup_table_16(&mut self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
         self.decompose_16_config.populate_lookup_table(layouter)
+    }
+
+    fn populate_lookup_table_8(&mut self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
+        self.decompose_8_config.populate_lookup_table(layouter)
     }
 
     fn populate_xor_lookup_table(&mut self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {

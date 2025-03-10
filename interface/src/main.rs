@@ -1,5 +1,5 @@
 use blake2b_halo2::blake2b::chips::blake2b_chip::Blake2bChip;
-use blake2b_halo2::blake2b::blake2b_circuit::Blake2bCircuit;
+use blake2b_halo2::blake2b::circuit::Blake2bCircuit;
 use halo2_proofs::circuit::Value;
 use halo2_proofs::dev::cost_model::{from_circuit_to_cost_model_options, CostOptions};
 use halo2_proofs::dev::MockProver;

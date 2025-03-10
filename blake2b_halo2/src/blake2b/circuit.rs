@@ -2,7 +2,7 @@ use super::*;
 use halo2_proofs::circuit::SimpleFloorPlanner;
 use halo2_proofs::plonk::Circuit;
 use std::array;
-use crate::blake2b::blake2b_instructions::Blake2bInstructions;
+use crate::blake2b::instructions::Blake2bInstructions;
 
 /// This is an example circuit of how you should use the Blake2b chip.
 #[derive(Clone)]
