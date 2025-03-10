@@ -11,3 +11,9 @@ serde_json = "1.0.135"
 ff = "0.13"
 hex = "0.4.3"
 halo2_proofs = { git = "https://github.com/input-output-hk/halo2", features = ["cost-estimator"] }
+cfg-if = "1.0.0"
+
+[features]
+opt_4_limbs = []
+opt_recycle = []
+opt_spread  = []

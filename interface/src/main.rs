@@ -1,4 +1,3 @@
-use blake2b_halo2::blake2b::chips::blake2b_chip::Blake2bChip;
 use blake2b_halo2::blake2b::circuit::Blake2bCircuit;
 use halo2_proofs::circuit::Value;
 use halo2_proofs::dev::cost_model::{from_circuit_to_cost_model_options, CostOptions};
@@ -6,6 +5,21 @@ use halo2_proofs::dev::MockProver;
 use halo2_proofs::halo2curves::bn256::Fr;
 use serde::Deserialize;
 use std::cmp::max;
+
+cfg_if::cfg_if! {
+    if #[cfg(feature = "opt_4_limbs")] {
+        use blake2b_halo2::blake2b::chips::opt_4_limbs::Blake2bChipOpt4Limbs;
+        type Blake2bChip<F> = Blake2bChipOpt4Limbs<F>;
+    } else if #[cfg(feature = "opt_recycle")] {
+        use blake2b_halo2::blake2b::chips::opt_recycle::Blake2bChipOptRecycle;
+        type Blake2bChip<F> = Blake2bChipOptRecycle<F>;
+    } else if #[cfg(feature = "opt_spread")] {
+        use blake2b_halo2::blake2b::chips::opt_spread::Blake2bChipOptSpread;
+        type Blake2bChip<F> = Blake2bChipOptSpread<F>;
+    } else {
+        compile_error!("No feature selected");
+    }
+}
 
 #[derive(Deserialize, Debug)]
 struct Blake2bInput {

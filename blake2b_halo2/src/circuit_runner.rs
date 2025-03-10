@@ -12,8 +12,22 @@ use halo2_proofs::{
     transcript::{CircuitTranscript, Transcript},
 };
 
-use crate::blake2b::chips::blake2b_chip::Blake2bChip;
 use crate::blake2b::instructions::Blake2bInstructions;
+
+cfg_if::cfg_if! {
+    if #[cfg(feature = "opt_4_limbs")] {
+        use crate::blake2b::chips::opt_4_limbs::Blake2bChipOpt4Limbs;
+        type Blake2bChip<F> = Blake2bChipOpt4Limbs<F>;
+    } else if #[cfg(feature = "opt_recycle")] {
+        use crate::blake2b::chips::opt_recycle::Blake2bChipOptRecycle;
+        type Blake2bChip<F> = Blake2bChipOptRecycle<F>;
+    } else if #[cfg(feature = "opt_spread")] {
+        use crate::blake2b::chips::opt_spread::Blake2bChipOptSpread;
+        type Blake2bChip<F> = Blake2bChipOptSpread<F>;
+    } else {
+        compile_error!("No feature selected");
+    }
+}
 
 type Blake2bCircuit<F> = Blake2bCircuitGeneric<F, Blake2bChip<F>>;
 pub type Blake2bCircuitInputs = (Vec<Value<Fr>>, usize, Vec<Value<Fr>>, usize, [Fr; 64], usize);

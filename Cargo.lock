@@ -532,6 +532,7 @@ name = "interface"
 version = "0.1.0"
 dependencies = [
  "blake2b_halo2",
+ "cfg-if",
  "ff",
  "halo2_proofs",
  "hex",
