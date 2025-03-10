@@ -16,6 +16,7 @@ use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Fixed, Instance};
 use num_bigint::BigUint;
 use crate::blake2b::blake2b_instructions::Blake2bInstructions;
 use crate::base_operations::addition_mod_64::AdditionConfigWith8Limbs;
+use crate::base_operations::xor::Xor;
 use crate::base_operations::xor_spread::XorSpreadConfig;
 
 type AdditionConfig<F> = AdditionConfigWith8Limbs<F>;

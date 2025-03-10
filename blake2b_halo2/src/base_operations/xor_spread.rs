@@ -2,6 +2,7 @@ use std::array;
 use halo2_proofs::circuit::AssignedCell;
 use crate::auxiliar_functions::value_for;
 use crate::base_operations::decompose_8::Decompose8Config;
+use crate::base_operations::xor::Xor;
 use super::*;
 
 #[derive(Clone, Debug)]
@@ -16,6 +17,94 @@ pub struct XorSpreadConfig<F: PrimeField> {
 
     q_xor: Selector,
     _ph: PhantomData<F>,
+}
+
+impl<F: PrimeField> Xor<F> for XorSpreadConfig<F> {
+    /// Method that populates the spread lookup tables. Must be called only once in the user circuit.
+    fn populate_xor_lookup_table(
+        &mut self,
+        layouter: &mut impl Layouter<F>,
+    ) -> Result<(), Error> {
+        self.populate_spread_table(layouter)?;
+        self.populate_empty_spread_table(layouter)?;
+        Ok(())
+    }
+
+    fn generate_xor_rows_from_cells_optimized(
+        &mut self,
+        region: &mut Region<F>,
+        offset: &mut usize,
+        previous_cell: &AssignedCell<F, F>,
+        cell_to_copy: &AssignedCell<F, F>,
+        decompose_8_config: &mut Decompose8Config<F>,
+        use_previous_cell: bool,
+    ) -> Result<[AssignedCell<F, F>; 9], Error> {
+        let value_lhs = previous_cell.value().copied();
+        let value_rhs = cell_to_copy.value().copied();
+
+        if !use_previous_cell {
+            decompose_8_config.generate_row_from_cell(region, previous_cell, *offset)?;
+            *offset += 1;
+        }
+
+        decompose_8_config.generate_row_from_cell(region, cell_to_copy, *offset)?;
+        *offset += 1;
+
+        self.populate_spread_limbs_of(region, offset, value_lhs);
+        *offset += 1;
+
+        self.populate_spread_limbs_of(region, offset, value_rhs);
+        *offset += 1;
+
+        let value_result = value_lhs.and_then(|v0| {
+            value_rhs.and_then(|v1| Value::known(auxiliar_functions::xor_field_elements(v0, v1)))
+        });
+
+        self.populate_spread_limbs_of(region, offset, value_result);
+        *offset += 1;
+
+        let result_row = decompose_8_config.generate_row_from_value_and_keep_row(
+            region,
+            value_result,
+            *offset,
+        )?;
+
+        self.q_xor.enable(region, *offset)?;
+        *offset += 1;
+
+        value_lhs.and_then(|lhs| {
+            value_rhs.and_then(|rhs| {
+                value_result.and_then(|result| {
+                    let lhs_limb_values = auxiliar_functions::decompose_field_8bit_limbs(lhs);
+                    let rhs_limb_values = auxiliar_functions::decompose_field_8bit_limbs(rhs);
+                    let result_limb_values = auxiliar_functions::decompose_field_8bit_limbs(result);
+
+                    let empty_spread_positions = Self::empty_spread_positions();
+                    let columns_in_order =
+                        Self::columns_in_order(self.full_number_u64, self.limbs, self.extra);
+                    for i in 0..8 {
+                        let z_i = Self::spread_bits_left(lhs_limb_values[i])
+                            + Self::spread_bits_left(rhs_limb_values[i])
+                            - Self::spread_bits_left(result_limb_values[i]);
+
+                        region
+                            .assign_advice(
+                                || "empty spread",
+                                columns_in_order[empty_spread_positions[i].1],
+                                // We need to subtract 6 since we are in the offset 7 because we already assigned all rows
+                                *offset + empty_spread_positions[i].0 - 6,
+                                || value_for::<u16, F>(z_i),
+                            )
+                            .unwrap();
+                    }
+
+                    Value::<F>::unknown()
+                })
+            })
+        });
+
+        Ok(result_row.try_into().unwrap())
+    }
 }
 
 impl<F: PrimeField> XorSpreadConfig<F> {
@@ -92,92 +181,6 @@ impl<F: PrimeField> XorSpreadConfig<F> {
             q_xor,
             _ph: PhantomData,
         }
-    }
-
-    /// Method that populates the spread lookup tables. Must be called only once in the user circuit.
-    pub fn populate_xor_lookup_table(
-        &mut self,
-        layouter: &mut impl Layouter<F>,
-    ) -> Result<(), Error> {
-        self.populate_spread_table(layouter)?;
-        self.populate_empty_spread_table(layouter)?;
-        Ok(())
-    }
-
-    pub fn generate_xor_rows_from_cells_optimized(
-        &mut self,
-        region: &mut Region<F>,
-        offset: &mut usize,
-        previous_cell: &AssignedCell<F, F>,
-        cell_to_copy: &AssignedCell<F, F>,
-        decompose_8_config: &mut Decompose8Config<F>,
-        use_previous_cell: bool,
-    ) -> Result<[AssignedCell<F, F>; 9], Error> {
-        let value_lhs = previous_cell.value().copied();
-        let value_rhs = cell_to_copy.value().copied();
-
-        if !use_previous_cell {
-            decompose_8_config.generate_row_from_cell(region, previous_cell, *offset)?;
-            *offset += 1;
-        }
-
-        decompose_8_config.generate_row_from_cell(region, cell_to_copy, *offset)?;
-        *offset += 1;
-
-        self.populate_spread_limbs_of(region, offset, value_lhs);
-        *offset += 1;
-
-        self.populate_spread_limbs_of(region, offset, value_rhs);
-        *offset += 1;
-
-        let value_result = value_lhs.and_then(|v0| {
-            value_rhs.and_then(|v1| Value::known(auxiliar_functions::xor_field_elements(v0, v1)))
-        });
-
-        self.populate_spread_limbs_of(region, offset, value_result);
-        *offset += 1;
-
-        let result_row = decompose_8_config.generate_row_from_value_and_keep_row(
-            region,
-            value_result,
-            *offset,
-        )?;
-
-        self.q_xor.enable(region, *offset)?;
-        *offset += 1;
-
-        value_lhs.and_then(|lhs| {
-            value_rhs.and_then(|rhs| {
-                value_result.and_then(|result| {
-                    let lhs_limb_values = auxiliar_functions::decompose_field_8bit_limbs(lhs);
-                    let rhs_limb_values = auxiliar_functions::decompose_field_8bit_limbs(rhs);
-                    let result_limb_values = auxiliar_functions::decompose_field_8bit_limbs(result);
-
-                    let empty_spread_positions = Self::empty_spread_positions();
-                    let columns_in_order =
-                        Self::columns_in_order(self.full_number_u64, self.limbs, self.extra);
-                    for i in 0..8 {
-                        let z_i = Self::spread_bits_left(lhs_limb_values[i])
-                            + Self::spread_bits_left(rhs_limb_values[i])
-                            - Self::spread_bits_left(result_limb_values[i]);
-
-                        region
-                            .assign_advice(
-                                || "empty spread",
-                                columns_in_order[empty_spread_positions[i].1],
-                                // We need to subtract 6 since we are in the offset 7 because we already assigned all rows
-                                *offset + empty_spread_positions[i].0 - 6,
-                                || value_for::<u16, F>(z_i),
-                            )
-                            .unwrap();
-                    }
-
-                    Value::<F>::unknown()
-                })
-            })
-        });
-
-        Ok(result_row.try_into().unwrap())
     }
 
     fn populate_spread_limbs_of(

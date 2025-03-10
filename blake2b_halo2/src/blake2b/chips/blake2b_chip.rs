@@ -10,6 +10,7 @@ use ff::PrimeField;
 use halo2_proofs::circuit::{AssignedCell, Layouter, Value};
 use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Fixed, Instance};
 use num_bigint::BigUint;
+use crate::base_operations::xor::Xor;
 use crate::blake2b::blake2b_instructions::Blake2bInstructions;
 
 /// This toggles between optimizations for the sum operation.

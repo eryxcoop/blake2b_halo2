@@ -5,6 +5,7 @@ use halo2_proofs::circuit::SimpleFloorPlanner;
 use halo2_proofs::plonk::Circuit;
 use std::array;
 use std::marker::PhantomData;
+use crate::base_operations::xor::Xor;
 
 #[derive(Clone)]
 pub struct XorConfig<F: PrimeField> {

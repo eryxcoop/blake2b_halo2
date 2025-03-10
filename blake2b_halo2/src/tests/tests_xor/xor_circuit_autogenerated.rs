@@ -4,6 +4,7 @@ use halo2_proofs::circuit::SimpleFloorPlanner;
 use halo2_proofs::plonk::{Circuit, Fixed};
 use std::array;
 use std::marker::PhantomData;
+use crate::base_operations::xor::Xor;
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "xor_with_spread")] {
