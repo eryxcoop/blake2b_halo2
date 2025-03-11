@@ -6,9 +6,8 @@ This repo holds an optimized Blake2b implementation in Halo2 prover.
 
 The repo is divided into three parts:
 * Under the directory ```rust_implementation``` there's an implementation in plain Rust of the algorithm Blake2b with its test vector. This implementation is based on the C implementation in the [Blake2 RFC](https://datatracker.ietf.org/doc/html/rfc7693.html).
-* Under the directory ```blake2b_halo2``` there are all the things that have to do with Halo2. In particular, there are Halo2 chips that implement primitives for operating modulo $2^{64}$, a chip for the Blake2b operation and tests for all of the above.
-* Under the directory ```interface``` there is a simple package that lets you try the implementation. More details below.   
-
+* Under the directory ```blake2b_halo2``` there are all the things that have to do with Halo2. In particular, there are Halo2 chips that implement primitives for operating modulo 2⁶⁴, a chip for the Blake2b operation and tests for all of the above.
+* Under the directory ```interface``` there is a simple package that lets you try the implementation. More details below.
 
 # Different blake implementations
 
@@ -23,11 +22,11 @@ To use our 'opt_spread' implementation, set the `opt_spread` feature.
 
 To give a quick summary:
 
-opt_4_limbs ---- turns on ----> `sum_with_4_limbs` and `xor_with_table` features.
+opt_4_limbs ----> turns on the sum operation with 4 limbs instead of 8 and xor with a precomputed table.
 
-opt_recycle ---- turns on ----> `sum_with_8_limbs` and `xor_with_table` features.
+opt_recycle ----> turns on the sum operation with 8 limbs and xor with a precomputed table.
 
-opt_spread  ---- turns on ----> `sum_with_8_limbs` and `xor_with_spread` features.
+opt_spread  ----> turns on the sum operation with 8 limbs and xor with an 8-bit spread table.
 
 # Trying the implementation
 Under the directory ```interface``` you can try the halo2 implementation of Blake2b.
@@ -35,15 +34,15 @@ Just fill the ```src/inputs.json``` file with the message, key and desired outpu
 
 To try the optimization 'opt_4_limbs': 
 
-```cargo run --release --features blake2b_halo2/opt_4_limbs,interface/opt_4_limbs```
+```cargo run --release --features interface/opt_4_limbs```
 
 To try the optimization 'opt_recycle':
 
-```cargo run --release --features blake2b_halo2/opt_recycle,interface/opt_recycle```
+```cargo run --release --features interface/opt_recycle```
 
 To try the optimization 'opt_spread':
 
-```cargo run --release --features blake2b_halo2/opt_spread,interface/opt_spread```
+```cargo run --release --features interface/opt_spread```
 
 
 # Running the tests
@@ -52,28 +51,39 @@ We have unit tests for all our auxiliar chips and the vector tests for the Blake
 
 To test the optimization 'opt_4_limbs':
 
-```cargo test --release --features blake2b_halo2/opt_4_limbs,interface/opt_4_limbs test_hashes_in_circuit_```
+```cargo test --release --features blake2b_halo2/opt_4_limbs test_hashes_in_circuit_```
 
 To test the optimization 'opt_recycle':
 
-```cargo test --release --features blake2b_halo2/opt_recycle,interface/opt_recycle test_hashes_in_circuit_```
+```cargo test --release --features blake2b_halo2/opt_recycle test_hashes_in_circuit_```
 
 To test the optimization 'opt_spread':
 
-```cargo test --release --features blake2b_halo2/opt_spread,interface/opt_spread test_hashes_in_circuit_```
+```cargo test --release --features blake2b_halo2/opt_spread test_hashes_in_circuit_```
 
 
 Those tests use the same test vector than the plain Rust implementation. Running the above tests can take some time since there are 512 tests in the test vector, and each one repeats all the static procedures (like creating big lookup tables), but it shouldn't take more than 2 minutes in release mode.
 
 To test the auxiliar chips:
 
-```cargo test --release --features blake2b_halo2/opt_recycle,interface/opt_recycle -- --skip test_hashes_in_circuit_```
+```cargo test --release --features blake2b_halo2/opt_recycle -- --skip test_hashes_in_circuit_```
 
 # Benchmarking
 Just run
 
-```cargo bench --features blake2b_halo2/opt_recycle,interface/opt_recycle```
+```cargo bench```
 
-The report should be found in ```/target/criterion/optimization_comparison/report/index.html```. 
+The report should be found in ```/target/criterion/report/index.html```. 
 
 Alternatively, you can find our own generated report in ```/blake2b_halo2/benches/report/index.html```. 
+
+There are 5 targets for benchmarking: mocked proving, verification key generation, proving key generation, proof generation and verification. Each one will compare all the optimizations over inputs of different size. Running all the benchmarks can take quite some time, so if you want to run one specific target use:
+
+```cargo bench <TARGET_NAME>```
+
+where <TARGET_NAME> is one of the following:
+* mocked_proving
+* vk_generation
+* pk_generation
+* proof_generation
+* verification

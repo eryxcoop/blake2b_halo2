@@ -17,13 +17,3 @@ pub mod base_operations;
 pub mod tests;
 pub mod circuit_runner;
 pub mod blake2b;
-
-#[cfg(all(feature = "sum_with_4_limbs", feature = "sum_with_8_limbs"))]
-compile_error!(
-    "Features `sum_with_4_limbs` and `sum_with_8_limbs` cannot be enabled at the same time!"
-);
-
-#[cfg(all(feature = "xor_with_table", feature = "xor_with_spread"))]
-compile_error!(
-    "Features `xor_with_table` and `xor_with_spread` cannot be enabled at the same time!"
-);
