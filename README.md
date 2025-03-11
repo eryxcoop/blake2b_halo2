@@ -79,7 +79,7 @@ Alternatively, you can find our own generated report in ```/blake2b_halo2/benche
 
 There are 5 targets for benchmarking: mocked proving, verification key generation, proving key generation, proof generation and verification. Each one will compare all the optimizations over inputs of different size. Running all the benchmarks can take quite some time, so if you want to run one specific target use:
 
-```cargo bench <TARGET_NAME>```
+```cargo bench --bench <TARGET_NAME>```
 
 where <TARGET_NAME> is one of the following:
 * mocked_proving
