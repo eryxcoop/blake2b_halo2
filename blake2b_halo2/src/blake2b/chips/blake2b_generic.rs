@@ -12,13 +12,10 @@ use crate::base_operations::rotate_63::Rotate63Config;
 use crate::base_operations::xor::Xor;
 use crate::blake2b::instructions::Blake2bInstructions;
 
-/// We have a single chip holding 3 optimizations, which is Blake2bChip. That chip uses features to
-/// switch between different optimizations.
-/// In order to benchmark the 3 optimizations at the same time, we decided to unfold that chip
-/// into 3 chips that don't need to use rust features. This way we can compile the 3 of them at the
-/// same time which makes the Criterion report automatizable.
-///
-/// This is the trait that groups the 3 chips optimization chips.
+
+/// This is the trait that groups the 3 optimization chips. Most of their code is the same, so the
+/// behaviour was encapsulated here. Each optimization has to override only 3 or 4 methods, besides
+/// its signature for some of the gates.
 pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>: Blake2bInstructions<F> {
     // Getters for the internal members of the chip
     fn decompose_8_config(&mut self) -> Decompose8Config<F>;

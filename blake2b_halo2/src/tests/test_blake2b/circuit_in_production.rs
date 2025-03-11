@@ -1,4 +1,4 @@
-use crate::circuit_runner::CircuitRunner;
+use crate::blake2b::circuit_runner::CircuitRunner;
 
 #[test]
 fn test_with_real_snark() {

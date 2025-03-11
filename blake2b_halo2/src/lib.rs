@@ -15,5 +15,4 @@ pub mod base_operations;
 
 #[cfg(test)]
 pub mod tests;
-pub mod circuit_runner;
 pub mod blake2b;

@@ -6,7 +6,7 @@ use blake2b_halo2::blake2b::chips::opt_recycle::Blake2bChipOptRecycle;
 use blake2b_halo2::blake2b::chips::opt_spread::Blake2bChipOptSpread;
 use blake2b_halo2::blake2b::instructions::Blake2bInstructions;
 use criterion::measurement::WallTime;
-use blake2b_halo2::circuit_runner::CircuitRunner;
+use blake2b_halo2::blake2b::circuit_runner::CircuitRunner;
 
 pub mod utils;
 use utils::*;

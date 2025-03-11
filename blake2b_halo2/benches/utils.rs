@@ -4,7 +4,7 @@ use halo2_proofs::circuit::Value;
 use halo2_proofs::halo2curves::bn256::Fr;
 use rand::Rng;
 use blake2b_halo2::auxiliar_functions::value_for;
-use blake2b_halo2::circuit_runner::Blake2bCircuitInputs;
+use blake2b_halo2::blake2b::circuit_runner::Blake2bCircuitInputs;
 
 pub fn benchmarking_block_sizes() -> Vec<usize> {
     vec![1, 5, 10, 20, 30]

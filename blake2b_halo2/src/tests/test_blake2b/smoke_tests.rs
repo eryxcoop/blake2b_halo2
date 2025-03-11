@@ -1,4 +1,4 @@
-use crate::circuit_runner::CircuitRunner;
+use crate::blake2b::circuit_runner::CircuitRunner;
 use super::*;
 
 #[test]
