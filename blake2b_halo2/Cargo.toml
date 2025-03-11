@@ -22,11 +22,11 @@ name = "mocked_proving"
 harness = false
 
 [[bench]]
-name = "pk_generation"
+name = "vk_generation"
 harness = false
 
 [[bench]]
-name = "vk_generation"
+name = "pk_generation"
 harness = false
 
 [[bench]]
@@ -38,14 +38,7 @@ name = "verification"
 harness = false
 
 [features]
-default = [] # No default features to avoid undesired behaviour
-
-sum_with_8_limbs = []
-sum_with_4_limbs = []
-
-xor_with_table = []
-xor_with_spread = []
-
-opt_4_limbs = ["sum_with_4_limbs", "xor_with_table"]
-opt_recycle = ["sum_with_8_limbs", "xor_with_table"]
-opt_spread  = ["sum_with_8_limbs", "xor_with_spread"]
+default = ["opt_spread"]
+opt_4_limbs = []
+opt_recycle = []
+opt_spread  = []
