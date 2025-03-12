@@ -36,7 +36,7 @@ pub struct CircuitRunner;
 
 /// Circuit runner methods for Mock Prover
 impl CircuitRunner {
-    pub fn mocked_preprocess_inputs_sintesize_prove_and_verify(
+    pub fn mocked_preprocess_inputs_synthesize_prove_and_verify(
         input: &String,
         key: &String,
         expected: &String,

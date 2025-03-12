@@ -11,7 +11,7 @@ struct TestCase {
 }
 
 pub fn run_test(input: &String, key: &String, expected: &String) {
-    CircuitRunner::mocked_preprocess_inputs_sintesize_prove_and_verify(input, key, expected);
+    CircuitRunner::mocked_preprocess_inputs_synthesize_prove_and_verify(input, key, expected);
 }
 
 #[test]
