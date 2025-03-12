@@ -8,7 +8,7 @@ pub trait Xor<F: PrimeField> {
         layouter: &mut impl Layouter<F>,
     ) -> Result<(), Error>;
 
-    // weird name - is there an unoptimized function?
+    // [Inigo comment] weird name - is there an unoptimized function?
     fn generate_xor_rows_from_cells_optimized(
         &mut self,
         region: &mut Region<F>,

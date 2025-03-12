@@ -67,7 +67,7 @@ pub trait Decomposition<F: PrimeField, const T: usize> {
         _bytes: [Value<F>; 8],
         _offset: usize,
     ) -> Result<Vec<AssignedCell<F, F>>, Error> {
-        // best to write `panic!` in the implementation, rather than as a default implementation.
+        // [Inigo comment] best to write `panic!` in the implementation, rather than as a default implementation.
         panic!("Not implemented");
     }
 

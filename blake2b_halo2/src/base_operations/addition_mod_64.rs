@@ -12,7 +12,7 @@ pub type AdditionConfigWith4Limbs<F> = AdditionMod64Config<F, 4, 6>;
 ///
 /// R is used to define the total number of columns in the trace.
 /// It will allways be T + 2 (full number and carry)
-// Configs do not need the generic F. please change throughout the whole codebase.
+// [Inigo comment] Configs do not need the generic F. please change throughout the whole codebase.
 pub struct AdditionMod64Config<F: Field, const T: usize, const R: usize> {
     carry: Column<Advice>,
     q_add: Selector,

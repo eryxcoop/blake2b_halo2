@@ -48,7 +48,7 @@ impl<F: PrimeField> Xor<F> for XorSpreadConfig<F> {
         decompose_8_config.generate_row_from_cell(region, cell_to_copy, *offset)?;
         *offset += 1;
 
-        // It is a bit unclear what is going on here. How do you guarantee that the value being
+        // [Inigo comment] It is a bit unclear what is going on here. How do you guarantee that the value being
         // assigned here is the same as the input?
         // Maybe soundness issue? copy constraint missing
         self.populate_spread_limbs_of(region, offset, value_lhs);
@@ -230,7 +230,7 @@ impl<F: PrimeField> XorSpreadConfig<F> {
         }
     }
 
-    // this is only used once - why not have it directly in the implementation of the trait?
+    // [Inigo comment] this is only used once - why not have it directly in the implementation of the trait?
     fn populate_spread_table(&self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
         layouter.assign_table(
             || "xor spread table",

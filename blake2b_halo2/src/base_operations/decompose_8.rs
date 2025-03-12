@@ -2,7 +2,7 @@ use super::*;
 use halo2_proofs::circuit::AssignedCell;
 
 /// This config handles the decomposition of 64-bit numbers into 8-bit limbs in the trace
-// Configs do not need to be parametrised by the PrimeField.
+// [Inigo comment] Configs do not need to be parametrised by the PrimeField.
 #[derive(Clone, Debug)]
 pub struct Decompose8Config<F: PrimeField> {
     /// The full number and the limbs are not owned by the config.

@@ -37,7 +37,7 @@ impl<F: PrimeField, const T: usize, const R: usize> Rotate63Config<F, T, R> {
     }
 
     /// Receives a trace and populates the rows for the rotation of 63 bits to the right
-    // Where are you using this function? Is it only in tests? why is it public?
+    // [Inigo comment] Where are you using this function? Is it only in tests? why is it public?
     pub fn populate_rotation_rows(
         &self,
         layouter: &mut impl Layouter<F>,

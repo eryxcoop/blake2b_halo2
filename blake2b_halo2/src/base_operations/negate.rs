@@ -40,7 +40,7 @@ impl<F: PrimeField> NegateConfig<F> {
         input: &AssignedCell<F, F>,
         decompose_config: &mut Decompose8Config<F>,
     ) -> Result<AssignedCell<F, F>, Error> {
-        // You are unlinking the cell with the actual value - this might be a
+        // [Inigo comment] You are unlinking the cell with the actual value - this might be a
         // soundness issue.
         let value = input.value().copied();
         self.generate_rows(region, offset, value, decompose_config)
@@ -48,7 +48,7 @@ impl<F: PrimeField> NegateConfig<F> {
 
     /// Receives a value, generates a row for that value and generates the row for the negation
     /// of the value
-    // If you only want to negate, why are you assigning the decomposition of the value?
+    // [Inigo comment] If you only want to negate, why are you assigning the decomposition of the value?
     pub fn generate_rows(
         &mut self,
         region: &mut Region<F>,
