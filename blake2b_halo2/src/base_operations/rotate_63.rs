@@ -37,6 +37,7 @@ impl<F: PrimeField, const T: usize, const R: usize> Rotate63Config<F, T, R> {
     }
 
     /// Receives a trace and populates the rows for the rotation of 63 bits to the right
+    // Where are you using this function? Is it only in tests? why is it public?
     pub fn populate_rotation_rows(
         &self,
         layouter: &mut impl Layouter<F>,
@@ -68,17 +69,20 @@ impl<F: PrimeField, const T: usize, const R: usize> Rotate63Config<F, T, R> {
         self.q_rot63.enable(region, *offset)?;
 
         let input_value = input_row[0].value().copied();
-        let result_value = input_value.and_then(|input| {
-            Value::known(auxiliar_functions::rotate_right_field_element(input, 63))
+        let result_value = input_value.map(|input| {
+            auxiliar_functions::rotate_right_field_element(input, 63)
         });
 
+        // Why do you decompose? can't you work directly on the rotation of the value?
         let result_cell =
             decompose_config.generate_row_from_value(region, result_value, *offset)?;
         *offset += 1;
         Ok(result_cell)
     }
 
-    pub fn unknown_trace() -> [[Value<F>; R]; 2] {
+    // functions that are only used in tests should not be part of the config.
+    #[cfg(test)]
+    fn unknown_trace() -> [[Value<F>; R]; 2] {
         [[Value::unknown(); R]; 2]
     }
 }

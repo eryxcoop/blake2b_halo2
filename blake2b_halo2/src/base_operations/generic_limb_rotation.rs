@@ -5,6 +5,7 @@ use halo2_proofs::circuit::{AssignedCell, Layouter, Value};
 use std::marker::PhantomData;
 
 #[derive(Clone, Debug)]
+// If there are no new rows/gates, there should not be a config
 pub struct LimbRotationConfig<F: Field> {
     _ph: PhantomData<F>,
 }

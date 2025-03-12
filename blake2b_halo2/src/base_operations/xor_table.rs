@@ -146,6 +146,7 @@ impl<F: PrimeField> XorTableConfig<F> {
 
     /// Given 3 explicit rows of values, it assigns the full number and the limbs of the operands
     /// and the result in the trace
+    // functions only used in tests should not be part of the config.
     pub fn populate_xor_region(
         &mut self,
         layouter: &mut impl Layouter<F>,

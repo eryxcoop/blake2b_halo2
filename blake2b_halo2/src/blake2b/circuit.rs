@@ -5,9 +5,9 @@ use std::array;
 use crate::blake2b::instructions::Blake2bInstructions;
 
 /// This is an example circuit of how you should use the Blake2b chip.
+/// This example here is strange. You should have this either in a test or example.
 #[derive(Clone)]
 pub struct Blake2bCircuit<F: PrimeField, OptimizationChip: Blake2bInstructions<F>> {
-    _ph: PhantomData<F>,
     _ph2: PhantomData<OptimizationChip>,
     /// The input and the key should be unknown for the verifier.
     input: Vec<Value<F>>,
@@ -36,7 +36,6 @@ impl<F: PrimeField, OptimizationChip: Blake2bInstructions<F>> Circuit<F>
         let key_size = self.key_size;
         let output_size = self.output_size;
         Self {
-            _ph: PhantomData,
             _ph2: PhantomData,
             input: vec![Value::unknown(); input_size],
             input_size,
@@ -94,7 +93,6 @@ impl<F: PrimeField, OptimizationChip: Blake2bInstructions<F>> Blake2bCircuit<F, 
         output_size: usize,
     ) -> Self {
         Self {
-            _ph: PhantomData,
             _ph2: PhantomData,
             input,
             input_size,

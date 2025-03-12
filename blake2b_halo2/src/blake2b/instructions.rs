@@ -1,7 +1,11 @@
+use halo2_proofs::circuit::Chip;
+//ComposableChip
 use super::*;
 
 /// The set of instructions that every Blake2b chip should implement
 pub trait Blake2bInstructions<F: PrimeField>: Clone {
+    // Configure should not be a function of the instructions. The instructions should
+    // only be blake2b related functions, not chip-related.
     /// Configuration of the circuit, this includes initialization of all the necessary configs.
     /// Some of them are general for every implementation, some are optimization-specific.
     /// It should be called in the configuration of the user circuit.
@@ -11,6 +15,7 @@ pub trait Blake2bInstructions<F: PrimeField>: Clone {
         limbs: [Column<Advice>; 8],
     ) -> Self;
 
+    // Strange name - initialise with what? Also, this seems something non blake2b-specific
     /// Initialization of the circuit. This will usually create the needed lookup tables for the
     /// specific optimization. This should be called on the synthesize of the circuit but only once.
     fn initialize_with(&mut self, layouter: &mut impl Layouter<F>) -> Result<(), Error>;

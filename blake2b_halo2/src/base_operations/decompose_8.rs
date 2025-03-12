@@ -2,6 +2,7 @@ use super::*;
 use halo2_proofs::circuit::AssignedCell;
 
 /// This config handles the decomposition of 64-bit numbers into 8-bit limbs in the trace
+// Configs do not need to be parametrised by the PrimeField.
 #[derive(Clone, Debug)]
 pub struct Decompose8Config<F: PrimeField> {
     /// The full number and the limbs are not owned by the config.
@@ -52,6 +53,8 @@ impl<F: PrimeField> Decomposition<F, 8> for Decompose8Config<F> {
         });
 
         /// Range checks for all the limbs
+        /// I think its fine to explicitly add the lookup call here rather than having the function
+        /// call (at the end of the day you use it only twice).
         for limb in limbs {
             Self::range_check_for_limb(meta, &limb, &q_decompose, &t_range);
         }
@@ -66,9 +69,13 @@ impl<F: PrimeField> Decomposition<F, 8> for Decompose8Config<F> {
     }
 
     /// Given an explicit vector of values, it assigns the full number and the limbs in a row of the trace
+    // If you are assuming a structure in the input `row`, you should specify it in the
+    // docs of the function (e.g. row[0] is a u64 value, and the rest is its decomposition).
     fn populate_row_from_values(
         &mut self,
         region: &mut Region<F>,
+        // If you know this value is going to have size 9, you should use an array here
+        // row: [Value<F>; 9]
         row: Vec<Value<F>>,
         offset: usize,
     ) -> Result<Vec<AssignedCell<F, F>>, Error> {
@@ -144,6 +151,7 @@ impl<F: PrimeField> Decomposition<F, 8> for Decompose8Config<F> {
     /// full row that was created from that value. An example of this could be the Generic Limb
     /// Rotation Operation, where we need to establish copy constraints over the rotated limbs.
     fn generate_row_from_value_and_keep_row(
+        // why is this mutable?
         &mut self,
         region: &mut Region<F>,
         value: Value<F>,
