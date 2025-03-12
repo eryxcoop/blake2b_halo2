@@ -65,10 +65,17 @@ impl<F: PrimeField> Circuit<F> for NegateCircuit<F> {
             || "negate",
             |mut region| {
                 let mut offset = 0;
-                let result = config.negate_config.generate_rows(
+                let cell = config.decompose_8_config.generate_row_from_value(
+                    &mut region,
+                    self.value,
+                    offset,
+                )?;
+                offset += 1;
+
+                let result = config.negate_config.generate_rows_from_cell(
                     &mut region,
                     &mut offset,
-                    self.value,
+                    &cell,
                     &mut config.decompose_8_config,
                 )?;
                 let fixed_cell = region.assign_fixed(

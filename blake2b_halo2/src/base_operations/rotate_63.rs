@@ -80,9 +80,8 @@ impl<F: PrimeField, const T: usize, const R: usize> Rotate63Config<F, T, R> {
         Ok(result_cell)
     }
 
-    // functions that are only used in tests should not be part of the config.
-    #[cfg(test)]
-    fn unknown_trace() -> [[Value<F>; R]; 2] {
+    // [Inigo comment] functions that are only used in tests should not be part of the config.
+    pub fn unknown_trace() -> [[Value<F>; R]; 2] {
         [[Value::unknown(); R]; 2]
     }
 }

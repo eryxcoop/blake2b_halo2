@@ -33,6 +33,13 @@ impl<F: PrimeField> NegateConfig<F> {
         }
     }
 
+    /// Receives a cell, generates a new row for that cell and generates the row for the negation
+    /// of the value
+    // [Inigo comment - answered] If you only want to negate, why are you assigning the decomposition of the value?
+    //
+    // Not operation is used only once at the beginning of the circuit. So we think it's better
+    // leave this function using the decomposition for simplicity, since it won't change the circuit
+    // performance
     pub fn generate_rows_from_cell(
         &mut self,
         region: &mut Region<F>,
@@ -40,26 +47,16 @@ impl<F: PrimeField> NegateConfig<F> {
         input: &AssignedCell<F, F>,
         decompose_config: &mut Decompose8Config<F>,
     ) -> Result<AssignedCell<F, F>, Error> {
-        // [Inigo comment] You are unlinking the cell with the actual value - this might be a
+        // [Inigo comment - solved] You are unlinking the cell with the actual value - this might be a
         // soundness issue.
+        //
+        // Solution - In line 53 we changed generate_row_from_value for generate_row_from_cell which adds a
+        // copy constraint between input and the new cell
         let value = input.value().copied();
-        self.generate_rows(region, offset, value, decompose_config)
-    }
-
-    /// Receives a value, generates a row for that value and generates the row for the negation
-    /// of the value
-    // [Inigo comment] If you only want to negate, why are you assigning the decomposition of the value?
-    pub fn generate_rows(
-        &mut self,
-        region: &mut Region<F>,
-        offset: &mut usize,
-        value: Value<F>,
-        decompose_config: &mut Decompose8Config<F>,
-    ) -> Result<AssignedCell<F, F>, Error> {
         self.q_negate.enable(region, *offset)?;
         let result_value =
             value.and_then(|v0| Value::known(F::from(((1u128 << 64) - 1) as u64) - v0));
-        decompose_config.generate_row_from_value(region, value, *offset)?;
+        decompose_config.generate_row_from_cell(region, input, *offset)?;
         *offset += 1;
         let result_cell =
             decompose_config.generate_row_from_value(region, result_value, *offset)?;

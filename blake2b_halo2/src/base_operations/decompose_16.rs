@@ -79,6 +79,15 @@ impl<F: PrimeField> Decomposition<F, 4> for Decompose16Config<F> {
         Ok(vec![limb_0, limb_1, limb_2, limb_3])
     }
 
+    fn generate_row_from_bytes(
+        &mut self,
+        _region: &mut Region<F>,
+        _bytes: [Value<F>; 8],
+        _offset: usize,
+    ) -> Result<Vec<AssignedCell<F, F>>, Error> {
+        panic!("Not implemented");
+    }
+
     /// Given a value of 64 bits, it returns a row with the assigned cells for the full number and the limbs
     fn generate_row_from_value(
         &mut self,
@@ -96,6 +105,15 @@ impl<F: PrimeField> Decomposition<F, 4> for Decompose16Config<F> {
             region.assign_advice(|| format!("limb{}", i), self.limbs[i], offset, || *limb)?;
         }
         result
+    }
+
+    fn generate_row_from_value_and_keep_row(
+        &mut self,
+        _region: &mut Region<F>,
+        _value: Value<F>,
+        _offset: usize,
+    ) -> Result<Vec<AssignedCell<F, F>>, Error> {
+        panic!("Not implemented");
     }
 
     /// Given a value and a limb index, it returns the value of the limb

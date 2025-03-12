@@ -66,10 +66,7 @@ pub trait Decomposition<F: PrimeField, const T: usize> {
         _region: &mut Region<F>,
         _bytes: [Value<F>; 8],
         _offset: usize,
-    ) -> Result<Vec<AssignedCell<F, F>>, Error> {
-        // [Inigo comment] best to write `panic!` in the implementation, rather than as a default implementation.
-        panic!("Not implemented");
-    }
+    ) -> Result<Vec<AssignedCell<F, F>>, Error>;
 
     fn generate_row_from_cell(
         &mut self,
@@ -89,9 +86,7 @@ pub trait Decomposition<F: PrimeField, const T: usize> {
         _region: &mut Region<F>,
         _value: Value<F>,
         _offset: usize,
-    ) -> Result<Vec<AssignedCell<F, F>>, Error> {
-        panic!("Not implemented");
-    }
+    ) -> Result<Vec<AssignedCell<F, F>>, Error>;
 
     fn get_limb_from(value: Value<F>, limb_number: usize) -> Value<F>;
 }
