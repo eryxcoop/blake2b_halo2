@@ -9,7 +9,10 @@ pub struct Rotate63Config<const T: usize, const R: usize> {
 }
 
 impl<const T: usize, const R: usize> Rotate63Config<T, R> {
-    pub fn configure<F: PrimeField>(meta: &mut ConstraintSystem<F>, full_number_u64: Column<Advice>) -> Self {
+    pub fn configure<F: PrimeField>(
+        meta: &mut ConstraintSystem<F>,
+        full_number_u64: Column<Advice>,
+    ) -> Self {
         let q_rot63 = meta.complex_selector();
         /// The gate that will be used to rotate a number 63 bits to the right
         /// The gate is defined as:
@@ -29,9 +32,7 @@ impl<const T: usize, const R: usize> Rotate63Config<T, R> {
             ]
         });
 
-        Self {
-            q_rot63,
-        }
+        Self { q_rot63 }
     }
 
     /// Receives a trace and populates the rows for the rotation of 63 bits to the right
@@ -72,9 +73,8 @@ impl<const T: usize, const R: usize> Rotate63Config<T, R> {
         self.q_rot63.enable(region, *offset)?;
 
         let input_value = input_row[0].value().copied();
-        let result_value = input_value.map(|input| {
-            auxiliar_functions::rotate_right_field_element(input, 63)
-        });
+        let result_value =
+            input_value.map(|input| auxiliar_functions::rotate_right_field_element(input, 63));
 
         // Why do you decompose? can't you work directly on the rotation of the value?
         let result_cell =

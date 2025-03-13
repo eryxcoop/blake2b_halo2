@@ -1,6 +1,6 @@
 use super::*;
 use crate::base_operations::decompose_8::Decompose8Config;
-use ff::{ PrimeField};
+use ff::{PrimeField};
 use halo2_proofs::circuit::{AssignedCell, Layouter, Value};
 
 #[derive(Default, Clone, Debug)]

@@ -150,11 +150,17 @@ impl CircuitRunner {
         Self::verify(&expected_output_fields, &params, pk, &proof)
     }
 
-    pub fn create_vk<OptimizationChip: Blake2bInstructions>(circuit: &Blake2bCircuitGeneric<Fr, OptimizationChip>, params: &ParamsKZG<Bn256>) -> VerifyingKey<Fr, KZGCommitmentScheme<Bn256>> {
+    pub fn create_vk<OptimizationChip: Blake2bInstructions>(
+        circuit: &Blake2bCircuitGeneric<Fr, OptimizationChip>,
+        params: &ParamsKZG<Bn256>,
+    ) -> VerifyingKey<Fr, KZGCommitmentScheme<Bn256>> {
         keygen_vk_with_k(params, circuit, 17).expect("Verifying key should be created")
     }
 
-    pub fn create_pk<OptimizationChip: Blake2bInstructions>(circuit: &Blake2bCircuitGeneric<Fr, OptimizationChip>, vk: VerifyingKey<Fr, KZGCommitmentScheme<Bn256>>) -> ProvingKey<Fr, KZGCommitmentScheme<Bn256>> {
+    pub fn create_pk<OptimizationChip: Blake2bInstructions>(
+        circuit: &Blake2bCircuitGeneric<Fr, OptimizationChip>,
+        vk: VerifyingKey<Fr, KZGCommitmentScheme<Bn256>>,
+    ) -> ProvingKey<Fr, KZGCommitmentScheme<Bn256>> {
         keygen_pk(vk.clone(), circuit).expect("Proving key should be created")
     }
 
@@ -162,8 +168,8 @@ impl CircuitRunner {
         expected_output_fields: &[Fr],
         circuit: Blake2bCircuitGeneric<Fr, OptimizationChip>,
         params: &ParamsKZG<Bn256>,
-        pk: &ProvingKey<Fr, KZGCommitmentScheme<Bn256>>) -> Vec<u8>
-    {
+        pk: &ProvingKey<Fr, KZGCommitmentScheme<Bn256>>,
+    ) -> Vec<u8> {
         let mut transcript = CircuitTranscript::init();
         create_proof(
             params,
@@ -173,22 +179,26 @@ impl CircuitRunner {
             rand::thread_rng(),
             &mut transcript,
         )
-            .expect("Proof generation should work");
+        .expect("Proof generation should work");
         let proof = transcript.finalize();
         proof
     }
 
-    pub fn verify(expected_output_fields: &[Fr], params: &ParamsKZG<Bn256>, pk: ProvingKey<Fr, KZGCommitmentScheme<Bn256>>, proof: &Vec<u8>) -> Result<(), Error> {
+    pub fn verify(
+        expected_output_fields: &[Fr],
+        params: &ParamsKZG<Bn256>,
+        pk: ProvingKey<Fr, KZGCommitmentScheme<Bn256>>,
+        proof: &Vec<u8>,
+    ) -> Result<(), Error> {
         let mut transcript = CircuitTranscript::init_from_bytes(&proof[..]);
 
         assert!(prepare::<Fr, KZGCommitmentScheme<Bn256>, _>(
             pk.get_vk(),
             &[&[expected_output_fields]],
             &mut transcript,
-        )
-            ?
-            .verify(&params.verifier_params())
-            .is_ok());
+        )?
+        .verify(&params.verifier_params())
+        .is_ok());
         Ok(())
     }
 }

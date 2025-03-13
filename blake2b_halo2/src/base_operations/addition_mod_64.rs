@@ -45,10 +45,7 @@ impl<const T: usize, const R: usize> AdditionMod64Config<T, R> {
             ]
         });
 
-        Self {
-            carry,
-            q_add,
-        }
+        Self { carry, q_add }
     }
 
     /// This method is meant to receive a valid addition_trace, and populate the circuit with it
@@ -126,7 +123,10 @@ impl<const T: usize, const R: usize> AdditionMod64Config<T, R> {
         Ok([result_cell, carry_cell])
     }
 
-    fn calculate_result_and_carry<F: PrimeField>(lhs: Value<&F>, rhs: Value<&F>) -> (Value<F>, Value<F>) {
+    fn calculate_result_and_carry<F: PrimeField>(
+        lhs: Value<&F>,
+        rhs: Value<&F>,
+    ) -> (Value<F>, Value<F>) {
         let [result_value, carry_value] = lhs
             .zip(rhs)
             .map(|(a, b)| {

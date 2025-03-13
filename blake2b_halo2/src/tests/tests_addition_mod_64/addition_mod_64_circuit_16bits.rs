@@ -17,9 +17,7 @@ pub struct AdditionMod64Circuit16Bits<F: PrimeField> {
 
 impl<F: PrimeField> AdditionMod64Circuit16Bits<F> {
     pub fn new_for_trace(trace: [[Value<F>; 6]; 3]) -> Self {
-        Self {
-            trace,
-        }
+        Self { trace }
     }
 }
 

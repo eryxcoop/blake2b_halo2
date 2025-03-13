@@ -10,7 +10,10 @@ pub struct NegateConfig {
 }
 
 impl NegateConfig {
-    pub fn configure<F: PrimeField>(meta: &mut ConstraintSystem<F>, full_number_u64: Column<Advice>) -> Self {
+    pub fn configure<F: PrimeField>(
+        meta: &mut ConstraintSystem<F>,
+        full_number_u64: Column<Advice>,
+    ) -> Self {
         let q_negate = meta.complex_selector();
 
         /// The gate that will be used to negate a number
@@ -26,9 +29,7 @@ impl NegateConfig {
             ]
         });
 
-        Self {
-            q_negate,
-        }
+        Self { q_negate }
     }
 
     /// Receives a cell, generates a new row for that cell and generates the row for the negation

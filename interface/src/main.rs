@@ -1,12 +1,12 @@
+use blake2_rfc::blake2b::blake2b;
 use blake2b_halo2::example_blake2b_circuit::Blake2bCircuit;
 use halo2_proofs::circuit::Value;
 use halo2_proofs::dev::cost_model::{from_circuit_to_cost_model_options, CostOptions};
 use halo2_proofs::dev::MockProver;
 use halo2_proofs::halo2curves::bn256::Fr;
+use hex;
 use serde::Deserialize;
 use std::cmp::max;
-use blake2_rfc::blake2b::blake2b;
-use hex;
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "opt_4_limbs")] {
@@ -36,7 +36,8 @@ fn main() {
     let file_path = format!("{}/interface/src/inputs.json", workspace_root);
 
     let file_content = std::fs::read_to_string(file_path).expect("Failed to read input file");
-    let complete_input: Blake2bInput = serde_json::from_str(&file_content).expect("Failed to parse input");
+    let complete_input: Blake2bInput =
+        serde_json::from_str(&file_content).expect("Failed to parse input");
 
     let input = &complete_input.input;
     let key = &complete_input.key;

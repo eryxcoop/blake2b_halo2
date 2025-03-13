@@ -31,18 +31,23 @@ pub struct Blake2bChipOptSpread {
     expected_final_state: Column<Instance>,
 }
 
-
 /// These are the methods of the Blake2bInstructions trait. Every implementation of Blake2b should
 /// implement configuration, initialization and computation.
 impl Blake2bInstructions for Blake2bChipOptSpread {
-    fn configure<F: PrimeField>(meta: &mut ConstraintSystem<F>, full_number_u64: Column<Advice>, limbs: [Column<Advice>; 8]) -> Self {
+    fn configure<F: PrimeField>(
+        meta: &mut ConstraintSystem<F>,
+        full_number_u64: Column<Advice>,
+        limbs: [Column<Advice>; 8],
+    ) -> Self {
         /// Config that is the same for every optimization
-        let (decompose_8_config,
+        let (
+            decompose_8_config,
             generic_limb_rotation_config,
             rotate_63_config,
             negate_config,
             constants,
-            expected_final_state) = Self::generic_configure(meta, full_number_u64, limbs);
+            expected_final_state,
+        ) = Self::generic_configure(meta, full_number_u64, limbs);
 
         /// Config that is optimization-specific
         /// An extra carry column is needed for the sum operation with 8 limbs.
@@ -64,7 +69,10 @@ impl Blake2bInstructions for Blake2bChipOptSpread {
         }
     }
 
-    fn initialize_with<F: PrimeField>(&mut self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
+    fn initialize_with<F: PrimeField>(
+        &mut self,
+        layouter: &mut impl Layouter<F>,
+    ) -> Result<(), Error> {
         /// Initialization that is the same for every optimization
         self.generic_initialize_with(layouter)
     }
@@ -80,11 +88,18 @@ impl Blake2bInstructions for Blake2bChipOptSpread {
         key: &[Value<F>],
     ) -> Result<(), Error> {
         Blake2bGeneric::compute_blake2b_hash_for_inputs(
-            self, layouter, output_size, input_size, key_size, input, key)
+            self,
+            layouter,
+            output_size,
+            input_size,
+            key_size,
+            input,
+            key,
+        )
     }
 }
 
-impl<F: PrimeField> Blake2bGeneric<F,8,10> for Blake2bChipOptSpread {
+impl<F: PrimeField> Blake2bGeneric<F, 8, 10> for Blake2bChipOptSpread {
     // Getters that the trait needs for its default implementations
     fn decompose_8_config(&mut self) -> Decompose8Config {
         self.decompose_8_config.clone()
@@ -122,30 +137,62 @@ impl<F: PrimeField> Blake2bGeneric<F,8,10> for Blake2bChipOptSpread {
 
     /// opt_spread optimization decomposes the sum operands in 8-bit limbs, so we need to use the
     /// decompose_8_config for the sum operation instead of the decompose_16_config.
-    fn add(&mut self, lhs: &AssignedCell<F, F>, rhs: &AssignedCell<F, F>, region: &mut Region<F>, offset: &mut usize) -> Result<AssignedCell<F, F>, Error> {
-        let addition_cell = self.addition_config.generate_addition_rows_from_cells_optimized(region, offset, lhs, rhs, &mut self.decompose_8_config, false)?[0].clone();
+    fn add(
+        &mut self,
+        lhs: &AssignedCell<F, F>,
+        rhs: &AssignedCell<F, F>,
+        region: &mut Region<F>,
+        offset: &mut usize,
+    ) -> Result<AssignedCell<F, F>, Error> {
+        let addition_cell = self.addition_config.generate_addition_rows_from_cells_optimized(
+            region,
+            offset,
+            lhs,
+            rhs,
+            &mut self.decompose_8_config,
+            false,
+        )?[0]
+            .clone();
         Ok(addition_cell)
     }
 
     /// This method behaves like 'add', with the difference that it takes advantage of the fact that
     /// the last row in the circuit is one of the operands of the addition, so it only needs to copy
     /// one parameter because the other is already on the trace.
-    fn add_copying_one_parameter(&mut self, previous_cell: &AssignedCell<F, F>, cell_to_copy: &AssignedCell<F, F>, region: &mut Region<F>, offset: &mut usize) -> Result<AssignedCell<F, F>, Error> {
-        Ok(self.addition_config
-            .generate_addition_rows_from_cells_optimized(region, offset, previous_cell, cell_to_copy, &mut self.decompose_8_config, true)
-            ?[0].clone())
+    fn add_copying_one_parameter(
+        &mut self,
+        previous_cell: &AssignedCell<F, F>,
+        cell_to_copy: &AssignedCell<F, F>,
+        region: &mut Region<F>,
+        offset: &mut usize,
+    ) -> Result<AssignedCell<F, F>, Error> {
+        Ok(self.addition_config.generate_addition_rows_from_cells_optimized(
+            region,
+            offset,
+            previous_cell,
+            cell_to_copy,
+            &mut self.decompose_8_config,
+            true,
+        )?[0]
+            .clone())
     }
 
     /// This method performs a regular xor operation with the difference that it returns the full
     /// row in the trace, instead of just the cell holding the value. This allows an optimization
     /// where the next operation (which is a rotation) can just read the limbs directly and apply
     /// the limb rotation without copying the operand.
-    fn xor_for_mix(&mut self, previous_cell: &AssignedCell<F, F>, cell_to_copy: &AssignedCell<F, F>, region: &mut Region<F>, offset: &mut usize) -> Result<[AssignedCell<F, F>; 9], Error> {
+    fn xor_for_mix(
+        &mut self,
+        previous_cell: &AssignedCell<F, F>,
+        cell_to_copy: &AssignedCell<F, F>,
+        region: &mut Region<F>,
+        offset: &mut usize,
+    ) -> Result<[AssignedCell<F, F>; 9], Error> {
         self.xor_copying_one_parameter(previous_cell, cell_to_copy, region, offset)
     }
 }
 
-impl Blake2bChipOptSpread{
+impl Blake2bChipOptSpread {
     /// This method only exists inwith 8-bit limbs sum, so it's defined in a different block.
     /// opt_recycle decomposes the sum operands in 8-bit limbs, so the xor operation that comes after
     /// can recycle the result row of the addition and use it as its first operand.
@@ -156,14 +203,13 @@ impl Blake2bChipOptSpread{
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<[AssignedCell<F, F>; 9], Error> {
-        self.xor_config
-            .generate_xor_rows_from_cells(
-                region,
-                offset,
-                previous_cell,
-                cell_to_copy,
-                &mut self.decompose_8_config,
-                true,
-            )
+        self.xor_config.generate_xor_rows_from_cells(
+            region,
+            offset,
+            previous_cell,
+            cell_to_copy,
+            &mut self.decompose_8_config,
+            true,
+        )
     }
 }

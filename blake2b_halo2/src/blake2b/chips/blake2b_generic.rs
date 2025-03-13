@@ -12,11 +12,12 @@ use crate::base_operations::rotate_63::Rotate63Config;
 use crate::base_operations::xor::Xor;
 use crate::blake2b::instructions::Blake2bInstructions;
 
-
 /// This is the trait that groups the 3 optimization chips. Most of their code is the same, so the
 /// behaviour was encapsulated here. Each optimization has to override only 3 or 4 methods, besides
 /// its signature for some of the gates.
-pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>: Blake2bInstructions {
+pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
+    Blake2bInstructions
+{
     // Getters for the internal members of the chip
     fn decompose_8_config(&mut self) -> Decompose8Config;
     fn addition_config(&mut self) -> AdditionMod64Config<LIMBS, WIDTH>;
@@ -102,12 +103,15 @@ pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
     fn generic_configure(
         meta: &mut ConstraintSystem<F>,
         full_number_u64: Column<Advice>,
-        limbs: [Column<Advice>; 8]) -> (Decompose8Config,
-                                        LimbRotation,
-                                        Rotate63Config<8, 9>,
-                                        NegateConfig,
-                                        Column<Fixed>,
-                                        Column<Instance>) {
+        limbs: [Column<Advice>; 8],
+    ) -> (
+        Decompose8Config,
+        LimbRotation,
+        Rotate63Config<8, 9>,
+        NegateConfig,
+        Column<Fixed>,
+        Column<Instance>,
+    ) {
         Self::enforce_modulus_size();
         let decompose_8_config = Decompose8Config::configure(meta, full_number_u64, limbs);
         let rotate_63_config = Rotate63Config::configure(meta, full_number_u64);
@@ -119,12 +123,14 @@ pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
         let expected_final_state = meta.instance_column();
         meta.enable_equality(expected_final_state);
 
-        (decompose_8_config,
-         LimbRotation,
-         rotate_63_config,
-         negate_config,
-         constants,
-         expected_final_state)
+        (
+            decompose_8_config,
+            LimbRotation,
+            rotate_63_config,
+            negate_config,
+            constants,
+            expected_final_state,
+        )
     }
 
     /// This method handles the part of the initialization of the chip that is generic to all
@@ -147,8 +153,8 @@ pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
         output_size_constant: AssignedCell<F, F>,
         key_size_constant_shifted: AssignedCell<F, F>,
     ) -> Result<[AssignedCell<F, F>; 8], Error> {
-        let mut global_state = Self::iv_constants().map(
-            |constant| self.new_row_from_value(constant, region, offset).unwrap());
+        let mut global_state = Self::iv_constants()
+            .map(|constant| self.new_row_from_value(constant, region, offset).unwrap());
 
         Self::constrain_initial_state(region, &global_state, iv_constants)?;
 
@@ -223,7 +229,8 @@ pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
                     128
                 } else {
                     // Complete the block with zeroes
-                    (Self::BLAKE2B_BLOCK_SIZE - input_size % Self::BLAKE2B_BLOCK_SIZE) % Self::BLAKE2B_BLOCK_SIZE
+                    (Self::BLAKE2B_BLOCK_SIZE - input_size % Self::BLAKE2B_BLOCK_SIZE)
+                        % Self::BLAKE2B_BLOCK_SIZE
                 };
                 self.constrain_padding_cells_to_equal_zero(
                     region,
@@ -310,14 +317,14 @@ pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
         let mut global_state_bytes = Vec::new();
         for i in 0..8 {
             global_state[i] = self.xor(&global_state[i], &state[i], region, row_offset)?;
-            let row = self.xor_with_full_rows(&global_state[i], &state[i + 8], region, row_offset)?;
+            let row =
+                self.xor_with_full_rows(&global_state[i], &state[i + 8], region, row_offset)?;
             global_state_bytes.extend_from_slice(&row[1..]);
             global_state[i] = row[0].clone();
         }
         let global_state_bytes_array = global_state_bytes.try_into().unwrap();
         Ok(global_state_bytes_array)
     }
-
 
     /// This method computes a single round of mixing for the Blake2b algorithm.
     /// One round of compress has 96 mixing rounds
@@ -392,15 +399,14 @@ pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
         offset: &mut usize,
     ) -> Result<[AssignedCell<F, F>; 9], Error> {
         let mut decompose_8_config = self.decompose_8_config();
-        self.xor_config()
-            .generate_xor_rows_from_cells(
-                region,
-                offset,
-                lhs,
-                rhs,
-                &mut decompose_8_config,
-                false,
-            )
+        self.xor_config().generate_xor_rows_from_cells(
+            region,
+            offset,
+            lhs,
+            rhs,
+            &mut decompose_8_config,
+            false,
+        )
     }
 
     fn not(
@@ -410,8 +416,12 @@ pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
         offset: &mut usize,
     ) -> Result<AssignedCell<F, F>, Error> {
         let mut decompose_8_config = self.decompose_8_config();
-        self.negate_config()
-            .generate_rows_from_cell(region, offset, input_cell, &mut decompose_8_config)
+        self.negate_config().generate_rows_from_cell(
+            region,
+            offset,
+            input_cell,
+            &mut decompose_8_config,
+        )
     }
 
     fn xor(
@@ -433,7 +443,6 @@ pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
             .clone();
         Ok(full_number_cell)
     }
-
 
     fn add(
         &mut self,
@@ -470,13 +479,12 @@ pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
         offset: &mut usize,
     ) -> Result<AssignedCell<F, F>, Error> {
         let mut decompose_8_config = self.decompose_8_config();
-        self.rotate_63_config()
-            .generate_rotation_rows_from_cells(
-                region,
-                offset,
-                input_row,
-                &mut decompose_8_config,
-            )
+        self.rotate_63_config().generate_rotation_rows_from_cells(
+            region,
+            offset,
+            input_row,
+            &mut decompose_8_config,
+        )
     }
 
     fn rotate_right_16(
@@ -486,14 +494,13 @@ pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
         offset: &mut usize,
     ) -> Result<AssignedCell<F, F>, Error> {
         let mut decompose_8_config = self.decompose_8_config();
-        self.generic_limb_rotation_config()
-            .generate_rotation_rows_from_input_row(
-                region,
-                offset,
-                &mut decompose_8_config,
-                input_row,
-                2,
-            )
+        self.generic_limb_rotation_config().generate_rotation_rows_from_input_row(
+            region,
+            offset,
+            &mut decompose_8_config,
+            input_row,
+            2,
+        )
     }
 
     fn rotate_right_24(
@@ -503,14 +510,13 @@ pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
         offset: &mut usize,
     ) -> Result<AssignedCell<F, F>, Error> {
         let mut decompose_8_config = self.decompose_8_config();
-        self.generic_limb_rotation_config()
-            .generate_rotation_rows_from_input_row(
-                region,
-                offset,
-                &mut decompose_8_config,
-                input_row,
-                3,
-            )
+        self.generic_limb_rotation_config().generate_rotation_rows_from_input_row(
+            region,
+            offset,
+            &mut decompose_8_config,
+            input_row,
+            3,
+        )
     }
 
     fn rotate_right_32(
@@ -520,14 +526,13 @@ pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
         offset: &mut usize,
     ) -> Result<AssignedCell<F, F>, Error> {
         let mut decompose_8_config = self.decompose_8_config();
-        self.generic_limb_rotation_config()
-            .generate_rotation_rows_from_input_row(
-                region,
-                offset,
-                &mut decompose_8_config,
-                input_row,
-                4,
-            )
+        self.generic_limb_rotation_config().generate_rotation_rows_from_input_row(
+            region,
+            offset,
+            &mut decompose_8_config,
+            input_row,
+            4,
+        )
     }
 
     // ----- Auxiliar methods ----- //

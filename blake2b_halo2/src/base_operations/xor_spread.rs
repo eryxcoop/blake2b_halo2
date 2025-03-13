@@ -85,11 +85,10 @@ impl Xor for XorSpreadConfig {
                     let columns_in_order =
                         Self::columns_in_order::<F>(self.full_number_u64, self.limbs, self.extra);
                     for i in 0..8 {
-                        let z_i = (
-                            Self::spread_bits::<F>(lhs_limb_values[i])
+                        let z_i = (Self::spread_bits::<F>(lhs_limb_values[i])
                             + Self::spread_bits::<F>(rhs_limb_values[i])
-                            - Self::spread_bits::<F>(result_limb_values[i])
-                        ) / 2;
+                            - Self::spread_bits::<F>(result_limb_values[i]))
+                            / 2;
 
                         region
                             .assign_advice(
@@ -144,11 +143,10 @@ impl XorSpreadConfig {
             let mut gates = vec![];
             for i in 0..8 {
                 gates.push(
-                    q_xor.clone() * (
-                        grid[2][i+1].clone()
-                        + grid[3][i+1].clone()
-                        - grid[4][i+1].clone()
-                        - Expression::Constant(field_for(2u16)) * z_expr[i].clone()),
+                    q_xor.clone()
+                        * (grid[2][i + 1].clone() + grid[3][i + 1].clone()
+                            - grid[4][i + 1].clone()
+                            - Expression::Constant(field_for(2u16)) * z_expr[i].clone()),
                 );
             }
 
@@ -234,7 +232,10 @@ impl XorSpreadConfig {
     //
     // This is only used for the xor spread implementation, it is not a general method for the xor
     // trait.
-    fn populate_spread_table<F: PrimeField>(&self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
+    fn populate_spread_table<F: PrimeField>(
+        &self,
+        layouter: &mut impl Layouter<F>,
+    ) -> Result<(), Error> {
         layouter.assign_table(
             || "xor spread table",
             |mut table| {

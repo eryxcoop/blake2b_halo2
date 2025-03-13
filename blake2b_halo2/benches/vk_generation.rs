@@ -1,4 +1,6 @@
-use criterion::{criterion_group, criterion_main, BatchSize, BenchmarkGroup, BenchmarkId, Criterion, Throughput};
+use criterion::{
+    criterion_group, criterion_main, BatchSize, BenchmarkGroup, BenchmarkId, Criterion, Throughput,
+};
 use halo2_proofs::poly::kzg::params::ParamsKZG;
 use halo2_proofs::halo2curves::bn256::{Bn256};
 use blake2b_halo2::blake2b::chips::opt_4_limbs::Blake2bChipOpt4Limbs;
@@ -23,9 +25,24 @@ pub fn benchmark_verification_key_generation(c: &mut Criterion) {
     for amount_of_blocks in benchmarking_block_sizes() {
         group.throughput(Throughput::Bytes(amount_of_blocks as u64));
 
-        benchmark_verification_key::<Blake2bChipOpt4Limbs>(&params, &mut group, amount_of_blocks, "opt_4_limbs");
-        benchmark_verification_key::<Blake2bChipOptRecycle>(&params, &mut group, amount_of_blocks, "opt_recycle");
-        benchmark_verification_key::<Blake2bChipOptSpread>(&params, &mut group, amount_of_blocks, "opt_spread");
+        benchmark_verification_key::<Blake2bChipOpt4Limbs>(
+            &params,
+            &mut group,
+            amount_of_blocks,
+            "opt_4_limbs",
+        );
+        benchmark_verification_key::<Blake2bChipOptRecycle>(
+            &params,
+            &mut group,
+            amount_of_blocks,
+            "opt_recycle",
+        );
+        benchmark_verification_key::<Blake2bChipOptSpread>(
+            &params,
+            &mut group,
+            amount_of_blocks,
+            "opt_spread",
+        );
     }
     group.finish()
 }
@@ -34,8 +51,8 @@ fn benchmark_verification_key<OptimizationChip: Blake2bInstructions>(
     params: &ParamsKZG<Bn256>,
     group: &mut BenchmarkGroup<WallTime>,
     amount_of_blocks: usize,
-    name: &str)
-{
+    name: &str,
+) {
     group.bench_function(BenchmarkId::new(name, amount_of_blocks), |b| {
         b.iter_batched(
             || {
@@ -45,9 +62,7 @@ fn benchmark_verification_key<OptimizationChip: Blake2bInstructions>(
                 >(ci.clone());
                 circuit
             },
-            |circuit| {
-                CircuitRunner::create_vk(&circuit, params)
-            },
+            |circuit| CircuitRunner::create_vk(&circuit, params),
             BatchSize::SmallInput,
         )
     });

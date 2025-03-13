@@ -36,7 +36,8 @@ pub fn random_input_for_desired_blocks(amount_of_blocks: usize) -> Blake2bCircui
 
     let expected_output_: Vec<Fr> = hash_result.iter().map(|byte| Fr::from(*byte as u64)).collect();
     let expected_output: [Fr; OUTPUT_SIZE] = expected_output_.try_into().unwrap();
-    let input_values: Vec<Value<Fr>> = random_input_bytes.iter().map(|x| value_for(*x as u64)).collect();
+    let input_values: Vec<Value<Fr>> =
+        random_input_bytes.iter().map(|x| value_for(*x as u64)).collect();
     let key_size = 0;
     let key_values: Vec<Value<Fr>> = vec![];
 

@@ -23,9 +23,24 @@ pub fn benchmark_proof_generation(c: &mut Criterion) {
     for amount_of_blocks in benchmarking_block_sizes() {
         group.throughput(Throughput::Bytes(amount_of_blocks as u64));
 
-        benchmark_proof::<Blake2bChipOpt4Limbs>(&params, &mut group, amount_of_blocks, "opt_4_limbs");
-        benchmark_proof::<Blake2bChipOptRecycle>(&params, &mut group, amount_of_blocks, "opt_recycle");
-        benchmark_proof::<Blake2bChipOptSpread>(&params, &mut group, amount_of_blocks, "opt_spread");
+        benchmark_proof::<Blake2bChipOpt4Limbs>(
+            &params,
+            &mut group,
+            amount_of_blocks,
+            "opt_4_limbs",
+        );
+        benchmark_proof::<Blake2bChipOptRecycle>(
+            &params,
+            &mut group,
+            amount_of_blocks,
+            "opt_recycle",
+        );
+        benchmark_proof::<Blake2bChipOptSpread>(
+            &params,
+            &mut group,
+            amount_of_blocks,
+            "opt_spread",
+        );
     }
     group.finish()
 }
@@ -34,8 +49,8 @@ fn benchmark_proof<OptimizationChip: Blake2bInstructions>(
     params: &ParamsKZG<Bn256>,
     group: &mut BenchmarkGroup<WallTime>,
     amount_of_blocks: usize,
-    name: &str)
-{
+    name: &str,
+) {
     let ci = random_input_for_desired_blocks(amount_of_blocks);
     let expected_output_fields = ci.4.clone();
 
@@ -44,6 +59,8 @@ fn benchmark_proof<OptimizationChip: Blake2bInstructions>(
     let pk = CircuitRunner::create_pk(&circuit, vk.clone());
 
     group.bench_function(BenchmarkId::new(name, amount_of_blocks), |b| {
-        b.iter(|| CircuitRunner::create_proof(&expected_output_fields, circuit.clone(), &params, &pk))
+        b.iter(|| {
+            CircuitRunner::create_proof(&expected_output_fields, circuit.clone(), &params, &pk)
+        })
     });
 }

@@ -114,4 +114,3 @@ pub(crate) fn rotate_right_field_element<F: PrimeField>(
 pub fn unknown_trace_for_rot63<F: PrimeField, const R: usize>() -> [[Value<F>; R]; 2] {
     [[Value::unknown(); R]; 2]
 }
-

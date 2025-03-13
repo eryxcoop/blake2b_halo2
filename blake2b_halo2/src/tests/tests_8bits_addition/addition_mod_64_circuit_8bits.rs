@@ -35,8 +35,7 @@ impl<F: PrimeField> Circuit<F> for AdditionMod64Circuit8Bits<F> {
 
         let decompose_8_config = Decompose8Config::configure(meta, full_number_u64, limbs);
 
-        let sum_8bits_config =
-            AdditionConfigWith8Limbs::configure(meta, full_number_u64, carry);
+        let sum_8bits_config = AdditionConfigWith8Limbs::configure(meta, full_number_u64, carry);
 
         Self::Config {
             _ph: PhantomData,

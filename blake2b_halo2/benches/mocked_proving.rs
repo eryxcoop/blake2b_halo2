@@ -1,4 +1,6 @@
-use criterion::{criterion_group, criterion_main, BatchSize, BenchmarkGroup, BenchmarkId, Criterion, Throughput};
+use criterion::{
+    criterion_group, criterion_main, BatchSize, BenchmarkGroup, BenchmarkId, Criterion, Throughput,
+};
 use blake2b_halo2::blake2b::chips::opt_4_limbs::Blake2bChipOpt4Limbs;
 use blake2b_halo2::blake2b::chips::opt_recycle::Blake2bChipOptRecycle;
 use blake2b_halo2::blake2b::chips::opt_spread::Blake2bChipOptSpread;

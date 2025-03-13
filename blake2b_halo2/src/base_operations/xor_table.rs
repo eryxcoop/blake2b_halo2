@@ -112,7 +112,10 @@ impl Xor for XorTableConfig {
 }
 
 impl XorTableConfig {
-    pub fn configure<F: PrimeField>(meta: &mut ConstraintSystem<F>, limbs_8_bits: [Column<Advice>; 8]) -> Self {
+    pub fn configure<F: PrimeField>(
+        meta: &mut ConstraintSystem<F>,
+        limbs_8_bits: [Column<Advice>; 8],
+    ) -> Self {
         let q_xor = meta.complex_selector();
         let t_xor_left = meta.lookup_table_column();
         let t_xor_right = meta.lookup_table_column();

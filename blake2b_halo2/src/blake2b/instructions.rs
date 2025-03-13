@@ -17,7 +17,10 @@ pub trait Blake2bInstructions: Clone {
     // [Inigo comment] Strange name - initialise with what? Also, this seems something non blake2b-specific
     /// Initialization of the circuit. This will usually create the needed lookup tables for the
     /// specific optimization. This should be called on the synthesize of the circuit but only once.
-    fn initialize_with<F: PrimeField>(&mut self, layouter: &mut impl Layouter<F>) -> Result<(), Error>;
+    fn initialize_with<F: PrimeField>(
+        &mut self,
+        layouter: &mut impl Layouter<F>,
+    ) -> Result<(), Error>;
 
     /// Execution of the algorithm for a set of given inputs in the context of a circuit.
     /// This should be called on the synthesize of the circuit for each desired hash.
