@@ -47,9 +47,11 @@ impl Xor for XorSpreadConfig {
         decompose_8_config.generate_row_from_cell(region, cell_to_copy, *offset)?;
         *offset += 1;
 
-        // [Inigo comment] It is a bit unclear what is going on here. How do you guarantee that the value being
+        // [Inigo comment - answered] It is a bit unclear what is going on here. How do you guarantee that the value being
         // assigned here is the same as the input?
         // Maybe soundness issue? copy constraint missing
+        //
+        // The gate is guaranteeing soundness here
         self.populate_spread_limbs_of(region, offset, value_lhs);
         *offset += 1;
 
