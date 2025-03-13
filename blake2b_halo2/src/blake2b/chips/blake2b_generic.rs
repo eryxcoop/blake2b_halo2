@@ -345,29 +345,29 @@ pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
 
         // v[a] = ((v[a] as u128 + v[b] as u128 + x as u128) % (1 << 64)) as u64;
         let a_plus_b = self.add(&v_a, &v_b, region, offset)?;
-        let a = self.add_copying_one_parameter(&a_plus_b, &x, region, offset);
+        let a = self.add_copying_one_parameter(&a_plus_b, &x, region, offset)?;
 
         // v[d] = rotr_64(v[d] ^ v[a], 32);
         let d_xor_a = self.xor_for_mix(&a, &v_d, region, offset);
         let d = self.rotate_right_32(d_xor_a, region, offset);
 
         // v[c] = ((v[c] as u128 + v[d] as u128) % (1 << 64)) as u64;
-        let c = self.add_copying_one_parameter(&d, &v_c, region, offset);
+        let c = self.add_copying_one_parameter(&d, &v_c, region, offset)?;
 
         // v[b] = rotr_64(v[b] ^ v[c], 24);
         let b_xor_c = self.xor_for_mix(&c, &v_b, region, offset);
         let b = self.rotate_right_24(b_xor_c, region, offset);
 
         // v[a] = ((v[a] as u128 + v[b] as u128 + y as u128) % (1 << 64)) as u64;
-        let a_plus_b = self.add_copying_one_parameter(&b, &a, region, offset);
-        let a = self.add_copying_one_parameter(&a_plus_b, &y, region, offset);
+        let a_plus_b = self.add_copying_one_parameter(&b, &a, region, offset)?;
+        let a = self.add_copying_one_parameter(&a_plus_b, &y, region, offset)?;
 
         // v[d] = rotr_64(v[d] ^ v[a], 16);
         let d_xor_a = self.xor_for_mix(&a, &d, region, offset);
         let d = self.rotate_right_16(d_xor_a, region, offset);
 
         // v[c] = ((v[c] as u128 + v[d] as u128) % (1 << 64)) as u64;
-        let c = self.add_copying_one_parameter(&d, &c, region, offset);
+        let c = self.add_copying_one_parameter(&d, &c, region, offset)?;
 
         // v[b] = rotr_64(v[b] ^ v[c], 63);
         let b_xor_c = self.xor_for_mix(&c, &b, region, offset);
@@ -454,7 +454,7 @@ pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
         cell_to_copy: &AssignedCell<F, F>,
         region: &mut Region<F>,
         offset: &mut usize,
-    ) -> AssignedCell<F, F>;
+    ) -> Result<AssignedCell<F, F>, Error>;
 
     /// Sometimes we can reutilice an output row to be the input row of the next operation. This is
     /// a convenience method for that in the case of the xor operation.

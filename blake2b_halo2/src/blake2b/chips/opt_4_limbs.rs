@@ -150,11 +150,11 @@ impl<F: PrimeField> Blake2bGeneric<F,4,6> for Blake2bChipOpt4Limbs<F> {
                                  previous_cell: &AssignedCell<F, F>,
                                  cell_to_copy: &AssignedCell<F, F>,
                                  region: &mut Region<F>,
-                                 offset: &mut usize) -> AssignedCell<F, F> {
-        self.addition_config
+                                 offset: &mut usize) -> Result<AssignedCell<F, F>, Error> {
+        Ok(self.addition_config
             .generate_addition_rows_from_cells_optimized(
                 region, offset, previous_cell, cell_to_copy, &mut self.decompose_16_config, true)
-            .unwrap()[0].clone()
+            ?[0].clone())
     }
 
     /// This method performs a regular xor operation with the difference that it returns the full
