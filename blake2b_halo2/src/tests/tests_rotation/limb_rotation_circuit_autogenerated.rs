@@ -53,13 +53,12 @@ impl<F: PrimeField, const T: usize> Circuit<F> for LimbRotationCircuitAutogenera
         meta.enable_equality(full_number_u64);
 
         let decompose_8_config = Decompose8Config::configure(meta, full_number_u64, limbs);
-        let limb_rotation_config = LimbRotation::new();
 
         Self::Config {
             limb_rotation_config: LimbRotationCircuitConfig {
                 _ph: PhantomData,
                 decompose_8_config,
-                limb_rotation_config,
+                limb_rotation_config: LimbRotation,
             },
             fixed,
         }
