@@ -287,7 +287,7 @@ pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
         // accumulative_state[13] ^= ctx.processed_bytes_count[1]; This is 0 so we ignore it
 
         if is_last_block {
-            state[14] = self.not(&state[14], region, row_offset);
+            state[14] = self.not(&state[14], region, row_offset)?;
         }
 
         /// Main loop
@@ -409,11 +409,10 @@ pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
         input_cell: &AssignedCell<F, F>,
         region: &mut Region<F>,
         offset: &mut usize,
-    ) -> AssignedCell<F, F> {
+    ) -> Result<AssignedCell<F, F>, Error> {
         let mut decompose_8_config = self.decompose_8_config();
         self.negate_config()
             .generate_rows_from_cell(region, offset, input_cell, &mut decompose_8_config)
-            .unwrap()
     }
 
     fn xor(
