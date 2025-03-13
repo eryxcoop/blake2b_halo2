@@ -20,7 +20,7 @@ use crate::base_operations::xor::Xor;
 /// | full_number_rhs    | limb_0_rhs    | limb_1_rhs    | ... | limb_7_rhs    |
 /// | full_number_result | limb_0_result | limb_1_result | ... | limb_7_result |
 #[derive(Clone, Debug)]
-pub struct XorTableConfig<F: PrimeField> {
+pub struct XorTableConfig {
     /// Lookup table columns
     t_xor_left: TableColumn,
     t_xor_right: TableColumn,
@@ -28,12 +28,11 @@ pub struct XorTableConfig<F: PrimeField> {
 
     /// Selector for the xor gate
     q_xor: Selector,
-    _ph: PhantomData<F>,
 }
 
-impl<F: PrimeField> Xor<F> for XorTableConfig<F> {
+impl Xor for XorTableConfig {
     /// Method that populates the lookup table. Must be called only once in the user circuit.
-    fn populate_xor_lookup_table(
+    fn populate_xor_lookup_table<F: PrimeField>(
         &mut self,
         layouter: &mut impl Layouter<F>,
     ) -> Result<(), Error> {
@@ -73,7 +72,7 @@ impl<F: PrimeField> Xor<F> for XorTableConfig<F> {
     /// This method generates the xor rows in the trace. If the previous cell in the region is one
     /// of the operands, it won't be copied. Otherwise, it will be copied from the cell_to_copy,
     /// generating an extra row in the circuit.
-    fn generate_xor_rows_from_cells(
+    fn generate_xor_rows_from_cells<F: PrimeField>(
         &mut self,
         region: &mut Region<F>,
         offset: &mut usize,
@@ -112,8 +111,8 @@ impl<F: PrimeField> Xor<F> for XorTableConfig<F> {
     }
 }
 
-impl<F: PrimeField> XorTableConfig<F> {
-    pub fn configure(meta: &mut ConstraintSystem<F>, limbs_8_bits: [Column<Advice>; 8]) -> Self {
+impl XorTableConfig {
+    pub fn configure<F: PrimeField>(meta: &mut ConstraintSystem<F>, limbs_8_bits: [Column<Advice>; 8]) -> Self {
         let q_xor = meta.complex_selector();
         let t_xor_left = meta.lookup_table_column();
         let t_xor_right = meta.lookup_table_column();
@@ -140,14 +139,13 @@ impl<F: PrimeField> XorTableConfig<F> {
             t_xor_right,
             t_xor_out,
             q_xor,
-            _ph: PhantomData,
         }
     }
 
     /// Given 3 explicit rows of values, it assigns the full number and the limbs of the operands
     /// and the result in the trace
     // [Inigo comment] functions only used in tests should not be part of the config.
-    pub fn populate_xor_region(
+    pub fn populate_xor_region<F: PrimeField>(
         &mut self,
         layouter: &mut impl Layouter<F>,
         xor_trace: [[Value<F>; 9]; 3],
@@ -172,7 +170,7 @@ impl<F: PrimeField> XorTableConfig<F> {
         Ok(())
     }
 
-    pub fn unknown_trace() -> [[Value<F>; 9]; 3] {
+    pub fn unknown_trace<F: PrimeField>() -> [[Value<F>; 9]; 3] {
         [[Value::unknown(); 9]; 3]
     }
 }

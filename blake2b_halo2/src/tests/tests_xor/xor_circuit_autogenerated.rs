@@ -9,17 +9,17 @@ use crate::base_operations::xor::Xor;
 cfg_if::cfg_if! {
     if #[cfg(any(feature = "opt_4_limbs", feature = "opt_recycle"))] {
         use crate::base_operations::xor_table::XorTableConfig;
-        type XorConfig<F> = XorTableConfig<F>;
+        type XorConfig = XorTableConfig;
     } else {
         use crate::base_operations::xor_spread::XorSpreadConfig;
-        type XorConfig<F> = XorSpreadConfig<F>;
+        type XorConfig<F> = XorSpreadConfig;
     }
 }
 
 #[derive(Clone)]
 pub struct XorCircuitConfig<F: PrimeField> {
     _ph: PhantomData<F>,
-    xor_config: XorConfig<F>,
+    xor_config: XorConfig,
     decompose_8_config: Decompose8Config,
 }
 

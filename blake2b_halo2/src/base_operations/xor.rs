@@ -2,13 +2,13 @@ use halo2_proofs::circuit::AssignedCell;
 use crate::base_operations::decompose_8::Decompose8Config;
 use super::*;
 
-pub trait Xor<F: PrimeField> {
-    fn populate_xor_lookup_table(
+pub trait Xor {
+    fn populate_xor_lookup_table<F: PrimeField>(
         &mut self,
         layouter: &mut impl Layouter<F>,
     ) -> Result<(), Error>;
 
-    fn generate_xor_rows_from_cells(
+    fn generate_xor_rows_from_cells<F: PrimeField>(
         &mut self,
         region: &mut Region<F>,
         offset: &mut usize,

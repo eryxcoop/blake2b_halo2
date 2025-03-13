@@ -10,7 +10,7 @@ use crate::base_operations::xor::Xor;
 #[derive(Clone)]
 pub struct XorConfig<F: PrimeField> {
     _ph: PhantomData<F>,
-    xor_config: XorTableConfig<F>,
+    xor_config: XorTableConfig,
     decompose_8_config: Decompose8Config,
 }
 

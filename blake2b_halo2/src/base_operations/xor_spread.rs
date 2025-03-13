@@ -6,7 +6,7 @@ use crate::base_operations::xor::Xor;
 use super::*;
 
 #[derive(Clone, Debug)]
-pub struct XorSpreadConfig<F: PrimeField> {
+pub struct XorSpreadConfig {
     full_number_u64: Column<Advice>,
     limbs: [Column<Advice>; 8],
     extra: Column<Advice>,
@@ -15,12 +15,11 @@ pub struct XorSpreadConfig<F: PrimeField> {
     t_spread: TableColumn,
 
     q_xor: Selector,
-    _ph: PhantomData<F>,
 }
 
-impl<F: PrimeField> Xor<F> for XorSpreadConfig<F> {
+impl Xor for XorSpreadConfig {
     /// Method that populates the spread lookup tables. Must be called only once in the user circuit.
-    fn populate_xor_lookup_table(
+    fn populate_xor_lookup_table<F: PrimeField>(
         &mut self,
         layouter: &mut impl Layouter<F>,
     ) -> Result<(), Error> {
@@ -28,7 +27,7 @@ impl<F: PrimeField> Xor<F> for XorSpreadConfig<F> {
         Ok(())
     }
 
-    fn generate_xor_rows_from_cells(
+    fn generate_xor_rows_from_cells<F: PrimeField>(
         &mut self,
         region: &mut Region<F>,
         offset: &mut usize,
@@ -80,14 +79,14 @@ impl<F: PrimeField> Xor<F> for XorSpreadConfig<F> {
                     let rhs_limb_values = auxiliar_functions::decompose_field_8bit_limbs(rhs);
                     let result_limb_values = auxiliar_functions::decompose_field_8bit_limbs(result);
 
-                    let empty_spread_positions = Self::empty_spread_positions();
+                    let empty_spread_positions = Self::empty_spread_positions::<F>();
                     let columns_in_order =
-                        Self::columns_in_order(self.full_number_u64, self.limbs, self.extra);
+                        Self::columns_in_order::<F>(self.full_number_u64, self.limbs, self.extra);
                     for i in 0..8 {
                         let z_i = (
-                            Self::spread_bits(lhs_limb_values[i])
-                            + Self::spread_bits(rhs_limb_values[i])
-                            - Self::spread_bits(result_limb_values[i])
+                            Self::spread_bits::<F>(lhs_limb_values[i])
+                            + Self::spread_bits::<F>(rhs_limb_values[i])
+                            - Self::spread_bits::<F>(result_limb_values[i])
                         ) / 2;
 
                         region
@@ -110,8 +109,8 @@ impl<F: PrimeField> Xor<F> for XorSpreadConfig<F> {
     }
 }
 
-impl<F: PrimeField> XorSpreadConfig<F> {
-    pub fn configure(
+impl XorSpreadConfig {
+    pub fn configure<F: PrimeField>(
         meta: &mut ConstraintSystem<F>,
         limbs: [Column<Advice>; 8],
         full_number_u64: Column<Advice>,
@@ -121,9 +120,9 @@ impl<F: PrimeField> XorSpreadConfig<F> {
         let t_range = meta.lookup_table_column();
         let t_spread = meta.lookup_table_column();
 
-        let columns = Self::columns_in_order(full_number_u64, limbs, extra);
+        let columns = Self::columns_in_order::<F>(full_number_u64, limbs, extra);
 
-        let empty_spread_positions: [(usize, usize); 8] = Self::empty_spread_positions();
+        let empty_spread_positions: [(usize, usize); 8] = Self::empty_spread_positions::<F>();
 
         meta.create_gate("xor with spread", |meta| {
             let q_xor = meta.query_selector(q_xor);
@@ -181,11 +180,10 @@ impl<F: PrimeField> XorSpreadConfig<F> {
             t_range,
             t_spread,
             q_xor,
-            _ph: PhantomData,
         }
     }
 
-    fn populate_spread_limbs_of(
+    fn populate_spread_limbs_of<F: PrimeField>(
         &mut self,
         region: &mut Region<F>,
         offset: &mut usize,
@@ -199,7 +197,7 @@ impl<F: PrimeField> XorSpreadConfig<F> {
                         || "lhs limb",
                         self.limbs[i],
                         *offset,
-                        || value_for::<u16, F>(Self::spread_bits(*limb)),
+                        || value_for::<u16, F>(Self::spread_bits::<F>(*limb)),
                     )
                     .unwrap();
             }
@@ -207,7 +205,7 @@ impl<F: PrimeField> XorSpreadConfig<F> {
         });
     }
 
-    fn lookup_spread_rows(
+    fn lookup_spread_rows<F: PrimeField>(
         meta: &mut ConstraintSystem<F>,
         q_xor: Selector,
         t_range: TableColumn,
@@ -234,7 +232,7 @@ impl<F: PrimeField> XorSpreadConfig<F> {
     //
     // This is only used for the xor spread implementation, it is not a general method for the xor
     // trait.
-    fn populate_spread_table(&self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
+    fn populate_spread_table<F: PrimeField>(&self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
         layouter.assign_table(
             || "xor spread table",
             |mut table| {
@@ -249,7 +247,7 @@ impl<F: PrimeField> XorSpreadConfig<F> {
                         || "spread value",
                         self.t_spread,
                         i,
-                        || value_for::<u64, F>(Self::spread_bits(i as u8) as u64),
+                        || value_for::<u64, F>(Self::spread_bits::<F>(i as u8) as u64),
                     )?;
                 }
                 Ok(())
@@ -257,7 +255,7 @@ impl<F: PrimeField> XorSpreadConfig<F> {
         )
     }
 
-    fn spread_bits(x: u8) -> u16 {
+    fn spread_bits<F: PrimeField>(x: u8) -> u16 {
         let mut spread = 0;
         for i in 0..8 {
             spread |= ((x & (1 << i)) as u16) << i;
@@ -265,11 +263,11 @@ impl<F: PrimeField> XorSpreadConfig<F> {
         spread
     }
 
-    fn empty_spread_positions() -> [(usize, usize); 8] {
+    fn empty_spread_positions<F: PrimeField>() -> [(usize, usize); 8] {
         [(2, 0), (3, 0), (4, 0), (1, 9), (2, 9), (3, 9), (4, 9), (5, 9)]
     }
 
-    fn columns_in_order(
+    fn columns_in_order<F: PrimeField>(
         full_number_u64: Column<Advice>,
         limbs: [Column<Advice>; 8],
         extra: Column<Advice>,

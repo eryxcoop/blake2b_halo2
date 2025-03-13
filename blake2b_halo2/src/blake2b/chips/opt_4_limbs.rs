@@ -32,7 +32,7 @@ pub struct Blake2bChipOpt4Limbs<F: PrimeField> {
     addition_config: AdditionMod64Config<4, 6>,
     generic_limb_rotation_config: LimbRotation,
     rotate_63_config: Rotate63Config<8, 9>,
-    xor_config: XorTableConfig<F>,
+    xor_config: XorTableConfig,
     negate_config: NegateConfig<F>,
     /// Column for constants of Blake2b
     constants: Column<Fixed>,
@@ -111,7 +111,7 @@ impl<F: PrimeField> Blake2bGeneric<F,4,6> for Blake2bChipOpt4Limbs<F> {
         self.rotate_63_config.clone()
     }
 
-    fn xor_config(&mut self) -> impl Xor<F> {
+    fn xor_config(&mut self) -> impl Xor {
         self.xor_config.clone()
     }
 

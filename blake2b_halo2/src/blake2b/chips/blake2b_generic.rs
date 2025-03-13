@@ -22,7 +22,7 @@ pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
     fn addition_config(&mut self) -> AdditionMod64Config<LIMBS, WIDTH>;
     fn generic_limb_rotation_config(&mut self) -> LimbRotation;
     fn rotate_63_config(&mut self) -> Rotate63Config<8, 9>;
-    fn xor_config(&mut self) -> impl Xor<F>;
+    fn xor_config(&mut self) -> impl Xor;
     fn negate_config(&mut self) -> NegateConfig<F>;
     fn constants(&self) -> Column<Fixed>;
     fn expected_final_state(&self) -> Column<Instance>;
