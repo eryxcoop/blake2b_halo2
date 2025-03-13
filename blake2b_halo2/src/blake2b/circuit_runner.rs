@@ -131,7 +131,7 @@ impl CircuitRunner {
         input: String,
         out: String,
         key: String,
-    ) {
+    ) -> Result<(), Error> {
         let (input_values, input_size, key_values, key_size, expected_output_fields, output_size) =
             Self::prepare_parameters_for_test(&input, &key, &out);
 
@@ -147,7 +147,7 @@ impl CircuitRunner {
         let vk: VerifyingKey<Fr, KZGCommitmentScheme<Bn256>> = Self::create_vk(&circuit, &params);
         let pk: ProvingKey<Fr, KZGCommitmentScheme<Bn256>> = Self::create_pk(&circuit, vk);
         let proof = Self::create_proof(&expected_output_fields, circuit, &params, &pk);
-        Self::verify(&expected_output_fields, &params, pk, &proof);
+        Self::verify(&expected_output_fields, &params, pk, &proof)
     }
 
     pub fn create_vk<OptimizationChip: Blake2bInstructions<Fr>>(circuit: &Blake2bCircuitGeneric<Fr, OptimizationChip>, params: &ParamsKZG<Bn256>) -> VerifyingKey<Fr, KZGCommitmentScheme<Bn256>> {
@@ -178,7 +178,7 @@ impl CircuitRunner {
         proof
     }
 
-    pub fn verify(expected_output_fields: &[Fr], params: &ParamsKZG<Bn256>, pk: ProvingKey<Fr, KZGCommitmentScheme<Bn256>>, proof: &Vec<u8>) {
+    pub fn verify(expected_output_fields: &[Fr], params: &ParamsKZG<Bn256>, pk: ProvingKey<Fr, KZGCommitmentScheme<Bn256>>, proof: &Vec<u8>) -> Result<(), Error> {
         let mut transcript = CircuitTranscript::init_from_bytes(&proof[..]);
 
         assert!(prepare::<Fr, KZGCommitmentScheme<Bn256>, _>(
@@ -186,8 +186,9 @@ impl CircuitRunner {
             &[&[expected_output_fields]],
             &mut transcript,
         )
-            .unwrap()
+            ?
             .verify(&params.verifier_params())
             .is_ok());
+        Ok(())
     }
 }
