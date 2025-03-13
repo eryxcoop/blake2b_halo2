@@ -1,5 +1,6 @@
 use super::*;
 use halo2_proofs::circuit::AssignedCell;
+use crate::auxiliar_functions::{field_for, get_limb_from_field};
 
 /// This config handles the decomposition of 64-bit numbers into 8-bit limbs in the trace
 // [Inigo comment - solved] Configs do not need to be parametrised by the PrimeField.
@@ -170,6 +171,6 @@ impl Decomposition<8> for Decompose8Config {
 
     /// Given a value and a limb index, it returns the value of the limb
     fn get_limb_from<F: PrimeField>(value: Value<F>, limb_number: usize) -> Value<F> {
-        value.map(|v| auxiliar_functions::get_limb_from_field(v, limb_number))
+        value.map(|v| field_for(get_limb_from_field(v, limb_number)))
     }
 }

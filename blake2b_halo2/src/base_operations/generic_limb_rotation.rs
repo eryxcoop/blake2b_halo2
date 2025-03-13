@@ -83,8 +83,7 @@ impl LimbRotation {
         input_row: [AssignedCell<F, F>; 9],
         limbs_to_rotate_to_the_right: usize,
     ) -> Result<AssignedCell<F, F>, Error> {
-        let value = input_row[0].value().copied();
-        let result_value = Self::right_rotation_value(value, limbs_to_rotate_to_the_right);
+        let result_value = Self::right_rotation_value(input_row[0].value(), limbs_to_rotate_to_the_right);
 
         let result_row =
             decompose_config.generate_row_from_value_and_keep_row(region, result_value, *offset)?;
@@ -121,10 +120,10 @@ impl LimbRotation {
     }
 
     /// Computes the actual value of the rotation of the number
-    fn right_rotation_value<F: PrimeField>(value: Value<F>, limbs_to_rotate: usize) -> Value<F> {
+    fn right_rotation_value<F: PrimeField>(value: Value<&F>, limbs_to_rotate: usize) -> Value<F> {
         value.map(|input| {
             let bits_to_rotate = limbs_to_rotate * 8;
-            auxiliar_functions::rotate_right_field_element(input, bits_to_rotate)
+            auxiliar_functions::rotate_right_field_element(*input, bits_to_rotate)
         })
     }
 }
