@@ -130,17 +130,17 @@ impl<F: PrimeField> Blake2bGeneric<F,8,10> for Blake2bChipOptSpread<F> {
     /// This method behaves like 'add', with the difference that it takes advantage of the fact that
     /// the last row in the circuit is one of the operands of the addition, so it only needs to copy
     /// one parameter because the other is already on the trace.
-    fn add_copying_one_parameter(&mut self, previous_cell: &AssignedCell<F, F>, cell_to_copy: &AssignedCell<F, F>, region: &mut Region<F>, offset: &mut usize) -> AssignedCell<F, F> {
-        self.addition_config
+    fn add_copying_one_parameter(&mut self, previous_cell: &AssignedCell<F, F>, cell_to_copy: &AssignedCell<F, F>, region: &mut Region<F>, offset: &mut usize) -> Result<AssignedCell<F, F>, Error> {
+        Ok(self.addition_config
             .generate_addition_rows_from_cells_optimized(region, offset, previous_cell, cell_to_copy, &mut self.decompose_8_config, true)
-            .unwrap()[0].clone()
+            ?[0].clone())
     }
 
     /// This method performs a regular xor operation with the difference that it returns the full
     /// row in the trace, instead of just the cell holding the value. This allows an optimization
     /// where the next operation (which is a rotation) can just read the limbs directly and apply
     /// the limb rotation without copying the operand.
-    fn xor_for_mix(&mut self, previous_cell: &AssignedCell<F, F>, cell_to_copy: &AssignedCell<F, F>, region: &mut Region<F>, offset: &mut usize) -> [AssignedCell<F, F>; 9] {
+    fn xor_for_mix(&mut self, previous_cell: &AssignedCell<F, F>, cell_to_copy: &AssignedCell<F, F>, region: &mut Region<F>, offset: &mut usize) -> Result<[AssignedCell<F, F>; 9], Error> {
         self.xor_copying_one_parameter(previous_cell, cell_to_copy, region, offset)
     }
 }
@@ -155,7 +155,7 @@ impl<F: PrimeField> Blake2bChipOptSpread<F>{
         cell_to_copy: &AssignedCell<F, F>,
         region: &mut Region<F>,
         offset: &mut usize,
-    ) -> [AssignedCell<F, F>; 9] {
+    ) -> Result<[AssignedCell<F, F>; 9], Error> {
         self.xor_config
             .generate_xor_rows_from_cells(
                 region,
@@ -165,6 +165,5 @@ impl<F: PrimeField> Blake2bChipOptSpread<F>{
                 &mut self.decompose_8_config,
                 true,
             )
-            .unwrap()
     }
 }

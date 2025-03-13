@@ -287,7 +287,7 @@ pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
         // accumulative_state[13] ^= ctx.processed_bytes_count[1]; This is 0 so we ignore it
 
         if is_last_block {
-            state[14] = self.not(&state[14], region, row_offset);
+            state[14] = self.not(&state[14], region, row_offset)?;
         }
 
         /// Main loop
@@ -311,7 +311,7 @@ pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
         let mut global_state_bytes = Vec::new();
         for i in 0..8 {
             global_state[i] = self.xor(&global_state[i], &state[i], region, row_offset)?;
-            let row = self.xor_with_full_rows(&global_state[i], &state[i + 8], region, row_offset);
+            let row = self.xor_with_full_rows(&global_state[i], &state[i + 8], region, row_offset)?;
             global_state_bytes.extend_from_slice(&row[1..]);
             global_state[i] = row[0].clone();
         }
@@ -345,33 +345,33 @@ pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
 
         // v[a] = ((v[a] as u128 + v[b] as u128 + x as u128) % (1 << 64)) as u64;
         let a_plus_b = self.add(&v_a, &v_b, region, offset)?;
-        let a = self.add_copying_one_parameter(&a_plus_b, &x, region, offset);
+        let a = self.add_copying_one_parameter(&a_plus_b, &x, region, offset)?;
 
         // v[d] = rotr_64(v[d] ^ v[a], 32);
-        let d_xor_a = self.xor_for_mix(&a, &v_d, region, offset);
-        let d = self.rotate_right_32(d_xor_a, region, offset);
+        let d_xor_a = self.xor_for_mix(&a, &v_d, region, offset)?;
+        let d = self.rotate_right_32(d_xor_a, region, offset)?;
 
         // v[c] = ((v[c] as u128 + v[d] as u128) % (1 << 64)) as u64;
-        let c = self.add_copying_one_parameter(&d, &v_c, region, offset);
+        let c = self.add_copying_one_parameter(&d, &v_c, region, offset)?;
 
         // v[b] = rotr_64(v[b] ^ v[c], 24);
-        let b_xor_c = self.xor_for_mix(&c, &v_b, region, offset);
-        let b = self.rotate_right_24(b_xor_c, region, offset);
+        let b_xor_c = self.xor_for_mix(&c, &v_b, region, offset)?;
+        let b = self.rotate_right_24(b_xor_c, region, offset)?;
 
         // v[a] = ((v[a] as u128 + v[b] as u128 + y as u128) % (1 << 64)) as u64;
-        let a_plus_b = self.add_copying_one_parameter(&b, &a, region, offset);
-        let a = self.add_copying_one_parameter(&a_plus_b, &y, region, offset);
+        let a_plus_b = self.add_copying_one_parameter(&b, &a, region, offset)?;
+        let a = self.add_copying_one_parameter(&a_plus_b, &y, region, offset)?;
 
         // v[d] = rotr_64(v[d] ^ v[a], 16);
-        let d_xor_a = self.xor_for_mix(&a, &d, region, offset);
-        let d = self.rotate_right_16(d_xor_a, region, offset);
+        let d_xor_a = self.xor_for_mix(&a, &d, region, offset)?;
+        let d = self.rotate_right_16(d_xor_a, region, offset)?;
 
         // v[c] = ((v[c] as u128 + v[d] as u128) % (1 << 64)) as u64;
-        let c = self.add_copying_one_parameter(&d, &c, region, offset);
+        let c = self.add_copying_one_parameter(&d, &c, region, offset)?;
 
         // v[b] = rotr_64(v[b] ^ v[c], 63);
-        let b_xor_c = self.xor_for_mix(&c, &b, region, offset);
-        let b = self.rotate_right_63(b_xor_c, region, offset);
+        let b_xor_c = self.xor_for_mix(&c, &b, region, offset)?;
+        let b = self.rotate_right_63(b_xor_c, region, offset)?;
 
         state[a_] = a;
         state[b_] = b;
@@ -391,7 +391,7 @@ pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
         rhs: &AssignedCell<F, F>,
         region: &mut Region<F>,
         offset: &mut usize,
-    ) -> [AssignedCell<F, F>; 9] {
+    ) -> Result<[AssignedCell<F, F>; 9], Error> {
         let mut decompose_8_config = self.decompose_8_config();
         self.xor_config()
             .generate_xor_rows_from_cells(
@@ -402,7 +402,6 @@ pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
                 &mut decompose_8_config,
                 false,
             )
-            .unwrap()
     }
 
     fn not(
@@ -410,11 +409,10 @@ pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
         input_cell: &AssignedCell<F, F>,
         region: &mut Region<F>,
         offset: &mut usize,
-    ) -> AssignedCell<F, F> {
+    ) -> Result<AssignedCell<F, F>, Error> {
         let mut decompose_8_config = self.decompose_8_config();
         self.negate_config()
             .generate_rows_from_cell(region, offset, input_cell, &mut decompose_8_config)
-            .unwrap()
     }
 
     fn xor(
@@ -454,7 +452,7 @@ pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
         cell_to_copy: &AssignedCell<F, F>,
         region: &mut Region<F>,
         offset: &mut usize,
-    ) -> AssignedCell<F, F>;
+    ) -> Result<AssignedCell<F, F>, Error>;
 
     /// Sometimes we can reutilice an output row to be the input row of the next operation. This is
     /// a convenience method for that in the case of the xor operation.
@@ -464,14 +462,14 @@ pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
         cell_to_copy: &AssignedCell<F, F>,
         region: &mut Region<F>,
         offset: &mut usize,
-    ) -> [AssignedCell<F, F>; 9];
+    ) -> Result<[AssignedCell<F, F>; 9], Error>;
 
     fn rotate_right_63(
         &mut self,
         input_row: [AssignedCell<F, F>; 9],
         region: &mut Region<F>,
         offset: &mut usize,
-    ) -> AssignedCell<F, F> {
+    ) -> Result<AssignedCell<F, F>, Error> {
         let mut decompose_8_config = self.decompose_8_config();
         self.rotate_63_config()
             .generate_rotation_rows_from_cells(
@@ -480,7 +478,6 @@ pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
                 input_row,
                 &mut decompose_8_config,
             )
-            .unwrap()
     }
 
     fn rotate_right_16(
@@ -488,7 +485,7 @@ pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
         input_row: [AssignedCell<F, F>; 9],
         region: &mut Region<F>,
         offset: &mut usize,
-    ) -> AssignedCell<F, F> {
+    ) -> Result<AssignedCell<F, F>, Error> {
         let mut decompose_8_config = self.decompose_8_config();
         self.generic_limb_rotation_config()
             .generate_rotation_rows_from_input_row(
@@ -498,7 +495,6 @@ pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
                 input_row,
                 2,
             )
-            .unwrap()
     }
 
     fn rotate_right_24(
@@ -506,7 +502,7 @@ pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
         input_row: [AssignedCell<F, F>; 9],
         region: &mut Region<F>,
         offset: &mut usize,
-    ) -> AssignedCell<F, F> {
+    ) -> Result<AssignedCell<F, F>, Error> {
         let mut decompose_8_config = self.decompose_8_config();
         self.generic_limb_rotation_config()
             .generate_rotation_rows_from_input_row(
@@ -516,7 +512,6 @@ pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
                 input_row,
                 3,
             )
-            .unwrap()
     }
 
     fn rotate_right_32(
@@ -524,7 +519,7 @@ pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
         input_row: [AssignedCell<F, F>; 9],
         region: &mut Region<F>,
         offset: &mut usize,
-    ) -> AssignedCell<F, F> {
+    ) -> Result<AssignedCell<F, F>, Error> {
         let mut decompose_8_config = self.decompose_8_config();
         self.generic_limb_rotation_config()
             .generate_rotation_rows_from_input_row(
@@ -534,7 +529,6 @@ pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
                 input_row,
                 4,
             )
-            .unwrap()
     }
 
     // ----- Auxiliar methods ----- //
