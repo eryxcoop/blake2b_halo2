@@ -9,7 +9,7 @@ use std::marker::PhantomData;
 #[derive(Clone)]
 pub struct Rotation63Config16bitLimbs<F: Field> {
     _ph: PhantomData<F>,
-    rotation_63_config: Rotate63Config<F, 4, 5>,
+    rotation_63_config: Rotate63Config<4, 5>,
     decompose_16_config: Decompose16Config<F>,
 }
 

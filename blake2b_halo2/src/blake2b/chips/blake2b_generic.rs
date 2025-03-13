@@ -21,7 +21,7 @@ pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
     fn decompose_8_config(&mut self) -> Decompose8Config;
     fn addition_config(&mut self) -> AdditionMod64Config<LIMBS, WIDTH>;
     fn generic_limb_rotation_config(&mut self) -> LimbRotation;
-    fn rotate_63_config(&mut self) -> Rotate63Config<F, 8, 9>;
+    fn rotate_63_config(&mut self) -> Rotate63Config<8, 9>;
     fn xor_config(&mut self) -> impl Xor<F>;
     fn negate_config(&mut self) -> NegateConfig<F>;
     fn constants(&self) -> Column<Fixed>;
@@ -104,7 +104,7 @@ pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
         full_number_u64: Column<Advice>,
         limbs: [Column<Advice>; 8]) -> (Decompose8Config,
                                         LimbRotation,
-                                        Rotate63Config<F, 8, 9>,
+                                        Rotate63Config<8, 9>,
                                         NegateConfig<F>,
                                         Column<Fixed>,
                                         Column<Instance>) {

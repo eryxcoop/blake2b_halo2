@@ -4,13 +4,12 @@ use halo2_proofs::circuit::AssignedCell;
 /// This config handles the 63-right-bit rotation of a 64-bit number, which is the same as the
 /// 1-bit rotation to the left.
 #[derive(Clone, Debug)]
-pub struct Rotate63Config<F: Field, const T: usize, const R: usize> {
+pub struct Rotate63Config<const T: usize, const R: usize> {
     q_rot63: Selector,
-    _ph: PhantomData<F>,
 }
 
-impl<F: PrimeField, const T: usize, const R: usize> Rotate63Config<F, T, R> {
-    pub fn configure(meta: &mut ConstraintSystem<F>, full_number_u64: Column<Advice>) -> Self {
+impl<const T: usize, const R: usize> Rotate63Config<T, R> {
+    pub fn configure<F: PrimeField>(meta: &mut ConstraintSystem<F>, full_number_u64: Column<Advice>) -> Self {
         let q_rot63 = meta.complex_selector();
         /// The gate that will be used to rotate a number 63 bits to the right
         /// The gate is defined as:
@@ -31,7 +30,6 @@ impl<F: PrimeField, const T: usize, const R: usize> Rotate63Config<F, T, R> {
         });
 
         Self {
-            _ph: PhantomData,
             q_rot63,
         }
     }
@@ -43,7 +41,7 @@ impl<F: PrimeField, const T: usize, const R: usize> Rotate63Config<F, T, R> {
     // gate is correctly defined. If we use the generate_rotation_rows_from_cells, we wouldn't be able
     // to fill the circuit with incorrect values and check that the proof is rejected.
     // We need to make it public to be able to call it from the tests.
-    pub fn populate_rotation_rows(
+    pub fn populate_rotation_rows<F: PrimeField>(
         &self,
         layouter: &mut impl Layouter<F>,
         decompose_config: &mut impl Decomposition<F, T>,
@@ -64,7 +62,7 @@ impl<F: PrimeField, const T: usize, const R: usize> Rotate63Config<F, T, R> {
 
     /// Receives a row of cells, generates a row for the rotation of 63 bits to the right
     /// and populates the circuit with it
-    pub fn generate_rotation_rows_from_cells(
+    pub fn generate_rotation_rows_from_cells<F: PrimeField>(
         &mut self,
         region: &mut Region<F>,
         offset: &mut usize,
