@@ -5,6 +5,8 @@ use halo2_proofs::halo2curves::bn256::Fr;
 use rand::Rng;
 use blake2b_halo2::auxiliar_functions::value_for;
 use blake2b_halo2::blake2b::circuit_runner::Blake2bCircuitInputs;
+use blake2_rfc::blake2b::blake2b;
+use hex;
 
 pub fn benchmarking_block_sizes() -> Vec<usize> {
     vec![1, 5, 10, 20, 30]
@@ -25,17 +27,23 @@ pub fn random_input_for_desired_blocks(amount_of_blocks: usize) -> Blake2bCircui
 
     let input_size = amount_of_blocks * 128;
     const OUTPUT_SIZE: usize = 64;
-    let mut random_inputs: Vec<u8> = (0..input_size).map(|_| rng.gen_range(0..=255)).collect();
-    let mut key_u8: Vec<u8> = vec![];
-    let mut buffer_out = vec![0u8; OUTPUT_SIZE];
+    let random_input_bytes: Vec<u8> = (0..input_size).map(|_| rng.gen_range(0..=255)).collect();
+    let random_inputs: &str = &hex::encode(&random_input_bytes);
+    let key: &str = "";
+    let output_size = OUTPUT_SIZE;
 
-    rust_implementation::blake2b(&mut buffer_out, &mut key_u8, &mut random_inputs);
+    let hash_result = run_blake2b(random_inputs, key, output_size);
 
-    let expected_output_: Vec<Fr> = buffer_out.iter().map(|byte| Fr::from(*byte as u64)).collect();
+    let expected_output_: Vec<Fr> = hash_result.iter().map(|byte| Fr::from(*byte as u64)).collect();
     let expected_output: [Fr; OUTPUT_SIZE] = expected_output_.try_into().unwrap();
-    let input_values: Vec<Value<Fr>> = random_inputs.iter().map(|x| value_for(*x as u64)).collect();
+    let input_values: Vec<Value<Fr>> = random_input_bytes.iter().map(|x| value_for(*x as u64)).collect();
     let key_size = 0;
     let key_values: Vec<Value<Fr>> = vec![];
 
     (input_values, input_size, key_values, key_size, expected_output, OUTPUT_SIZE)
+}
+
+fn run_blake2b(input: &str, key: &str, output_size: usize) -> Vec<u8> {
+    let res = blake2b(output_size, key.as_bytes(), input.as_bytes());
+    res.as_bytes().try_into().unwrap()
 }

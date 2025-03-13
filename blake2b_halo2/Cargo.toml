@@ -15,8 +15,7 @@ num-bigint = "0.4"
 
 [dev-dependencies]
 criterion = { version = "0.5.1", features = ["html_reports", "csv_output"] }
-# [Inigo comment] The rust implementation should be an existing implementation
-rust_implementation = { path = "../rust_implementation" }
+blake2-rfc = "0.2.18"
 
 [[bench]]
 name = "mocked_proving"

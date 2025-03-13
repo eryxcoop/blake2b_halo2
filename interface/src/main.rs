@@ -5,6 +5,8 @@ use halo2_proofs::dev::MockProver;
 use halo2_proofs::halo2curves::bn256::Fr;
 use serde::Deserialize;
 use std::cmp::max;
+use blake2_rfc::blake2b::blake2b;
+use hex;
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "opt_4_limbs")] {
@@ -34,27 +36,35 @@ fn main() {
     let file_path = format!("{}/interface/src/inputs.json", workspace_root);
 
     let file_content = std::fs::read_to_string(file_path).expect("Failed to read input file");
-    let input: Blake2bInput = serde_json::from_str(&file_content).expect("Failed to parse input");
+    let complete_input: Blake2bInput = serde_json::from_str(&file_content).expect("Failed to parse input");
 
-    let (input, key, buffer_out) = run_blake2b(&input.input, &input.key, input.output_size);
+    let input = &complete_input.input;
+    let key = &complete_input.key;
+    let output_size = complete_input.output_size;
+
+    let input_bytes = hex::decode(input).expect("Failed decode");
+    let key_bytes = hex::decode(key).expect("Failed decode");
+
+    let buffer_out = run_blake2b_rust(input, key, output_size);
+
     println!("Hash digest bytes: {:?}\n\n", buffer_out);
-    println!("The amount of bytes in your input is {}", input.len());
-    println!("The amount of bytes in your key is {}", key.len());
+    println!("The amount of bytes in your input is {}", input_bytes.len());
+    println!("The amount of bytes in your key is {}", key_bytes.len());
     println!(
         "The amount of blocks processed by the hash is {}",
-        amount_of_blocks(&input, &key)
+        amount_of_blocks(&input_bytes, &key_bytes)
     );
     println!(
         "The amount of rows in the circuit depends only on the amount of blocks, so two inputs \
     of different sizes but same amount of blocks will have same length in the circuit\n\n"
     );
     println!("Computing the circuit and generating the proof, this could take a couple of seconds ...\n\n");
-    let cost_options = run_blake2b_halo2(input.clone(), key.clone(), buffer_out);
+    let cost_options = run_blake2b_halo2(input_bytes.clone(), key_bytes.clone(), buffer_out);
     println!("Cost model options: ");
     println!(
         "The amount of advice rows is {} (for {} blocks of input)",
         cost_options.rows_count,
-        amount_of_blocks(&input, &key)
+        amount_of_blocks(&input_bytes, &key_bytes)
     );
     println!(
         "The amount of advice columns is {}",
@@ -77,13 +87,9 @@ fn main() {
     );
 }
 
-fn run_blake2b(input: &str, key: &str, output_size: usize) -> (Vec<u8>, Vec<u8>, Vec<u8>) {
-    let mut input_message = rust_implementation::hex_to_bytes(input);
-    let mut key = rust_implementation::hex_to_bytes(key);
-    let mut buffer_out: Vec<u8> = vec![0; output_size];
-
-    rust_implementation::blake2b(&mut buffer_out, &mut key, &mut input_message);
-    (input_message, key, buffer_out)
+fn run_blake2b_rust(input: &str, key: &str, output_size: usize) -> Vec<u8> {
+    let res = blake2b(output_size, key.as_bytes(), input.as_bytes());
+    res.as_bytes().try_into().unwrap()
 }
 
 fn run_blake2b_halo2(
