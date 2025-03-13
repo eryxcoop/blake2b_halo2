@@ -12,7 +12,7 @@ cfg_if::cfg_if! {
         type XorConfig = XorTableConfig;
     } else {
         use crate::base_operations::xor_spread::XorSpreadConfig;
-        type XorConfig<F> = XorSpreadConfig;
+        type XorConfig = XorSpreadConfig;
     }
 }
 
