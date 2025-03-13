@@ -90,11 +90,7 @@ pub fn xor_field_elements<F: PrimeField>(a: F, b: F) -> F {
     F::from(a_value ^ b_value)
 }
 
-pub fn get_value_limb_from_field<F: PrimeField>(field: F, limb_number: usize) -> Value<F> {
-    value_for(get_limb_from_field(field, limb_number))
-}
-
-fn get_limb_from_field<F: PrimeField>(field: F, limb_number: usize) -> u8 {
+pub fn get_limb_from_field<F: PrimeField>(field: F, limb_number: usize) -> u8 {
     let binding = field.to_repr();
     let a_bytes = binding.as_ref();
     a_bytes[limb_number]

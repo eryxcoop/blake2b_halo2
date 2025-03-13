@@ -170,6 +170,6 @@ impl Decomposition<8> for Decompose8Config {
 
     /// Given a value and a limb index, it returns the value of the limb
     fn get_limb_from<F: PrimeField>(value: Value<F>, limb_number: usize) -> Value<F> {
-        value.and_then(|v| auxiliar_functions::get_value_limb_from_field(v, limb_number))
+        value.map(|v| auxiliar_functions::get_limb_from_field(v, limb_number))
     }
 }

@@ -122,9 +122,9 @@ impl LimbRotation {
 
     /// Computes the actual value of the rotation of the number
     fn right_rotation_value<F: PrimeField>(value: Value<F>, limbs_to_rotate: usize) -> Value<F> {
-        value.and_then(|input| {
+        value.map(|input| {
             let bits_to_rotate = limbs_to_rotate * 8;
-            Value::known(auxiliar_functions::rotate_right_field_element(input, bits_to_rotate))
+            auxiliar_functions::rotate_right_field_element(input, bits_to_rotate)
         })
     }
 }

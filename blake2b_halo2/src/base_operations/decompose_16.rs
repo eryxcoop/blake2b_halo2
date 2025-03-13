@@ -116,12 +116,12 @@ impl Decomposition<4> for Decompose16Config {
 
     /// Given a value and a limb index, it returns the value of the limb
     fn get_limb_from<F: PrimeField>(value: Value<F>, limb_number: usize) -> Value<F> {
-        value.and_then(|v| {
+        value.map(|v| {
             let binding = v.to_repr();
             let a_bytes = binding.as_ref();
-            Value::known(F::from(
+            F::from(
                 a_bytes[2 * limb_number] as u64 + 256u64 * a_bytes[2 * limb_number + 1] as u64,
-            ))
+            )
         })
     }
 }

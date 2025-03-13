@@ -58,8 +58,8 @@ impl Xor for XorSpreadConfig {
         self.populate_spread_limbs_of(region, offset, value_rhs);
         *offset += 1;
 
-        let value_result = value_lhs.and_then(|v0| {
-            value_rhs.and_then(|v1| Value::known(auxiliar_functions::xor_field_elements(v0, v1)))
+        let value_result = value_lhs.zip(value_rhs).map(|(v0, v1)| {
+            auxiliar_functions::xor_field_elements(v0, v1)
         });
 
         self.populate_spread_limbs_of(region, offset, value_result);
@@ -74,36 +74,32 @@ impl Xor for XorSpreadConfig {
         self.q_xor.enable(region, *offset)?;
         *offset += 1;
 
-        value_lhs.and_then(|lhs| {
-            value_rhs.and_then(|rhs| {
-                value_result.and_then(|result| {
-                    let lhs_limb_values = auxiliar_functions::decompose_field_8bit_limbs(lhs);
-                    let rhs_limb_values = auxiliar_functions::decompose_field_8bit_limbs(rhs);
-                    let result_limb_values = auxiliar_functions::decompose_field_8bit_limbs(result);
+        value_lhs.zip(value_rhs).zip(value_result).map(|((lhs, rhs), result)| {
+            let lhs_limb_values = auxiliar_functions::decompose_field_8bit_limbs(lhs);
+            let rhs_limb_values = auxiliar_functions::decompose_field_8bit_limbs(rhs);
+            let result_limb_values = auxiliar_functions::decompose_field_8bit_limbs(result);
 
-                    let empty_spread_positions = Self::empty_spread_positions::<F>();
-                    let columns_in_order =
-                        Self::columns_in_order::<F>(self.full_number_u64, self.limbs, self.extra);
-                    for i in 0..8 {
-                        let z_i = (Self::spread_bits::<F>(lhs_limb_values[i])
-                            + Self::spread_bits::<F>(rhs_limb_values[i])
-                            - Self::spread_bits::<F>(result_limb_values[i]))
-                            / 2;
+            let empty_spread_positions = Self::empty_spread_positions::<F>();
+            let columns_in_order =
+                Self::columns_in_order::<F>(self.full_number_u64, self.limbs, self.extra);
+            for i in 0..8 {
+                let z_i = (Self::spread_bits::<F>(lhs_limb_values[i])
+                    + Self::spread_bits::<F>(rhs_limb_values[i])
+                    - Self::spread_bits::<F>(result_limb_values[i]))
+                    / 2;
 
-                        region
-                            .assign_advice(
-                                || format!("reminder z_{}", i),
-                                columns_in_order[empty_spread_positions[i].1],
-                                // We need to subtract 6 since we are in the offset 7 because we already assigned all rows
-                                *offset + empty_spread_positions[i].0 - 6,
-                                || value_for::<u16, F>(z_i),
-                            )
-                            .unwrap();
-                    }
+                region
+                    .assign_advice(
+                        || format!("reminder z_{}", i),
+                        columns_in_order[empty_spread_positions[i].1],
+                        // We need to subtract 6 since we are in the offset 7 because we already assigned all rows
+                        *offset + empty_spread_positions[i].0 - 6,
+                        || value_for::<u16, F>(z_i),
+                    )
+                    .unwrap();
+            }
 
-                    Value::<F>::unknown()
-                })
-            })
+            Value::<F>::unknown()
         });
 
         Ok(result_row.try_into().unwrap())
