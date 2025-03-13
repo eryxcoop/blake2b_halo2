@@ -1,25 +1,16 @@
 use super::*;
 use crate::base_operations::decompose_8::Decompose8Config;
-use ff::{Field, PrimeField};
+use ff::{ PrimeField};
 use halo2_proofs::circuit::{AssignedCell, Layouter, Value};
-use std::marker::PhantomData;
 
-#[derive(Clone, Debug)]
-// [Inigo comment] If there are no new rows/gates, there should not be a config
-pub struct LimbRotationConfig<F: Field> {
-    _ph: PhantomData<F>,
-}
+#[derive(Default, Clone, Debug)]
+pub struct LimbRotation;
 
 /// This config does not have a gate. It only rotates the limbs of a number to the right and
 /// uses copy constrains to ensure that the rotation is correct.
 /// This config is used in our circuit to implement 16-bit, 24-bit and 32-bit rotations.
-#[allow(clippy::new_without_default)]
-impl<F: PrimeField> LimbRotationConfig<F> {
-    pub fn new() -> Self {
-        Self { _ph: PhantomData }
-    }
-
-    pub fn unknown_trace() -> [[Value<F>; 9]; 2] {
+impl LimbRotation {
+    pub fn unknown_trace<F: PrimeField>() -> [[Value<F>; 9]; 2] {
         [[Value::unknown(); 9]; 2]
     }
 
@@ -29,7 +20,7 @@ impl<F: PrimeField> LimbRotationConfig<F> {
     /// In the end of the method, the circuit will have the correct constraints to ensure that
     /// the output is the input rotated to the right by the number of limbs specified in the
     /// limb_rotations_right parameter.
-    pub fn populate_rotation_rows(
+    pub fn populate_rotation_rows<F: PrimeField>(
         &self,
         layouter: &mut impl Layouter<F>,
         decompose_config: &mut Decompose8Config,
@@ -58,7 +49,7 @@ impl<F: PrimeField> LimbRotationConfig<F> {
 
     /// This method receives a value, and copies it to the trace. Then calls another method to
     /// do the rotation
-    pub fn generate_rotation_rows_from_value(
+    pub fn generate_rotation_rows_from_value<F: PrimeField>(
         &self,
         region: &mut Region<F>,
         offset: &mut usize,
@@ -84,7 +75,7 @@ impl<F: PrimeField> LimbRotationConfig<F> {
     /// to be the correct rotation of the input.
     /// For this method to work, the input_row must be the last row of the trace at the moment
     /// the method is called
-    pub fn generate_rotation_rows_from_input_row(
+    pub fn generate_rotation_rows_from_input_row<F: PrimeField>(
         &self,
         region: &mut Region<F>,
         offset: &mut usize,
@@ -113,7 +104,7 @@ impl<F: PrimeField> LimbRotationConfig<F> {
 
     /// Here the rotation is enforced by copy constraints
     #[allow(clippy::ptr_arg)]
-    fn constrain_result_with_input_row(
+    fn constrain_result_with_input_row<F: PrimeField>(
         region: &mut Region<F>,
         input_row: &Vec<AssignedCell<F, F>>,
         result_row: &Vec<AssignedCell<F, F>>,
@@ -130,7 +121,7 @@ impl<F: PrimeField> LimbRotationConfig<F> {
     }
 
     /// Computes the actual value of the rotation of the number
-    fn right_rotation_value(value: Value<F>, limbs_to_rotate: usize) -> Value<F> {
+    fn right_rotation_value<F: PrimeField>(value: Value<F>, limbs_to_rotate: usize) -> Value<F> {
         value.and_then(|input| {
             let bits_to_rotate = limbs_to_rotate * 8;
             Value::known(auxiliar_functions::rotate_right_field_element(input, bits_to_rotate))

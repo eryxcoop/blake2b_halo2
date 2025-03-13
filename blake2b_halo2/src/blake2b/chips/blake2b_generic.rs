@@ -6,7 +6,7 @@ use crate::auxiliar_functions::value_for;
 use crate::base_operations::addition_mod_64::AdditionMod64Config;
 use crate::base_operations::decompose_8::Decompose8Config;
 use crate::base_operations::decomposition::Decomposition;
-use crate::base_operations::generic_limb_rotation::LimbRotationConfig;
+use crate::base_operations::generic_limb_rotation::LimbRotation;
 use crate::base_operations::negate::NegateConfig;
 use crate::base_operations::rotate_63::Rotate63Config;
 use crate::base_operations::xor::Xor;
@@ -20,7 +20,7 @@ pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
     // Getters for the internal members of the chip
     fn decompose_8_config(&mut self) -> Decompose8Config;
     fn addition_config(&mut self) -> AdditionMod64Config<LIMBS, WIDTH>;
-    fn generic_limb_rotation_config(&mut self) -> LimbRotationConfig<F>;
+    fn generic_limb_rotation_config(&mut self) -> LimbRotation;
     fn rotate_63_config(&mut self) -> Rotate63Config<F, 8, 9>;
     fn xor_config(&mut self) -> impl Xor<F>;
     fn negate_config(&mut self) -> NegateConfig<F>;
@@ -103,14 +103,13 @@ pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
         meta: &mut ConstraintSystem<F>,
         full_number_u64: Column<Advice>,
         limbs: [Column<Advice>; 8]) -> (Decompose8Config,
-                                        LimbRotationConfig<F>,
+                                        LimbRotation,
                                         Rotate63Config<F, 8, 9>,
                                         NegateConfig<F>,
                                         Column<Fixed>,
                                         Column<Instance>) {
         Self::enforce_modulus_size();
         let decompose_8_config = Decompose8Config::configure(meta, full_number_u64, limbs);
-        let generic_limb_rotation_config = LimbRotationConfig::new();
         let rotate_63_config = Rotate63Config::configure(meta, full_number_u64);
         let negate_config = NegateConfig::configure(meta, full_number_u64);
 
@@ -121,7 +120,7 @@ pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
         meta.enable_equality(expected_final_state);
 
         (decompose_8_config,
-         generic_limb_rotation_config,
+         LimbRotation,
          rotate_63_config,
          negate_config,
          constants,

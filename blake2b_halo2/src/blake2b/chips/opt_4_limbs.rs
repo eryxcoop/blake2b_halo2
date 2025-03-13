@@ -5,7 +5,7 @@ use crate::base_operations::addition_mod_64::{AdditionMod64Config};
 use crate::base_operations::decompose_16::Decompose16Config;
 use crate::base_operations::decompose_8::Decompose8Config;
 use crate::base_operations::decomposition::Decomposition;
-use crate::base_operations::generic_limb_rotation::LimbRotationConfig;
+use crate::base_operations::generic_limb_rotation::LimbRotation;
 use crate::base_operations::negate::NegateConfig;
 use crate::base_operations::rotate_63::Rotate63Config;
 use crate::base_operations::xor::Xor;
@@ -30,7 +30,7 @@ pub struct Blake2bChipOpt4Limbs<F: PrimeField> {
     decompose_16_config: Decompose16Config<F>,
     /// Base oprerations configs
     addition_config: AdditionMod64Config<4, 6>,
-    generic_limb_rotation_config: LimbRotationConfig<F>,
+    generic_limb_rotation_config: LimbRotation,
     rotate_63_config: Rotate63Config<F, 8, 9>,
     xor_config: XorTableConfig<F>,
     negate_config: NegateConfig<F>,
@@ -103,7 +103,7 @@ impl<F: PrimeField> Blake2bGeneric<F,4,6> for Blake2bChipOpt4Limbs<F> {
         self.addition_config.clone()
     }
 
-    fn generic_limb_rotation_config(&mut self) -> LimbRotationConfig<F> {
+    fn generic_limb_rotation_config(&mut self) -> LimbRotation {
         self.generic_limb_rotation_config.clone()
     }
 

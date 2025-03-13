@@ -1,6 +1,6 @@
 use super::*;
 use crate::base_operations::decompose_8::Decompose8Config;
-use crate::base_operations::generic_limb_rotation::LimbRotationConfig;
+use crate::base_operations::generic_limb_rotation::LimbRotation;
 use ff::PrimeField;
 use halo2_proofs::circuit::SimpleFloorPlanner;
 use halo2_proofs::plonk::Circuit;
@@ -28,7 +28,7 @@ impl<F: PrimeField, const T: usize> Circuit<F> for LimbRotationCircuit<F, T> {
     fn without_witnesses(&self) -> Self {
         Self {
             _ph: PhantomData,
-            trace: LimbRotationConfig::unknown_trace(),
+            trace: LimbRotation::unknown_trace(),
         }
     }
 
@@ -41,7 +41,7 @@ impl<F: PrimeField, const T: usize> Circuit<F> for LimbRotationCircuit<F, T> {
         });
 
         let decompose_8_config = Decompose8Config::configure(meta, full_number_u64, limbs);
-        let limb_rotation_config = LimbRotationConfig::new();
+        let limb_rotation_config = LimbRotation::new();
 
         Self::Config {
             _ph: PhantomData,

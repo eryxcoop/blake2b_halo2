@@ -3,7 +3,7 @@ use halo2_proofs::circuit::{AssignedCell, Layouter, Region, Value};
 use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Error, Fixed, Instance};
 use crate::base_operations::addition_mod_64::AdditionMod64Config;
 use crate::base_operations::decompose_8::Decompose8Config;
-use crate::base_operations::generic_limb_rotation::LimbRotationConfig;
+use crate::base_operations::generic_limb_rotation::LimbRotation;
 use crate::base_operations::negate::NegateConfig;
 use crate::base_operations::rotate_63::Rotate63Config;
 use crate::base_operations::xor::Xor;
@@ -21,7 +21,7 @@ pub struct Blake2bChipOptSpread<F: PrimeField> {
     decompose_8_config: Decompose8Config,
     /// Base oprerations configs
     addition_config: AdditionMod64Config<8, 10>,
-    generic_limb_rotation_config: LimbRotationConfig<F>,
+    generic_limb_rotation_config: LimbRotation,
     rotate_63_config: Rotate63Config<F, 8, 9>,
     xor_config: XorSpreadConfig<F>,
     negate_config: NegateConfig<F>,
@@ -94,7 +94,7 @@ impl<F: PrimeField> Blake2bGeneric<F,8,10> for Blake2bChipOptSpread<F> {
         self.addition_config.clone()
     }
 
-    fn generic_limb_rotation_config(&mut self) -> LimbRotationConfig<F> {
+    fn generic_limb_rotation_config(&mut self) -> LimbRotation {
         self.generic_limb_rotation_config.clone()
     }
 
