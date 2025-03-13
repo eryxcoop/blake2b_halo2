@@ -16,3 +16,4 @@ pub mod base_operations;
 #[cfg(test)]
 pub mod tests;
 pub mod blake2b;
+pub mod example_blake2b_circuit;
