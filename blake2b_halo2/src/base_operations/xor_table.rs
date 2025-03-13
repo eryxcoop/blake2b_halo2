@@ -73,7 +73,7 @@ impl<F: PrimeField> Xor<F> for XorTableConfig<F> {
     /// This method generates the xor rows in the trace. If the previous cell in the region is one
     /// of the operands, it won't be copied. Otherwise, it will be copied from the cell_to_copy,
     /// generating an extra row in the circuit.
-    fn generate_xor_rows_from_cells_optimized(
+    fn generate_xor_rows_from_cells(
         &mut self,
         region: &mut Region<F>,
         offset: &mut usize,

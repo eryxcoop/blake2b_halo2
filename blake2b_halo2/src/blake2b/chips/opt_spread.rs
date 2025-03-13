@@ -157,7 +157,7 @@ impl<F: PrimeField> Blake2bChipOptSpread<F>{
         offset: &mut usize,
     ) -> [AssignedCell<F, F>; 9] {
         self.xor_config
-            .generate_xor_rows_from_cells_optimized(
+            .generate_xor_rows_from_cells(
                 region,
                 offset,
                 previous_cell,

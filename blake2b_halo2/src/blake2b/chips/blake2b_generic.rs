@@ -394,7 +394,7 @@ pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
     ) -> [AssignedCell<F, F>; 9] {
         let mut decompose_8_config = self.decompose_8_config();
         self.xor_config()
-            .generate_xor_rows_from_cells_optimized(
+            .generate_xor_rows_from_cells(
                 region,
                 offset,
                 lhs,
@@ -425,7 +425,7 @@ pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
         offset: &mut usize,
     ) -> Result<AssignedCell<F, F>, Error> {
         let mut decompose_8_config = self.decompose_8_config();
-        let full_number_cell = self.xor_config().generate_xor_rows_from_cells_optimized(
+        let full_number_cell = self.xor_config().generate_xor_rows_from_cells(
             region,
             offset,
             lhs,

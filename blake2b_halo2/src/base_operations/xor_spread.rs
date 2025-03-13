@@ -28,7 +28,7 @@ impl<F: PrimeField> Xor<F> for XorSpreadConfig<F> {
         Ok(())
     }
 
-    fn generate_xor_rows_from_cells_optimized(
+    fn generate_xor_rows_from_cells(
         &mut self,
         region: &mut Region<F>,
         offset: &mut usize,
