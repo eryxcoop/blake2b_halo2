@@ -1,6 +1,5 @@
 use criterion::{criterion_group, criterion_main, BatchSize, BenchmarkGroup, BenchmarkId, Criterion, Throughput};
 use blake2b_halo2::blake2b::chips::opt_4_limbs::Blake2bChipOpt4Limbs;
-use halo2_proofs::halo2curves::bn256::Fr;
 use blake2b_halo2::blake2b::chips::opt_recycle::Blake2bChipOptRecycle;
 use blake2b_halo2::blake2b::chips::opt_spread::Blake2bChipOptSpread;
 use blake2b_halo2::blake2b::instructions::Blake2bInstructions;
@@ -20,17 +19,17 @@ pub fn benchmark_mocked_proving(c: &mut Criterion) {
     for amount_of_blocks in benchmarking_block_sizes() {
         group.throughput(Throughput::Bytes(amount_of_blocks as u64));
 
-        benchmark_optimization_with_amount_of_blocks::<Blake2bChipOpt4Limbs<Fr>>(
+        benchmark_optimization_with_amount_of_blocks::<Blake2bChipOpt4Limbs>(
             &mut group,
             amount_of_blocks,
             "opt_4_limbs",
         );
-        benchmark_optimization_with_amount_of_blocks::<Blake2bChipOptRecycle<Fr>>(
+        benchmark_optimization_with_amount_of_blocks::<Blake2bChipOptRecycle>(
             &mut group,
             amount_of_blocks,
             "opt_recycle",
         );
-        benchmark_optimization_with_amount_of_blocks::<Blake2bChipOptSpread<Fr>>(
+        benchmark_optimization_with_amount_of_blocks::<Blake2bChipOptSpread>(
             &mut group,
             amount_of_blocks,
             "opt_spread",

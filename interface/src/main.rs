@@ -11,13 +11,13 @@ use hex;
 cfg_if::cfg_if! {
     if #[cfg(feature = "opt_4_limbs")] {
         use blake2b_halo2::blake2b::chips::opt_4_limbs::Blake2bChipOpt4Limbs;
-        type Blake2bChip<F> = Blake2bChipOpt4Limbs;
+        type Blake2bChip = Blake2bChipOpt4Limbs;
     } else if #[cfg(feature = "opt_recycle")] {
         use blake2b_halo2::blake2b::chips::opt_recycle::Blake2bChipOptRecycle;
-        type Blake2bChip<F> = Blake2bChipOptRecycle;
+        type Blake2bChip = Blake2bChipOptRecycle;
     } else if #[cfg(feature = "opt_spread")] {
         use blake2b_halo2::blake2b::chips::opt_spread::Blake2bChipOptSpread;
-        type Blake2bChip<F> = Blake2bChipOptSpread;
+        type Blake2bChip = Blake2bChipOptSpread;
     } else {
         compile_error!("No feature selected");
     }
@@ -119,7 +119,7 @@ fn run_blake2b_halo2(
         .collect::<Vec<_>>();
 
     // TEST
-    let circuit = Blake2bCircuit::<Fr, Blake2bChip<Fr>>::new_for(
+    let circuit = Blake2bCircuit::<Fr, Blake2bChip>::new_for(
         input_values,
         input_size,
         key_values,
