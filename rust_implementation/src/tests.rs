@@ -12,7 +12,7 @@ struct TestCase {
 
 #[test]
 fn test_hashes() {
-    let file_content = std::fs::read_to_string("./test_vector.json").expect("Failed to read file");
+    let file_content = std::fs::read_to_string("../test_vector.json").expect("Failed to read file");
     let test_cases: Vec<TestCase> =
         serde_json::from_str(&file_content).expect("Failed to parse JSON");
 
