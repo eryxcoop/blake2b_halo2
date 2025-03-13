@@ -51,10 +51,8 @@ impl NegateConfig {
         //
         // Solution - In line 53 we changed generate_row_from_value for generate_row_from_cell which adds a
         // copy constraint between input and the new cell
-        let value = input.value().copied();
         self.q_negate.enable(region, *offset)?;
-        let result_value =
-            value.and_then(|v0| Value::known(F::from(((1u128 << 64) - 1) as u64) - v0));
+        let result_value = input.value().map(|v0| F::from(((1u128 << 64) - 1) as u64) - *v0);
         decompose_config.generate_row_from_cell(region, input, *offset)?;
         *offset += 1;
         let result_cell =
