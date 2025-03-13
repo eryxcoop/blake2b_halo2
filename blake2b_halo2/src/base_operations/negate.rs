@@ -45,7 +45,7 @@ impl<F: PrimeField> NegateConfig<F> {
         region: &mut Region<F>,
         offset: &mut usize,
         input: &AssignedCell<F, F>,
-        decompose_config: &mut Decompose8Config<F>,
+        decompose_config: &mut Decompose8Config,
     ) -> Result<AssignedCell<F, F>, Error> {
         // [Inigo comment - solved] You are unlinking the cell with the actual value - this might be a
         // soundness issue.

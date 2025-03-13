@@ -26,7 +26,7 @@ use crate::blake2b::chips::blake2b_generic::Blake2bGeneric;
 #[derive(Clone, Debug)]
 pub struct Blake2bChipOpt4Limbs<F: PrimeField> {
     /// Decomposition configs
-    decompose_8_config: Decompose8Config<F>,
+    decompose_8_config: Decompose8Config,
     decompose_16_config: Decompose16Config<F>,
     /// Base oprerations configs
     addition_config: AdditionMod64Config<4, 6>,
@@ -95,7 +95,7 @@ impl<F: PrimeField> Blake2bInstructions<F> for Blake2bChipOpt4Limbs<F> {
 
 impl<F: PrimeField> Blake2bGeneric<F,4,6> for Blake2bChipOpt4Limbs<F> {
     // Getters that the trait needs for its default implementations
-    fn decompose_8_config(&mut self) -> Decompose8Config<F> {
+    fn decompose_8_config(&mut self) -> Decompose8Config {
         self.decompose_8_config.clone()
     }
 

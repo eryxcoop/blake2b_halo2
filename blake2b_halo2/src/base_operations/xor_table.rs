@@ -79,7 +79,7 @@ impl<F: PrimeField> Xor<F> for XorTableConfig<F> {
         offset: &mut usize,
         previous_cell: &AssignedCell<F, F>,
         cell_to_copy: &AssignedCell<F, F>,
-        decompose_8_config: &mut Decompose8Config<F>,
+        decompose_8_config: &mut Decompose8Config,
         use_previous_cell: bool,
     ) -> Result<[AssignedCell<F, F>; 9], Error> {
         let value_a = previous_cell.value().copied();
@@ -151,7 +151,7 @@ impl<F: PrimeField> XorTableConfig<F> {
         &mut self,
         layouter: &mut impl Layouter<F>,
         xor_trace: [[Value<F>; 9]; 3],
-        decompose_8_config: &mut Decompose8Config<F>,
+        decompose_8_config: &mut Decompose8Config,
     ) -> Result<(), Error> {
         layouter.assign_region(
             || "xor",

@@ -11,7 +11,7 @@ use crate::base_operations::xor::Xor;
 pub struct XorConfig<F: PrimeField> {
     _ph: PhantomData<F>,
     xor_config: XorTableConfig<F>,
-    decompose_8_config: Decompose8Config<F>,
+    decompose_8_config: Decompose8Config,
 }
 
 pub struct XorCircuit<F: PrimeField> {

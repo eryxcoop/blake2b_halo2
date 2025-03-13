@@ -18,7 +18,7 @@ use crate::blake2b::instructions::Blake2bInstructions;
 /// its signature for some of the gates.
 pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>: Blake2bInstructions<F> {
     // Getters for the internal members of the chip
-    fn decompose_8_config(&mut self) -> Decompose8Config<F>;
+    fn decompose_8_config(&mut self) -> Decompose8Config;
     fn addition_config(&mut self) -> AdditionMod64Config<LIMBS, WIDTH>;
     fn generic_limb_rotation_config(&mut self) -> LimbRotationConfig<F>;
     fn rotate_63_config(&mut self) -> Rotate63Config<F, 8, 9>;
@@ -102,7 +102,7 @@ pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
     fn generic_configure(
         meta: &mut ConstraintSystem<F>,
         full_number_u64: Column<Advice>,
-        limbs: [Column<Advice>; 8]) -> (Decompose8Config<F>,
+        limbs: [Column<Advice>; 8]) -> (Decompose8Config,
                                         LimbRotationConfig<F>,
                                         Rotate63Config<F, 8, 9>,
                                         NegateConfig<F>,

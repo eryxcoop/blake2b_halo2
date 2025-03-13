@@ -2,9 +2,9 @@ use super::*;
 use halo2_proofs::circuit::AssignedCell;
 
 /// This config handles the decomposition of 64-bit numbers into 8-bit limbs in the trace
-// [Inigo comment] Configs do not need to be parametrised by the PrimeField.
+// [Inigo comment - solved] Configs do not need to be parametrised by the PrimeField.
 #[derive(Clone, Debug)]
-pub struct Decompose8Config<F: PrimeField> {
+pub struct Decompose8Config {
     /// The full number and the limbs are not owned by the config.
     full_number_u64: Column<Advice>,
     /// There are 8 limbs of 8 bits each
@@ -14,10 +14,9 @@ pub struct Decompose8Config<F: PrimeField> {
     q_decompose: Selector,
     /// Table of [0, 2^8) to check if the limb is in the correct range
     t_range: TableColumn,
-    _ph: PhantomData<F>,
 }
 
-impl<F: PrimeField> Decomposition<F, 8> for Decompose8Config<F> {
+impl<F: PrimeField> Decomposition<F, 8> for Decompose8Config {
     const LIMB_SIZE: usize = 8;
     fn range_table_column(&self) -> TableColumn {
         self.t_range
@@ -64,7 +63,6 @@ impl<F: PrimeField> Decomposition<F, 8> for Decompose8Config<F> {
             limbs,
             q_decompose,
             t_range,
-            _ph: PhantomData,
         }
     }
 

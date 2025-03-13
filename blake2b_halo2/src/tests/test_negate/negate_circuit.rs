@@ -17,7 +17,7 @@ pub struct NegateCircuit<F: PrimeField> {
 pub struct NegateCircuitConfig<F: PrimeField> {
     _ph: PhantomData<F>,
     negate_config: NegateConfig<F>,
-    decompose_8_config: Decompose8Config<F>,
+    decompose_8_config: Decompose8Config,
     fixed_result: Column<Fixed>,
 }
 

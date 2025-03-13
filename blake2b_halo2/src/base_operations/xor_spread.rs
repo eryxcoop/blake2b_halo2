@@ -34,7 +34,7 @@ impl<F: PrimeField> Xor<F> for XorSpreadConfig<F> {
         offset: &mut usize,
         previous_cell: &AssignedCell<F, F>,
         cell_to_copy: &AssignedCell<F, F>,
-        decompose_8_config: &mut Decompose8Config<F>,
+        decompose_8_config: &mut Decompose8Config,
         use_previous_cell: bool,
     ) -> Result<[AssignedCell<F, F>; 9], Error> {
         let value_lhs = previous_cell.value().copied();
@@ -230,7 +230,10 @@ impl<F: PrimeField> XorSpreadConfig<F> {
         }
     }
 
-    // [Inigo comment] this is only used once - why not have it directly in the implementation of the trait?
+    // [Inigo comment - answered] this is only used once - why not have it directly in the implementation of the trait?
+    //
+    // This is only used for the xor spread implementation, it is not a general method for the xor
+    // trait.
     fn populate_spread_table(&self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
         layouter.assign_table(
             || "xor spread table",

@@ -12,7 +12,7 @@ pub struct AdditionMod64Circuit8Bits<F: Field> {
 #[derive(Clone, Debug)]
 pub struct AdditionMod64Config8Bits<F: PrimeField + Clone> {
     sum_8bits_config: AdditionConfigWith8Limbs,
-    decompose_8_config: Decompose8Config<F>,
+    decompose_8_config: Decompose8Config,
     _ph: PhantomData<F>,
 }
 
