@@ -37,7 +37,12 @@ impl<F: PrimeField, const T: usize, const R: usize> Rotate63Config<F, T, R> {
     }
 
     /// Receives a trace and populates the rows for the rotation of 63 bits to the right
-    // [Inigo comment] Where are you using this function? Is it only in tests? why is it public?
+    // [Inigo comment - answered] Where are you using this function? Is it only in tests? why is it public?
+    //
+    // This function is used for testing. We use it to be able to have tests that checks that the
+    // gate is correctly defined. If we use the generate_rotation_rows_from_cells, we wouldn't be able
+    // to fill the circuit with incorrect values and check that the proof is rejected.
+    // We need to make it public to be able to call it from the tests.
     pub fn populate_rotation_rows(
         &self,
         layouter: &mut impl Layouter<F>,
@@ -78,10 +83,5 @@ impl<F: PrimeField, const T: usize, const R: usize> Rotate63Config<F, T, R> {
             decompose_config.generate_row_from_value(region, result_value, *offset)?;
         *offset += 1;
         Ok(result_cell)
-    }
-
-    // [Inigo comment] functions that are only used in tests should not be part of the config.
-    pub fn unknown_trace() -> [[Value<F>; R]; 2] {
-        [[Value::unknown(); R]; 2]
     }
 }
