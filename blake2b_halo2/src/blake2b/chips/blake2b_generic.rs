@@ -19,7 +19,7 @@ use crate::blake2b::instructions::Blake2bInstructions;
 pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>: Blake2bInstructions<F> {
     // Getters for the internal members of the chip
     fn decompose_8_config(&mut self) -> Decompose8Config<F>;
-    fn addition_config(&mut self) -> AdditionMod64Config<F, LIMBS, WIDTH>;
+    fn addition_config(&mut self) -> AdditionMod64Config<LIMBS, WIDTH>;
     fn generic_limb_rotation_config(&mut self) -> LimbRotationConfig<F>;
     fn rotate_63_config(&mut self) -> Rotate63Config<F, 8, 9>;
     fn xor_config(&mut self) -> impl Xor<F>;

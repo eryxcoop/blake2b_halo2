@@ -29,7 +29,7 @@ pub struct Blake2bChipOpt4Limbs<F: PrimeField> {
     decompose_8_config: Decompose8Config<F>,
     decompose_16_config: Decompose16Config<F>,
     /// Base oprerations configs
-    addition_config: AdditionMod64Config<F, 4, 6>,
+    addition_config: AdditionMod64Config<4, 6>,
     generic_limb_rotation_config: LimbRotationConfig<F>,
     rotate_63_config: Rotate63Config<F, 8, 9>,
     xor_config: XorTableConfig<F>,
@@ -53,7 +53,7 @@ impl<F: PrimeField> Blake2bInstructions<F> for Blake2bChipOpt4Limbs<F> {
             expected_final_state) = Self::generic_configure(meta, full_number_u64, limbs);
 
         /// Config that is optimization-specific
-        let addition_config = AdditionMod64Config::<F, 4, 6>::configure(meta, full_number_u64, limbs[4]);
+        let addition_config = AdditionMod64Config::<4, 6>::configure(meta, full_number_u64, limbs[4]);
         let xor_config = XorTableConfig::configure(meta, limbs);
         let decompose_16_config =
             Decompose16Config::configure(meta, full_number_u64, limbs[0..4].try_into().unwrap());
@@ -99,7 +99,7 @@ impl<F: PrimeField> Blake2bGeneric<F,4,6> for Blake2bChipOpt4Limbs<F> {
         self.decompose_8_config.clone()
     }
 
-    fn addition_config(&mut self) -> AdditionMod64Config<F, 4, 6> {
+    fn addition_config(&mut self) -> AdditionMod64Config<4, 6> {
         self.addition_config.clone()
     }
 

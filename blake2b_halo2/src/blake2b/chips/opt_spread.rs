@@ -20,7 +20,7 @@ pub struct Blake2bChipOptSpread<F: PrimeField> {
     /// Decomposition configs
     decompose_8_config: Decompose8Config<F>,
     /// Base oprerations configs
-    addition_config: AdditionMod64Config<F, 8, 10>,
+    addition_config: AdditionMod64Config<8, 10>,
     generic_limb_rotation_config: LimbRotationConfig<F>,
     rotate_63_config: Rotate63Config<F, 8, 9>,
     xor_config: XorSpreadConfig<F>,
@@ -47,7 +47,7 @@ impl<F: PrimeField> Blake2bInstructions<F> for Blake2bChipOptSpread<F> {
         /// Config that is optimization-specific
         /// An extra carry column is needed for the sum operation with 8 limbs.
         let carry = meta.advice_column();
-        let addition_config = AdditionMod64Config::<F, 8, 10>::configure(meta, full_number_u64, carry);
+        let addition_config = AdditionMod64Config::<8, 10>::configure(meta, full_number_u64, carry);
 
         /// We must provide the spread config all the columns, not just the limbs
         let xor_config = XorSpreadConfig::configure(meta, limbs, full_number_u64, carry);
@@ -90,7 +90,7 @@ impl<F: PrimeField> Blake2bGeneric<F,8,10> for Blake2bChipOptSpread<F> {
         self.decompose_8_config.clone()
     }
 
-    fn addition_config(&mut self) -> AdditionMod64Config<F, 8, 10> {
+    fn addition_config(&mut self) -> AdditionMod64Config<8, 10> {
         self.addition_config.clone()
     }
 

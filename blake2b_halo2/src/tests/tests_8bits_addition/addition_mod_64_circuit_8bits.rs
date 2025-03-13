@@ -11,7 +11,7 @@ pub struct AdditionMod64Circuit8Bits<F: Field> {
 
 #[derive(Clone, Debug)]
 pub struct AdditionMod64Config8Bits<F: PrimeField + Clone> {
-    sum_8bits_config: AdditionConfigWith8Limbs<F>,
+    sum_8bits_config: AdditionConfigWith8Limbs,
     decompose_8_config: Decompose8Config<F>,
     _ph: PhantomData<F>,
 }
@@ -36,7 +36,7 @@ impl<F: PrimeField> Circuit<F> for AdditionMod64Circuit8Bits<F> {
         let decompose_8_config = Decompose8Config::configure(meta, full_number_u64, limbs);
 
         let sum_8bits_config =
-            AdditionConfigWith8Limbs::<F>::configure(meta, full_number_u64, carry);
+            AdditionConfigWith8Limbs::configure(meta, full_number_u64, carry);
 
         Self::Config {
             _ph: PhantomData,

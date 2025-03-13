@@ -7,7 +7,7 @@ use crate::base_operations::addition_mod_64::AdditionMod64Config;
 
 #[derive(Clone)]
 pub struct AdditionMod64Config16Bits<F: Field> {
-    addition_mod_64_config: AdditionMod64Config<F, 4, 6>,
+    addition_mod_64_config: AdditionMod64Config<4, 6>,
     decompose_16_config: Decompose16Config<F>,
 }
 
@@ -43,7 +43,7 @@ impl<F: PrimeField> Circuit<F> for AdditionMod64Circuit16Bits<F> {
 
         let decompose_16_config = Decompose16Config::configure(meta, full_number_u64, limbs);
         let addition_mod_64_config =
-            AdditionMod64Config::<F, 4, 6>::configure(meta, full_number_u64, carry);
+            AdditionMod64Config::<4, 6>::configure(meta, full_number_u64, carry);
 
         Self::Config {
             addition_mod_64_config,
