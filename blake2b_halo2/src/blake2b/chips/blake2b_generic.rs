@@ -349,14 +349,14 @@ pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
 
         // v[d] = rotr_64(v[d] ^ v[a], 32);
         let d_xor_a = self.xor_for_mix(&a, &v_d, region, offset)?;
-        let d = self.rotate_right_32(d_xor_a, region, offset);
+        let d = self.rotate_right_32(d_xor_a, region, offset)?;
 
         // v[c] = ((v[c] as u128 + v[d] as u128) % (1 << 64)) as u64;
         let c = self.add_copying_one_parameter(&d, &v_c, region, offset)?;
 
         // v[b] = rotr_64(v[b] ^ v[c], 24);
         let b_xor_c = self.xor_for_mix(&c, &v_b, region, offset)?;
-        let b = self.rotate_right_24(b_xor_c, region, offset);
+        let b = self.rotate_right_24(b_xor_c, region, offset)?;
 
         // v[a] = ((v[a] as u128 + v[b] as u128 + y as u128) % (1 << 64)) as u64;
         let a_plus_b = self.add_copying_one_parameter(&b, &a, region, offset)?;
@@ -364,14 +364,14 @@ pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
 
         // v[d] = rotr_64(v[d] ^ v[a], 16);
         let d_xor_a = self.xor_for_mix(&a, &d, region, offset)?;
-        let d = self.rotate_right_16(d_xor_a, region, offset);
+        let d = self.rotate_right_16(d_xor_a, region, offset)?;
 
         // v[c] = ((v[c] as u128 + v[d] as u128) % (1 << 64)) as u64;
         let c = self.add_copying_one_parameter(&d, &c, region, offset)?;
 
         // v[b] = rotr_64(v[b] ^ v[c], 63);
         let b_xor_c = self.xor_for_mix(&c, &b, region, offset)?;
-        let b = self.rotate_right_63(b_xor_c, region, offset);
+        let b = self.rotate_right_63(b_xor_c, region, offset)?;
 
         state[a_] = a;
         state[b_] = b;
@@ -469,7 +469,7 @@ pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
         input_row: [AssignedCell<F, F>; 9],
         region: &mut Region<F>,
         offset: &mut usize,
-    ) -> AssignedCell<F, F> {
+    ) -> Result<AssignedCell<F, F>, Error> {
         let mut decompose_8_config = self.decompose_8_config();
         self.rotate_63_config()
             .generate_rotation_rows_from_cells(
@@ -478,7 +478,6 @@ pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
                 input_row,
                 &mut decompose_8_config,
             )
-            .unwrap()
     }
 
     fn rotate_right_16(
@@ -486,7 +485,7 @@ pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
         input_row: [AssignedCell<F, F>; 9],
         region: &mut Region<F>,
         offset: &mut usize,
-    ) -> AssignedCell<F, F> {
+    ) -> Result<AssignedCell<F, F>, Error> {
         let mut decompose_8_config = self.decompose_8_config();
         self.generic_limb_rotation_config()
             .generate_rotation_rows_from_input_row(
@@ -496,7 +495,6 @@ pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
                 input_row,
                 2,
             )
-            .unwrap()
     }
 
     fn rotate_right_24(
@@ -504,7 +502,7 @@ pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
         input_row: [AssignedCell<F, F>; 9],
         region: &mut Region<F>,
         offset: &mut usize,
-    ) -> AssignedCell<F, F> {
+    ) -> Result<AssignedCell<F, F>, Error> {
         let mut decompose_8_config = self.decompose_8_config();
         self.generic_limb_rotation_config()
             .generate_rotation_rows_from_input_row(
@@ -514,7 +512,6 @@ pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
                 input_row,
                 3,
             )
-            .unwrap()
     }
 
     fn rotate_right_32(
@@ -522,7 +519,7 @@ pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
         input_row: [AssignedCell<F, F>; 9],
         region: &mut Region<F>,
         offset: &mut usize,
-    ) -> AssignedCell<F, F> {
+    ) -> Result<AssignedCell<F, F>, Error> {
         let mut decompose_8_config = self.decompose_8_config();
         self.generic_limb_rotation_config()
             .generate_rotation_rows_from_input_row(
@@ -532,7 +529,6 @@ pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
                 input_row,
                 4,
             )
-            .unwrap()
     }
 
     // ----- Auxiliar methods ----- //
