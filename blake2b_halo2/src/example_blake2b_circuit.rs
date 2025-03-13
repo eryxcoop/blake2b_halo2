@@ -1,11 +1,11 @@
-use super::*;
-use halo2_proofs::circuit::SimpleFloorPlanner;
-use halo2_proofs::plonk::Circuit;
+use ff::PrimeField;
+use std::marker::PhantomData;
+use halo2_proofs::plonk::{Advice, Circuit, Column, ConstraintSystem, Error};
+use halo2_proofs::circuit::{Layouter, SimpleFloorPlanner, Value};
 use std::array;
 use crate::blake2b::instructions::Blake2bInstructions;
 
 /// This is an example circuit of how you should use the Blake2b chip.
-/// [Inigo comment] This example here is strange. You should have this either in a test or example.
 #[derive(Clone)]
 pub struct Blake2bCircuit<F: PrimeField, OptimizationChip: Blake2bInstructions> {
     _ph2: PhantomData<OptimizationChip>,

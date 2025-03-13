@@ -1,7 +1,7 @@
 use super::*;
 use halo2_proofs::dev::MockProver;
 use halo2_proofs::halo2curves::bn256::Fr;
-use crate::blake2b::circuit::Blake2bCircuit as Blake2bCircuitGeneric;
+use crate::example_blake2b_circuit::Blake2bCircuit as Blake2bCircuitGeneric;
 use halo2_proofs::{
     halo2curves::bn256::{Bn256},
     plonk::{create_proof, keygen_pk, keygen_vk_with_k, prepare, ProvingKey, VerifyingKey},
