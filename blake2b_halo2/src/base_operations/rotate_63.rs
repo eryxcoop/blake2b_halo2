@@ -84,9 +84,4 @@ impl<F: PrimeField, const T: usize, const R: usize> Rotate63Config<F, T, R> {
         *offset += 1;
         Ok(result_cell)
     }
-
-    // [Inigo comment] functions that are only used in tests should not be part of the config.
-    pub fn unknown_trace() -> [[Value<F>; R]; 2] {
-        [[Value::unknown(); R]; 2]
-    }
 }
