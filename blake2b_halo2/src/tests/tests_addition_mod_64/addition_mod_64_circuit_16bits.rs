@@ -11,11 +11,11 @@ pub struct AdditionMod64Config16Bits {
     decompose_16_config: Decompose16Config,
 }
 
-pub struct AdditionMod64Circuit16Bits<F: Field> {
+pub struct AdditionMod64Circuit16Bits<F: PrimeField> {
     trace: [[Value<F>; 6]; 3],
 }
 
-impl<F: Field> AdditionMod64Circuit16Bits<F> {
+impl<F: PrimeField> AdditionMod64Circuit16Bits<F> {
     pub fn new_for_trace(trace: [[Value<F>; 6]; 3]) -> Self {
         Self {
             trace,

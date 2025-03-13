@@ -5,13 +5,12 @@ use halo2_proofs::circuit::AssignedCell;
 
 /// This config handles the bitwise negation of a 64-bit number.
 #[derive(Clone, Debug)]
-pub struct NegateConfig<F: Field> {
+pub struct NegateConfig {
     q_negate: Selector,
-    _ph: PhantomData<F>,
 }
 
-impl<F: PrimeField> NegateConfig<F> {
-    pub fn configure(meta: &mut ConstraintSystem<F>, full_number_u64: Column<Advice>) -> Self {
+impl NegateConfig {
+    pub fn configure<F: PrimeField>(meta: &mut ConstraintSystem<F>, full_number_u64: Column<Advice>) -> Self {
         let q_negate = meta.complex_selector();
 
         /// The gate that will be used to negate a number
@@ -29,7 +28,6 @@ impl<F: PrimeField> NegateConfig<F> {
 
         Self {
             q_negate,
-            _ph: PhantomData,
         }
     }
 
@@ -40,7 +38,7 @@ impl<F: PrimeField> NegateConfig<F> {
     // Not operation is used only once at the beginning of the circuit. So we think it's better
     // leave this function using the decomposition for simplicity, since it won't change the circuit
     // performance
-    pub fn generate_rows_from_cell(
+    pub fn generate_rows_from_cell<F: PrimeField>(
         &mut self,
         region: &mut Region<F>,
         offset: &mut usize,

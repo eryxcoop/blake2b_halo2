@@ -16,14 +16,14 @@ use crate::blake2b::instructions::Blake2bInstructions;
 /// This is the trait that groups the 3 optimization chips. Most of their code is the same, so the
 /// behaviour was encapsulated here. Each optimization has to override only 3 or 4 methods, besides
 /// its signature for some of the gates.
-pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>: Blake2bInstructions<F> {
+pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>: Blake2bInstructions {
     // Getters for the internal members of the chip
     fn decompose_8_config(&mut self) -> Decompose8Config;
     fn addition_config(&mut self) -> AdditionMod64Config<LIMBS, WIDTH>;
     fn generic_limb_rotation_config(&mut self) -> LimbRotation;
     fn rotate_63_config(&mut self) -> Rotate63Config<8, 9>;
     fn xor_config(&mut self) -> impl Xor;
-    fn negate_config(&mut self) -> NegateConfig<F>;
+    fn negate_config(&mut self) -> NegateConfig;
     fn constants(&self) -> Column<Fixed>;
     fn expected_final_state(&self) -> Column<Instance>;
 
@@ -105,7 +105,7 @@ pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
         limbs: [Column<Advice>; 8]) -> (Decompose8Config,
                                         LimbRotation,
                                         Rotate63Config<8, 9>,
-                                        NegateConfig<F>,
+                                        NegateConfig,
                                         Column<Fixed>,
                                         Column<Instance>) {
         Self::enforce_modulus_size();

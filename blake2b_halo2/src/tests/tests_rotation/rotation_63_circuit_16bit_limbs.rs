@@ -7,18 +7,18 @@ use std::array;
 use std::marker::PhantomData;
 
 #[derive(Clone)]
-pub struct Rotation63Config16bitLimbs<F: Field> {
+pub struct Rotation63Config16bitLimbs<F: PrimeField> {
     _ph: PhantomData<F>,
     rotation_63_config: Rotate63Config<4, 5>,
     decompose_16_config: Decompose16Config,
 }
 
-pub struct Rotation63Circuit16bitLimbs<F: Field> {
+pub struct Rotation63Circuit16bitLimbs<F: PrimeField> {
     _ph: PhantomData<F>,
     trace: [[Value<F>; 5]; 2],
 }
 
-impl<F: Field> Rotation63Circuit16bitLimbs<F> {
+impl<F: PrimeField> Rotation63Circuit16bitLimbs<F> {
     pub fn new_for_trace(trace: [[Value<F>; 5]; 2]) -> Self {
         Self {
             _ph: PhantomData,

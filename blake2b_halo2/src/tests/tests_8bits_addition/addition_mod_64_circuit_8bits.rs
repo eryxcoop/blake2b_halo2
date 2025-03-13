@@ -4,7 +4,7 @@ use halo2_proofs::circuit::SimpleFloorPlanner;
 use halo2_proofs::plonk::Circuit;
 use std::array;
 
-pub struct AdditionMod64Circuit8Bits<F: Field> {
+pub struct AdditionMod64Circuit8Bits<F: PrimeField> {
     _ph: PhantomData<F>,
     trace: [[Value<F>; 10]; 3],
 }
@@ -61,7 +61,7 @@ impl<F: PrimeField> Circuit<F> for AdditionMod64Circuit8Bits<F> {
     }
 }
 
-impl<F: Field> AdditionMod64Circuit8Bits<F> {
+impl<F: PrimeField> AdditionMod64Circuit8Bits<F> {
     pub fn new_for_trace(trace: [[Value<F>; 10]; 3]) -> Self {
         Self {
             _ph: PhantomData,

@@ -30,7 +30,7 @@ pub fn benchmark_proof_generation(c: &mut Criterion) {
     group.finish()
 }
 
-fn benchmark_proof<OptimizationChip: Blake2bInstructions<Fr>>(
+fn benchmark_proof<OptimizationChip: Blake2bInstructions>(
     params: &ParamsKZG<Bn256>,
     group: &mut BenchmarkGroup<WallTime>,
     amount_of_blocks: usize,

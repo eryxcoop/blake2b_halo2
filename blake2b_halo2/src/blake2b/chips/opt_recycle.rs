@@ -18,7 +18,7 @@ use crate::blake2b::instructions::Blake2bInstructions;
 /// all the possible 8-bit operands. Since all operations have operands with 8-bit decompositions,
 /// we can recycle (hence the name) some rows per iteration of the algorithm for every operation.
 #[derive(Clone, Debug)]
-pub struct Blake2bChipOptRecycle<F: PrimeField> {
+pub struct Blake2bChipOptRecycle {
     /// Decomposition configs
     decompose_8_config: Decompose8Config,
     /// Base oprerations configs
@@ -26,7 +26,7 @@ pub struct Blake2bChipOptRecycle<F: PrimeField> {
     generic_limb_rotation_config: LimbRotation,
     rotate_63_config: Rotate63Config<8, 9>,
     xor_config: XorTableConfig,
-    negate_config: NegateConfig<F>,
+    negate_config: NegateConfig,
     /// Column for constants of Blake2b
     constants: Column<Fixed>,
     /// Column for the expected final state of the hash
@@ -36,8 +36,8 @@ pub struct Blake2bChipOptRecycle<F: PrimeField> {
 
 /// These are the methods of the Blake2bInstructions trait. Every implementation of Blake2b should
 /// implement configuration, initialization and computation.
-impl<F: PrimeField> Blake2bInstructions<F> for Blake2bChipOptRecycle<F> {
-    fn configure(meta: &mut ConstraintSystem<F>, full_number_u64: Column<Advice>, limbs: [Column<Advice>; 8]) -> Self {
+impl Blake2bInstructions for Blake2bChipOptRecycle {
+    fn configure<F: PrimeField>(meta: &mut ConstraintSystem<F>, full_number_u64: Column<Advice>, limbs: [Column<Advice>; 8]) -> Self {
         /// Config that is the same for every optimization
         let (decompose_8_config,
             generic_limb_rotation_config,
@@ -64,13 +64,13 @@ impl<F: PrimeField> Blake2bInstructions<F> for Blake2bChipOptRecycle<F> {
         }
     }
 
-    fn initialize_with(&mut self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
+    fn initialize_with<F: PrimeField>(&mut self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
         /// Initialization that is the same for every optimization
         self.generic_initialize_with(layouter)
     }
 
     /// This methods is implemented the same way in all optimizations
-    fn compute_blake2b_hash_for_inputs(
+    fn compute_blake2b_hash_for_inputs<F: PrimeField>(
         &mut self,
         layouter: &mut impl Layouter<F>,
         output_size: usize,
@@ -84,7 +84,7 @@ impl<F: PrimeField> Blake2bInstructions<F> for Blake2bChipOptRecycle<F> {
     }
 }
 
-impl<F: PrimeField> Blake2bGeneric<F,8,10> for Blake2bChipOptRecycle<F> {
+impl<F: PrimeField> Blake2bGeneric<F,8,10> for Blake2bChipOptRecycle {
     // Getters that the trait needs for its default implementations
     fn decompose_8_config(&mut self) -> Decompose8Config {
         self.decompose_8_config.clone()
@@ -106,7 +106,7 @@ impl<F: PrimeField> Blake2bGeneric<F,8,10> for Blake2bChipOptRecycle<F> {
         self.xor_config.clone()
     }
 
-    fn negate_config(&mut self) -> NegateConfig<F> {
+    fn negate_config(&mut self) -> NegateConfig {
         self.negate_config.clone()
     }
 
@@ -145,11 +145,11 @@ impl<F: PrimeField> Blake2bGeneric<F,8,10> for Blake2bChipOptRecycle<F> {
     }
 }
 
-impl<F: PrimeField> Blake2bChipOptRecycle<F>{
+impl Blake2bChipOptRecycle{
     /// This method only exists in the opt_recycle optimization, so it's defined in a different block.
     /// opt_recycle decomposes the sum operands in 8-bit limbs, so the xor operation that comes after
     /// can recycle the result row of the addition and use it as its first operand.
-    fn xor_copying_one_parameter(
+    fn xor_copying_one_parameter<F: PrimeField>(
         &mut self,
         previous_cell: &AssignedCell<F, F>,
         cell_to_copy: &AssignedCell<F, F>,

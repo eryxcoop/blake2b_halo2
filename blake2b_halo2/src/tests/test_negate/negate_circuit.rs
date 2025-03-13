@@ -8,7 +8,6 @@ use std::array;
 use std::marker::PhantomData;
 
 pub struct NegateCircuit<F: PrimeField> {
-    _ph: PhantomData<F>,
     value: Value<F>,
     expected_result: Value<F>,
 }
@@ -16,7 +15,7 @@ pub struct NegateCircuit<F: PrimeField> {
 #[derive(Clone)]
 pub struct NegateCircuitConfig<F: PrimeField> {
     _ph: PhantomData<F>,
-    negate_config: NegateConfig<F>,
+    negate_config: NegateConfig,
     decompose_8_config: Decompose8Config,
     fixed_result: Column<Fixed>,
 }
@@ -27,7 +26,6 @@ impl<F: PrimeField> Circuit<F> for NegateCircuit<F> {
 
     fn without_witnesses(&self) -> Self {
         Self {
-            _ph: PhantomData,
             value: Value::unknown(),
             expected_result: Value::unknown(),
         }
@@ -39,7 +37,7 @@ impl<F: PrimeField> Circuit<F> for NegateCircuit<F> {
         let limbs: [Column<Advice>; 8] = array::from_fn(|_| meta.advice_column());
 
         let decompose_8_config = Decompose8Config::configure(meta, full_number_u64, limbs);
-        let negate_config = NegateConfig::<F>::configure(meta, full_number_u64);
+        let negate_config = NegateConfig::configure(meta, full_number_u64);
 
         let fixed_result = meta.fixed_column();
         meta.enable_equality(full_number_u64);
@@ -96,7 +94,6 @@ impl<F: PrimeField> Circuit<F> for NegateCircuit<F> {
 impl<F: PrimeField> NegateCircuit<F> {
     pub fn new_for(value: Value<F>, expected_result: Value<F>) -> Self {
         Self {
-            _ph: PhantomData,
             value,
             expected_result,
         }

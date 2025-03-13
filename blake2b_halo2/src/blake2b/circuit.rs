@@ -7,7 +7,7 @@ use crate::blake2b::instructions::Blake2bInstructions;
 /// This is an example circuit of how you should use the Blake2b chip.
 /// [Inigo comment] This example here is strange. You should have this either in a test or example.
 #[derive(Clone)]
-pub struct Blake2bCircuit<F: PrimeField, OptimizationChip: Blake2bInstructions<F>> {
+pub struct Blake2bCircuit<F: PrimeField, OptimizationChip: Blake2bInstructions> {
     _ph2: PhantomData<OptimizationChip>,
     /// The input and the key should be unknown for the verifier.
     input: Vec<Value<F>>,
@@ -19,13 +19,13 @@ pub struct Blake2bCircuit<F: PrimeField, OptimizationChip: Blake2bInstructions<F
 }
 
 #[derive(Clone)]
-pub struct Blake2bConfig<F: PrimeField, OptimizationChip: Blake2bInstructions<F>> {
+pub struct Blake2bConfig<F: PrimeField, OptimizationChip: Blake2bInstructions> {
     _ph: PhantomData<F>,
     /// The chip that will be used to compute the hash. We only need this.
     blake2b_chip: OptimizationChip,
 }
 
-impl<F: PrimeField, OptimizationChip: Blake2bInstructions<F>> Circuit<F>
+impl<F: PrimeField, OptimizationChip: Blake2bInstructions> Circuit<F>
     for Blake2bCircuit<F, OptimizationChip>
 {
     type Config = Blake2bConfig<F, OptimizationChip>;
@@ -84,7 +84,7 @@ impl<F: PrimeField, OptimizationChip: Blake2bInstructions<F>> Circuit<F>
     }
 }
 
-impl<F: PrimeField, OptimizationChip: Blake2bInstructions<F>> Blake2bCircuit<F, OptimizationChip> {
+impl<F: PrimeField, OptimizationChip: Blake2bInstructions> Blake2bCircuit<F, OptimizationChip> {
     pub fn new_for(
         input: Vec<Value<F>>,
         input_size: usize,

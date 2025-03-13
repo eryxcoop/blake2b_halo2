@@ -24,7 +24,7 @@ use crate::blake2b::chips::blake2b_generic::Blake2bGeneric;
 /// It also computes xor with a table that precomputes all the possible 8-bit operands (refer to
 /// XorTableConfig).
 #[derive(Clone, Debug)]
-pub struct Blake2bChipOpt4Limbs<F: PrimeField> {
+pub struct Blake2bChipOpt4Limbs {
     /// Decomposition configs
     decompose_8_config: Decompose8Config,
     decompose_16_config: Decompose16Config,
@@ -33,7 +33,7 @@ pub struct Blake2bChipOpt4Limbs<F: PrimeField> {
     generic_limb_rotation_config: LimbRotation,
     rotate_63_config: Rotate63Config<8, 9>,
     xor_config: XorTableConfig,
-    negate_config: NegateConfig<F>,
+    negate_config: NegateConfig,
     /// Column for constants of Blake2b
     constants: Column<Fixed>,
     /// Column for the expected final state of the hash
@@ -42,8 +42,8 @@ pub struct Blake2bChipOpt4Limbs<F: PrimeField> {
 
 /// These are the methods of the Blake2bInstructions trait. Every implementation of Blake2b should
 /// implement configuration, initialization and computation.
-impl<F: PrimeField> Blake2bInstructions<F> for Blake2bChipOpt4Limbs<F> {
-    fn configure(meta: &mut ConstraintSystem<F>, full_number_u64: Column<Advice>, limbs: [Column<Advice>; 8]) -> Self {
+impl Blake2bInstructions for Blake2bChipOpt4Limbs {
+    fn configure<F: PrimeField>(meta: &mut ConstraintSystem<F>, full_number_u64: Column<Advice>, limbs: [Column<Advice>; 8]) -> Self {
         /// Config that is the same for every optimization
         let (decompose_8_config,
             generic_limb_rotation_config,
@@ -71,7 +71,7 @@ impl<F: PrimeField> Blake2bInstructions<F> for Blake2bChipOpt4Limbs<F> {
         }
     }
 
-    fn initialize_with(&mut self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
+    fn initialize_with<F: PrimeField>(&mut self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
         /// Initialization that is the same for every optimization
         self.generic_initialize_with(layouter)?;
         /// Initialization that is optimization-specific. In this case we need a 16-bit lookup table.
@@ -79,7 +79,7 @@ impl<F: PrimeField> Blake2bInstructions<F> for Blake2bChipOpt4Limbs<F> {
     }
 
     /// This methods is implemented the same way in all optimizations
-    fn compute_blake2b_hash_for_inputs(
+    fn compute_blake2b_hash_for_inputs<F: PrimeField>(
         &mut self,
         layouter: &mut impl Layouter<F>,
         output_size: usize,
@@ -93,7 +93,7 @@ impl<F: PrimeField> Blake2bInstructions<F> for Blake2bChipOpt4Limbs<F> {
     }
 }
 
-impl<F: PrimeField> Blake2bGeneric<F,4,6> for Blake2bChipOpt4Limbs<F> {
+impl<F: PrimeField> Blake2bGeneric<F,4,6> for Blake2bChipOpt4Limbs {
     // Getters that the trait needs for its default implementations
     fn decompose_8_config(&mut self) -> Decompose8Config {
         self.decompose_8_config.clone()
@@ -115,7 +115,7 @@ impl<F: PrimeField> Blake2bGeneric<F,4,6> for Blake2bChipOpt4Limbs<F> {
         self.xor_config.clone()
     }
 
-    fn negate_config(&mut self) -> NegateConfig<F> {
+    fn negate_config(&mut self) -> NegateConfig {
         self.negate_config.clone()
     }
 
@@ -166,11 +166,11 @@ impl<F: PrimeField> Blake2bGeneric<F,4,6> for Blake2bChipOpt4Limbs<F> {
     }
 }
 
-impl<F: PrimeField> Blake2bChipOpt4Limbs<F> {
+impl Blake2bChipOpt4Limbs {
     /// This method only exists in the opt_4_limbs optimization, so it's defined in a different block.
     /// opt_4_limbs decomposes the sum operands in 16-bit limbs, so we need to range check them with
     /// a 16-bit lookup table. This method initializes it
-    fn populate_lookup_table_16(&mut self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
+    fn populate_lookup_table_16<F: PrimeField>(&mut self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
         self.decompose_16_config.populate_lookup_table(layouter)
     }
 }

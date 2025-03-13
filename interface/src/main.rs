@@ -11,13 +11,13 @@ use hex;
 cfg_if::cfg_if! {
     if #[cfg(feature = "opt_4_limbs")] {
         use blake2b_halo2::blake2b::chips::opt_4_limbs::Blake2bChipOpt4Limbs;
-        type Blake2bChip<F> = Blake2bChipOpt4Limbs<F>;
+        type Blake2bChip<F> = Blake2bChipOpt4Limbs;
     } else if #[cfg(feature = "opt_recycle")] {
         use blake2b_halo2::blake2b::chips::opt_recycle::Blake2bChipOptRecycle;
-        type Blake2bChip<F> = Blake2bChipOptRecycle<F>;
+        type Blake2bChip<F> = Blake2bChipOptRecycle;
     } else if #[cfg(feature = "opt_spread")] {
         use blake2b_halo2::blake2b::chips::opt_spread::Blake2bChipOptSpread;
-        type Blake2bChip<F> = Blake2bChipOptSpread<F>;
+        type Blake2bChip<F> = Blake2bChipOptSpread;
     } else {
         compile_error!("No feature selected");
     }
