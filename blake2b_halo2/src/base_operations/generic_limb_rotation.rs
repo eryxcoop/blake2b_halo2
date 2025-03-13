@@ -53,7 +53,7 @@ impl LimbRotation {
         &self,
         region: &mut Region<F>,
         offset: &mut usize,
-        decompose_config: &mut impl Decomposition<F, 8>,
+        decompose_config: &mut impl Decomposition<8>,
         input: Value<F>,
         limbs_to_rotate_to_the_right: usize,
     ) -> Result<AssignedCell<F, F>, Error> {
@@ -79,7 +79,7 @@ impl LimbRotation {
         &self,
         region: &mut Region<F>,
         offset: &mut usize,
-        decompose_config: &mut impl Decomposition<F, 8>,
+        decompose_config: &mut impl Decomposition<8>,
         input_row: [AssignedCell<F, F>; 9],
         limbs_to_rotate_to_the_right: usize,
     ) -> Result<AssignedCell<F, F>, Error> {

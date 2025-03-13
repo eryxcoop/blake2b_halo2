@@ -27,7 +27,7 @@ use crate::blake2b::chips::blake2b_generic::Blake2bGeneric;
 pub struct Blake2bChipOpt4Limbs<F: PrimeField> {
     /// Decomposition configs
     decompose_8_config: Decompose8Config,
-    decompose_16_config: Decompose16Config<F>,
+    decompose_16_config: Decompose16Config,
     /// Base oprerations configs
     addition_config: AdditionMod64Config<4, 6>,
     generic_limb_rotation_config: LimbRotation,

@@ -10,7 +10,7 @@ use std::marker::PhantomData;
 pub struct Rotation63Config16bitLimbs<F: Field> {
     _ph: PhantomData<F>,
     rotation_63_config: Rotate63Config<4, 5>,
-    decompose_16_config: Decompose16Config<F>,
+    decompose_16_config: Decompose16Config,
 }
 
 pub struct Rotation63Circuit16bitLimbs<F: Field> {

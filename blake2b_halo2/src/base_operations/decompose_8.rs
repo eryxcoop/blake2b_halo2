@@ -16,14 +16,14 @@ pub struct Decompose8Config {
     t_range: TableColumn,
 }
 
-impl<F: PrimeField> Decomposition<F, 8> for Decompose8Config {
+impl Decomposition<8> for Decompose8Config {
     const LIMB_SIZE: usize = 8;
     fn range_table_column(&self) -> TableColumn {
         self.t_range
     }
 
     /// The full number and the limbs are not owned by the config.
-    fn configure(
+    fn configure<F: PrimeField>(
         meta: &mut ConstraintSystem<F>,
         full_number_u64: Column<Advice>,
         limbs: [Column<Advice>; 8],
@@ -69,7 +69,7 @@ impl<F: PrimeField> Decomposition<F, 8> for Decompose8Config {
     /// Given an explicit vector of values, it assigns the full number and the limbs in a row of the trace
     // If you are assuming a structure in the input `row`, you should specify it in the
     // docs of the function (e.g. row[0] is a u64 value, and the rest is its decomposition).
-    fn populate_row_from_values(
+    fn populate_row_from_values<F: PrimeField>(
         &mut self,
         region: &mut Region<F>,
         // If you know this value is going to have size 9, you should use an array here
@@ -92,7 +92,7 @@ impl<F: PrimeField> Decomposition<F, 8> for Decompose8Config {
     }
 
     /// Given a value of 64 bits, it returns a row with the assigned cells for the full number and the limbs
-    fn generate_row_from_value(
+    fn generate_row_from_value<F: PrimeField>(
         &mut self,
         region: &mut Region<F>,
         value: Value<F>,
@@ -104,7 +104,7 @@ impl<F: PrimeField> Decomposition<F, 8> for Decompose8Config {
     }
 
     /// Given 8 8-bit limbs, it returns a row with the assigned cells for the full number and the limbs
-    fn generate_row_from_bytes(
+    fn generate_row_from_bytes<F: PrimeField>(
         &mut self,
         region: &mut Region<F>,
         bytes: [Value<F>; 8],
@@ -124,7 +124,7 @@ impl<F: PrimeField> Decomposition<F, 8> for Decompose8Config {
 
     /// Given a cell with a 64-bit value, it returns a new row with the copied full number and the
     /// decomposition in 8-bit limbs
-    fn generate_row_from_cell(
+    fn generate_row_from_cell<F: PrimeField>(
         &mut self,
         region: &mut Region<F>,
         cell: &AssignedCell<F, F>,
@@ -138,17 +138,12 @@ impl<F: PrimeField> Decomposition<F, 8> for Decompose8Config {
         Ok(new_cells)
     }
 
-    /// Given a value and a limb index, it returns the value of the limb
-    fn get_limb_from(value: Value<F>, limb_number: usize) -> Value<F> {
-        value.and_then(|v| auxiliar_functions::get_value_limb_from_field(v, limb_number))
-    }
-
     /// Convenience method for generating a row from a value and keeping the full row.
     /// Given a Value, we might want to use it as an operand in the circuit, and sometimes we need
     /// to establish constraints over the result's limbs. That's why we need a way to retrieve the
     /// full row that was created from that value. An example of this could be the Generic Limb
     /// Rotation Operation, where we need to establish copy constraints over the rotated limbs.
-    fn generate_row_from_value_and_keep_row(
+    fn generate_row_from_value_and_keep_row<F: PrimeField>(
         // why is this mutable?
         &mut self,
         region: &mut Region<F>,
@@ -171,5 +166,10 @@ impl<F: PrimeField> Decomposition<F, 8> for Decompose8Config {
         }
 
         Ok(result)
+    }
+
+    /// Given a value and a limb index, it returns the value of the limb
+    fn get_limb_from<F: PrimeField>(value: Value<F>, limb_number: usize) -> Value<F> {
+        value.and_then(|v| auxiliar_functions::get_value_limb_from_field(v, limb_number))
     }
 }

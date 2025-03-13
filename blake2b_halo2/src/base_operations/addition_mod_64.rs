@@ -62,7 +62,7 @@ impl<const T: usize, const R: usize> AdditionMod64Config<T, R> {
         &mut self,
         layouter: &mut impl Layouter<F>,
         addition_trace: [[Value<F>; R]; 3],
-        decompose_config: &mut impl Decomposition<F, T>,
+        decompose_config: &mut impl Decomposition<T>,
     ) -> Result<(), Error> {
         layouter.assign_region(
             || "decompose",
@@ -104,7 +104,7 @@ impl<const T: usize, const R: usize> AdditionMod64Config<T, R> {
         offset: &mut usize,
         previous_cell: &AssignedCell<F, F>,
         cell_to_copy: &AssignedCell<F, F>,
-        decompose_config: &mut impl Decomposition<F, T>,
+        decompose_config: &mut impl Decomposition<T>,
         use_last_cell_as_first_operand: bool,
     ) -> Result<[AssignedCell<F, F>; 2], Error> {
         let (result_value, carry_value) =
@@ -142,7 +142,7 @@ impl<const T: usize, const R: usize> AdditionMod64Config<T, R> {
         region: &mut Region<F>,
         row: Vec<Value<F>>,
         offset: usize,
-        decompose_config: &mut impl Decomposition<F, T>,
+        decompose_config: &mut impl Decomposition<T>,
     ) -> Result<(), Error> {
         decompose_config.populate_row_from_values(region, row.clone(), offset)?;
         region.assign_advice(|| "carry", self.carry, offset, || row[R - 1])?;

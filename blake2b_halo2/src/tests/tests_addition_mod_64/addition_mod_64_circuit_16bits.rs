@@ -6,32 +6,29 @@ use std::array;
 use crate::base_operations::addition_mod_64::AdditionMod64Config;
 
 #[derive(Clone)]
-pub struct AdditionMod64Config16Bits<F: Field> {
+pub struct AdditionMod64Config16Bits {
     addition_mod_64_config: AdditionMod64Config<4, 6>,
-    decompose_16_config: Decompose16Config<F>,
+    decompose_16_config: Decompose16Config,
 }
 
 pub struct AdditionMod64Circuit16Bits<F: Field> {
-    _ph: PhantomData<F>,
     trace: [[Value<F>; 6]; 3],
 }
 
 impl<F: Field> AdditionMod64Circuit16Bits<F> {
     pub fn new_for_trace(trace: [[Value<F>; 6]; 3]) -> Self {
         Self {
-            _ph: PhantomData,
             trace,
         }
     }
 }
 
 impl<F: PrimeField> Circuit<F> for AdditionMod64Circuit16Bits<F> {
-    type Config = AdditionMod64Config16Bits<F>;
+    type Config = AdditionMod64Config16Bits;
     type FloorPlanner = SimpleFloorPlanner;
 
     fn without_witnesses(&self) -> Self {
         Self {
-            _ph: PhantomData,
             trace: [[Value::unknown(); 6]; 3],
         }
     }

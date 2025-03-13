@@ -5,18 +5,18 @@ use halo2_proofs::poly::Rotation;
 
 /// This trait enables indistinct decomposition of a number into a set of limbs.
 /// T is the amount of limbs that the number will be decomposed into.
-pub trait Decomposition<F: PrimeField, const T: usize> {
+pub trait Decomposition<const T: usize> {
     const LIMB_SIZE: usize;
 
     fn range_table_column(&self) -> TableColumn;
 
-    fn configure(
+    fn configure<F: PrimeField>(
         meta: &mut ConstraintSystem<F>,
         full_number_u64: Column<Advice>,
         limbs: [Column<Advice>; T],
     ) -> Self;
 
-    fn populate_row_from_values(
+    fn populate_row_from_values<F: PrimeField>(
         &mut self,
         region: &mut Region<F>,
         row: Vec<Value<F>>,
@@ -24,7 +24,7 @@ pub trait Decomposition<F: PrimeField, const T: usize> {
     ) -> Result<Vec<AssignedCell<F, F>>, Error>;
 
     /// Populates the table for the range check
-    fn populate_lookup_table(&self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
+    fn populate_lookup_table<F: PrimeField>(&self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
         layouter.assign_table(
             || format!("range {}-bit check table", Self::LIMB_SIZE),
             |mut table| {
@@ -41,7 +41,7 @@ pub trait Decomposition<F: PrimeField, const T: usize> {
         )
     }
 
-    fn range_check_for_limb(
+    fn range_check_for_limb<F: PrimeField>(
         meta: &mut ConstraintSystem<F>,
         limb: &Column<Advice>,
         q_decompose: &Selector,
@@ -54,21 +54,21 @@ pub trait Decomposition<F: PrimeField, const T: usize> {
         });
     }
 
-    fn generate_row_from_value(
+    fn generate_row_from_value<F: PrimeField>(
         &mut self,
         region: &mut Region<F>,
         value: Value<F>,
         offset: usize,
     ) -> Result<AssignedCell<F, F>, Error>;
 
-    fn generate_row_from_bytes(
+    fn generate_row_from_bytes<F: PrimeField>(
         &mut self,
         _region: &mut Region<F>,
         _bytes: [Value<F>; 8],
         _offset: usize,
     ) -> Result<Vec<AssignedCell<F, F>>, Error>;
 
-    fn generate_row_from_cell(
+    fn generate_row_from_cell<F: PrimeField>(
         &mut self,
         region: &mut Region<F>,
         cell: &AssignedCell<F, F>,
@@ -81,12 +81,12 @@ pub trait Decomposition<F: PrimeField, const T: usize> {
         Ok(vec![new_cell])
     }
 
-    fn generate_row_from_value_and_keep_row(
+    fn generate_row_from_value_and_keep_row<F: PrimeField>(
         &mut self,
         _region: &mut Region<F>,
         _value: Value<F>,
         _offset: usize,
     ) -> Result<Vec<AssignedCell<F, F>>, Error>;
 
-    fn get_limb_from(value: Value<F>, limb_number: usize) -> Value<F>;
+    fn get_limb_from<F: PrimeField>(value: Value<F>, limb_number: usize) -> Value<F>;
 }
