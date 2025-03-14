@@ -71,7 +71,7 @@ impl Decomposition<8> for Decompose8Config {
     // If you are assuming a structure in the input `row`, you should specify it in the
     // docs of the function (e.g. row[0] is a u64 value, and the rest is its decomposition).
     fn populate_row_from_values<F: PrimeField>(
-        &mut self,
+        &self,
         region: &mut Region<F>,
         // If you know this value is going to have size 9, you should use an array here
         // row: [Value<F>; 9]
@@ -94,7 +94,7 @@ impl Decomposition<8> for Decompose8Config {
 
     /// Given a value of 64 bits, it returns a row with the assigned cells for the full number and the limbs
     fn generate_row_from_value<F: PrimeField>(
-        &mut self,
+        &self,
         region: &mut Region<F>,
         value: Value<F>,
         offset: usize,
@@ -106,7 +106,7 @@ impl Decomposition<8> for Decompose8Config {
 
     /// Given 8 8-bit limbs, it returns a row with the assigned cells for the full number and the limbs
     fn generate_row_from_bytes<F: PrimeField>(
-        &mut self,
+        &self,
         region: &mut Region<F>,
         bytes: [Value<F>; 8],
         offset: usize,
@@ -126,7 +126,7 @@ impl Decomposition<8> for Decompose8Config {
     /// Given a cell with a 64-bit value, it returns a new row with the copied full number and the
     /// decomposition in 8-bit limbs
     fn generate_row_from_cell<F: PrimeField>(
-        &mut self,
+        &self,
         region: &mut Region<F>,
         cell: &AssignedCell<F, F>,
         offset: usize,
@@ -145,8 +145,7 @@ impl Decomposition<8> for Decompose8Config {
     /// full row that was created from that value. An example of this could be the Generic Limb
     /// Rotation Operation, where we need to establish copy constraints over the rotated limbs.
     fn generate_row_from_value_and_keep_row<F: PrimeField>(
-        // why is this mutable?
-        &mut self,
+        &self,
         region: &mut Region<F>,
         value: Value<F>,
         offset: usize,

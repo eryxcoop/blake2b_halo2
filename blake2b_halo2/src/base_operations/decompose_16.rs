@@ -62,7 +62,7 @@ impl Decomposition<4> for Decompose16Config {
 
     /// Given an explicit vector of values, it assigns the full number and the limbs in a row of the trace
     fn populate_row_from_values<F: PrimeField>(
-        &mut self,
+        &self,
         region: &mut Region<F>,
         row: Vec<Value<F>>,
         offset: usize,
@@ -79,7 +79,7 @@ impl Decomposition<4> for Decompose16Config {
 
     /// Given a value of 64 bits, it returns a row with the assigned cells for the full number and the limbs
     fn generate_row_from_value<F: PrimeField>(
-        &mut self,
+        &self,
         region: &mut Region<F>,
         value: Value<F>,
         offset: usize,
@@ -97,7 +97,7 @@ impl Decomposition<4> for Decompose16Config {
     }
 
     fn generate_row_from_bytes<F: PrimeField>(
-        &mut self,
+        &self,
         _region: &mut Region<F>,
         _bytes: [Value<F>; 8],
         _offset: usize,
@@ -106,7 +106,7 @@ impl Decomposition<4> for Decompose16Config {
     }
 
     fn generate_row_from_value_and_keep_row<F: PrimeField>(
-        &mut self,
+        &self,
         _region: &mut Region<F>,
         _value: Value<F>,
         _offset: usize,
