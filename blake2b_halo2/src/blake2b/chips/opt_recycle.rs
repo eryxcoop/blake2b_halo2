@@ -149,7 +149,7 @@ impl<F: PrimeField> Blake2bGeneric<F, 8, 10> for Blake2bChipOptRecycle {
             offset,
             lhs,
             rhs,
-            &mut self.decompose_8_config,
+            &self.decompose_8_config,
             false,
         )?[0]
             .clone();
@@ -171,7 +171,7 @@ impl<F: PrimeField> Blake2bGeneric<F, 8, 10> for Blake2bChipOptRecycle {
             offset,
             previous_cell,
             cell_to_copy,
-            &mut self.decompose_8_config,
+            &self.decompose_8_config,
             true,
         )?[0]
             .clone())

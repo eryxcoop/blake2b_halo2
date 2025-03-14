@@ -54,7 +54,7 @@ impl<F: PrimeField> Circuit<F> for AdditionMod64Circuit8Bits<F> {
         config.sum_8bits_config.populate_addition_rows(
             &mut layouter,
             self.trace,
-            &mut config.decompose_8_config,
+            &config.decompose_8_config,
         )?;
         Ok(())
     }

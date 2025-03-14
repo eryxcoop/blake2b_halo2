@@ -56,7 +56,7 @@ impl<F: PrimeField> Circuit<F> for AdditionMod64Circuit16Bits<F> {
         config.addition_mod_64_config.populate_addition_rows(
             &mut layouter,
             self.trace,
-            &mut config.decompose_16_config,
+            &config.decompose_16_config,
         )?;
         Ok(())
     }

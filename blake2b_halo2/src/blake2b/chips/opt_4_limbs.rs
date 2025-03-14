@@ -160,7 +160,7 @@ impl<F: PrimeField> Blake2bGeneric<F, 4, 6> for Blake2bChipOpt4Limbs {
             offset,
             lhs,
             rhs,
-            &mut self.decompose_16_config,
+            &self.decompose_16_config,
             false,
         )?[0]
             .clone();
@@ -182,7 +182,7 @@ impl<F: PrimeField> Blake2bGeneric<F, 4, 6> for Blake2bChipOpt4Limbs {
             offset,
             previous_cell,
             cell_to_copy,
-            &mut self.decompose_16_config,
+            &self.decompose_16_config,
             true,
         )?[0]
             .clone())
