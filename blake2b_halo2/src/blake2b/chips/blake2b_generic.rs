@@ -3,7 +3,6 @@ use halo2_proofs::circuit::{AssignedCell, Layouter, Region, Value};
 use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Error, Fixed, Instance};
 use num_bigint::BigUint;
 use crate::auxiliar_functions::value_for;
-use crate::base_operations::addition_mod_64::AdditionMod64Config;
 use crate::base_operations::decompose_8::Decompose8Config;
 use crate::base_operations::decomposition::Decomposition;
 use crate::base_operations::generic_limb_rotation::LimbRotation;
@@ -15,12 +14,11 @@ use crate::blake2b::instructions::Blake2bInstructions;
 /// This is the trait that groups the 3 optimization chips. Most of their code is the same, so the
 /// behaviour was encapsulated here. Each optimization has to override only 3 or 4 methods, besides
 /// its signature for some of the gates.
-pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
+pub trait Blake2bGeneric<F: PrimeField>:
     Blake2bInstructions
 {
     // Getters for the internal members of the chip
     fn decompose_8_config(&mut self) -> Decompose8Config;
-    fn addition_config(&mut self) -> AdditionMod64Config<LIMBS, WIDTH>;
     fn generic_limb_rotation_config(&mut self) -> LimbRotation;
     fn rotate_63_config(&mut self) -> Rotate63Config<8, 9>;
     fn xor_config(&mut self) -> impl Xor;

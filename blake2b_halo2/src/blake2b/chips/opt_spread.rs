@@ -99,14 +99,10 @@ impl Blake2bInstructions for Blake2bChipOptSpread {
     }
 }
 
-impl<F: PrimeField> Blake2bGeneric<F, 8, 10> for Blake2bChipOptSpread {
+impl<F: PrimeField> Blake2bGeneric<F> for Blake2bChipOptSpread {
     // Getters that the trait needs for its default implementations
     fn decompose_8_config(&mut self) -> Decompose8Config {
         self.decompose_8_config.clone()
-    }
-
-    fn addition_config(&mut self) -> AdditionMod64Config<8, 10> {
-        self.addition_config.clone()
     }
 
     fn generic_limb_rotation_config(&mut self) -> LimbRotation {
