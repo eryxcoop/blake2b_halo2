@@ -8,7 +8,7 @@ use crate::base_operations::generic_limb_rotation::LimbRotation;
 use crate::base_operations::negate::NegateConfig;
 use crate::base_operations::rotate_63::Rotate63Config;
 use crate::base_operations::xor::Xor;
-use crate::blake2b::chips::utils::{compute_processed_bytes_count_value_for_iteration, constrain_initial_state, enforce_input_sizes, enforce_modulus_size, get_full_number_of_each, get_total_blocks_count, iv_constants, ABCD, BLAKE2B_BLOCK_SIZE, SIGMA};
+use crate::blake2b::chips::utils::{compute_processed_bytes_count_value_for_iteration, constrain_initial_state, constrain_padding_cells_to_equal_zero, enforce_input_sizes, enforce_modulus_size, get_full_number_of_each, get_total_blocks_count, iv_constants, ABCD, BLAKE2B_BLOCK_SIZE, SIGMA};
 
 /// This is the trait that groups the 3 optimization chips. Most of their code is the same, so the
 /// behaviour was encapsulated here. Each optimization has to override only 3 or 4 methods, besides
@@ -234,7 +234,7 @@ pub trait Blake2bGeneric: Clone {
                     (BLAKE2B_BLOCK_SIZE - input_size % BLAKE2B_BLOCK_SIZE)
                         % BLAKE2B_BLOCK_SIZE
                 };
-                self.constrain_padding_cells_to_equal_zero(
+                constrain_padding_cells_to_equal_zero(
                     region,
                     zeros_amount_for_input_padding,
                     &current_block_rows,
@@ -245,7 +245,7 @@ pub trait Blake2bGeneric: Clone {
             if is_key_block {
                 /// Complete the block with zeroes
                 let zeros_amount_for_key_padding = BLAKE2B_BLOCK_SIZE - key.len();
-                self.constrain_padding_cells_to_equal_zero(
+                constrain_padding_cells_to_equal_zero(
                     region,
                     zeros_amount_for_key_padding,
                     &current_block_rows,
@@ -594,34 +594,6 @@ pub trait Blake2bGeneric: Clone {
         let ret = self.decompose_8_config().generate_row_from_value(region, value, *offset);
         *offset += 1;
         ret
-    }
-
-    /// This method constrains the padding cells to equal zero. The amount of constraints
-    /// depends on the input size and the key size, which makes sense since those values are known
-    /// at circuit building time.
-    /// The idea is that since we decompose the state into 8 limbs, we already have the input
-    /// bytes in the trace. It's just a matter of iterating the cells in the correct order and knowing
-    /// which ones should equal zero. In Blake2b the padding is allways 0.
-    fn constrain_padding_cells_to_equal_zero<F: PrimeField>(
-        &self,
-        region: &mut Region<F>,
-        zeros_amount: usize,
-        current_block_rows: &[Vec<AssignedCell<F, F>>; 16],
-        zero_constant_cell: &AssignedCell<F, F>,
-    ) -> Result<(), Error> {
-        let mut constrained_padding_cells = 0;
-        for row in (0..16).rev() {
-            for limb in (1..9).rev() {
-                if constrained_padding_cells < zeros_amount {
-                    region.constrain_equal(
-                        current_block_rows[row][limb].cell(),
-                        zero_constant_cell.cell(),
-                    )?;
-                    constrained_padding_cells += 1;
-                }
-            }
-        }
-        Ok(())
     }
 
     #[allow(clippy::too_many_arguments)]

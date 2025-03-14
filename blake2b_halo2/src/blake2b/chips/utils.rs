@@ -80,6 +80,33 @@ pub fn get_total_blocks_count(
     }
 }
 
+/// This method constrains the padding cells to equal zero. The amount of constraints
+/// depends on the input size and the key size, which makes sense since those values are known
+/// at circuit building time.
+/// The idea is that since we decompose the state into 8 limbs, we already have the input
+/// bytes in the trace. It's just a matter of iterating the cells in the correct order and knowing
+/// which ones should equal zero. In Blake2b the padding is allways 0.
+pub fn constrain_padding_cells_to_equal_zero<F: PrimeField>(
+    region: &mut Region<F>,
+    zeros_amount: usize,
+    current_block_rows: &[Vec<AssignedCell<F, F>>; 16],
+    zero_constant_cell: &AssignedCell<F, F>,
+) -> Result<(), Error> {
+    let mut constrained_padding_cells = 0;
+    for row in (0..16).rev() {
+        for limb in (1..9).rev() {
+            if constrained_padding_cells < zeros_amount {
+                region.constrain_equal(
+                    current_block_rows[row][limb].cell(),
+                    zero_constant_cell.cell(),
+                )?;
+                constrained_padding_cells += 1;
+            }
+        }
+    }
+    Ok(())
+}
+
 // ----- Blake2b constants -----
 
 pub const BLAKE2B_BLOCK_SIZE: usize = 128;
