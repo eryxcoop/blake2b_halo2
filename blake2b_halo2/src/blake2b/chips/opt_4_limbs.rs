@@ -42,12 +42,8 @@ impl Blake2bGeneric for Blake2bChipOpt4Limbs {
         limbs: [Column<Advice>; 8],
     ) -> Self {
         /// Config that is the same for every optimization
-        let (
-            decompose_8_config,
-            generic_limb_rotation_config,
-            rotate_63_config,
-            negate_config,
-        ) = Self::generic_configure(meta, full_number_u64, limbs);
+        let (decompose_8_config, generic_limb_rotation_config, rotate_63_config, negate_config) =
+            Self::generic_configure(meta, full_number_u64, limbs);
 
         /// Config that is optimization-specific
         let addition_config =

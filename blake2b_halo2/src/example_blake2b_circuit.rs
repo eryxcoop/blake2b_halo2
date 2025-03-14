@@ -23,7 +23,7 @@ pub struct Blake2bConfig<F: PrimeField, OptimizationChip: Blake2bGeneric> {
     _ph: PhantomData<F>,
     /// The chip that will be used to compute the hash. We only need this.
     blake2b_chip: OptimizationChip,
-    expected_final_state: Column<Instance>
+    expected_final_state: Column<Instance>,
 }
 
 impl<F: PrimeField, OptimizationChip: Blake2bGeneric> Circuit<F>
@@ -65,7 +65,7 @@ impl<F: PrimeField, OptimizationChip: Blake2bGeneric> Circuit<F>
         Self::Config {
             _ph: PhantomData,
             blake2b_chip,
-            expected_final_state
+            expected_final_state,
         }
     }
 
@@ -89,9 +89,13 @@ impl<F: PrimeField, OptimizationChip: Blake2bGeneric> Circuit<F>
             &self.key,
         )?;
 
-        /// Assert results 
+        /// Assert results
         config.blake2b_chip.constraint_public_inputs_to_equal_computation_results(
-            &mut layouter, result_cells, self.output_size, config.expected_final_state)
+            &mut layouter,
+            result_cells,
+            self.output_size,
+            config.expected_final_state,
+        )
     }
 }
 

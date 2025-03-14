@@ -33,12 +33,8 @@ impl Blake2bGeneric for Blake2bChipOptSpread {
         limbs: [Column<Advice>; 8],
     ) -> Self {
         /// Config that is the same for every optimization
-        let (
-            decompose_8_config,
-            generic_limb_rotation_config,
-            rotate_63_config,
-            negate_config,
-        ) = Self::generic_configure(meta, full_number_u64, limbs);
+        let (decompose_8_config, generic_limb_rotation_config, rotate_63_config, negate_config) =
+            Self::generic_configure(meta, full_number_u64, limbs);
 
         /// Config that is optimization-specific
         /// An extra carry column is needed for the sum operation with 8 limbs.

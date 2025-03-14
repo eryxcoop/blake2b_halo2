@@ -7,7 +7,12 @@ use crate::base_operations::generic_limb_rotation::LimbRotation;
 use crate::base_operations::negate::NegateConfig;
 use crate::base_operations::rotate_63::Rotate63Config;
 use crate::base_operations::xor::Xor;
-use crate::blake2b::chips::utils::{compute_processed_bytes_count_value_for_iteration, constrain_initial_state, constrain_padding_cells_to_equal_zero, enforce_input_sizes, enforce_modulus_size, get_full_number_of_each, get_total_blocks_count, iv_constant_values, iv_constants, ABCD, BLAKE2B_BLOCK_SIZE, SIGMA};
+use crate::blake2b::chips::utils::{
+    compute_processed_bytes_count_value_for_iteration, constrain_initial_state,
+    constrain_padding_cells_to_equal_zero, enforce_input_sizes, enforce_modulus_size,
+    get_full_number_of_each, get_total_blocks_count, iv_constant_values, iv_constants, ABCD,
+    BLAKE2B_BLOCK_SIZE, SIGMA,
+};
 
 /// This is the trait that groups the 3 optimization chips. Most of their code is the same, so the
 /// behaviour was encapsulated here. Each optimization has to override only 3 or 4 methods, besides
@@ -45,7 +50,7 @@ pub trait Blake2bGeneric: Clone {
         key_size: usize,
         input: &[Value<F>],
         key: &[Value<F>],
-    ) -> Result<[AssignedCell<F,F>; 64], Error> {
+    ) -> Result<[AssignedCell<F, F>; 64], Error> {
         enforce_input_sizes(output_size, key_size);
 
         /// All the computation is performed inside a single region. Some optimizations take advantage
@@ -56,12 +61,18 @@ pub trait Blake2bGeneric: Clone {
                 /// Initialize in 0 the offset for the advice cells in the region
                 let mut advice_offset: usize = 0;
 
-                let (iv_constant_cells,
+                let (
+                    iv_constant_cells,
                     init_const_state_0,
                     output_size_constant,
                     key_size_constant_shifted,
-                    zero_constant
-                ) = self.assign_constant_advice_cells(output_size, key_size, &mut region, &mut advice_offset)?;
+                    zero_constant,
+                ) = self.assign_constant_advice_cells(
+                    output_size,
+                    key_size,
+                    &mut region,
+                    &mut advice_offset,
+                )?;
 
                 let mut global_state = self.compute_initial_state(
                     &mut region,
@@ -87,17 +98,47 @@ pub trait Blake2bGeneric: Clone {
     }
 
     /// Assign all the constants at the beginning
-    fn assign_constant_advice_cells<F: PrimeField>(&self, output_size: usize, key_size: usize, mut region: &mut Region<F>, mut advice_offset: &mut usize) -> Result<([AssignedCell<F, F>; 8], AssignedCell<F, F>, AssignedCell<F, F>, AssignedCell<F, F>, AssignedCell<F, F>), Error> {
+    fn assign_constant_advice_cells<F: PrimeField>(
+        &self,
+        output_size: usize,
+        key_size: usize,
+        mut region: &mut Region<F>,
+        mut advice_offset: &mut usize,
+    ) -> Result<
+        (
+            [AssignedCell<F, F>; 8],
+            AssignedCell<F, F>,
+            AssignedCell<F, F>,
+            AssignedCell<F, F>,
+            AssignedCell<F, F>,
+        ),
+        Error,
+    > {
         let iv_constant_cells: [AssignedCell<F, F>; 8] =
             self.assign_iv_constants_to_fixed_cells(&mut region, &mut advice_offset)?;
         *advice_offset += 1;
-        let init_const_state_0 = self.assign_constant_in_cell(&mut region, advice_offset, 0x01010000, "state 0 xor", 0)?;
-        let output_size_constant = self.assign_constant_in_cell(&mut region, advice_offset, output_size, "output size", 1)?;
-        let key_size_constant_shifted = self.assign_constant_in_cell(&mut region, advice_offset, key_size << 8, "key size", 2)?;
-        let zero_constant = self.assign_constant_in_cell(&mut region, advice_offset, 0, "zero", 3)?;
+        let init_const_state_0 =
+            self.assign_constant_in_cell(&mut region, advice_offset, 0x01010000, "state 0 xor", 0)?;
+        let output_size_constant = self.assign_constant_in_cell(
+            &mut region,
+            advice_offset,
+            output_size,
+            "output size",
+            1,
+        )?;
+        let key_size_constant_shifted =
+            self.assign_constant_in_cell(&mut region, advice_offset, key_size << 8, "key size", 2)?;
+        let zero_constant =
+            self.assign_constant_in_cell(&mut region, advice_offset, 0, "zero", 3)?;
         *advice_offset += 1;
 
-        Ok((iv_constant_cells, init_const_state_0, output_size_constant, key_size_constant_shifted, zero_constant))
+        Ok((
+            iv_constant_cells,
+            init_const_state_0,
+            output_size_constant,
+            key_size_constant_shifted,
+            zero_constant,
+        ))
     }
 
     /// Assign constants to advice cell to use later on
@@ -107,8 +148,10 @@ pub trait Blake2bGeneric: Clone {
         offset: &usize,
         constant: usize,
         name: &str,
-        limb_index: usize) -> Result<AssignedCell<F,F>, Error> {
-        self.decompose_8_config().assign_constant_in_cell(region, constant, *offset, name, limb_index)
+        limb_index: usize,
+    ) -> Result<AssignedCell<F, F>, Error> {
+        self.decompose_8_config()
+            .assign_constant_in_cell(region, constant, *offset, name, limb_index)
     }
 
     /// This method handles the part of the configuration that is generic to all optimizations.
@@ -117,12 +160,7 @@ pub trait Blake2bGeneric: Clone {
         meta: &mut ConstraintSystem<F>,
         full_number_u64: Column<Advice>,
         limbs: [Column<Advice>; 8],
-    ) -> (
-        Decompose8Config,
-        LimbRotation,
-        Rotate63Config<8, 9>,
-        NegateConfig,
-    ) {
+    ) -> (Decompose8Config, LimbRotation, Rotate63Config<8, 9>, NegateConfig) {
         enforce_modulus_size::<F>();
         let decompose_8_config = Decompose8Config::configure(meta, full_number_u64, limbs);
         let rotate_63_config = Rotate63Config::configure(meta, full_number_u64);
@@ -132,12 +170,7 @@ pub trait Blake2bGeneric: Clone {
         meta.enable_equality(constants);
         meta.enable_constant(constants);
 
-        (
-            decompose_8_config,
-            LimbRotation,
-            rotate_63_config,
-            negate_config,
-        )
+        (decompose_8_config, LimbRotation, rotate_63_config, negate_config)
     }
 
     /// This method handles the part of the initialization of the chip that is generic to all
@@ -564,9 +597,18 @@ pub trait Blake2bGeneric: Clone {
         region: &mut Region<F>,
         offset: &usize,
     ) -> Result<[AssignedCell<F, F>; 8], Error> {
-        let ret: [AssignedCell<F,F>; 8] = iv_constants().iter().enumerate()
+        let ret: [AssignedCell<F, F>; 8] = iv_constants()
+            .iter()
+            .enumerate()
             .map(|(index, constant)| {
-                self.assign_constant_in_cell(region, offset, *constant as usize, "iv constants", index).unwrap()
+                self.assign_constant_in_cell(
+                    region,
+                    offset,
+                    *constant as usize,
+                    "iv constants",
+                    index,
+                )
+                .unwrap()
             })
             .collect::<Vec<AssignedCell<F, F>>>()
             .try_into()
@@ -680,7 +722,7 @@ pub trait Blake2bGeneric: Clone {
         layouter: &mut impl Layouter<F>,
         global_state_bytes: [AssignedCell<F, F>; 64],
         output_size: usize,
-        public_inputs_instance_column: Column<Instance>
+        public_inputs_instance_column: Column<Instance>,
     ) -> Result<(), Error> {
         for (i, global_state_byte_cell) in global_state_bytes.iter().enumerate().take(output_size) {
             layouter.constrain_instance(

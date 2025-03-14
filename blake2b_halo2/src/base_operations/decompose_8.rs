@@ -24,12 +24,13 @@ impl Decompose8Config {
         constant: usize,
         offset: usize,
         name: &str,
-        limb_index: usize) -> Result<AssignedCell<F,F>, Error> {
+        limb_index: usize,
+    ) -> Result<AssignedCell<F, F>, Error> {
         region.assign_advice_from_constant(
-            ||name,
+            || name,
             self.limbs[limb_index],
             offset,
-            F::from(constant as u64)
+            F::from(constant as u64),
         )
     }
 }

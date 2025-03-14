@@ -138,7 +138,12 @@ pub const ABCD: [[usize; 4]; 8] = [
 ];
 
 pub fn iv_constant_values<F: PrimeField>() -> [Value<F>; 8] {
-    iv_constants().iter().map(|constant| value_for(*constant)).collect::<Vec<_>>().try_into().unwrap()
+    iv_constants()
+        .iter()
+        .map(|constant| value_for(*constant))
+        .collect::<Vec<_>>()
+        .try_into()
+        .unwrap()
 }
 
 pub fn iv_constants() -> [u64; 8] {
