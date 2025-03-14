@@ -8,7 +8,7 @@ use crate::base_operations::generic_limb_rotation::LimbRotation;
 use crate::base_operations::negate::NegateConfig;
 use crate::base_operations::rotate_63::Rotate63Config;
 use crate::base_operations::xor::Xor;
-use crate::blake2b::chips::utils::{constrain_initial_state, enforce_input_sizes, enforce_modulus_size, get_full_number_of_each};
+use crate::blake2b::chips::utils::{compute_processed_bytes_count_value_for_iteration, constrain_initial_state, enforce_input_sizes, enforce_modulus_size, get_full_number_of_each, get_total_blocks_count};
 
 /// This is the trait that groups the 3 optimization chips. Most of their code is the same, so the
 /// behaviour was encapsulated here. Each optimization has to override only 3 or 4 methods, besides
@@ -191,7 +191,7 @@ pub trait Blake2bGeneric: Clone {
         let is_input_empty = input_size == 0;
 
         let input_blocks = input_size.div_ceil(Self::BLAKE2B_BLOCK_SIZE);
-        let total_blocks = Self::get_total_blocks_count(input_blocks, is_input_empty, is_key_empty);
+        let total_blocks = get_total_blocks_count(input_blocks, is_input_empty, is_key_empty);
         let last_input_block_index = if is_input_empty { 0 } else { input_blocks - 1 };
 
         /// Main loop
@@ -201,7 +201,7 @@ pub trait Blake2bGeneric: Clone {
 
             /// This is an intermediate value in the Blake2b algorithm. It represents the amount of
             /// bytes processed so far.
-            let processed_bytes_count = Self::compute_processed_bytes_count_value_for_iteration(
+            let processed_bytes_count = compute_processed_bytes_count_value_for_iteration(
                 i,
                 is_last_block,
                 input_size,
@@ -707,45 +707,6 @@ pub trait Blake2bGeneric: Clone {
         let ret = self.decompose_8_config().generate_row_from_bytes(region, bytes, *offset);
         *offset += 1;
         ret
-    }
-
-    /// The 'processed_bytes_count' is a variable in the algorithm that changes with every iteration,
-    /// in each iteration we compute the new value for it.
-    fn compute_processed_bytes_count_value_for_iteration<F: PrimeField>(
-        iteration: usize,
-        is_last_block: bool,
-        input_size: usize,
-        empty_key: bool,
-    ) -> Value<F> {
-        let processed_bytes_count = if is_last_block {
-            input_size + if empty_key { 0 } else { 128 }
-        } else {
-            128 * (iteration + 1)
-        };
-
-        Value::known(F::from(processed_bytes_count as u64))
-    }
-
-    /// Computes the edge cases in the amount of blocks to process.
-    fn get_total_blocks_count(
-        input_blocks: usize,
-        is_input_empty: bool,
-        is_key_empty: bool,
-    ) -> usize {
-        if is_key_empty {
-            if is_input_empty {
-                // If there's no input and no key, we still need to process one block of zeroes.
-                1
-            } else {
-                input_blocks
-            }
-        } else if is_input_empty {
-            // If there's no input but there's key, key is processed in the first and only block.
-            1
-        } else {
-            // Key needs to be processed in a block alone, then come the input blocks.
-            input_blocks + 1
-        }
     }
 
     /// Here we want to make sure that the public inputs are equal to the final state of the hash.

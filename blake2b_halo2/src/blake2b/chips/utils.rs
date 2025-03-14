@@ -1,5 +1,5 @@
 use ff::PrimeField;
-use halo2_proofs::circuit::{AssignedCell, Region};
+use halo2_proofs::circuit::{AssignedCell, Region, Value};
 use num_bigint::BigUint;
 use halo2_proofs::plonk::Error;
 
@@ -38,4 +38,43 @@ pub fn get_full_number_of_each<F: PrimeField>(
     current_block_rows: [Vec<AssignedCell<F, F>>; 16],
 ) -> [AssignedCell<F, F>; 16] {
     current_block_rows.iter().map(|row| row[0].clone()).collect::<Vec<_>>().try_into().unwrap()
+}
+
+/// The 'processed_bytes_count' is a variable in the algorithm that changes with every iteration,
+/// in each iteration we compute the new value for it.
+pub fn compute_processed_bytes_count_value_for_iteration<F: PrimeField>(
+    iteration: usize,
+    is_last_block: bool,
+    input_size: usize,
+    empty_key: bool,
+) -> Value<F> {
+    let processed_bytes_count = if is_last_block {
+        input_size + if empty_key { 0 } else { 128 }
+    } else {
+        128 * (iteration + 1)
+    };
+
+    Value::known(F::from(processed_bytes_count as u64))
+}
+
+/// Computes the edge cases in the amount of blocks to process.
+pub fn get_total_blocks_count(
+    input_blocks: usize,
+    is_input_empty: bool,
+    is_key_empty: bool,
+) -> usize {
+    if is_key_empty {
+        if is_input_empty {
+            // If there's no input and no key, we still need to process one block of zeroes.
+            1
+        } else {
+            input_blocks
+        }
+    } else if is_input_empty {
+        // If there's no input but there's key, key is processed in the first and only block.
+        1
+    } else {
+        // Key needs to be processed in a block alone, then come the input blocks.
+        input_blocks + 1
+    }
 }
