@@ -8,7 +8,7 @@ use crate::base_operations::generic_limb_rotation::LimbRotation;
 use crate::base_operations::negate::NegateConfig;
 use crate::base_operations::rotate_63::Rotate63Config;
 use crate::base_operations::xor::Xor;
-use crate::blake2b::chips::utils::{enforce_input_sizes, enforce_modulus_size};
+use crate::blake2b::chips::utils::{constrain_initial_state, enforce_input_sizes, enforce_modulus_size, get_full_number_of_each};
 
 /// This is the trait that groups the 3 optimization chips. Most of their code is the same, so the
 /// behaviour was encapsulated here. Each optimization has to override only 3 or 4 methods, besides
@@ -158,7 +158,7 @@ pub trait Blake2bGeneric: Clone {
         let mut global_state = Self::iv_constants()
             .map(|constant| self.new_row_from_value(constant, region, offset).unwrap());
 
-        Self::constrain_initial_state(region, &global_state, iv_constants)?;
+        constrain_initial_state(region, &global_state, iv_constants)?;
 
         // state[0] = state[0] ^ 0x01010000 ^ (key.len() << 8) as u64 ^ outlen as u64;
         global_state[0] = self.xor(&global_state[0], &init_const_state_0, region, offset)?;
@@ -253,7 +253,7 @@ pub trait Blake2bGeneric: Clone {
                 )?;
             }
 
-            let current_block_cells = Self::get_full_number_of_each(current_block_rows);
+            let current_block_cells = get_full_number_of_each(current_block_rows);
 
             let result = self.compress(
                 region,
@@ -594,25 +594,6 @@ pub trait Blake2bGeneric: Clone {
         let ret = self.decompose_8_config().generate_row_from_value(region, value, *offset);
         *offset += 1;
         ret
-    }
-
-    /// Sets copy constraints to the part of the state that is copied from iv_constants.
-    fn constrain_initial_state<F: PrimeField>(
-        region: &mut Region<F>,
-        global_state: &[AssignedCell<F, F>; 8],
-        iv_constants: &[AssignedCell<F, F>; 8],
-    ) -> Result<(), Error> {
-        for i in 0..8 {
-            region.constrain_equal(iv_constants[i].cell(), global_state[i].cell())?;
-        }
-        Ok(())
-    }
-
-    /// Extracts the full number cell of each of the state rows
-    fn get_full_number_of_each<F: PrimeField>(
-        current_block_rows: [Vec<AssignedCell<F, F>>; 16],
-    ) -> [AssignedCell<F, F>; 16] {
-        current_block_rows.iter().map(|row| row[0].clone()).collect::<Vec<_>>().try_into().unwrap()
     }
 
     /// This method constrains the padding cells to equal zero. The amount of constraints
