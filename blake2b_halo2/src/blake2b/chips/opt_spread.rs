@@ -67,7 +67,7 @@ impl Blake2bGeneric for Blake2bChipOptSpread {
     }
 
     fn initialize_with<F: PrimeField>(
-        &mut self,
+        &self,
         layouter: &mut impl Layouter<F>,
     ) -> Result<(), Error> {
         /// Initialization that is the same for every optimization
@@ -75,23 +75,23 @@ impl Blake2bGeneric for Blake2bChipOptSpread {
     }
 
     // Getters that the trait needs for its default implementations
-    fn decompose_8_config(&mut self) -> Decompose8Config {
+    fn decompose_8_config(&self) -> Decompose8Config {
         self.decompose_8_config.clone()
     }
 
-    fn generic_limb_rotation_config(&mut self) -> LimbRotation {
+    fn generic_limb_rotation_config(& self) -> LimbRotation {
         self.generic_limb_rotation_config.clone()
     }
 
-    fn rotate_63_config(&mut self) -> Rotate63Config<8, 9> {
+    fn rotate_63_config(&self) -> Rotate63Config<8, 9> {
         self.rotate_63_config.clone()
     }
 
-    fn xor_config(&mut self) -> impl Xor {
+    fn xor_config(&self) -> impl Xor {
         self.xor_config.clone()
     }
 
-    fn negate_config(&mut self) -> NegateConfig {
+    fn negate_config(&self) -> NegateConfig {
         self.negate_config.clone()
     }
 
@@ -108,18 +108,18 @@ impl Blake2bGeneric for Blake2bChipOptSpread {
     /// opt_spread optimization decomposes the sum operands in 8-bit limbs, so we need to use the
     /// decompose_8_config for the sum operation instead of the decompose_16_config.
     fn add<F: PrimeField>(
-        &mut self,
+        &self,
         lhs: &AssignedCell<F, F>,
         rhs: &AssignedCell<F, F>,
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<AssignedCell<F, F>, Error> {
-        let addition_cell = self.addition_config.generate_addition_rows_from_cells_optimized(
+        let addition_cell = self.addition_config.generate_addition_rows_from_cells(
             region,
             offset,
             lhs,
             rhs,
-            &mut self.decompose_8_config,
+            &self.decompose_8_config,
             false,
         )?[0]
             .clone();
@@ -130,18 +130,18 @@ impl Blake2bGeneric for Blake2bChipOptSpread {
     /// the last row in the circuit is one of the operands of the addition, so it only needs to copy
     /// one parameter because the other is already on the trace.
     fn add_copying_one_parameter<F: PrimeField>(
-        &mut self,
+        &self,
         previous_cell: &AssignedCell<F, F>,
         cell_to_copy: &AssignedCell<F, F>,
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<AssignedCell<F, F>, Error> {
-        Ok(self.addition_config.generate_addition_rows_from_cells_optimized(
+        Ok(self.addition_config.generate_addition_rows_from_cells(
             region,
             offset,
             previous_cell,
             cell_to_copy,
-            &mut self.decompose_8_config,
+            &self.decompose_8_config,
             true,
         )?[0]
             .clone())
@@ -152,7 +152,7 @@ impl Blake2bGeneric for Blake2bChipOptSpread {
     /// where the next operation (which is a rotation) can just read the limbs directly and apply
     /// the limb rotation without copying the operand.
     fn xor_for_mix<F: PrimeField>(
-        &mut self,
+        &self,
         previous_cell: &AssignedCell<F, F>,
         cell_to_copy: &AssignedCell<F, F>,
         region: &mut Region<F>,
@@ -167,7 +167,7 @@ impl Blake2bChipOptSpread {
     /// opt_recycle decomposes the sum operands in 8-bit limbs, so the xor operation that comes after
     /// can recycle the result row of the addition and use it as its first operand.
     fn xor_copying_one_parameter<F: PrimeField>(
-        &mut self,
+        &self,
         previous_cell: &AssignedCell<F, F>,
         cell_to_copy: &AssignedCell<F, F>,
         region: &mut Region<F>,
@@ -178,7 +178,7 @@ impl Blake2bChipOptSpread {
             offset,
             previous_cell,
             cell_to_copy,
-            &mut self.decompose_8_config,
+            &self.decompose_8_config,
             true,
         )
     }

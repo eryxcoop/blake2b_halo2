@@ -33,11 +33,11 @@ pub trait Blake2bGeneric: Clone {
     ) -> Result<(), Error>;
 
     // Getters for the internal members of the chip
-    fn decompose_8_config(&mut self) -> Decompose8Config;
-    fn generic_limb_rotation_config(&mut self) -> LimbRotation;
-    fn rotate_63_config(&mut self) -> Rotate63Config<8, 9>;
-    fn xor_config(&mut self) -> impl Xor;
-    fn negate_config(&mut self) -> NegateConfig;
+    fn decompose_8_config(&self) -> Decompose8Config;
+    fn generic_limb_rotation_config(&self) -> LimbRotation;
+    fn rotate_63_config(&self) -> Rotate63Config<8, 9>;
+    fn xor_config(&self) -> impl Xor;
+    fn negate_config(&self) -> NegateConfig;
     fn constants(&self) -> Column<Fixed>;
     fn expected_final_state(&self) -> Column<Instance>;
 
@@ -45,7 +45,7 @@ pub trait Blake2bGeneric: Clone {
 
     /// This is the main method of the chips. It computes the Blake2b hash for the given inputs.
     fn compute_blake2b_hash_for_inputs<F: PrimeField>(
-        &mut self,
+        &self,
         layouter: &mut impl Layouter<F>,
         output_size: usize,
         input_size: usize,
@@ -137,7 +137,7 @@ pub trait Blake2bGeneric: Clone {
 
     /// This method handles the part of the initialization of the chip that is generic to all
     /// optimizations. In particular, the initialization of lookup tables.
-    fn generic_initialize_with<F: PrimeField>(&mut self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
+    fn generic_initialize_with<F: PrimeField>(&self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
         self.populate_lookup_table_8(layouter)?;
         self.populate_xor_lookup_table(layouter)?;
         Ok(())
@@ -147,7 +147,7 @@ pub trait Blake2bGeneric: Clone {
     /// output size, which are values known at circuit building time. This computation should
     /// also be verified by the circuit.
     fn compute_initial_state<F: PrimeField>(
-        &mut self,
+        &self,
         region: &mut Region<F>,
         offset: &mut usize,
         iv_constant_cells: &[AssignedCell<F, F>; 8],
@@ -174,7 +174,7 @@ pub trait Blake2bGeneric: Clone {
     /// that represent that particular word in the state.
     #[allow(clippy::too_many_arguments)]
     fn perform_blake2b_iterations<F: PrimeField>(
-        &mut self,
+        &self,
         region: &mut Region<F>,
         advice_offset: &mut usize,
         constants_offset: &mut usize,
@@ -273,7 +273,7 @@ pub trait Blake2bGeneric: Clone {
     /// the is_last_block parameter should be set to true.
     #[allow(clippy::too_many_arguments)]
     fn compress<F: PrimeField>(
-        &mut self,
+        &self,
         region: &mut Region<F>,
         row_offset: &mut usize,
         iv_constants: &[AssignedCell<F, F>; 8],
@@ -332,7 +332,7 @@ pub trait Blake2bGeneric: Clone {
     /// One round of compress has 96 mixing rounds
     #[allow(clippy::too_many_arguments)]
     fn mix<F: PrimeField>(
-        &mut self,
+        &self,
         a_: usize,
         b_: usize,
         c_: usize,
@@ -394,25 +394,25 @@ pub trait Blake2bGeneric: Clone {
     /// In this case we need to perform the xor operation and return the entire row, because we
     /// need it to constrain the result.
     fn xor_with_full_rows<F: PrimeField>(
-        &mut self,
+        &self,
         lhs: &AssignedCell<F, F>,
         rhs: &AssignedCell<F, F>,
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<[AssignedCell<F, F>; 9], Error> {
-        let mut decompose_8_config = self.decompose_8_config();
+        let decompose_8_config = self.decompose_8_config();
         self.xor_config().generate_xor_rows_from_cells(
             region,
             offset,
             lhs,
             rhs,
-            &mut decompose_8_config,
+            &decompose_8_config,
             false,
         )
     }
 
     fn not<F: PrimeField>(
-        &mut self,
+        &self,
         input_cell: &AssignedCell<F, F>,
         region: &mut Region<F>,
         offset: &mut usize,
@@ -427,19 +427,19 @@ pub trait Blake2bGeneric: Clone {
     }
 
     fn xor<F: PrimeField>(
-        &mut self,
+        &self,
         lhs: &AssignedCell<F, F>,
         rhs: &AssignedCell<F, F>,
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<AssignedCell<F, F>, Error> {
-        let mut decompose_8_config = self.decompose_8_config();
+        let decompose_8_config = self.decompose_8_config();
         let full_number_cell = self.xor_config().generate_xor_rows_from_cells(
             region,
             offset,
             lhs,
             rhs,
-            &mut decompose_8_config,
+            &decompose_8_config,
             false,
         )?[0]
             .clone();
@@ -447,7 +447,7 @@ pub trait Blake2bGeneric: Clone {
     }
 
     fn add<F: PrimeField>(
-        &mut self,
+        &self,
         lhs: &AssignedCell<F, F>,
         rhs: &AssignedCell<F, F>,
         region: &mut Region<F>,
@@ -457,7 +457,7 @@ pub trait Blake2bGeneric: Clone {
     /// Sometimes we can reutilice an output row to be the input row of the next operation. This is
     /// a convenience method for that in the case of the sum operation.
     fn add_copying_one_parameter<F: PrimeField>(
-        &mut self,
+        &self,
         previous_cell: &AssignedCell<F, F>,
         cell_to_copy: &AssignedCell<F, F>,
         region: &mut Region<F>,
@@ -467,7 +467,7 @@ pub trait Blake2bGeneric: Clone {
     /// Sometimes we can reutilice an output row to be the input row of the next operation. This is
     /// a convenience method for that in the case of the xor operation.
     fn xor_for_mix<F: PrimeField>(
-        &mut self,
+        &self,
         previous_cell: &AssignedCell<F, F>,
         cell_to_copy: &AssignedCell<F, F>,
         region: &mut Region<F>,
@@ -475,7 +475,7 @@ pub trait Blake2bGeneric: Clone {
     ) -> Result<[AssignedCell<F, F>; 9], Error>;
 
     fn rotate_right_63<F: PrimeField>(
-        &mut self,
+        &self,
         input_row: [AssignedCell<F, F>; 9],
         region: &mut Region<F>,
         offset: &mut usize,
@@ -490,7 +490,7 @@ pub trait Blake2bGeneric: Clone {
     }
 
     fn rotate_right_16<F: PrimeField>(
-        &mut self,
+        &self,
         input_row: [AssignedCell<F, F>; 9],
         region: &mut Region<F>,
         offset: &mut usize,
@@ -506,7 +506,7 @@ pub trait Blake2bGeneric: Clone {
     }
 
     fn rotate_right_24<F: PrimeField>(
-        &mut self,
+        &self,
         input_row: [AssignedCell<F, F>; 9],
         region: &mut Region<F>,
         offset: &mut usize,
@@ -522,7 +522,7 @@ pub trait Blake2bGeneric: Clone {
     }
 
     fn rotate_right_32<F: PrimeField>(
-        &mut self,
+        &self,
         input_row: [AssignedCell<F, F>; 9],
         region: &mut Region<F>,
         offset: &mut usize,
@@ -539,11 +539,11 @@ pub trait Blake2bGeneric: Clone {
 
     // ----- Auxiliar methods ----- //
 
-    fn populate_lookup_table_8<F: PrimeField>(&mut self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
+    fn populate_lookup_table_8<F: PrimeField>(&self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
         self.decompose_8_config().populate_lookup_table(layouter)
     }
 
-    fn populate_xor_lookup_table<F: PrimeField>(&mut self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
+    fn populate_xor_lookup_table<F: PrimeField>(&self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
         self.xor_config().populate_xor_lookup_table(layouter)
     }
 
@@ -586,7 +586,7 @@ pub trait Blake2bGeneric: Clone {
     /// Creates a new row with a full number in the first columns and the 8 bit decomposition in
     /// the following cells. Returns only the AssignedCell with the full number.
     fn new_row_from_value<F: PrimeField>(
-        &mut self,
+        &self,
         value: Value<F>,
         region: &mut Region<F>,
         offset: &mut usize,
@@ -603,7 +603,7 @@ pub trait Blake2bGeneric: Clone {
     /// bytes in the trace. It's just a matter of iterating the cells in the correct order and knowing
     /// which ones should equal zero. In Blake2b the padding is allways 0.
     fn constrain_padding_cells_to_equal_zero<F: PrimeField>(
-        &mut self,
+        &self,
         region: &mut Region<F>,
         zeros_amount: usize,
         current_block_rows: &[Vec<AssignedCell<F, F>>; 16],
@@ -626,7 +626,7 @@ pub trait Blake2bGeneric: Clone {
 
     #[allow(clippy::too_many_arguments)]
     fn build_current_block_rows<F: PrimeField>(
-        &mut self,
+        &self,
         region: &mut Region<F>,
         offset: &mut usize,
         input: &[Value<F>],
@@ -681,7 +681,7 @@ pub trait Blake2bGeneric: Clone {
     }
 
     fn block_words_from_bytes<F: PrimeField>(
-        &mut self,
+        &self,
         region: &mut Region<F>,
         offset: &mut usize,
         block: [Value<F>; 128],
@@ -699,7 +699,7 @@ pub trait Blake2bGeneric: Clone {
     /// Given an array of byte-values, it puts in the circuit a full row with those bytes in the
     /// limbs and the resulting full number in the first column.
     fn new_row_from_bytes<F: PrimeField>(
-        &mut self,
+        &self,
         bytes: [Value<F>; 8],
         region: &mut Region<F>,
         offset: &mut usize,

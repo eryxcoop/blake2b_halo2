@@ -40,7 +40,7 @@ impl NegateConfig {
     // leave this function using the decomposition for simplicity, since it won't change the circuit
     // performance
     pub fn generate_rows_from_cell<F: PrimeField>(
-        &mut self,
+        &self,
         region: &mut Region<F>,
         offset: &mut usize,
         input: &AssignedCell<F, F>,

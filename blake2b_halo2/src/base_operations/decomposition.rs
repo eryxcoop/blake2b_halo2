@@ -17,7 +17,7 @@ pub trait Decomposition<const T: usize> {
     ) -> Self;
 
     fn populate_row_from_values<F: PrimeField>(
-        &mut self,
+        &self,
         region: &mut Region<F>,
         row: Vec<Value<F>>,
         offset: usize,
@@ -58,21 +58,21 @@ pub trait Decomposition<const T: usize> {
     }
 
     fn generate_row_from_value<F: PrimeField>(
-        &mut self,
+        &self,
         region: &mut Region<F>,
         value: Value<F>,
         offset: usize,
     ) -> Result<AssignedCell<F, F>, Error>;
 
     fn generate_row_from_bytes<F: PrimeField>(
-        &mut self,
+        &self,
         _region: &mut Region<F>,
         _bytes: [Value<F>; 8],
         _offset: usize,
     ) -> Result<Vec<AssignedCell<F, F>>, Error>;
 
     fn generate_row_from_cell<F: PrimeField>(
-        &mut self,
+        &self,
         region: &mut Region<F>,
         cell: &AssignedCell<F, F>,
         offset: usize,
@@ -85,7 +85,7 @@ pub trait Decomposition<const T: usize> {
     }
 
     fn generate_row_from_value_and_keep_row<F: PrimeField>(
-        &mut self,
+        &self,
         _region: &mut Region<F>,
         _value: Value<F>,
         _offset: usize,

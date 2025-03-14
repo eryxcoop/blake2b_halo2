@@ -64,7 +64,7 @@ impl<const T: usize, const R: usize> Rotate63Config<T, R> {
     /// Receives a row of cells, generates a row for the rotation of 63 bits to the right
     /// and populates the circuit with it
     pub fn generate_rotation_rows_from_cells<F: PrimeField>(
-        &mut self,
+        &self,
         region: &mut Region<F>,
         offset: &mut usize,
         input_row: [AssignedCell<F, F>; 9],
