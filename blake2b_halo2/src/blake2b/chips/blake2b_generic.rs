@@ -1,7 +1,6 @@
 use ff::PrimeField;
 use halo2_proofs::circuit::{AssignedCell, Layouter, Region, Value};
 use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Error, Fixed, Instance};
-use crate::auxiliar_functions::value_for;
 use crate::base_operations::decompose_8::Decompose8Config;
 use crate::base_operations::decomposition::Decomposition;
 use crate::base_operations::generic_limb_rotation::LimbRotation;
@@ -62,7 +61,8 @@ pub trait Blake2bGeneric: Clone {
                 let (iv_constant_cells,
                     init_const_state_0,
                     output_size_constant,
-                    key_size_constant_shifted
+                    key_size_constant_shifted,
+                    zero_constant
                 ) = self.assign_constant_advice_cells(output_size, key_size, &mut region, &mut advice_offset)?;
 
                 let mut global_state = self.compute_initial_state(
@@ -82,6 +82,7 @@ pub trait Blake2bGeneric: Clone {
                     key,
                     &iv_constant_cells,
                     &mut global_state,
+                    zero_constant,
                 )
             },
         )?;
@@ -93,18 +94,21 @@ pub trait Blake2bGeneric: Clone {
         )
     }
 
-    fn assign_constant_advice_cells<F: PrimeField>(&self, output_size: usize, key_size: usize, mut region: &mut Region<F>, mut advice_offset: &mut usize) -> Result<([AssignedCell<F, F>; 8], AssignedCell<F, F>, AssignedCell<F, F>, AssignedCell<F, F>), Error> {
+    /// Assign all the constants at the beginning
+    fn assign_constant_advice_cells<F: PrimeField>(&self, output_size: usize, key_size: usize, mut region: &mut Region<F>, mut advice_offset: &mut usize) -> Result<([AssignedCell<F, F>; 8], AssignedCell<F, F>, AssignedCell<F, F>, AssignedCell<F, F>, AssignedCell<F, F>), Error> {
         let iv_constant_cells: [AssignedCell<F, F>; 8] =
             self.assign_iv_constants_to_fixed_cells(&mut region, &mut advice_offset)?;
         *advice_offset += 1;
         let init_const_state_0 = self.assign_constant_in_cell(&mut region, advice_offset, 0x01010000, "state 0 xor", 0)?;
         let output_size_constant = self.assign_constant_in_cell(&mut region, advice_offset, output_size, "output size", 1)?;
         let key_size_constant_shifted = self.assign_constant_in_cell(&mut region, advice_offset, key_size << 8, "key size", 2)?;
+        let zero_constant = self.assign_constant_in_cell(&mut region, advice_offset, 0, "zero", 3)?;
         *advice_offset += 1;
 
-        Ok((iv_constant_cells, init_const_state_0, output_size_constant, key_size_constant_shifted))
+        Ok((iv_constant_cells, init_const_state_0, output_size_constant, key_size_constant_shifted, zero_constant))
     }
 
+    /// Assign constants to advice cell to use later on
     fn assign_constant_in_cell<F: PrimeField>(
         &self,
         region: &mut Region<F>,
@@ -201,6 +205,7 @@ pub trait Blake2bGeneric: Clone {
         key: &[Value<F>],
         iv_constants: &[AssignedCell<F, F>; 8],
         global_state: &mut [AssignedCell<F, F>; 8],
+        zero_constant_cell: AssignedCell<F, F>,
     ) -> Result<[AssignedCell<F, F>; 64], Error> {
         // This is just to be able to return the result of the last compress call
         let mut global_state_bytes = Err(Error::Synthesis);
@@ -211,9 +216,6 @@ pub trait Blake2bGeneric: Clone {
         let input_blocks = input_size.div_ceil(BLAKE2B_BLOCK_SIZE);
         let total_blocks = get_total_blocks_count(input_blocks, is_input_empty, is_key_empty);
         let last_input_block_index = if is_input_empty { 0 } else { input_blocks - 1 };
-
-        let zero_constant_cell =
-            self.assign_constant_to_fixed_cell(region, &mut 0, 0usize, "fixed 0")?;
 
         /// Main loop
         for i in 0..total_blocks {
@@ -585,20 +587,6 @@ pub trait Blake2bGeneric: Clone {
             .try_into()
             .unwrap();
         Ok(ret)
-    }
-
-    /// Assign constants to fixed cells to use later on
-    fn assign_constant_to_fixed_cell<F: PrimeField>(
-        &self,
-        region: &mut Region<F>,
-        offset: &mut usize,
-        constant: usize,
-        region_name: &str,
-    ) -> Result<AssignedCell<F, F>, Error> {
-        let constant_value = value_for(constant as u64);
-        let ret = region.assign_fixed(|| region_name, self.constants(), *offset, || constant_value);
-        *offset += 1;
-        ret
     }
 
     /// Creates a new row with a full number in the first columns and the 8 bit decomposition in
