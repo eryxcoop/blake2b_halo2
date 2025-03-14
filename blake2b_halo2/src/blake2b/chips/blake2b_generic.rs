@@ -32,7 +32,7 @@ pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
 
     /// This is the main method of the chips. It computes the Blake2b hash for the given inputs.
     fn compute_blake2b_hash_for_inputs(
-        &mut self,
+        &self,
         layouter: &mut impl Layouter<F>,
         output_size: usize,
         input_size: usize,
@@ -135,7 +135,7 @@ pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
 
     /// This method handles the part of the initialization of the chip that is generic to all
     /// optimizations. In particular, the initialization of lookup tables.
-    fn generic_initialize_with(&mut self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
+    fn generic_initialize_with(&self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
         self.populate_lookup_table_8(layouter)?;
         self.populate_xor_lookup_table(layouter)?;
         Ok(())
@@ -145,7 +145,7 @@ pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
     /// output size, which are values known at circuit building time. This computation should
     /// also be verified by the circuit.
     fn compute_initial_state(
-        &mut self,
+        &self,
         region: &mut Region<F>,
         offset: &mut usize,
         iv_constants: &[AssignedCell<F, F>; 8],
@@ -172,7 +172,7 @@ pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
     /// that represent that particular word in the state.
     #[allow(clippy::too_many_arguments)]
     fn perform_blake2b_iterations(
-        &mut self,
+        &self,
         region: &mut Region<F>,
         advice_offset: &mut usize,
         constants_offset: &mut usize,
@@ -271,7 +271,7 @@ pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
     /// the is_last_block parameter should be set to true.
     #[allow(clippy::too_many_arguments)]
     fn compress(
-        &mut self,
+        &self,
         region: &mut Region<F>,
         row_offset: &mut usize,
         iv_constants: &[AssignedCell<F, F>; 8],
@@ -330,7 +330,7 @@ pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
     /// One round of compress has 96 mixing rounds
     #[allow(clippy::too_many_arguments)]
     fn mix(
-        &mut self,
+        &self,
         a_: usize,
         b_: usize,
         c_: usize,
@@ -537,11 +537,11 @@ pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
 
     // ----- Auxiliar methods ----- //
 
-    fn populate_lookup_table_8(&mut self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
+    fn populate_lookup_table_8(&self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
         self.decompose_8_config().populate_lookup_table(layouter)
     }
 
-    fn populate_xor_lookup_table(&mut self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
+    fn populate_xor_lookup_table(&self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
         self.xor_config().populate_xor_lookup_table(layouter)
     }
 
