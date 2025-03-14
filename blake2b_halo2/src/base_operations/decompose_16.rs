@@ -119,9 +119,7 @@ impl Decomposition<4> for Decompose16Config {
         value.map(|v| {
             let binding = v.to_repr();
             let a_bytes = binding.as_ref();
-            F::from(
-                a_bytes[2 * limb_number] as u64 + 256u64 * a_bytes[2 * limb_number + 1] as u64,
-            )
+            F::from(a_bytes[2 * limb_number] as u64 + 256u64 * a_bytes[2 * limb_number + 1] as u64)
         })
     }
 }

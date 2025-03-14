@@ -84,11 +84,10 @@ impl Xor for XorTableConfig {
         let difference_offset = if use_previous_cell { 1 } else { 0 };
         self.q_xor.enable(region, *offset - difference_offset)?;
 
-        let result_value = previous_cell.value().zip(
-            cell_to_copy.value()
-        ).map(|(v0, v1)| {
-            auxiliar_functions::xor_field_elements(*v0, *v1)
-        });
+        let result_value = previous_cell
+            .value()
+            .zip(cell_to_copy.value())
+            .map(|(v0, v1)| auxiliar_functions::xor_field_elements(*v0, *v1));
 
         decompose_8_config.generate_row_from_cell(region, cell_to_copy, *offset)?;
         *offset += 1;

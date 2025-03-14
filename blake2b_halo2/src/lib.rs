@@ -1,6 +1,5 @@
 #![allow(unused_doc_comments)]
 
-
 use halo2_proofs::{circuit::Layouter, plonk::ConstraintSystem};
 
 use crate::base_operations::decomposition::Decomposition;

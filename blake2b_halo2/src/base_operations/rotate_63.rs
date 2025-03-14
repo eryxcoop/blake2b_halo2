@@ -72,8 +72,9 @@ impl<const T: usize, const R: usize> Rotate63Config<T, R> {
     ) -> Result<AssignedCell<F, F>, Error> {
         self.q_rot63.enable(region, *offset)?;
 
-        let result_value =
-            input_row[0].value().map(|input| auxiliar_functions::rotate_right_field_element(*input, 63));
+        let result_value = input_row[0]
+            .value()
+            .map(|input| auxiliar_functions::rotate_right_field_element(*input, 63));
 
         // Why do you decompose? can't you work directly on the rotation of the value?
         let result_cell =

@@ -66,10 +66,7 @@ impl Blake2bGeneric for Blake2bChipOptSpread {
         }
     }
 
-    fn initialize_with<F: PrimeField>(
-        &self,
-        layouter: &mut impl Layouter<F>,
-    ) -> Result<(), Error> {
+    fn initialize_with<F: PrimeField>(&self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
         /// Initialization that is the same for every optimization
         self.generic_initialize_with(layouter)
     }
@@ -79,7 +76,7 @@ impl Blake2bGeneric for Blake2bChipOptSpread {
         self.decompose_8_config.clone()
     }
 
-    fn generic_limb_rotation_config(& self) -> LimbRotation {
+    fn generic_limb_rotation_config(&self) -> LimbRotation {
         self.generic_limb_rotation_config.clone()
     }
 

@@ -58,9 +58,8 @@ impl Xor for XorSpreadConfig {
         self.populate_spread_limbs_of(region, offset, value_rhs);
         *offset += 1;
 
-        let value_result = value_lhs.zip(value_rhs).map(|(v0, v1)| {
-            auxiliar_functions::xor_field_elements(v0, v1)
-        });
+        let value_result =
+            value_lhs.zip(value_rhs).map(|(v0, v1)| auxiliar_functions::xor_field_elements(v0, v1));
 
         self.populate_spread_limbs_of(region, offset, value_result);
         *offset += 1;

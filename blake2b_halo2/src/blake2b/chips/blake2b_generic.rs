@@ -8,13 +8,16 @@ use crate::base_operations::generic_limb_rotation::LimbRotation;
 use crate::base_operations::negate::NegateConfig;
 use crate::base_operations::rotate_63::Rotate63Config;
 use crate::base_operations::xor::Xor;
-use crate::blake2b::chips::utils::{compute_processed_bytes_count_value_for_iteration, constrain_initial_state, constrain_padding_cells_to_equal_zero, enforce_input_sizes, enforce_modulus_size, get_full_number_of_each, get_total_blocks_count, iv_constants, ABCD, BLAKE2B_BLOCK_SIZE, SIGMA};
+use crate::blake2b::chips::utils::{
+    compute_processed_bytes_count_value_for_iteration, constrain_initial_state,
+    constrain_padding_cells_to_equal_zero, enforce_input_sizes, enforce_modulus_size,
+    get_full_number_of_each, get_total_blocks_count, iv_constants, ABCD, BLAKE2B_BLOCK_SIZE, SIGMA,
+};
 
 /// This is the trait that groups the 3 optimization chips. Most of their code is the same, so the
 /// behaviour was encapsulated here. Each optimization has to override only 3 or 4 methods, besides
 /// its signature for some of the gates.
 pub trait Blake2bGeneric: Clone {
-
     /// Configuration of the circuit, this includes initialization of all the necessary configs.
     /// Some of them are general for every implementation, some are optimization-specific.
     /// It should be called in the configuration of the user circuit.
@@ -27,10 +30,7 @@ pub trait Blake2bGeneric: Clone {
     // [Inigo comment] Strange name - initialise with what? Also, this seems something non blake2b-specific
     /// Initialization of the circuit. This will usually create the needed lookup tables for the
     /// specific optimization. This should be called on the synthesize of the circuit but only once.
-    fn initialize_with<F: PrimeField>(
-        &self,
-        layouter: &mut impl Layouter<F>,
-    ) -> Result<(), Error>;
+    fn initialize_with<F: PrimeField>(&self, layouter: &mut impl Layouter<F>) -> Result<(), Error>;
 
     // Getters for the internal members of the chip
     fn decompose_8_config(&self) -> Decompose8Config;
@@ -64,9 +64,24 @@ pub trait Blake2bGeneric: Clone {
                 let mut constants_offset: usize = 0;
                 let iv_constant_cells: [AssignedCell<F, F>; 8] =
                     self.assign_iv_constants_to_fixed_cells(&mut region, &mut constants_offset);
-                let init_const_state_0 = self.assign_constant_to_fixed_cell(&mut region, &mut constants_offset, 0x01010000, "state 0 xor")?;
-                let output_size_constant = self.assign_constant_to_fixed_cell(&mut region, &mut constants_offset, output_size, "output size")?;
-                let key_size_constant_shifted = self.assign_constant_to_fixed_cell(&mut region, &mut constants_offset, key_size << 8, "key size")?;
+                let init_const_state_0 = self.assign_constant_to_fixed_cell(
+                    &mut region,
+                    &mut constants_offset,
+                    0x01010000,
+                    "state 0 xor",
+                )?;
+                let output_size_constant = self.assign_constant_to_fixed_cell(
+                    &mut region,
+                    &mut constants_offset,
+                    output_size,
+                    "output size",
+                )?;
+                let key_size_constant_shifted = self.assign_constant_to_fixed_cell(
+                    &mut region,
+                    &mut constants_offset,
+                    key_size << 8,
+                    "key size",
+                )?;
 
                 /// Initialize in 0 the offset for the advice cells in the region
                 let mut advice_offset: usize = 0;
@@ -137,7 +152,10 @@ pub trait Blake2bGeneric: Clone {
 
     /// This method handles the part of the initialization of the chip that is generic to all
     /// optimizations. In particular, the initialization of lookup tables.
-    fn generic_initialize_with<F: PrimeField>(&self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
+    fn generic_initialize_with<F: PrimeField>(
+        &self,
+        layouter: &mut impl Layouter<F>,
+    ) -> Result<(), Error> {
         self.populate_lookup_table_8(layouter)?;
         self.populate_xor_lookup_table(layouter)?;
         Ok(())
@@ -231,8 +249,7 @@ pub trait Blake2bGeneric: Clone {
                     128
                 } else {
                     // Complete the block with zeroes
-                    (BLAKE2B_BLOCK_SIZE - input_size % BLAKE2B_BLOCK_SIZE)
-                        % BLAKE2B_BLOCK_SIZE
+                    (BLAKE2B_BLOCK_SIZE - input_size % BLAKE2B_BLOCK_SIZE) % BLAKE2B_BLOCK_SIZE
                 };
                 constrain_padding_cells_to_equal_zero(
                     region,
@@ -539,11 +556,17 @@ pub trait Blake2bGeneric: Clone {
 
     // ----- Auxiliar methods ----- //
 
-    fn populate_lookup_table_8<F: PrimeField>(&self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
+    fn populate_lookup_table_8<F: PrimeField>(
+        &self,
+        layouter: &mut impl Layouter<F>,
+    ) -> Result<(), Error> {
         self.decompose_8_config().populate_lookup_table(layouter)
     }
 
-    fn populate_xor_lookup_table<F: PrimeField>(&self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
+    fn populate_xor_lookup_table<F: PrimeField>(
+        &self,
+        layouter: &mut impl Layouter<F>,
+    ) -> Result<(), Error> {
         self.xor_config().populate_xor_lookup_table(layouter)
     }
 

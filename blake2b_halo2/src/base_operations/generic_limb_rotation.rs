@@ -83,7 +83,8 @@ impl LimbRotation {
         input_row: [AssignedCell<F, F>; 9],
         limbs_to_rotate_to_the_right: usize,
     ) -> Result<AssignedCell<F, F>, Error> {
-        let result_value = Self::right_rotation_value(input_row[0].value(), limbs_to_rotate_to_the_right);
+        let result_value =
+            Self::right_rotation_value(input_row[0].value(), limbs_to_rotate_to_the_right);
 
         let result_row =
             decompose_config.generate_row_from_value_and_keep_row(region, result_value, *offset)?;
