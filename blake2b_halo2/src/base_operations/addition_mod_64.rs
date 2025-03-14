@@ -56,7 +56,7 @@ impl<const T: usize, const R: usize> AdditionMod64Config<T, R> {
     /// Note that the carry value is not used in the parameters of the addition, but it is used
     /// to calculate its result.
     pub fn populate_addition_rows<F: PrimeField>(
-        &mut self,
+        &self,
         layouter: &mut impl Layouter<F>,
         addition_trace: [[Value<F>; R]; 3],
         decompose_config: &mut impl Decomposition<T>,
@@ -96,7 +96,7 @@ impl<const T: usize, const R: usize> AdditionMod64Config<T, R> {
     /// is the last cell that was generated in the circuit, by setting the use_last_cell_as_first_operand
     /// to true we can avoid generating the row for the previous_cell again, and just copy the cell_to_copy.
     pub fn generate_addition_rows_from_cells_optimized<F: PrimeField>(
-        &mut self,
+        &self,
         region: &mut Region<F>,
         offset: &mut usize,
         previous_cell: &AssignedCell<F, F>,
@@ -138,7 +138,7 @@ impl<const T: usize, const R: usize> AdditionMod64Config<T, R> {
     }
 
     fn populate_row_from_values<F: PrimeField>(
-        &mut self,
+        &self,
         region: &mut Region<F>,
         row: Vec<Value<F>>,
         offset: usize,

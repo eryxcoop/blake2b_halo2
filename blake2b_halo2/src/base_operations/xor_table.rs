@@ -33,7 +33,7 @@ pub struct XorTableConfig {
 impl Xor for XorTableConfig {
     /// Method that populates the lookup table. Must be called only once in the user circuit.
     fn populate_xor_lookup_table<F: PrimeField>(
-        &mut self,
+        &self,
         layouter: &mut impl Layouter<F>,
     ) -> Result<(), Error> {
         layouter.assign_table(
@@ -73,7 +73,7 @@ impl Xor for XorTableConfig {
     /// of the operands, it won't be copied. Otherwise, it will be copied from the cell_to_copy,
     /// generating an extra row in the circuit.
     fn generate_xor_rows_from_cells<F: PrimeField>(
-        &mut self,
+        &self,
         region: &mut Region<F>,
         offset: &mut usize,
         previous_cell: &AssignedCell<F, F>,
@@ -150,7 +150,7 @@ impl XorTableConfig {
     //
     // Read Rotate63Config::populate_rotation_rows answer
     pub fn populate_xor_region<F: PrimeField>(
-        &mut self,
+        &self,
         layouter: &mut impl Layouter<F>,
         xor_trace: [[Value<F>; 9]; 3],
         decompose_8_config: &mut Decompose8Config,

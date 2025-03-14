@@ -4,12 +4,12 @@ use super::*;
 
 pub trait Xor {
     fn populate_xor_lookup_table<F: PrimeField>(
-        &mut self,
+        &self,
         layouter: &mut impl Layouter<F>,
     ) -> Result<(), Error>;
 
     fn generate_xor_rows_from_cells<F: PrimeField>(
-        &mut self,
+        &self,
         region: &mut Region<F>,
         offset: &mut usize,
         previous_cell: &AssignedCell<F, F>,
