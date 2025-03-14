@@ -1,6 +1,6 @@
 use ff::PrimeField;
 use halo2_proofs::circuit::{AssignedCell, Layouter, Region};
-use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Error, Fixed, Instance};
+use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Error, Instance};
 use crate::base_operations::addition_mod_64::AdditionMod64Config;
 use crate::base_operations::decompose_8::Decompose8Config;
 use crate::base_operations::generic_limb_rotation::LimbRotation;
@@ -24,8 +24,6 @@ pub struct Blake2bChipOptSpread {
     rotate_63_config: Rotate63Config<8, 9>,
     xor_config: XorSpreadConfig,
     negate_config: NegateConfig,
-    /// Column for constants of Blake2b
-    constants: Column<Fixed>,
     /// Column for the expected final state of the hash
     expected_final_state: Column<Instance>,
 }
@@ -42,7 +40,6 @@ impl Blake2bGeneric for Blake2bChipOptSpread {
             generic_limb_rotation_config,
             rotate_63_config,
             negate_config,
-            constants,
             expected_final_state,
         ) = Self::generic_configure(meta, full_number_u64, limbs);
 
@@ -61,7 +58,6 @@ impl Blake2bGeneric for Blake2bChipOptSpread {
             rotate_63_config,
             xor_config,
             negate_config,
-            constants,
             expected_final_state,
         }
     }
@@ -90,10 +86,6 @@ impl Blake2bGeneric for Blake2bChipOptSpread {
 
     fn negate_config(&self) -> NegateConfig {
         self.negate_config.clone()
-    }
-
-    fn constants(&self) -> Column<Fixed> {
-        self.constants
     }
 
     fn expected_final_state(&self) -> Column<Instance> {

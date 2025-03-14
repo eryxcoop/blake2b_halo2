@@ -1,6 +1,6 @@
 use ff::PrimeField;
 use halo2_proofs::circuit::{AssignedCell, Layouter, Region, Value};
-use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Error, Fixed, Instance};
+use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Error, Instance};
 use crate::base_operations::decompose_8::Decompose8Config;
 use crate::base_operations::decomposition::Decomposition;
 use crate::base_operations::generic_limb_rotation::LimbRotation;
@@ -33,7 +33,6 @@ pub trait Blake2bGeneric: Clone {
     fn rotate_63_config(&self) -> Rotate63Config<8, 9>;
     fn xor_config(&self) -> impl Xor;
     fn negate_config(&self) -> NegateConfig;
-    fn constants(&self) -> Column<Fixed>;
     fn expected_final_state(&self) -> Column<Instance>;
 
     // ---------- MAIN METHODS ---------- //
@@ -130,7 +129,6 @@ pub trait Blake2bGeneric: Clone {
         LimbRotation,
         Rotate63Config<8, 9>,
         NegateConfig,
-        Column<Fixed>,
         Column<Instance>,
     ) {
         enforce_modulus_size::<F>();
@@ -150,7 +148,6 @@ pub trait Blake2bGeneric: Clone {
             LimbRotation,
             rotate_63_config,
             negate_config,
-            constants,
             expected_final_state,
         )
     }
