@@ -155,7 +155,7 @@ impl<F: PrimeField> Blake2bGeneric<F, 4, 6> for Blake2bChipOpt4Limbs {
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<AssignedCell<F, F>, Error> {
-        let addition_cell = self.addition_config.generate_addition_rows_from_cells_optimized(
+        let addition_cell = self.addition_config.generate_addition_rows_from_cells(
             region,
             offset,
             lhs,
@@ -177,7 +177,7 @@ impl<F: PrimeField> Blake2bGeneric<F, 4, 6> for Blake2bChipOpt4Limbs {
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<AssignedCell<F, F>, Error> {
-        Ok(self.addition_config.generate_addition_rows_from_cells_optimized(
+        Ok(self.addition_config.generate_addition_rows_from_cells(
             region,
             offset,
             previous_cell,

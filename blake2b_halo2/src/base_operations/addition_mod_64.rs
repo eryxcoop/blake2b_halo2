@@ -95,7 +95,7 @@ impl<const T: usize, const R: usize> AdditionMod64Config<T, R> {
     /// When one of the addition parameters (previous_cell)
     /// is the last cell that was generated in the circuit, by setting the use_last_cell_as_first_operand
     /// to true we can avoid generating the row for the previous_cell again, and just copy the cell_to_copy.
-    pub fn generate_addition_rows_from_cells_optimized<F: PrimeField>(
+    pub fn generate_addition_rows_from_cells<F: PrimeField>(
         &self,
         region: &mut Region<F>,
         offset: &mut usize,
