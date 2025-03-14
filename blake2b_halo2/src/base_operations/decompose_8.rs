@@ -17,6 +17,23 @@ pub struct Decompose8Config {
     t_range: TableColumn,
 }
 
+impl Decompose8Config {
+    pub fn assign_constant_in_cell<F: PrimeField>(
+        &self,
+        region: &mut Region<F>,
+        constant: usize,
+        offset: usize,
+        name: &str,
+        limb_index: usize) -> Result<AssignedCell<F,F>, Error> {
+        region.assign_advice_from_constant(
+            ||name,
+            self.limbs[limb_index],
+            offset,
+            F::from(constant as u64)
+        )
+    }
+}
+
 impl Decomposition<8> for Decompose8Config {
     const LIMB_SIZE: usize = 8;
     fn range_table_column(&self) -> TableColumn {

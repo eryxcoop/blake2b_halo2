@@ -8,11 +8,7 @@ use crate::base_operations::generic_limb_rotation::LimbRotation;
 use crate::base_operations::negate::NegateConfig;
 use crate::base_operations::rotate_63::Rotate63Config;
 use crate::base_operations::xor::Xor;
-use crate::blake2b::chips::utils::{
-    compute_processed_bytes_count_value_for_iteration, constrain_initial_state,
-    constrain_padding_cells_to_equal_zero, enforce_input_sizes, enforce_modulus_size,
-    get_full_number_of_each, get_total_blocks_count, iv_constants, ABCD, BLAKE2B_BLOCK_SIZE, SIGMA,
-};
+use crate::blake2b::chips::utils::{compute_processed_bytes_count_value_for_iteration, constrain_initial_state, constrain_padding_cells_to_equal_zero, enforce_input_sizes, enforce_modulus_size, get_full_number_of_each, get_total_blocks_count, iv_constant_values, iv_constants, ABCD, BLAKE2B_BLOCK_SIZE, SIGMA};
 
 /// This is the trait that groups the 3 optimization chips. Most of their code is the same, so the
 /// behaviour was encapsulated here. Each optimization has to override only 3 or 4 methods, besides
@@ -60,31 +56,14 @@ pub trait Blake2bGeneric: Clone {
         let global_state_bytes = layouter.assign_region(
             || "single region",
             |mut region| {
-                /// Initialize in 0 the offset for the fixed cells in the region
-                let mut constants_offset: usize = 0;
-                let iv_constant_cells: [AssignedCell<F, F>; 8] =
-                    self.assign_iv_constants_to_fixed_cells(&mut region, &mut constants_offset);
-                let init_const_state_0 = self.assign_constant_to_fixed_cell(
-                    &mut region,
-                    &mut constants_offset,
-                    0x01010000,
-                    "state 0 xor",
-                )?;
-                let output_size_constant = self.assign_constant_to_fixed_cell(
-                    &mut region,
-                    &mut constants_offset,
-                    output_size,
-                    "output size",
-                )?;
-                let key_size_constant_shifted = self.assign_constant_to_fixed_cell(
-                    &mut region,
-                    &mut constants_offset,
-                    key_size << 8,
-                    "key size",
-                )?;
-
                 /// Initialize in 0 the offset for the advice cells in the region
                 let mut advice_offset: usize = 0;
+
+                let (iv_constant_cells,
+                    init_const_state_0,
+                    output_size_constant,
+                    key_size_constant_shifted
+                ) = self.assign_constant_advice_cells(output_size, key_size, &mut region, &mut advice_offset)?;
 
                 let mut global_state = self.compute_initial_state(
                     &mut region,
@@ -98,7 +77,6 @@ pub trait Blake2bGeneric: Clone {
                 self.perform_blake2b_iterations(
                     &mut region,
                     &mut advice_offset,
-                    &mut constants_offset,
                     input_size,
                     input,
                     key,
@@ -113,6 +91,28 @@ pub trait Blake2bGeneric: Clone {
             global_state_bytes,
             output_size,
         )
+    }
+
+    fn assign_constant_advice_cells<F: PrimeField>(&self, output_size: usize, key_size: usize, mut region: &mut Region<F>, mut advice_offset: &mut usize) -> Result<([AssignedCell<F, F>; 8], AssignedCell<F, F>, AssignedCell<F, F>, AssignedCell<F, F>), Error> {
+        let iv_constant_cells: [AssignedCell<F, F>; 8] =
+            self.assign_iv_constants_to_fixed_cells(&mut region, &mut advice_offset)?;
+        *advice_offset += 1;
+        let init_const_state_0 = self.assign_constant_in_cell(&mut region, advice_offset, 0x01010000, "state 0 xor", 0)?;
+        let output_size_constant = self.assign_constant_in_cell(&mut region, advice_offset, output_size, "output size", 1)?;
+        let key_size_constant_shifted = self.assign_constant_in_cell(&mut region, advice_offset, key_size << 8, "key size", 2)?;
+        *advice_offset += 1;
+
+        Ok((iv_constant_cells, init_const_state_0, output_size_constant, key_size_constant_shifted))
+    }
+
+    fn assign_constant_in_cell<F: PrimeField>(
+        &self,
+        region: &mut Region<F>,
+        offset: &usize,
+        constant: usize,
+        name: &str,
+        limb_index: usize) -> Result<AssignedCell<F,F>, Error> {
+        self.decompose_8_config().assign_constant_in_cell(region, constant, *offset, name, limb_index)
     }
 
     /// This method handles the part of the configuration that is generic to all optimizations.
@@ -136,6 +136,7 @@ pub trait Blake2bGeneric: Clone {
 
         let constants = meta.fixed_column();
         meta.enable_equality(constants);
+        meta.enable_constant(constants);
 
         let expected_final_state = meta.instance_column();
         meta.enable_equality(expected_final_state);
@@ -173,7 +174,7 @@ pub trait Blake2bGeneric: Clone {
         output_size_constant: AssignedCell<F, F>,
         key_size_constant_shifted: AssignedCell<F, F>,
     ) -> Result<[AssignedCell<F, F>; 8], Error> {
-        let mut global_state = iv_constants()
+        let mut global_state = iv_constant_values()
             .map(|constant| self.new_row_from_value(constant, region, offset).unwrap());
 
         constrain_initial_state(region, &global_state, iv_constant_cells)?;
@@ -195,7 +196,6 @@ pub trait Blake2bGeneric: Clone {
         &self,
         region: &mut Region<F>,
         advice_offset: &mut usize,
-        constants_offset: &mut usize,
         input_size: usize,
         input: &[Value<F>],
         key: &[Value<F>],
@@ -213,7 +213,7 @@ pub trait Blake2bGeneric: Clone {
         let last_input_block_index = if is_input_empty { 0 } else { input_blocks - 1 };
 
         let zero_constant_cell =
-            self.assign_constant_to_fixed_cell(region, constants_offset, 0usize, "fixed 0")?;
+            self.assign_constant_to_fixed_cell(region, &mut 0, 0usize, "fixed 0")?;
 
         /// Main loop
         for i in 0..total_blocks {
@@ -575,21 +575,16 @@ pub trait Blake2bGeneric: Clone {
     fn assign_iv_constants_to_fixed_cells<F: PrimeField>(
         &self,
         region: &mut Region<F>,
-        offset: &mut usize,
-    ) -> [AssignedCell<F, F>; 8] {
-        let ret = iv_constants()
-            .iter()
-            .map(|value| {
-                let result = region
-                    .assign_fixed(|| "iv constants", self.constants(), *offset, || *value)
-                    .unwrap();
-                *offset += 1;
-                result
+        offset: &usize,
+    ) -> Result<[AssignedCell<F, F>; 8], Error> {
+        let ret: [AssignedCell<F,F>; 8] = iv_constants().iter().enumerate()
+            .map(|(index, constant)| {
+                self.assign_constant_in_cell(region, offset, *constant as usize, "iv constants", index).unwrap()
             })
             .collect::<Vec<AssignedCell<F, F>>>()
             .try_into()
             .unwrap();
-        ret
+        Ok(ret)
     }
 
     /// Assign constants to fixed cells to use later on
