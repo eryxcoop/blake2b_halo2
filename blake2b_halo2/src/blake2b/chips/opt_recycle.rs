@@ -99,7 +99,7 @@ impl Blake2bInstructions for Blake2bChipOptRecycle {
     }
 }
 
-impl<F: PrimeField> Blake2bGeneric<F> for Blake2bChipOptRecycle {
+impl Blake2bGeneric for Blake2bChipOptRecycle {
     // Getters that the trait needs for its default implementations
     fn decompose_8_config(&mut self) -> Decompose8Config {
         self.decompose_8_config.clone()
@@ -133,7 +133,7 @@ impl<F: PrimeField> Blake2bGeneric<F> for Blake2bChipOptRecycle {
 
     /// opt_recycle optimization decomposes the sum operands in 8-bit limbs, so we need to use the
     /// decompose_8_config for the sum operation instead of the decompose_16_config.
-    fn add(
+    fn add<F: PrimeField>(
         &mut self,
         lhs: &AssignedCell<F, F>,
         rhs: &AssignedCell<F, F>,
@@ -155,7 +155,7 @@ impl<F: PrimeField> Blake2bGeneric<F> for Blake2bChipOptRecycle {
     /// This method behaves like 'add', with the difference that it takes advantage of the fact that
     /// the last row in the circuit is one of the operands of the addition, so it only needs to copy
     /// one parameter because the other is already on the trace.
-    fn add_copying_one_parameter(
+    fn add_copying_one_parameter<F: PrimeField>(
         &mut self,
         previous_cell: &AssignedCell<F, F>,
         cell_to_copy: &AssignedCell<F, F>,
@@ -177,7 +177,7 @@ impl<F: PrimeField> Blake2bGeneric<F> for Blake2bChipOptRecycle {
     /// row in the trace, instead of just the cell holding the value. This allows an optimization
     /// where the next operation (which is a rotation) can just read the limbs directly and apply
     /// the limb rotation without copying the operand.
-    fn xor_for_mix(
+    fn xor_for_mix<F: PrimeField>(
         &mut self,
         previous_cell: &AssignedCell<F, F>,
         cell_to_copy: &AssignedCell<F, F>,
