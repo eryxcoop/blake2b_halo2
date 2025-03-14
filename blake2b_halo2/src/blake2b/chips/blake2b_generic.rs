@@ -8,7 +8,7 @@ use crate::base_operations::generic_limb_rotation::LimbRotation;
 use crate::base_operations::negate::NegateConfig;
 use crate::base_operations::rotate_63::Rotate63Config;
 use crate::base_operations::xor::Xor;
-use crate::blake2b::chips::utils::{compute_processed_bytes_count_value_for_iteration, constrain_initial_state, enforce_input_sizes, enforce_modulus_size, get_full_number_of_each, get_total_blocks_count};
+use crate::blake2b::chips::utils::{compute_processed_bytes_count_value_for_iteration, constrain_initial_state, enforce_input_sizes, enforce_modulus_size, get_full_number_of_each, get_total_blocks_count, iv_constants, ABCD, BLAKE2B_BLOCK_SIZE, SIGMA};
 
 /// This is the trait that groups the 3 optimization chips. Most of their code is the same, so the
 /// behaviour was encapsulated here. Each optimization has to override only 3 or 4 methods, besides
@@ -62,7 +62,7 @@ pub trait Blake2bGeneric: Clone {
             |mut region| {
                 /// Initialize in 0 the offset for the fixed cells in the region
                 let mut constants_offset: usize = 0;
-                let iv_constants: [AssignedCell<F, F>; 8] =
+                let iv_constant_cells: [AssignedCell<F, F>; 8] =
                     self.assign_iv_constants_to_fixed_cells(&mut region, &mut constants_offset);
                 let init_const_state_0 = self.assign_constant_to_fixed_cell(&mut region, &mut constants_offset, 0x01010000, "state 0 xor")?;
                 let output_size_constant = self.assign_constant_to_fixed_cell(&mut region, &mut constants_offset, output_size, "output size")?;
@@ -74,7 +74,7 @@ pub trait Blake2bGeneric: Clone {
                 let mut global_state = self.compute_initial_state(
                     &mut region,
                     &mut advice_offset,
-                    &iv_constants,
+                    &iv_constant_cells,
                     init_const_state_0,
                     output_size_constant,
                     key_size_constant_shifted,
@@ -87,7 +87,7 @@ pub trait Blake2bGeneric: Clone {
                     input_size,
                     input,
                     key,
-                    &iv_constants,
+                    &iv_constant_cells,
                     &mut global_state,
                 )
             },
@@ -150,15 +150,15 @@ pub trait Blake2bGeneric: Clone {
         &mut self,
         region: &mut Region<F>,
         offset: &mut usize,
-        iv_constants: &[AssignedCell<F, F>; 8],
+        iv_constant_cells: &[AssignedCell<F, F>; 8],
         init_const_state_0: AssignedCell<F, F>,
         output_size_constant: AssignedCell<F, F>,
         key_size_constant_shifted: AssignedCell<F, F>,
     ) -> Result<[AssignedCell<F, F>; 8], Error> {
-        let mut global_state = Self::iv_constants()
+        let mut global_state = iv_constants()
             .map(|constant| self.new_row_from_value(constant, region, offset).unwrap());
 
-        constrain_initial_state(region, &global_state, iv_constants)?;
+        constrain_initial_state(region, &global_state, iv_constant_cells)?;
 
         // state[0] = state[0] ^ 0x01010000 ^ (key.len() << 8) as u64 ^ outlen as u64;
         global_state[0] = self.xor(&global_state[0], &init_const_state_0, region, offset)?;
@@ -190,7 +190,7 @@ pub trait Blake2bGeneric: Clone {
         let is_key_empty = key.is_empty();
         let is_input_empty = input_size == 0;
 
-        let input_blocks = input_size.div_ceil(Self::BLAKE2B_BLOCK_SIZE);
+        let input_blocks = input_size.div_ceil(BLAKE2B_BLOCK_SIZE);
         let total_blocks = get_total_blocks_count(input_blocks, is_input_empty, is_key_empty);
         let last_input_block_index = if is_input_empty { 0 } else { input_blocks - 1 };
 
@@ -231,8 +231,8 @@ pub trait Blake2bGeneric: Clone {
                     128
                 } else {
                     // Complete the block with zeroes
-                    (Self::BLAKE2B_BLOCK_SIZE - input_size % Self::BLAKE2B_BLOCK_SIZE)
-                        % Self::BLAKE2B_BLOCK_SIZE
+                    (BLAKE2B_BLOCK_SIZE - input_size % BLAKE2B_BLOCK_SIZE)
+                        % BLAKE2B_BLOCK_SIZE
                 };
                 self.constrain_padding_cells_to_equal_zero(
                     region,
@@ -244,7 +244,7 @@ pub trait Blake2bGeneric: Clone {
             /// Padding for the key block, in all cases that it exists. It is always the first block.
             if is_key_block {
                 /// Complete the block with zeroes
-                let zeros_amount_for_key_padding = Self::BLAKE2B_BLOCK_SIZE - key.len();
+                let zeros_amount_for_key_padding = BLAKE2B_BLOCK_SIZE - key.len();
                 self.constrain_padding_cells_to_equal_zero(
                     region,
                     zeros_amount_for_key_padding,
@@ -302,12 +302,12 @@ pub trait Blake2bGeneric: Clone {
         for i in 0..12 {
             for j in 0..8 {
                 self.mix(
-                    Self::ABCD[j][0],
-                    Self::ABCD[j][1],
-                    Self::ABCD[j][2],
-                    Self::ABCD[j][3],
-                    Self::SIGMA[i][2 * j],
-                    Self::SIGMA[i][2 * j + 1],
+                    ABCD[j][0],
+                    ABCD[j][1],
+                    ABCD[j][2],
+                    ABCD[j][3],
+                    SIGMA[i][2 * j],
+                    SIGMA[i][2 * j + 1],
                     &mut state,
                     &current_block_cells,
                     region,
@@ -554,7 +554,7 @@ pub trait Blake2bGeneric: Clone {
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> [AssignedCell<F, F>; 8] {
-        let ret = Self::iv_constants()
+        let ret = iv_constants()
             .iter()
             .map(|value| {
                 let result = region
@@ -664,7 +664,7 @@ pub trait Blake2bGeneric: Clone {
         is_key_block: bool,
     ) -> Vec<Value<F>> {
         if is_last_block && !is_key_block {
-            let mut result = input[last_input_block_index * Self::BLAKE2B_BLOCK_SIZE..].to_vec();
+            let mut result = input[last_input_block_index * BLAKE2B_BLOCK_SIZE..].to_vec();
             result.resize(128, Value::known(F::ZERO));
             result
         } else if is_key_block {
@@ -674,8 +674,8 @@ pub trait Blake2bGeneric: Clone {
         } else {
             let current_input_block_index =
                 if is_key_empty { block_number } else { block_number - 1 };
-            input[current_input_block_index * Self::BLAKE2B_BLOCK_SIZE
-                ..(current_input_block_index + 1) * Self::BLAKE2B_BLOCK_SIZE]
+            input[current_input_block_index * BLAKE2B_BLOCK_SIZE
+                ..(current_input_block_index + 1) * BLAKE2B_BLOCK_SIZE]
                 .to_vec()
         }
     }
@@ -726,48 +726,5 @@ pub trait Blake2bGeneric: Clone {
             )?;
         }
         Ok(())
-    }
-
-    // ----- Blake2b constants -----
-
-    const BLAKE2B_BLOCK_SIZE: usize = 128;
-
-    const SIGMA: [[usize; 16]; 12] = [
-        [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
-        [14, 10, 4, 8, 9, 15, 13, 6, 1, 12, 0, 2, 11, 7, 5, 3],
-        [11, 8, 12, 0, 5, 2, 15, 13, 10, 14, 3, 6, 7, 1, 9, 4],
-        [7, 9, 3, 1, 13, 12, 11, 14, 2, 6, 5, 10, 4, 0, 15, 8],
-        [9, 0, 5, 7, 2, 4, 10, 15, 14, 1, 11, 12, 6, 8, 3, 13],
-        [2, 12, 6, 10, 0, 11, 8, 3, 4, 13, 7, 5, 15, 14, 1, 9],
-        [12, 5, 1, 15, 14, 13, 4, 10, 0, 7, 6, 3, 9, 2, 8, 11],
-        [13, 11, 7, 14, 12, 1, 3, 9, 5, 0, 15, 4, 8, 6, 2, 10],
-        [6, 15, 14, 9, 11, 3, 0, 8, 12, 2, 13, 7, 1, 4, 10, 5],
-        [10, 2, 8, 4, 7, 6, 1, 5, 15, 11, 9, 14, 3, 12, 13, 0],
-        [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
-        [14, 10, 4, 8, 9, 15, 13, 6, 1, 12, 0, 2, 11, 7, 5, 3],
-    ];
-
-    const ABCD: [[usize; 4]; 8] = [
-        [0, 4, 8, 12],
-        [1, 5, 9, 13],
-        [2, 6, 10, 14],
-        [3, 7, 11, 15],
-        [0, 5, 10, 15],
-        [1, 6, 11, 12],
-        [2, 7, 8, 13],
-        [3, 4, 9, 14],
-    ];
-
-    fn iv_constants<F: PrimeField>() -> [Value<F>; 8] {
-        [
-            value_for(0x6A09E667F3BCC908u128),
-            value_for(0xBB67AE8584CAA73Bu128),
-            value_for(0x3C6EF372FE94F82Bu128),
-            value_for(0xA54FF53A5F1D36F1u128),
-            value_for(0x510E527FADE682D1u128),
-            value_for(0x9B05688C2B3E6C1Fu128),
-            value_for(0x1F83D9ABFB41BD6Bu128),
-            value_for(0x5BE0CD19137E2179u128),
-        ]
     }
 }
