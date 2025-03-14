@@ -1,7 +1,6 @@
 use ff::PrimeField;
 use halo2_proofs::circuit::{AssignedCell, Layouter, Region, Value};
 use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Error, Fixed, Instance};
-use num_bigint::BigUint;
 use crate::auxiliar_functions::value_for;
 use crate::base_operations::decompose_8::Decompose8Config;
 use crate::base_operations::decomposition::Decomposition;
@@ -9,6 +8,7 @@ use crate::base_operations::generic_limb_rotation::LimbRotation;
 use crate::base_operations::negate::NegateConfig;
 use crate::base_operations::rotate_63::Rotate63Config;
 use crate::base_operations::xor::Xor;
+use crate::blake2b::chips::utils::{enforce_input_sizes, enforce_modulus_size};
 
 /// This is the trait that groups the 3 optimization chips. Most of their code is the same, so the
 /// behaviour was encapsulated here. Each optimization has to override only 3 or 4 methods, besides
@@ -53,7 +53,7 @@ pub trait Blake2bGeneric: Clone {
         input: &[Value<F>],
         key: &[Value<F>],
     ) -> Result<(), Error> {
-        Self::enforce_input_sizes(output_size, key_size);
+        enforce_input_sizes(output_size, key_size);
 
         /// All the computation is performed inside a single region. Some optimizations take advantage
         /// of this fact, since we want to avoid copying cells between regions.
@@ -64,20 +64,9 @@ pub trait Blake2bGeneric: Clone {
                 let mut constants_offset: usize = 0;
                 let iv_constants: [AssignedCell<F, F>; 8] =
                     self.assign_iv_constants_to_fixed_cells(&mut region, &mut constants_offset);
-                let init_const_state_0 = self
-                    .assign_01010000_constant_to_fixed_cell(&mut region, &mut constants_offset)?;
-                let output_size_constant = self.assign_constant_to_fixed_cell(
-                    &mut region,
-                    &mut constants_offset,
-                    output_size,
-                    "output size",
-                )?;
-                let key_size_constant_shifted = self.assign_constant_to_fixed_cell(
-                    &mut region,
-                    &mut constants_offset,
-                    key_size << 8,
-                    "key size",
-                )?;
+                let init_const_state_0 = self.assign_constant_to_fixed_cell(&mut region, &mut constants_offset, 0x01010000, "state 0 xor")?;
+                let output_size_constant = self.assign_constant_to_fixed_cell(&mut region, &mut constants_offset, output_size, "output size")?;
+                let key_size_constant_shifted = self.assign_constant_to_fixed_cell(&mut region, &mut constants_offset, key_size << 8, "key size")?;
 
                 /// Initialize in 0 the offset for the advice cells in the region
                 let mut advice_offset: usize = 0;
@@ -125,7 +114,7 @@ pub trait Blake2bGeneric: Clone {
         Column<Fixed>,
         Column<Instance>,
     ) {
-        Self::enforce_modulus_size::<F>();
+        enforce_modulus_size::<F>();
         let decompose_8_config = Decompose8Config::configure(meta, full_number_u64, limbs);
         let rotate_63_config = Rotate63Config::configure(meta, full_number_u64);
         let negate_config = NegateConfig::configure(meta, full_number_u64);
@@ -234,7 +223,7 @@ pub trait Blake2bGeneric: Clone {
             )?;
 
             let zero_constant_cell =
-                self.assign_0_constant_to_fixed_cell(region, constants_offset)?;
+                self.assign_constant_to_fixed_cell(region, constants_offset, 0usize, "fixed 0")?;
 
             /// Padding for the last block, in case the key block is not the only one.
             if is_last_block && !is_key_block {
@@ -580,23 +569,6 @@ pub trait Blake2bGeneric: Clone {
         ret
     }
 
-    /// This is a constant used in the initial state of Blake2b
-    fn assign_01010000_constant_to_fixed_cell<F: PrimeField>(
-        &self,
-        region: &mut Region<F>,
-        offset: &mut usize,
-    ) -> Result<AssignedCell<F, F>, Error> {
-        self.assign_constant_to_fixed_cell(region, offset, 0x01010000, "state 0 xor")
-    }
-
-    fn assign_0_constant_to_fixed_cell<F: PrimeField>(
-        &self,
-        region: &mut Region<F>,
-        offset: &mut usize,
-    ) -> Result<AssignedCell<F, F>, Error> {
-        self.assign_constant_to_fixed_cell(region, offset, 0usize, "fixed 0")
-    }
-
     /// Assign constants to fixed cells to use later on
     fn assign_constant_to_fixed_cell<F: PrimeField>(
         &self,
@@ -609,24 +581,6 @@ pub trait Blake2bGeneric: Clone {
         let ret = region.assign_fixed(|| region_name, self.constants(), *offset, || constant_value);
         *offset += 1;
         ret
-    }
-
-    /// Enforces the field's modulus to be greater than 2^65, which is a necessary condition for the rot63 gate to be sound.
-    fn enforce_modulus_size<F: PrimeField>() {
-        let modulus_bytes: Vec<u8> = hex::decode(F::MODULUS.trim_start_matches("0x"))
-            .expect("Modulus is not a valid hex number");
-        let modulus = BigUint::from_bytes_be(&modulus_bytes);
-        let two_pow_65 = BigUint::from(1u128 << 65);
-        assert!(modulus > two_pow_65, "Field modulus must be greater than 2^65");
-    }
-
-    /// Enforces the output and key sizes.
-    /// Output size must be between 1 and 64 bytes.
-    /// Key size must be between 0 and 64 bytes.
-    fn enforce_input_sizes(output_size: usize, key_size: usize) {
-        assert!(output_size <= 64, "Output size must be between 1 and 64 bytes");
-        assert!(output_size > 0, "Output size must be between 1 and 64 bytes");
-        assert!(key_size <= 64, "Key size must be between 1 and 64 bytes");
     }
 
     /// Creates a new row with a full number in the first columns and the 8 bit decomposition in
