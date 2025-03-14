@@ -70,7 +70,7 @@ impl Blake2bInstructions for Blake2bChipOptRecycle {
     }
 
     fn initialize_with<F: PrimeField>(
-        &mut self,
+        &self,
         layouter: &mut impl Layouter<F>,
     ) -> Result<(), Error> {
         /// Initialization that is the same for every optimization
@@ -79,7 +79,7 @@ impl Blake2bInstructions for Blake2bChipOptRecycle {
 
     /// This methods is implemented the same way in all optimizations
     fn compute_blake2b_hash_for_inputs<F: PrimeField>(
-        &mut self,
+        &self,
         layouter: &mut impl Layouter<F>,
         output_size: usize,
         input_size: usize,

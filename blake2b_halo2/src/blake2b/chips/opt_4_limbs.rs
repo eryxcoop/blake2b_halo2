@@ -79,7 +79,7 @@ impl Blake2bInstructions for Blake2bChipOpt4Limbs {
     }
 
     fn initialize_with<F: PrimeField>(
-        &mut self,
+        &self,
         layouter: &mut impl Layouter<F>,
     ) -> Result<(), Error> {
         /// Initialization that is the same for every optimization
@@ -90,7 +90,7 @@ impl Blake2bInstructions for Blake2bChipOpt4Limbs {
 
     /// This methods is implemented the same way in all optimizations
     fn compute_blake2b_hash_for_inputs<F: PrimeField>(
-        &mut self,
+        &self,
         layouter: &mut impl Layouter<F>,
         output_size: usize,
         input_size: usize,
@@ -208,7 +208,7 @@ impl Blake2bChipOpt4Limbs {
     /// opt_4_limbs decomposes the sum operands in 16-bit limbs, so we need to range check them with
     /// a 16-bit lookup table. This method initializes it
     fn populate_lookup_table_16<F: PrimeField>(
-        &mut self,
+        &self,
         layouter: &mut impl Layouter<F>,
     ) -> Result<(), Error> {
         self.decompose_16_config.populate_lookup_table(layouter)
