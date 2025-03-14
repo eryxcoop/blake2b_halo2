@@ -4,8 +4,8 @@ use halo2_proofs::halo2curves::bn256::{Bn256};
 use blake2b_halo2::blake2b::chips::opt_4_limbs::Blake2bChipOpt4Limbs;
 use blake2b_halo2::blake2b::chips::opt_recycle::Blake2bChipOptRecycle;
 use blake2b_halo2::blake2b::chips::opt_spread::Blake2bChipOptSpread;
-use blake2b_halo2::blake2b::instructions::Blake2bInstructions;
 use criterion::measurement::WallTime;
+use blake2b_halo2::blake2b::chips::blake2b_generic::Blake2bGeneric;
 use blake2b_halo2::blake2b::circuit_runner::CircuitRunner;
 
 pub mod utils;
@@ -45,7 +45,7 @@ pub fn benchmark_verification(c: &mut Criterion) {
     group.finish()
 }
 
-fn benchmark_verification_iteration<OptimizationChip: Blake2bInstructions>(
+fn benchmark_verification_iteration<OptimizationChip: Blake2bGeneric>(
     params: &ParamsKZG<Bn256>,
     group: &mut BenchmarkGroup<WallTime>,
     amount_of_blocks: usize,

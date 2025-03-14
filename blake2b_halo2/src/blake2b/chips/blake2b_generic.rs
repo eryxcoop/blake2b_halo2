@@ -9,12 +9,29 @@ use crate::base_operations::generic_limb_rotation::LimbRotation;
 use crate::base_operations::negate::NegateConfig;
 use crate::base_operations::rotate_63::Rotate63Config;
 use crate::base_operations::xor::Xor;
-use crate::blake2b::instructions::Blake2bInstructions;
 
 /// This is the trait that groups the 3 optimization chips. Most of their code is the same, so the
 /// behaviour was encapsulated here. Each optimization has to override only 3 or 4 methods, besides
 /// its signature for some of the gates.
-pub trait Blake2bGeneric: Blake2bInstructions {
+pub trait Blake2bGeneric: Clone {
+
+    /// Configuration of the circuit, this includes initialization of all the necessary configs.
+    /// Some of them are general for every implementation, some are optimization-specific.
+    /// It should be called in the configuration of the user circuit.
+    fn configure<F: PrimeField>(
+        meta: &mut ConstraintSystem<F>,
+        full_number_u64: Column<Advice>,
+        limbs: [Column<Advice>; 8],
+    ) -> Self;
+
+    // [Inigo comment] Strange name - initialise with what? Also, this seems something non blake2b-specific
+    /// Initialization of the circuit. This will usually create the needed lookup tables for the
+    /// specific optimization. This should be called on the synthesize of the circuit but only once.
+    fn initialize_with<F: PrimeField>(
+        &mut self,
+        layouter: &mut impl Layouter<F>,
+    ) -> Result<(), Error>;
+
     // Getters for the internal members of the chip
     fn decompose_8_config(&mut self) -> Decompose8Config;
     fn generic_limb_rotation_config(&mut self) -> LimbRotation;

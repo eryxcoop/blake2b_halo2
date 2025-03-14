@@ -1,5 +1,5 @@
 use ff::PrimeField;
-use halo2_proofs::circuit::{AssignedCell, Layouter, Region, Value};
+use halo2_proofs::circuit::{AssignedCell, Layouter, Region};
 use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Error, Fixed, Instance};
 use crate::base_operations::addition_mod_64::{AdditionMod64Config};
 use crate::base_operations::decompose_16::Decompose16Config;
@@ -10,7 +10,6 @@ use crate::base_operations::negate::NegateConfig;
 use crate::base_operations::rotate_63::Rotate63Config;
 use crate::base_operations::xor::Xor;
 use crate::base_operations::xor_table::XorTableConfig;
-use crate::blake2b::instructions::Blake2bInstructions;
 use crate::blake2b::chips::blake2b_generic::Blake2bGeneric;
 
 /// This is the main chip for the Blake2b hash function. It is responsible for the entire hash computation.
@@ -40,9 +39,7 @@ pub struct Blake2bChipOpt4Limbs {
     expected_final_state: Column<Instance>,
 }
 
-/// These are the methods of the Blake2bInstructions trait. Every implementation of Blake2b should
-/// implement configuration, initialization and computation.
-impl Blake2bInstructions for Blake2bChipOpt4Limbs {
+impl Blake2bGeneric for Blake2bChipOpt4Limbs {
     fn configure<F: PrimeField>(
         meta: &mut ConstraintSystem<F>,
         full_number_u64: Column<Advice>,
@@ -88,29 +85,6 @@ impl Blake2bInstructions for Blake2bChipOpt4Limbs {
         self.populate_lookup_table_16(layouter)
     }
 
-    /// This methods is implemented the same way in all optimizations
-    fn compute_blake2b_hash_for_inputs<F: PrimeField>(
-        &mut self,
-        layouter: &mut impl Layouter<F>,
-        output_size: usize,
-        input_size: usize,
-        key_size: usize,
-        input: &[Value<F>],
-        key: &[Value<F>],
-    ) -> Result<(), Error> {
-        Blake2bGeneric::compute_blake2b_hash_for_inputs(
-            self,
-            layouter,
-            output_size,
-            input_size,
-            key_size,
-            input,
-            key,
-        )
-    }
-}
-
-impl Blake2bGeneric for Blake2bChipOpt4Limbs {
     // Getters that the trait needs for its default implementations
     fn decompose_8_config(&mut self) -> Decompose8Config {
         self.decompose_8_config.clone()
