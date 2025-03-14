@@ -90,7 +90,7 @@ impl Blake2bGeneric for Blake2bChipOpt4Limbs {
         self.decompose_8_config.clone()
     }
 
-    fn generic_limb_rotation_config(&mut self) -> LimbRotation {
+    fn generic_limb_rotation_config(&self) -> LimbRotation {
         self.generic_limb_rotation_config.clone()
     }
 

@@ -67,7 +67,7 @@ impl<F: PrimeField, OptimizationChip: Blake2bGeneric> Circuit<F>
     #[allow(unused_variables)]
     fn synthesize(
         &self,
-        mut config: Self::Config,
+        config: Self::Config,
         mut layouter: impl Layouter<F>,
     ) -> Result<(), Error> {
         /// The initialization function should be called before the hash computation. For many hash

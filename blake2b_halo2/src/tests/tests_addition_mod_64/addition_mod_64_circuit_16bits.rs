@@ -49,7 +49,7 @@ impl<F: PrimeField> Circuit<F> for AdditionMod64Circuit16Bits<F> {
     #[allow(unused_variables)]
     fn synthesize(
         &self,
-        mut config: Self::Config,
+        config: Self::Config,
         mut layouter: impl Layouter<F>,
     ) -> Result<(), Error> {
         config.decompose_16_config.populate_lookup_table(&mut layouter)?;
