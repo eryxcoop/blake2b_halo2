@@ -33,7 +33,7 @@ impl Xor for XorSpreadConfig {
         offset: &mut usize,
         previous_cell: &AssignedCell<F, F>,
         cell_to_copy: &AssignedCell<F, F>,
-        decompose_8_config: &mut Decompose8Config,
+        decompose_8_config: &Decompose8Config,
         use_previous_cell: bool,
     ) -> Result<[AssignedCell<F, F>; 9], Error> {
         let value_lhs = previous_cell.value().copied();

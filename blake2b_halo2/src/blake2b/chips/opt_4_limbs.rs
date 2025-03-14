@@ -112,27 +112,27 @@ impl Blake2bInstructions for Blake2bChipOpt4Limbs {
 
 impl<F: PrimeField> Blake2bGeneric<F, 4, 6> for Blake2bChipOpt4Limbs {
     // Getters that the trait needs for its default implementations
-    fn decompose_8_config(&mut self) -> Decompose8Config {
+    fn decompose_8_config(&self) -> Decompose8Config {
         self.decompose_8_config.clone()
     }
 
-    fn addition_config(&mut self) -> AdditionMod64Config<4, 6> {
+    fn addition_config(&self) -> AdditionMod64Config<4, 6> {
         self.addition_config.clone()
     }
 
-    fn generic_limb_rotation_config(&mut self) -> LimbRotation {
+    fn generic_limb_rotation_config(&self) -> LimbRotation {
         self.generic_limb_rotation_config.clone()
     }
 
-    fn rotate_63_config(&mut self) -> Rotate63Config<8, 9> {
+    fn rotate_63_config(&self) -> Rotate63Config<8, 9> {
         self.rotate_63_config.clone()
     }
 
-    fn xor_config(&mut self) -> impl Xor {
+    fn xor_config(&self) -> impl Xor {
         self.xor_config.clone()
     }
 
-    fn negate_config(&mut self) -> NegateConfig {
+    fn negate_config(&self) -> NegateConfig {
         self.negate_config.clone()
     }
 
@@ -193,7 +193,7 @@ impl<F: PrimeField> Blake2bGeneric<F, 4, 6> for Blake2bChipOpt4Limbs {
     /// where the next operation (which is a rotation) can just read the limbs directly and apply
     /// the limb rotation without copying the operand.
     fn xor_for_mix(
-        &mut self,
+        &self,
         previous_cell: &AssignedCell<F, F>,
         cell_to_copy: &AssignedCell<F, F>,
         region: &mut Region<F>,
