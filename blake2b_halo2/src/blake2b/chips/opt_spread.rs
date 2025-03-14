@@ -138,7 +138,7 @@ impl<F: PrimeField> Blake2bGeneric<F, 8, 10> for Blake2bChipOptSpread {
     /// opt_spread optimization decomposes the sum operands in 8-bit limbs, so we need to use the
     /// decompose_8_config for the sum operation instead of the decompose_16_config.
     fn add(
-        &mut self,
+        &self,
         lhs: &AssignedCell<F, F>,
         rhs: &AssignedCell<F, F>,
         region: &mut Region<F>,
@@ -160,7 +160,7 @@ impl<F: PrimeField> Blake2bGeneric<F, 8, 10> for Blake2bChipOptSpread {
     /// the last row in the circuit is one of the operands of the addition, so it only needs to copy
     /// one parameter because the other is already on the trace.
     fn add_copying_one_parameter(
-        &mut self,
+        &self,
         previous_cell: &AssignedCell<F, F>,
         cell_to_copy: &AssignedCell<F, F>,
         region: &mut Region<F>,

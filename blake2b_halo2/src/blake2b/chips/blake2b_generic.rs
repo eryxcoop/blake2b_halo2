@@ -445,7 +445,7 @@ pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
     }
 
     fn add(
-        &mut self,
+        &self,
         lhs: &AssignedCell<F, F>,
         rhs: &AssignedCell<F, F>,
         region: &mut Region<F>,
@@ -455,7 +455,7 @@ pub trait Blake2bGeneric<F: PrimeField, const LIMBS: usize, const WIDTH: usize>:
     /// Sometimes we can reutilice an output row to be the input row of the next operation. This is
     /// a convenience method for that in the case of the sum operation.
     fn add_copying_one_parameter(
-        &mut self,
+        &self,
         previous_cell: &AssignedCell<F, F>,
         cell_to_copy: &AssignedCell<F, F>,
         region: &mut Region<F>,
