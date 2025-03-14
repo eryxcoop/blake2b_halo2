@@ -194,6 +194,9 @@ pub trait Blake2bGeneric: Clone {
         let total_blocks = get_total_blocks_count(input_blocks, is_input_empty, is_key_empty);
         let last_input_block_index = if is_input_empty { 0 } else { input_blocks - 1 };
 
+        let zero_constant_cell =
+            self.assign_constant_to_fixed_cell(region, constants_offset, 0usize, "fixed 0")?;
+
         /// Main loop
         for i in 0..total_blocks {
             let is_last_block = i == total_blocks - 1;
@@ -221,9 +224,6 @@ pub trait Blake2bGeneric: Clone {
                 is_last_block,
                 is_key_block,
             )?;
-
-            let zero_constant_cell =
-                self.assign_constant_to_fixed_cell(region, constants_offset, 0usize, "fixed 0")?;
 
             /// Padding for the last block, in case the key block is not the only one.
             if is_last_block && !is_key_block {
