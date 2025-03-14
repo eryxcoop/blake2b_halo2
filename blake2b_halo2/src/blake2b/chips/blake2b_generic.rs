@@ -33,7 +33,6 @@ pub trait Blake2bGeneric: Clone {
     fn rotate_63_config(&self) -> Rotate63Config<8, 9>;
     fn xor_config(&self) -> impl Xor;
     fn negate_config(&self) -> NegateConfig;
-    fn expected_final_state(&self) -> Column<Instance>;
 
     // ---------- MAIN METHODS ---------- //
 
@@ -46,12 +45,12 @@ pub trait Blake2bGeneric: Clone {
         key_size: usize,
         input: &[Value<F>],
         key: &[Value<F>],
-    ) -> Result<(), Error> {
+    ) -> Result<[AssignedCell<F,F>; 64], Error> {
         enforce_input_sizes(output_size, key_size);
 
         /// All the computation is performed inside a single region. Some optimizations take advantage
         /// of this fact, since we want to avoid copying cells between regions.
-        let global_state_bytes = layouter.assign_region(
+        layouter.assign_region(
             || "single region",
             |mut region| {
                 /// Initialize in 0 the offset for the advice cells in the region
@@ -84,12 +83,6 @@ pub trait Blake2bGeneric: Clone {
                     zero_constant,
                 )
             },
-        )?;
-
-        self.constraint_public_inputs_to_equal_computation_results(
-            layouter,
-            global_state_bytes,
-            output_size,
         )
     }
 
@@ -129,7 +122,6 @@ pub trait Blake2bGeneric: Clone {
         LimbRotation,
         Rotate63Config<8, 9>,
         NegateConfig,
-        Column<Instance>,
     ) {
         enforce_modulus_size::<F>();
         let decompose_8_config = Decompose8Config::configure(meta, full_number_u64, limbs);
@@ -140,15 +132,11 @@ pub trait Blake2bGeneric: Clone {
         meta.enable_equality(constants);
         meta.enable_constant(constants);
 
-        let expected_final_state = meta.instance_column();
-        meta.enable_equality(expected_final_state);
-
         (
             decompose_8_config,
             LimbRotation,
             rotate_63_config,
             negate_config,
-            expected_final_state,
         )
     }
 
@@ -692,11 +680,12 @@ pub trait Blake2bGeneric: Clone {
         layouter: &mut impl Layouter<F>,
         global_state_bytes: [AssignedCell<F, F>; 64],
         output_size: usize,
+        public_inputs_instance_column: Column<Instance>
     ) -> Result<(), Error> {
         for (i, global_state_byte_cell) in global_state_bytes.iter().enumerate().take(output_size) {
             layouter.constrain_instance(
                 global_state_byte_cell.cell(),
-                self.expected_final_state(),
+                public_inputs_instance_column,
                 i,
             )?;
         }

@@ -1,6 +1,6 @@
 use ff::PrimeField;
 use std::marker::PhantomData;
-use halo2_proofs::plonk::{Advice, Circuit, Column, ConstraintSystem, Error};
+use halo2_proofs::plonk::{Advice, Circuit, Column, ConstraintSystem, Error, Instance};
 use halo2_proofs::circuit::{Layouter, SimpleFloorPlanner, Value};
 use std::array;
 use crate::blake2b::chips::blake2b_generic::Blake2bGeneric;
@@ -23,6 +23,7 @@ pub struct Blake2bConfig<F: PrimeField, OptimizationChip: Blake2bGeneric> {
     _ph: PhantomData<F>,
     /// The chip that will be used to compute the hash. We only need this.
     blake2b_chip: OptimizationChip,
+    expected_final_state: Column<Instance>
 }
 
 impl<F: PrimeField, OptimizationChip: Blake2bGeneric> Circuit<F>
@@ -55,12 +56,16 @@ impl<F: PrimeField, OptimizationChip: Blake2bGeneric> Circuit<F>
             meta.enable_equality(limb);
         }
 
+        let expected_final_state = meta.instance_column();
+        meta.enable_equality(expected_final_state);
+
         /// We need to provide the chip with the advice columns that it will use.
         let blake2b_chip = OptimizationChip::configure(meta, full_number_u64, limbs);
 
         Self::Config {
             _ph: PhantomData,
             blake2b_chip,
+            expected_final_state
         }
     }
 
@@ -73,14 +78,20 @@ impl<F: PrimeField, OptimizationChip: Blake2bGeneric> Circuit<F>
         /// The initialization function should be called before the hash computation. For many hash
         /// computations it should be called only once.
         config.blake2b_chip.initialize_with(&mut layouter)?;
-        config.blake2b_chip.compute_blake2b_hash_for_inputs(
+
+        /// Call to the blake2b function
+        let result_cells = config.blake2b_chip.compute_blake2b_hash_for_inputs(
             &mut layouter,
             self.output_size,
             self.input_size,
             self.key_size,
             &self.input,
             &self.key,
-        )
+        )?;
+
+        /// Assert results 
+        config.blake2b_chip.constraint_public_inputs_to_equal_computation_results(
+            &mut layouter, result_cells, self.output_size, config.expected_final_state)
     }
 }
 

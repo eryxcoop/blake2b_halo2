@@ -1,6 +1,6 @@
 use ff::PrimeField;
 use halo2_proofs::circuit::{AssignedCell, Layouter, Region};
-use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Error, Instance};
+use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Error};
 use crate::base_operations::addition_mod_64::AdditionMod64Config;
 use crate::base_operations::decompose_8::Decompose8Config;
 use crate::base_operations::generic_limb_rotation::LimbRotation;
@@ -26,8 +26,6 @@ pub struct Blake2bChipOptRecycle {
     rotate_63_config: Rotate63Config<8, 9>,
     xor_config: XorTableConfig,
     negate_config: NegateConfig,
-    /// Column for the expected final state of the hash
-    expected_final_state: Column<Instance>,
 }
 
 impl Blake2bGeneric for Blake2bChipOptRecycle {
@@ -42,7 +40,6 @@ impl Blake2bGeneric for Blake2bChipOptRecycle {
             generic_limb_rotation_config,
             rotate_63_config,
             negate_config,
-            expected_final_state,
         ) = Self::generic_configure(meta, full_number_u64, limbs);
 
         /// Config that is optimization-specific
@@ -58,7 +55,6 @@ impl Blake2bGeneric for Blake2bChipOptRecycle {
             rotate_63_config,
             xor_config,
             negate_config,
-            expected_final_state,
         }
     }
 
@@ -86,10 +82,6 @@ impl Blake2bGeneric for Blake2bChipOptRecycle {
 
     fn negate_config(&self) -> NegateConfig {
         self.negate_config.clone()
-    }
-
-    fn expected_final_state(&self) -> Column<Instance> {
-        self.expected_final_state
     }
 
     // Functions that are optimization-specific
