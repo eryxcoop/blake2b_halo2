@@ -13,11 +13,13 @@ pub type AdditionConfigWith8Limbs = AdditionMod64Config<8, 10>;
 /// It will allways be T + 2 (full number and carry)
 // [Inigo comment - solved] Configs do not need the generic F. please change throughout the whole codebase.
 pub struct AdditionMod64Config<const T: usize, const R: usize> {
+    // Mod64 addition should involve Decomposition + Limbs rangecheck, to guarantee each component is 64-bit
     carry: Column<Advice>,
     q_add: Selector,
 }
 
 impl<const T: usize, const R: usize> AdditionMod64Config<T, R> {
+    // without 64-bit range-check each component for the addition, the constraint would not hold
     pub fn configure<F: PrimeField>(
         meta: &mut ConstraintSystem<F>,
         full_number_u64: Column<Advice>,
