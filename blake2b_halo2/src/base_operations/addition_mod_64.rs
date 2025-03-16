@@ -20,6 +20,7 @@ pub struct AdditionMod64Config<const T: usize, const R: usize> {
 
 impl<const T: usize, const R: usize> AdditionMod64Config<T, R> {
     // without 64-bit range-check each component for the addition, the constraint would not hold
+    // configure should include the limbs as well
     pub fn configure<F: PrimeField>(
         meta: &mut ConstraintSystem<F>,
         full_number_u64: Column<Advice>,
