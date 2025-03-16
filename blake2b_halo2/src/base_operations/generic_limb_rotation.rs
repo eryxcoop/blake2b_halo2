@@ -20,6 +20,7 @@ impl LimbRotation {
     /// In the end of the method, the circuit will have the correct constraints to ensure that
     /// the output is the input rotated to the right by the number of limbs specified in the
     /// limb_rotations_right parameter.
+    // Pls note the method if it is only for test
     pub fn populate_rotation_rows<F: PrimeField>(
         &self,
         layouter: &mut impl Layouter<F>,
@@ -49,6 +50,7 @@ impl LimbRotation {
 
     /// This method receives a value, and copies it to the trace. Then calls another method to
     /// do the rotation
+    // Pls note it as for test only
     pub fn generate_rotation_rows_from_value<F: PrimeField>(
         &self,
         region: &mut Region<F>,
@@ -103,6 +105,8 @@ impl LimbRotation {
     }
 
     /// Here the rotation is enforced by copy constraints
+    // instead of computing again the limbs of shifted-rotation, how about copy-advice directly between the two
+    // relevant limbs for input_row and result_row
     #[allow(clippy::ptr_arg)]
     fn constrain_result_with_input_row<F: PrimeField>(
         region: &mut Region<F>,
