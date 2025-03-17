@@ -20,8 +20,11 @@ pub struct XorSpreadConfig {
     full_number_u64: Column<Advice>,
     limbs: [Column<Advice>; 8],
     extra: Column<Advice>,
-    // [Zhiyong comment] yeah, pls include Dcompose8Config directly
-    t_range: TableColumn, // TODO: unify with Decompose8Config
+    // [Zhiyong comment - answered] yeah, pls include Dcompose8Config directly
+    //
+    // Response: I think there's no need to include it since the only thing it would be doing is
+    // exposing the t_range column, but we'll change it in a way we reuse that column. We don't
+    // even need to hold the column because it's only being used in the config to create the lookups
     t_spread: TableColumn,
 
     q_xor: Selector,
@@ -120,15 +123,15 @@ impl Xor for XorSpreadConfig {
 }
 
 impl XorSpreadConfig {
-    // [Zhiyong comment] might be better to reuse configure of Decompose8Config
     pub fn configure<F: PrimeField>(
         meta: &mut ConstraintSystem<F>,
         limbs: [Column<Advice>; 8],
         full_number_u64: Column<Advice>,
         extra: Column<Advice>,
+        decompose_8_config: &Decompose8Config,
     ) -> Self {
         let q_xor = meta.complex_selector();
-        let t_range = meta.lookup_table_column();
+        let t_range = decompose_8_config.range_table_column().clone();
         let t_spread = meta.lookup_table_column();
 
         let columns = Self::advice_columns_in_order::<F>(full_number_u64, limbs, extra);
@@ -187,7 +190,6 @@ impl XorSpreadConfig {
             full_number_u64,
             limbs,
             extra,
-            t_range,
             t_spread,
             q_xor,
         }
@@ -252,12 +254,6 @@ impl XorSpreadConfig {
             || "xor spread table",
             |mut table| {
                 for i in 0..1 << 8 {
-                    table.assign_cell(
-                        || "original value",
-                        self.t_range,
-                        i,
-                        || value_for::<u64, F>(i as u64),
-                    )?;
                     table.assign_cell(
                         || "spread value",
                         self.t_spread,
