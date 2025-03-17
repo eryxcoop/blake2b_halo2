@@ -49,30 +49,6 @@ impl LimbRotation {
         Ok(())
     }
 
-    /// This method receives a value, and copies it to the trace. Then calls another method to
-    /// do the rotation
-    // [Zhiyong comment] Pls note it as for test only
-    pub fn generate_rotation_rows_from_value<F: PrimeField>(
-        &self,
-        region: &mut Region<F>,
-        offset: &mut usize,
-        decompose_config: &mut impl Decomposition<8>,
-        input: Value<F>,
-        limbs_to_rotate_to_the_right: usize,
-    ) -> Result<AssignedCell<F, F>, Error> {
-        let input_row =
-            decompose_config.generate_row_from_value_and_keep_row(region, input, *offset)?;
-        *offset += 1;
-
-        self.generate_rotation_rows_from_input_row(
-            region,
-            offset,
-            decompose_config,
-            input_row.try_into().unwrap(),
-            limbs_to_rotate_to_the_right,
-        )
-    }
-
     /// This method receives a row of cells, and rotates the limbs to the right by the number
     /// specified in the limbs_to_rotate_to_the_right parameter. It then constrains the output
     /// to be the correct rotation of the input.

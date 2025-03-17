@@ -81,16 +81,22 @@ impl<F: PrimeField, const T: usize> Circuit<F> for LimbRotationCircuitAutogenera
             || format!("Rotate {} limbs", limbs_to_rotate_to_the_right),
             |mut region| {
                 let mut offset = 0;
-                let result = config
+                let input_row =
+                    config.limb_rotation_config.decompose_8_config.generate_row_from_value_and_keep_row(
+                        &mut region, self.input, offset)?;
+                offset += 1;
+
+                let self1 = &config
                     .limb_rotation_config
-                    .limb_rotation_config
-                    .generate_rotation_rows_from_value(
-                        &mut region,
-                        &mut offset,
-                        &mut config.limb_rotation_config.decompose_8_config,
-                        self.input,
-                        limbs_to_rotate_to_the_right,
-                    )?;
+                    .limb_rotation_config;
+                let decompose_config = &mut config.limb_rotation_config.decompose_8_config;
+                let result = self1.generate_rotation_rows_from_input_row(
+                    &mut region,
+                    &mut offset,
+                    decompose_config,
+                    input_row.try_into().unwrap(),
+                    limbs_to_rotate_to_the_right,
+                )?;
 
                 // Check that the calculation was performed correctly by the limb rotation config
                 let fixed_cell = region.assign_fixed(
