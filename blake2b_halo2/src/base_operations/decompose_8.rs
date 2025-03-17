@@ -18,6 +18,50 @@ pub struct Decompose8Config {
 }
 
 impl Decompose8Config {
+    /// The full number and the limbs are not owned by the config.
+    pub fn configure<F: PrimeField>(
+        meta: &mut ConstraintSystem<F>,
+        full_number_u64: Column<Advice>,
+        limbs: [Column<Advice>; 8],
+    ) -> Self {
+        let t_range = meta.lookup_table_column();
+        let q_decompose = meta.complex_selector();
+
+        /// Gate that checks if the decomposition is correct
+        meta.create_gate("decompose in 8 bit words", |meta| {
+            let q_decompose = meta.query_selector(q_decompose);
+            let full_number = meta.query_advice(full_number_u64, Rotation::cur());
+            let limbs: Vec<Expression<F>> =
+                limbs.iter().map(|column| meta.query_advice(*column, Rotation::cur())).collect();
+            vec![
+                q_decompose
+                    * (full_number
+                    - limbs[0].clone()
+                    - limbs[1].clone() * Expression::Constant(F::from(1 << 8))
+                    - limbs[2].clone() * Expression::Constant(F::from(1 << 16))
+                    - limbs[3].clone() * Expression::Constant(F::from(1 << 24))
+                    - limbs[4].clone() * Expression::Constant(F::from(1 << 32))
+                    - limbs[5].clone() * Expression::Constant(F::from(1 << 40))
+                    - limbs[6].clone() * Expression::Constant(F::from(1 << 48))
+                    - limbs[7].clone() * Expression::Constant(F::from(1 << 56))),
+            ]
+        });
+
+        /// Range checks for all the limbs
+        /// I think its fine to explicitly add the lookup call here rather than having the function
+        /// call (at the end of the day you use it only twice).
+        for limb in limbs {
+            Self::range_check_for_limb(meta, &limb, &q_decompose, &t_range);
+        }
+
+        Self {
+            full_number_u64,
+            limbs,
+            q_decompose,
+            t_range,
+        }
+    }
+
     // [Zhiyong comment - answered] no need to implement this method, unless we would use wrapping types
     //
     // We need this to be able to access the limbs column. We don't have access outside the chip
@@ -42,50 +86,6 @@ impl Decomposition<8> for Decompose8Config {
     const LIMB_SIZE: usize = 8;
     fn range_table_column(&self) -> TableColumn {
         self.t_range
-    }
-
-    /// The full number and the limbs are not owned by the config.
-    fn configure<F: PrimeField>(
-        meta: &mut ConstraintSystem<F>,
-        full_number_u64: Column<Advice>,
-        limbs: [Column<Advice>; 8],
-    ) -> Self {
-        let t_range = meta.lookup_table_column();
-        let q_decompose = meta.complex_selector();
-
-        /// Gate that checks if the decomposition is correct
-        meta.create_gate("decompose in 8 bit words", |meta| {
-            let q_decompose = meta.query_selector(q_decompose);
-            let full_number = meta.query_advice(full_number_u64, Rotation::cur());
-            let limbs: Vec<Expression<F>> =
-                limbs.iter().map(|column| meta.query_advice(*column, Rotation::cur())).collect();
-            vec![
-                q_decompose
-                    * (full_number
-                        - limbs[0].clone()
-                        - limbs[1].clone() * Expression::Constant(F::from(1 << 8))
-                        - limbs[2].clone() * Expression::Constant(F::from(1 << 16))
-                        - limbs[3].clone() * Expression::Constant(F::from(1 << 24))
-                        - limbs[4].clone() * Expression::Constant(F::from(1 << 32))
-                        - limbs[5].clone() * Expression::Constant(F::from(1 << 40))
-                        - limbs[6].clone() * Expression::Constant(F::from(1 << 48))
-                        - limbs[7].clone() * Expression::Constant(F::from(1 << 56))),
-            ]
-        });
-
-        /// Range checks for all the limbs
-        /// I think its fine to explicitly add the lookup call here rather than having the function
-        /// call (at the end of the day you use it only twice).
-        for limb in limbs {
-            Self::range_check_for_limb(meta, &limb, &q_decompose, &t_range);
-        }
-
-        Self {
-            full_number_u64,
-            limbs,
-            q_decompose,
-            t_range,
-        }
     }
 
     fn populate_row_from_values<F: PrimeField>(

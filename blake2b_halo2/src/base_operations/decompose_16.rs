@@ -16,14 +16,9 @@ pub struct Decompose16Config {
     t_range: TableColumn,
 }
 
-impl Decomposition<4> for Decompose16Config {
-    const LIMB_SIZE: usize = 16;
-    fn range_table_column(&self) -> TableColumn {
-        self.t_range
-    }
-
+impl Decompose16Config {
     /// The full number and the limbs are not owned by the config.
-    fn configure<F: PrimeField>(
+    pub fn configure<F: PrimeField>(
         meta: &mut ConstraintSystem<F>,
         full_number_u64: Column<Advice>,
         limbs: [Column<Advice>; 4],
@@ -40,10 +35,10 @@ impl Decomposition<4> for Decompose16Config {
             vec![
                 q_decompose
                     * (full_number
-                        - limbs[0].clone()
-                        - limbs[1].clone() * Expression::Constant(F::from(1 << 16))
-                        - limbs[2].clone() * Expression::Constant(F::from(1 << 32))
-                        - limbs[3].clone() * Expression::Constant(F::from(1 << 48))),
+                    - limbs[0].clone()
+                    - limbs[1].clone() * Expression::Constant(F::from(1 << 16))
+                    - limbs[2].clone() * Expression::Constant(F::from(1 << 32))
+                    - limbs[3].clone() * Expression::Constant(F::from(1 << 48))),
             ]
         });
 
@@ -58,6 +53,13 @@ impl Decomposition<4> for Decompose16Config {
             limbs,
             t_range,
         }
+    }
+}
+
+impl Decomposition<4> for Decompose16Config {
+    const LIMB_SIZE: usize = 16;
+    fn range_table_column(&self) -> TableColumn {
+        self.t_range
     }
 
     fn populate_row_from_values<F: PrimeField>(

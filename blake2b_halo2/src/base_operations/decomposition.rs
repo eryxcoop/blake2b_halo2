@@ -13,13 +13,6 @@ pub trait Decomposition<const T: usize> {
 
     fn range_table_column(&self) -> TableColumn;
 
-    // [Zhiyong comment] should we include configure into the trait?
-    fn configure<F: PrimeField>(
-        meta: &mut ConstraintSystem<F>,
-        full_number_u64: Column<Advice>,
-        limbs: [Column<Advice>; T],
-    ) -> Self;
-
     /// Given an explicit vector of values, it assigns the full number and the limbs in a row of the trace
     /// row size is T + 1
     /// row[0] is the full number
