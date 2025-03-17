@@ -18,7 +18,9 @@ pub struct Decompose8Config {
 }
 
 impl Decompose8Config {
-    // [Zhiyong comment] no need to implement this method, unless we would use wrapping types
+    // [Zhiyong comment - answered] no need to implement this method, unless we would use wrapping types
+    //
+    // We need this to be able to access the limbs column. We don't have access outside the chip
     pub fn assign_constant_in_cell<F: PrimeField>(
         &self,
         region: &mut Region<F>,
