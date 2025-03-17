@@ -69,17 +69,16 @@ impl<const T: usize, const R: usize> Rotate63Config<T, R> {
 
     /// Receives a row of cells, generates a row for the rotation of 63 bits to the right
     /// and populates the circuit with it
-    // [Zhiyong comment] as the configure only invovles two cells of one column, the assignment should be done for cells?
     pub fn generate_rotation_rows_from_cells<F: PrimeField>(
         &self,
         region: &mut Region<F>,
         offset: &mut usize,
-        input_row: [AssignedCell<F, F>; 9],
+        input: &AssignedCell<F, F>,
         decompose_config: &mut impl Decomposition<T>,
     ) -> Result<AssignedCell<F, F>, Error> {
         self.q_rot63.enable(region, *offset)?;
 
-        let result_value = input_row[0]
+        let result_value = input
             .value()
             .map(|input| auxiliar_functions::rotate_right_field_element(*input, 63));
 

@@ -503,7 +503,7 @@ pub trait Blake2bGeneric: Clone {
         self.rotate_63_config().generate_rotation_rows_from_cells(
             region,
             offset,
-            input_row,
+            &input_row[0],
             &mut decompose_8_config,
         )
     }
