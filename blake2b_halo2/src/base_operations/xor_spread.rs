@@ -31,13 +31,12 @@ pub struct XorSpreadConfig {
 }
 
 impl Xor for XorSpreadConfig {
-    /// Method that populates the spread lookup tables. Must be called only once in the user circuit.
+    /// Method that populates the spread lookup table. Must be called only once in the user circuit.
     fn populate_xor_lookup_table<F: PrimeField>(
         &self,
         layouter: &mut impl Layouter<F>,
     ) -> Result<(), Error> {
-        self.populate_spread_table(layouter)?;
-        Ok(())
+        self.populate_spread_table(layouter)
     }
 
     fn generate_xor_rows_from_cells<F: PrimeField>(
