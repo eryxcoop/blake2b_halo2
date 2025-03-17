@@ -49,9 +49,13 @@ impl Xor for XorSpreadConfig {
         let value_lhs = previous_cell.value().copied();
         let value_rhs = cell_to_copy.value().copied();
 
+
         if !use_previous_cell {
+            self.q_xor.enable(region, *offset)?;
             decompose_8_config.generate_row_from_cell(region, previous_cell, *offset)?;
             *offset += 1;
+        } else {
+            self.q_xor.enable(region, *offset - 1)?;
         }
 
         decompose_8_config.generate_row_from_cell(region, cell_to_copy, *offset)?;
@@ -79,8 +83,6 @@ impl Xor for XorSpreadConfig {
             value_result,
             *offset,
         )?;
-
-        self.q_xor.enable(region, *offset)?;
         *offset += 1;
 
         value_lhs.zip(value_rhs).zip(value_result).map(|((lhs, rhs), result)| {
@@ -140,8 +142,7 @@ impl XorSpreadConfig {
             #[allow(clippy::needless_range_loop)]
             for row in 0..6 {
                 for col in 0..10 {
-                    // [Zhiyong comment] what's the benefit of using negative rotations here?
-                    grid[row][col] = meta.query_advice(columns[col], Rotation(row as i32 - 5));
+                    grid[row][col] = meta.query_advice(columns[col], Rotation(row as i32));
                 }
             }
             let z_expr = z_limb_positions
@@ -163,20 +164,20 @@ impl XorSpreadConfig {
         });
 
         // Lookup spread lhs
-        Self::lookup_spread_rows(meta, q_xor, t_range, t_spread, columns, -5, -3);
+        Self::lookup_spread_rows(meta, q_xor, t_range, t_spread, columns, 0, 2);
 
         // Lookup spread rhs
-        Self::lookup_spread_rows(meta, q_xor, t_range, t_spread, columns, -4, -2);
+        Self::lookup_spread_rows(meta, q_xor, t_range, t_spread, columns, 1, 3);
 
         // Lookup spread result
-        Self::lookup_spread_rows(meta, q_xor, t_range, t_spread, columns, 0, -1);
+        Self::lookup_spread_rows(meta, q_xor, t_range, t_spread, columns, 5, 4);
 
         // Lookup z limbs
         for (row, column_index) in z_limb_positions.iter() {
             meta.lookup("reminder spread", |meta| {
                 let q_xor = meta.query_selector(q_xor);
                 let z_limb =
-                    meta.query_advice(columns[*column_index], Rotation(*row as i32 - 5));
+                    meta.query_advice(columns[*column_index], Rotation(*row as i32));
 
                 vec![(q_xor.clone() * z_limb, t_spread)]
             });
