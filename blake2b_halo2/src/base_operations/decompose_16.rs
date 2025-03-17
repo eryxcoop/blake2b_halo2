@@ -60,7 +60,6 @@ impl Decomposition<4> for Decompose16Config {
         }
     }
 
-    /// Given an explicit vector of values, it assigns the full number and the limbs in a row of the trace
     fn populate_row_from_values<F: PrimeField>(
         &self,
         region: &mut Region<F>,
@@ -77,7 +76,6 @@ impl Decomposition<4> for Decompose16Config {
         Ok(vec![limb_0, limb_1, limb_2, limb_3])
     }
 
-    /// Given a value of 64 bits, it returns a row with the assigned cells for the full number and the limbs
     fn generate_row_from_value<F: PrimeField>(
         &self,
         region: &mut Region<F>,
@@ -114,7 +112,6 @@ impl Decomposition<4> for Decompose16Config {
         panic!("Not implemented");
     }
 
-    /// Given a value and a limb index, it returns the value of the limb
     fn get_limb_from<F: PrimeField>(value: Value<F>, limb_number: usize) -> Value<F> {
         value.map(|v| {
             let binding = v.to_repr();

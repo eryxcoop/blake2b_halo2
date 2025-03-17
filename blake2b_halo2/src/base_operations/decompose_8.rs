@@ -86,10 +86,6 @@ impl Decomposition<8> for Decompose8Config {
         }
     }
 
-    /// Given an explicit vector of values, it assigns the full number and the limbs in a row of the trace
-    // [Inigo comment] If you are assuming a structure in the input `row`, you should specify it in the
-    // docs of the function (e.g. row[0] is a u64 value, and the rest is its decomposition).
-    // also the repr is in little endian
     fn populate_row_from_values<F: PrimeField>(
         &self,
         region: &mut Region<F>,
@@ -115,7 +111,6 @@ impl Decomposition<8> for Decompose8Config {
         Ok(std::iter::once(full_number).chain(limbs).collect())
     }
 
-    /// Given a value of 64 bits, it returns a row with the assigned cells for the full number and the limbs
     fn generate_row_from_value<F: PrimeField>(
         &self,
         region: &mut Region<F>,
@@ -127,7 +122,6 @@ impl Decomposition<8> for Decompose8Config {
         Ok(full_number_cell)
     }
 
-    /// Given 8 8-bit limbs, it returns a row with the assigned cells for the full number and the limbs
     fn generate_row_from_bytes<F: PrimeField>(
         &self,
         region: &mut Region<F>,
@@ -146,28 +140,6 @@ impl Decomposition<8> for Decompose8Config {
         self.generate_row_from_value_and_keep_row(region, Value::known(full_number), offset)
     }
 
-    /// Given a cell with a 64-bit value, it returns a new row with the copied full number and the
-    /// decomposition in 8-bit limbs
-    // [Zhiyong comment] already done in default implementation of the trait
-    fn generate_row_from_cell<F: PrimeField>(
-        &self,
-        region: &mut Region<F>,
-        cell: &AssignedCell<F, F>,
-        offset: usize,
-    ) -> Result<Vec<AssignedCell<F, F>>, Error> {
-        let value = cell.value().copied();
-        let new_cells = self.generate_row_from_value_and_keep_row(region, value, offset)?;
-        // [Inigo comment] This seems very dangerous, and food for bugs. `generate_row_from_value_and_keep_row`
-        // should be properly document (I think I made this comment somewhere else in the code base)
-        region.constrain_equal(cell.cell(), new_cells[0].cell())?;
-        Ok(new_cells)
-    }
-
-    /// Convenience method for generating a row from a value and keeping the full row.
-    /// Given a Value, we might want to use it as an operand in the circuit, and sometimes we need
-    /// to establish constraints over the result's limbs. That's why we need a way to retrieve the
-    /// full row that was created from that value. An example of this could be the Generic Limb
-    /// Rotation Operation, where we need to establish copy constraints over the rotated limbs.
     fn generate_row_from_value_and_keep_row<F: PrimeField>(
         &self,
         region: &mut Region<F>,
@@ -192,8 +164,6 @@ impl Decomposition<8> for Decompose8Config {
         Ok(result)
     }
 
-    /// Given a value and a limb index, it returns the value of the limb
-    // [Zhiyong comment] should explicitly mention the F::Repr is little endian
     fn get_limb_from<F: PrimeField>(value: Value<F>, limb_number: usize) -> Value<F> {
         value.map(|v| field_for(get_limb_from_field(v, limb_number)))
     }
