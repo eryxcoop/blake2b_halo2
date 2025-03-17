@@ -67,7 +67,8 @@ impl Xor for XorSpreadConfig {
         // assigned here is the same as the input?
         // Maybe soundness issue? copy constraint missing
         //
-        // The gate is guaranteeing soundness here
+        // The gate is guaranteeing soundness here, since it is checking that these two following
+        // rows contains the spread of the limbs of the input values (in the two previous rows)
         self.populate_spread_limbs_of(region, offset, value_lhs);
         *offset += 1;
 
