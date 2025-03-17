@@ -38,7 +38,7 @@ name = "verification"
 harness = false
 
 [features]
-default = ["opt_spread"]
+default = ["opt_4_limbs"]
 opt_4_limbs = []
 opt_recycle = []
 opt_spread  = []
