@@ -3,6 +3,7 @@ use halo2_proofs::circuit::AssignedCell;
 
 /// This config handles the 63-right-bit rotation of a 64-bit number, which is the same as the
 /// 1-bit rotation to the left.
+// [Zhiyong comment] should better documented regarding the legitimate field size for this special chip
 #[derive(Clone, Debug)]
 pub struct Rotate63Config<const T: usize, const R: usize> {
     q_rot63: Selector,
@@ -42,6 +43,8 @@ impl<const T: usize, const R: usize> Rotate63Config<T, R> {
     // gate is correctly defined. If we use the generate_rotation_rows_from_cells, we wouldn't be able
     // to fill the circuit with incorrect values and check that the proof is rejected.
     // We need to make it public to be able to call it from the tests.
+
+    // how about adding `enforce_modulus_size::<F>();` within this chip to keep the generic chip implementation clean?
     pub fn populate_rotation_rows<F: PrimeField>(
         &self,
         layouter: &mut impl Layouter<F>,
@@ -63,6 +66,7 @@ impl<const T: usize, const R: usize> Rotate63Config<T, R> {
 
     /// Receives a row of cells, generates a row for the rotation of 63 bits to the right
     /// and populates the circuit with it
+    // as the configure only invovles two cells of one column, the assignment should be done for cells?
     pub fn generate_rotation_rows_from_cells<F: PrimeField>(
         &self,
         region: &mut Region<F>,

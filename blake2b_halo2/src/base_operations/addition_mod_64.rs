@@ -30,6 +30,9 @@ impl<const T: usize, const R: usize> AdditionMod64Config<T, R> {
         ///     sum mod 2 ^ 64 = full_number_result - full_number_x - full_number_y
         ///                     + carry * (1 << 64)
         ///    carry = carry * (1 << 0) - carry
+        ///
+        /// Note that the full number is implicitly range checked to be a 64-bit number because we
+        /// are using 8-bit limbs (we are using the decompose 8 config)
         meta.create_gate("sum mod 2 ^ 64", |meta| {
             let q_add = meta.query_selector(q_add);
             let full_number_x = meta.query_advice(full_number_u64, Rotation(0));
