@@ -11,7 +11,14 @@ The repo is divided into three parts:
 
 # Different blake implementations
 
-We use features to toggle between different implementations. Right now we have three implementations (for more information about them you can see our [Blake2b implementation in Halo2](https://hackmd.io/@BjOWve_hTxGZidE1ii0HJg/HkVu20JFkx) documentation).
+## Documentation
+
+We have a [documentation](https://hackmd.io/@BjOWve_hTxGZidE1ii0HJg/HkVu20JFkx) where you can find more detail about 
+every implementation and the optimizations we made. Also you can find more explanation of all our gates.
+
+## Implementations
+
+We use features to toggle between different implementations. Right now we have three implementations (for more information about them you can see our documentation).
 
 To use our 'opt_4_limbs' implementation, set the `opt_4_limbs` feature.
 

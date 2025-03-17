@@ -5,6 +5,16 @@ use crate::base_operations::decompose_8::Decompose8Config;
 use crate::base_operations::xor::Xor;
 use super::*;
 
+/// This config produces a trace of the following shape (see our documentation for more details):
+/// 0: [x, l_0(x), l_1(x), l_2(x), l_3(x), l_4(x), l_5(x), l_6(x), l_7(x), - ]
+/// 1: [y, l_0(y), l_1(y), l_2(y), l_3(y), l_4(y), l_5(y), l_6(y), l_7(y), z_3 ]
+/// 2: [z_0, sp(l_0(x), sp(l_0(x), sp(l_0(x), sp(l_0(x), sp(l_0(x), sp(l_0(x), sp(l_0(x), s(l_0(x), z_4]
+/// 3: [z_1, sp(l_0(y), sp(l_0(y), sp(l_0(y), sp(l_0(y), sp(l_0(y), sp(l_0(y), sp(l_0(y), s(l_0(y), z_5]
+/// 4: [z_2, sp(l_0(w), sp(l_0(w), sp(l_0(w), sp(l_0(w), sp(l_0(w), sp(l_0(w), sp(l_0(w), s(l_0(w), z_6]
+/// 1: [w, l_0(w), l_1(w), l_2(w), l_3(w), l_4(w), l_5(w), l_6(w), l_7(w), z_7 ]
+///
+/// Where x and y are the values being XORed, w is the result of the operation and z_i are the
+/// odd bits of x + y
 #[derive(Clone, Debug)]
 pub struct XorSpreadConfig {
     full_number_u64: Column<Advice>,
@@ -74,15 +84,15 @@ impl Xor for XorSpreadConfig {
         *offset += 1;
 
         value_lhs.zip(value_rhs).zip(value_result).map(|((lhs, rhs), result)| {
-            // to get z_i, can we reuse the spread limb values already assigned above?
+            // [Zhiyong comment] to get z_i, can we reuse the spread limb values already assigned above?
             let lhs_limb_values = auxiliar_functions::decompose_field_8bit_limbs(lhs);
             let rhs_limb_values = auxiliar_functions::decompose_field_8bit_limbs(rhs);
             let result_limb_values = auxiliar_functions::decompose_field_8bit_limbs(result);
 
-            let empty_spread_positions = Self::empty_spread_positions::<F>();
+            let z_limb_positions = Self::z_limb_positions::<F>();
             let columns_in_order =
                 Self::columns_in_order::<F>(self.full_number_u64, self.limbs, self.extra);
-            // a handling error when z_i not divided by 2
+            // [Zhiyong comment] a handling error when z_i not divided by 2
             for i in 0..8 {
                 let z_i = (Self::spread_bits::<F>(lhs_limb_values[i])
                     + Self::spread_bits::<F>(rhs_limb_values[i])
@@ -92,10 +102,9 @@ impl Xor for XorSpreadConfig {
                 region
                     .assign_advice(
                         || format!("reminder z_{}", i),
-                        columns_in_order[empty_spread_positions[i].1],
-                        // We need to subtract 6 since we are in the offset 7 because we already assigned all rows
-                        // [Zhiyong comment] we are in the offset 6, not 7 ???
-                        *offset + empty_spread_positions[i].0 - 6,
+                        columns_in_order[z_limb_positions[i].1],
+                        // We need to subtract 6 since we are in the offset 6 because we already assigned all rows
+                        *offset + z_limb_positions[i].0 - 6,
                         || value_for::<u16, F>(z_i),
                     )
                     .unwrap();
@@ -109,7 +118,7 @@ impl Xor for XorSpreadConfig {
 }
 
 impl XorSpreadConfig {
-    // might be better to reuse configure of Decompose8Config
+    // [Zhiyong comment] might be better to reuse configure of Decompose8Config
     pub fn configure<F: PrimeField>(
         meta: &mut ConstraintSystem<F>,
         limbs: [Column<Advice>; 8],
@@ -122,7 +131,7 @@ impl XorSpreadConfig {
 
         let columns = Self::columns_in_order::<F>(full_number_u64, limbs, extra);
 
-        let empty_spread_positions: [(usize, usize); 8] = Self::empty_spread_positions::<F>();
+        let z_limb_positions: [(usize, usize); 8] = Self::z_limb_positions::<F>();
 
         meta.create_gate("xor with spread", |meta| {
             let q_xor = meta.query_selector(q_xor);
@@ -131,11 +140,11 @@ impl XorSpreadConfig {
             #[allow(clippy::needless_range_loop)]
             for row in 0..6 {
                 for col in 0..10 {
-                    // what's the benefit of using negative rotations here?
+                    // [Zhiyong comment] what's the benefit of using negative rotations here?
                     grid[row][col] = meta.query_advice(columns[col], Rotation(row as i32 - 5));
                 }
             }
-            let z_expr = empty_spread_positions
+            let z_expr = z_limb_positions
                 .iter()
                 .map(|&(row, col)| &grid[row][col])
                 .collect::<Vec<_>>();
@@ -162,14 +171,14 @@ impl XorSpreadConfig {
         // Lookup spread result
         Self::lookup_spread_rows(meta, q_xor, t_range, t_spread, columns, 0, -1);
 
-        // Lookup empty spread
-        for (row, column_index) in empty_spread_positions.iter() {
+        // Lookup z limbs
+        for (row, column_index) in z_limb_positions.iter() {
             meta.lookup("reminder spread", |meta| {
                 let q_xor = meta.query_selector(q_xor);
-                let empty_spread_limb =
+                let z_limb =
                     meta.query_advice(columns[*column_index], Rotation(*row as i32 - 5));
 
-                vec![(q_xor.clone() * empty_spread_limb, t_spread)]
+                vec![(q_xor.clone() * z_limb, t_spread)]
             });
         }
 
@@ -189,12 +198,12 @@ impl XorSpreadConfig {
         offset: &mut usize,
         value: Value<F>,
     ) {
-        value.and_then(|lhs| {
-            let lhs_limb_values = auxiliar_functions::decompose_field_8bit_limbs(lhs);
+        value.and_then(|v| {
+            let lhs_limb_values = auxiliar_functions::decompose_field_8bit_limbs(v);
             for (i, limb) in lhs_limb_values.iter().enumerate() {
                 region
                     .assign_advice(
-                        || "lhs limb",
+                        || "spread",
                         self.limbs[i],
                         *offset,
                         || value_for::<u16, F>(Self::spread_bits::<F>(*limb)),
@@ -205,7 +214,7 @@ impl XorSpreadConfig {
         });
     }
 
-    // doc
+    // [Zhiyong coment] doc
     fn lookup_spread_rows<F: PrimeField>(
         meta: &mut ConstraintSystem<F>,
         q_xor: Selector,
@@ -267,12 +276,12 @@ impl XorSpreadConfig {
         spread
     }
 
-    // doc
-    fn empty_spread_positions<F: PrimeField>() -> [(usize, usize); 8] {
+    /// A list of the relative places in the grid where z limbs assigned
+    fn z_limb_positions<F: PrimeField>() -> [(usize, usize); 8] {
         [(2, 0), (3, 0), (4, 0), (1, 9), (2, 9), (3, 9), (4, 9), (5, 9)]
     }
 
-    // doc
+    // [Zhiyong comment] doc
     fn columns_in_order<F: PrimeField>(
         full_number_u64: Column<Advice>,
         limbs: [Column<Advice>; 8],

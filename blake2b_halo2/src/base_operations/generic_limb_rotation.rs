@@ -15,12 +15,13 @@ impl LimbRotation {
     }
 
     /// This method is meant to receive a valid rotation_trace, and populate the circuit with it
-    /// The rotation trace is a matrix with 2 rows and 9 columns. The rows represent the input
-    /// and output of the rotation, and the columns represent the limbs of each number.
+    /// The rotation trace is a 2x9 matrix. The rows represent the input and output of the rotation,
+    /// and the columns represent the limbs of each number.
     /// In the end of the method, the circuit will have the correct constraints to ensure that
     /// the output is the input rotated to the right by the number of limbs specified in the
     /// limb_rotations_right parameter.
-    // [Zhiyong comment] Pls note the method if it is only for test
+    /// This method is not used in the actual circuit, but it is useful for testing if you want to
+    /// write a test where the values are incorrect and check that the contstaints fail.
     pub fn populate_rotation_rows<F: PrimeField>(
         &self,
         layouter: &mut impl Layouter<F>,
