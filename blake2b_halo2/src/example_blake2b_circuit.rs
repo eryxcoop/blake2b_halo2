@@ -3,6 +3,7 @@ use std::marker::PhantomData;
 use halo2_proofs::plonk::{Advice, Circuit, Column, ConstraintSystem, Error, Instance};
 use halo2_proofs::circuit::{Layouter, SimpleFloorPlanner, Value};
 use std::array;
+use crate::blake2b::blake2b::Blake2b;
 use crate::blake2b::chips::blake2b_generic::Blake2bGeneric;
 
 /// This is an example circuit of how you should use the Blake2b chip.
@@ -23,6 +24,7 @@ pub struct Blake2bConfig<F: PrimeField, OptimizationChip: Blake2bGeneric> {
     _ph: PhantomData<F>,
     /// The chip that will be used to compute the hash. We only need this.
     blake2b_chip: OptimizationChip,
+    /// Column that will hold the expected output of the hash in the form of public inputs
     expected_final_state: Column<Instance>,
 }
 
@@ -77,25 +79,14 @@ impl<F: PrimeField, OptimizationChip: Blake2bGeneric> Circuit<F>
     ) -> Result<(), Error> {
         /// The initialization function should be called before the hash computation. For many hash
         /// computations it should be called only once.
-        config.blake2b_chip.populate_lookup_tables(&mut layouter)?;
+        let mut blake2b = Blake2b::new(config.blake2b_chip)?;
+        blake2b.initialize(&mut layouter)?;
 
         /// Call to the blake2b function
-        let result_cells = config.blake2b_chip.compute_blake2b_hash_for_inputs(
-            &mut layouter,
-            self.output_size,
-            self.input_size,
-            self.key_size,
-            &self.input,
-            &self.key,
-        )?;
+        let result = blake2b.hash(&mut layouter, &self.input, &self.key, self.output_size)?;
 
         /// Assert results
-        config.blake2b_chip.constraint_public_inputs_to_equal_computation_results(
-            &mut layouter,
-            result_cells,
-            self.output_size,
-            config.expected_final_state,
-        )
+        blake2b.constrain_result(&mut layouter, result, config.expected_final_state, self.output_size)
     }
 }
 
