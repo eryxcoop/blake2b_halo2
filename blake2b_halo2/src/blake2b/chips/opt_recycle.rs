@@ -54,7 +54,7 @@ impl Blake2bGeneric for Blake2bChipOptRecycle {
         }
     }
 
-    fn initialize_with<F: PrimeField>(&self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
+    fn populate_lookup_tables<F: PrimeField>(&self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
         /// Initialization that is the same for every optimization
         self.generic_initialize_with(layouter)
     }

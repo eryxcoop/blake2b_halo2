@@ -30,7 +30,7 @@ pub trait Blake2bGeneric: Clone {
     // [Inigo comment] Strange name - initialise with what? Also, this seems something non blake2b-specific
     /// Initialization of the circuit. This will usually create the needed lookup tables for the
     /// specific optimization. This should be called on the synthesize of the circuit but only once.
-    fn initialize_with<F: PrimeField>(&self, layouter: &mut impl Layouter<F>) -> Result<(), Error>;
+    fn populate_lookup_tables<F: PrimeField>(&self, layouter: &mut impl Layouter<F>) -> Result<(), Error>;
 
     // Getters for the internal members of the chip
     fn decompose_8_config(&self) -> Decompose8Config;
