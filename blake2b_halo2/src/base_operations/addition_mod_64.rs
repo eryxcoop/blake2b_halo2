@@ -13,14 +13,11 @@ pub type AdditionConfigWith8Limbs = AdditionMod64Config<8, 10>;
 /// It will allways be T + 2 (full number and carry)
 // [Inigo comment - solved] Configs do not need the generic F. please change throughout the whole codebase.
 pub struct AdditionMod64Config<const T: usize, const R: usize> {
-    // Mod64 addition should involve Decomposition + Limbs rangecheck, to guarantee each component is 64-bit
     carry: Column<Advice>,
     q_add: Selector,
 }
 
 impl<const T: usize, const R: usize> AdditionMod64Config<T, R> {
-    // without 64-bit range-check each component for the addition, the constraint would not hold
-    // configure should include the limbs as well
     pub fn configure<F: PrimeField>(
         meta: &mut ConstraintSystem<F>,
         full_number_u64: Column<Advice>,
@@ -33,6 +30,9 @@ impl<const T: usize, const R: usize> AdditionMod64Config<T, R> {
         ///     sum mod 2 ^ 64 = full_number_result - full_number_x - full_number_y
         ///                     + carry * (1 << 64)
         ///    carry = carry * (1 << 0) - carry
+        ///
+        /// Note that the full number is implicitly range checked to be a 64-bit number because we
+        /// are using 8-bit limbs (we are using the decompose 8 config)
         meta.create_gate("sum mod 2 ^ 64", |meta| {
             let q_add = meta.query_selector(q_add);
             let full_number_x = meta.query_advice(full_number_u64, Rotation(0));

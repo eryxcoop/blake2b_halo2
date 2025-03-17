@@ -7,13 +7,13 @@ use halo2_proofs::poly::Rotation;
 /// designated limb size.
 /// T is the amount of limbs that the number will be decomposed into.
 // 
-// shall we document the methods in the trait here instead of its implementations?
+// [Zhiyong comment] shall we document the methods in the trait here instead of its implementations?
 pub trait Decomposition<const T: usize> {
     const LIMB_SIZE: usize;
 
     fn range_table_column(&self) -> TableColumn;
 
-    // should we include configure into the trait?
+    // [Zhiyong comment] should we include configure into the trait?
     fn configure<F: PrimeField>(
         meta: &mut ConstraintSystem<F>,
         full_number_u64: Column<Advice>,
@@ -75,7 +75,7 @@ pub trait Decomposition<const T: usize> {
         _offset: usize,
     ) -> Result<Vec<AssignedCell<F, F>>, Error>;
 
-    // Doc
+    // [Zhiyong comment] Doc
     fn generate_row_from_cell<F: PrimeField>(
         &self,
         region: &mut Region<F>,

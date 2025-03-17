@@ -3,7 +3,7 @@ use halo2_proofs::circuit::AssignedCell;
 
 /// This config handles the 63-right-bit rotation of a 64-bit number, which is the same as the
 /// 1-bit rotation to the left.
-// should better documented regarding the legitimate field size for this special chip
+// [Zhiyong comment] should better documented regarding the legitimate field size for this special chip
 #[derive(Clone, Debug)]
 pub struct Rotate63Config<const T: usize, const R: usize> {
     q_rot63: Selector,

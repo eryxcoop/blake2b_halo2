@@ -10,7 +10,7 @@ pub struct XorSpreadConfig {
     full_number_u64: Column<Advice>,
     limbs: [Column<Advice>; 8],
     extra: Column<Advice>,
-    // yeah, pls include Dcompose8Config directly
+    // [Zhiyong comment] yeah, pls include Dcompose8Config directly
     t_range: TableColumn, // TODO: unify with Decompose8Config
     t_spread: TableColumn,
 

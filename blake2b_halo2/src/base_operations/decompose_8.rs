@@ -18,7 +18,7 @@ pub struct Decompose8Config {
 }
 
 impl Decompose8Config {
-    // no need to implement this method, unless we would use wrapping types
+    // [Zhiyong comment] no need to implement this method, unless we would use wrapping types
     pub fn assign_constant_in_cell<F: PrimeField>(
         &self,
         region: &mut Region<F>,
@@ -87,13 +87,13 @@ impl Decomposition<8> for Decompose8Config {
     }
 
     /// Given an explicit vector of values, it assigns the full number and the limbs in a row of the trace
-    // If you are assuming a structure in the input `row`, you should specify it in the
+    // [Inigo comment] If you are assuming a structure in the input `row`, you should specify it in the
     // docs of the function (e.g. row[0] is a u64 value, and the rest is its decomposition).
     // also the repr is in little endian
     fn populate_row_from_values<F: PrimeField>(
         &self,
         region: &mut Region<F>,
-        // If you know this value is going to have size 9, you should use an array here
+        // [Inigo comment] If you know this value is going to have size 9, you should use an array here
         // row: [Value<F>; 9]
         row: Vec<Value<F>>,
         offset: usize,
@@ -145,7 +145,7 @@ impl Decomposition<8> for Decompose8Config {
 
     /// Given a cell with a 64-bit value, it returns a new row with the copied full number and the
     /// decomposition in 8-bit limbs
-    // already done in default implementation of the trait
+    // [Zhiyong comment] already done in default implementation of the trait
     fn generate_row_from_cell<F: PrimeField>(
         &self,
         region: &mut Region<F>,
@@ -190,7 +190,7 @@ impl Decomposition<8> for Decompose8Config {
     }
 
     /// Given a value and a limb index, it returns the value of the limb
-    // should explicitly mention the F::Repr is little endian
+    // [Zhiyong comment] should explicitly mention the F::Repr is little endian
     fn get_limb_from<F: PrimeField>(value: Value<F>, limb_number: usize) -> Value<F> {
         value.map(|v| field_for(get_limb_from_field(v, limb_number)))
     }
