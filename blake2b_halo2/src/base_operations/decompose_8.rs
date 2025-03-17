@@ -89,7 +89,7 @@ impl Decomposition<8> for Decompose8Config {
     fn populate_row_from_values<F: PrimeField>(
         &self,
         region: &mut Region<F>,
-        // [Inigo comment] If you know this value is going to have size 9, you should use an array here
+        // [Inigo comment - answered] If you know this value is going to have size 9, you should use an array here
         // row: [Value<F>; 9]
         //
         // This is because the method is implemented for the decompose 8 and the decompose 4 trait.
