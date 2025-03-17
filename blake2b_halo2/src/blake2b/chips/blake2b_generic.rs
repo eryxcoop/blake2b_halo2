@@ -9,7 +9,7 @@ use crate::base_operations::rotate_63::Rotate63Config;
 use crate::base_operations::xor::Xor;
 use crate::blake2b::chips::utils::{
     compute_processed_bytes_count_value_for_iteration, constrain_initial_state,
-    constrain_padding_cells_to_equal_zero, enforce_input_sizes, enforce_modulus_size,
+    constrain_padding_cells_to_equal_zero, enforce_input_sizes,
     get_full_number_of_each, get_total_blocks_count, iv_constant_values, iv_constants, ABCD,
     BLAKE2B_BLOCK_SIZE, SIGMA,
 };
@@ -159,7 +159,6 @@ pub trait Blake2bGeneric: Clone {
         full_number_u64: Column<Advice>,
         limbs: [Column<Advice>; 8],
     ) -> (Decompose8Config, LimbRotation, Rotate63Config<8, 9>, NegateConfig) {
-        enforce_modulus_size::<F>();
         let decompose_8_config = Decompose8Config::configure(meta, full_number_u64, limbs);
         let rotate_63_config = Rotate63Config::configure(meta, full_number_u64);
         let negate_config = NegateConfig::configure(meta, full_number_u64);

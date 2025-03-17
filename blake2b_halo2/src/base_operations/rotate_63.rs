@@ -1,9 +1,11 @@
 use super::*;
 use halo2_proofs::circuit::AssignedCell;
+use num_bigint::BigUint;
 
 /// This config handles the 63-right-bit rotation of a 64-bit number, which is the same as the
 /// 1-bit rotation to the left.
-// [Zhiyong comment] should better documented regarding the legitimate field size for this special chip
+/// For the gate of this config to be sound, it is necessary that the modulus of the field is
+/// greater than 2^65.
 #[derive(Clone, Debug)]
 pub struct Rotate63Config<const T: usize, const R: usize> {
     q_rot63: Selector,
@@ -14,6 +16,8 @@ impl<const T: usize, const R: usize> Rotate63Config<T, R> {
         meta: &mut ConstraintSystem<F>,
         full_number_u64: Column<Advice>,
     ) -> Self {
+        Self::enforce_modulus_size::<F>();
+
         let q_rot63 = meta.complex_selector();
         /// The gate that will be used to rotate a number 63 bits to the right
         /// The gate is defined as:
@@ -44,7 +48,6 @@ impl<const T: usize, const R: usize> Rotate63Config<T, R> {
     // to fill the circuit with incorrect values and check that the proof is rejected.
     // We need to make it public to be able to call it from the tests.
 
-    // [Zhiyong comment] how about adding `enforce_modulus_size::<F>();` within this chip to keep the generic chip implementation clean?
     pub fn populate_rotation_rows<F: PrimeField>(
         &self,
         layouter: &mut impl Layouter<F>,
@@ -85,5 +88,14 @@ impl<const T: usize, const R: usize> Rotate63Config<T, R> {
             decompose_config.generate_row_from_value(region, result_value, *offset)?;
         *offset += 1;
         Ok(result_cell)
+    }
+
+    /// Enforces the field's modulus to be greater than 2^65
+    pub fn enforce_modulus_size<F: PrimeField>() {
+        let modulus_bytes: Vec<u8> = hex::decode(F::MODULUS.trim_start_matches("0x"))
+            .expect("Modulus is not a valid hex number");
+        let modulus = BigUint::from_bytes_be(&modulus_bytes);
+        let two_pow_65 = BigUint::from(1u128 << 65);
+        assert!(modulus > two_pow_65, "Field modulus must be greater than 2^65");
     }
 }
