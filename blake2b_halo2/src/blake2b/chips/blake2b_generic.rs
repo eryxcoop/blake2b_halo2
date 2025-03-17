@@ -212,9 +212,6 @@ pub trait Blake2bGeneric: Clone {
         global_state: &mut [AssignedCell<F, F>; 8],
         zero_constant_cell: AssignedCell<F, F>,
     ) -> Result<[AssignedCell<F, F>; 64], Error> {
-        // This is just to be able to return the result of the last compress call
-        let mut global_state_bytes = Err(Error::Synthesis);
-
         let is_key_empty = key.is_empty();
         let is_input_empty = input_size == 0;
 
@@ -223,7 +220,7 @@ pub trait Blake2bGeneric: Clone {
         let last_input_block_index = if is_input_empty { 0 } else { input_blocks - 1 };
 
         /// Main loop
-        for i in 0..total_blocks {
+        (0..total_blocks).map(|i| {
             let is_last_block = i == total_blocks - 1;
             let is_key_block = !is_key_empty && i == 0;
 
@@ -279,7 +276,7 @@ pub trait Blake2bGeneric: Clone {
 
             let current_block_cells = get_full_number_of_each(current_block_rows);
 
-            let result = self.compress(
+            self.compress(
                 region,
                 advice_offset,
                 iv_constants,
@@ -287,10 +284,9 @@ pub trait Blake2bGeneric: Clone {
                 current_block_cells,
                 processed_bytes_count,
                 is_last_block,
-            );
-            global_state_bytes = result;
-        }
-        global_state_bytes
+            )
+
+        }).last().unwrap_or_else(|| Err(Error::Synthesis))
     }
 
     /// This method computes a compression round of Blake2b. If the algorithm is in its last round,
