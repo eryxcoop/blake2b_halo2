@@ -27,9 +27,7 @@ pub trait Blake2bGeneric: Clone {
         limbs: [Column<Advice>; 8],
     ) -> Self;
 
-    // [Inigo comment] Strange name - initialise with what? Also, this seems something non blake2b-specific
-    /// Initialization of the circuit. This will usually create the needed lookup tables for the
-    /// specific optimization. This should be called on the synthesize of the circuit but only once.
+    // Populate all lookup tables needed for the chip
     fn populate_lookup_tables<F: PrimeField>(&self, layouter: &mut impl Layouter<F>) -> Result<(), Error>;
 
     // Getters for the internal members of the chip
@@ -171,17 +169,6 @@ pub trait Blake2bGeneric: Clone {
         meta.enable_constant(constants);
 
         (decompose_8_config, LimbRotation, rotate_63_config, negate_config)
-    }
-
-    /// This method handles the part of the initialization of the chip that is generic to all
-    /// optimizations. In particular, the initialization of lookup tables.
-    fn generic_initialize_with<F: PrimeField>(
-        &self,
-        layouter: &mut impl Layouter<F>,
-    ) -> Result<(), Error> {
-        self.populate_lookup_table_8(layouter)?;
-        self.populate_xor_lookup_table(layouter)?;
-        Ok(())
     }
 
     /// Computes the initial global state of Blake2b. It only depends on the key size and the

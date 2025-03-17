@@ -55,8 +55,8 @@ impl Blake2bGeneric for Blake2bChipOptSpread {
     }
 
     fn populate_lookup_tables<F: PrimeField>(&self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
-        /// Initialization that is the same for every optimization
-        self.generic_initialize_with(layouter)
+        self.populate_lookup_table_8(layouter)?;
+        self.populate_xor_lookup_table(layouter)
     }
 
     // Getters that the trait needs for its default implementations
