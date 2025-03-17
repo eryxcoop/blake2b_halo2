@@ -94,7 +94,7 @@ impl Xor for XorSpreadConfig {
                         || format!("reminder z_{}", i),
                         columns_in_order[empty_spread_positions[i].1],
                         // We need to subtract 6 since we are in the offset 7 because we already assigned all rows
-                        // we are in the offset 6, not 7 ???
+                        // [Zhiyong comment] we are in the offset 6, not 7 ???
                         *offset + empty_spread_positions[i].0 - 6,
                         || value_for::<u16, F>(z_i),
                     )

@@ -44,7 +44,7 @@ impl<const T: usize, const R: usize> Rotate63Config<T, R> {
     // to fill the circuit with incorrect values and check that the proof is rejected.
     // We need to make it public to be able to call it from the tests.
 
-    // how about adding `enforce_modulus_size::<F>();` within this chip to keep the generic chip implementation clean?
+    // [Zhiyong comment] how about adding `enforce_modulus_size::<F>();` within this chip to keep the generic chip implementation clean?
     pub fn populate_rotation_rows<F: PrimeField>(
         &self,
         layouter: &mut impl Layouter<F>,
@@ -66,7 +66,7 @@ impl<const T: usize, const R: usize> Rotate63Config<T, R> {
 
     /// Receives a row of cells, generates a row for the rotation of 63 bits to the right
     /// and populates the circuit with it
-    // as the configure only invovles two cells of one column, the assignment should be done for cells?
+    // [Zhiyong comment] as the configure only invovles two cells of one column, the assignment should be done for cells?
     pub fn generate_rotation_rows_from_cells<F: PrimeField>(
         &self,
         region: &mut Region<F>,
@@ -80,7 +80,7 @@ impl<const T: usize, const R: usize> Rotate63Config<T, R> {
             .value()
             .map(|input| auxiliar_functions::rotate_right_field_element(*input, 63));
 
-        // Why do you decompose? can't you work directly on the rotation of the value?
+        // [Inigo comment] Why do you decompose? can't you work directly on the rotation of the value?
         let result_cell =
             decompose_config.generate_row_from_value(region, result_value, *offset)?;
         *offset += 1;
