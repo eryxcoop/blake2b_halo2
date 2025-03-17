@@ -91,7 +91,7 @@ impl Xor for XorSpreadConfig {
 
             let z_limb_positions = Self::z_limb_positions::<F>();
             let columns_in_order =
-                Self::columns_in_order::<F>(self.full_number_u64, self.limbs, self.extra);
+                Self::advice_columns_in_order::<F>(self.full_number_u64, self.limbs, self.extra);
             // [Zhiyong comment] a handling error when z_i not divided by 2
             for i in 0..8 {
                 let z_i = (Self::spread_bits::<F>(lhs_limb_values[i])
@@ -129,7 +129,7 @@ impl XorSpreadConfig {
         let t_range = meta.lookup_table_column();
         let t_spread = meta.lookup_table_column();
 
-        let columns = Self::columns_in_order::<F>(full_number_u64, limbs, extra);
+        let columns = Self::advice_columns_in_order::<F>(full_number_u64, limbs, extra);
 
         let z_limb_positions: [(usize, usize); 8] = Self::z_limb_positions::<F>();
 
@@ -214,7 +214,8 @@ impl XorSpreadConfig {
         });
     }
 
-    // [Zhiyong coment] doc
+    /// Lookup constrains to ensure the spreads are correct. The method receives two indexes, one
+    /// for the row containing the original limbs and one for one containing the spread limbs.
     fn lookup_spread_rows<F: PrimeField>(
         meta: &mut ConstraintSystem<F>,
         q_xor: Selector,
@@ -281,8 +282,8 @@ impl XorSpreadConfig {
         [(2, 0), (3, 0), (4, 0), (1, 9), (2, 9), (3, 9), (4, 9), (5, 9)]
     }
 
-    // [Zhiyong comment] doc
-    fn columns_in_order<F: PrimeField>(
+    /// This is an aux function that returns all the advice columns in order
+    fn advice_columns_in_order<F: PrimeField>(
         full_number_u64: Column<Advice>,
         limbs: [Column<Advice>; 8],
         extra: Column<Advice>,
