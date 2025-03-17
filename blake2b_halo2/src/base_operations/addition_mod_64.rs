@@ -147,7 +147,7 @@ impl<const T: usize, const R: usize> AdditionMod64Config<T, R> {
         offset: usize,
         decompose_config: &impl Decomposition<T>,
     ) -> Result<(), Error> {
-        decompose_config.populate_row_from_values(region, row.clone(), offset)?;
+        decompose_config.populate_row_from_values(region, &row, offset)?;
         region.assign_advice(|| "carry", self.carry, offset, || row[R - 1])?;
         Ok(())
     }

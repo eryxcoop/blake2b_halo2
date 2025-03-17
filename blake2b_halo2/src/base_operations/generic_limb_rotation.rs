@@ -32,9 +32,9 @@ impl LimbRotation {
             || format!("rotate {}", limb_rotations_right),
             |mut region| {
                 let first_row =
-                    decompose_config.populate_row_from_values(&mut region, trace[0].to_vec(), 0)?;
+                    decompose_config.populate_row_from_values(&mut region, &trace[0].to_vec(), 0)?;
                 let second_row =
-                    decompose_config.populate_row_from_values(&mut region, trace[1].to_vec(), 1)?;
+                    decompose_config.populate_row_from_values(&mut region, &trace[1].to_vec(), 1)?;
 
                 Self::constrain_result_with_input_row(
                     &mut region,

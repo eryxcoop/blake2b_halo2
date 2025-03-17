@@ -23,7 +23,7 @@ pub trait Decomposition<const T: usize> {
     fn populate_row_from_values<F: PrimeField>(
         &self,
         region: &mut Region<F>,
-        row: Vec<Value<F>>,
+        row: &Vec<Value<F>>,
         offset: usize,
     ) -> Result<Vec<AssignedCell<F, F>>, Error>;
 

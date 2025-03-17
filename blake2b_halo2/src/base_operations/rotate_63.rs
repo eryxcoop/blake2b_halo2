@@ -56,8 +56,8 @@ impl<const T: usize, const R: usize> Rotate63Config<T, R> {
             |mut region| {
                 let first_row = trace[0].to_vec();
                 let second_row = trace[1].to_vec();
-                decompose_config.populate_row_from_values(&mut region, first_row.clone(), 0)?;
-                decompose_config.populate_row_from_values(&mut region, second_row.clone(), 1)?;
+                decompose_config.populate_row_from_values(&mut region, &first_row, 0)?;
+                decompose_config.populate_row_from_values(&mut region, &second_row, 1)?;
                 self.q_rot63.enable(&mut region, 1)
             },
         )?;

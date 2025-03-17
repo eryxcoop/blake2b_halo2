@@ -95,7 +95,10 @@ impl Decomposition<8> for Decompose8Config {
         region: &mut Region<F>,
         // [Inigo comment] If you know this value is going to have size 9, you should use an array here
         // row: [Value<F>; 9]
-        row: Vec<Value<F>>,
+        //
+        // This is because the method is implemented for the decompose 8 and the decompose 4 trait.
+        // we used a vector to be able to keep the same signature for both implementations.
+        row: &Vec<Value<F>>,
         offset: usize,
     ) -> Result<Vec<AssignedCell<F, F>>, Error> {
         self.q_decompose.enable(region, offset)?;
