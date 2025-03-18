@@ -71,11 +71,11 @@ impl Xor for XorSpreadConfig {
             let result_limb_values = auxiliar_functions::decompose_field_8bit_limbs(result);
 
             // [Inigo comment - answered] It is a bit unclear what is going on here. How do you guarantee that the value being
-            // assigned here is the same as the input?
-            // Maybe soundness issue? copy constraint missing
+            // assigned here is the same as the input? Maybe soundness issue? copy constraint missing
             //
-            // The gate is guaranteeing soundness here, since it is checking that these two following
-            // rows contains the spread of the limbs of the input values (in the two previous rows)
+            // For the inputs, the .generate_row_from_cell() guarantees soundness with the internal copy
+            // constraint. Then, all the spreads are constrained with lookups in the "xor with spread" gate.
+
             self.populate_spread_limbs_of(region, *offset, lhs_limb_values);
             *offset += 1;
             self.populate_spread_limbs_of(region, *offset, rhs_limb_values);

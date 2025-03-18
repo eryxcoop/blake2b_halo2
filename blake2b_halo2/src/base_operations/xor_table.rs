@@ -27,7 +27,7 @@ pub struct XorTableConfig {
     t_xor_out: TableColumn,
 
     /// Selector for the xor gate
-    q_xor: Selector,
+    pub q_xor: Selector,
 }
 
 impl Xor for XorTableConfig {
@@ -141,36 +141,6 @@ impl XorTableConfig {
             t_xor_out,
             q_xor,
         }
-    }
-
-    /// Given 3 explicit rows of values, it assigns the full number and the limbs of the operands
-    /// and the result in the trace
-    // [Inigo comment - answered] functions only used in tests should not be part of the config.
-    //
-    // Read Rotate63Config::populate_rotation_rows answer
-    pub fn populate_xor_region<F: PrimeField>(
-        &self,
-        layouter: &mut impl Layouter<F>,
-        xor_trace: [[Value<F>; 9]; 3],
-        decompose_8_config: &mut Decompose8Config,
-    ) -> Result<(), Error> {
-        layouter.assign_region(
-            || "xor",
-            |mut region| {
-                self.q_xor.enable(&mut region, 0)?;
-
-                let first_row = xor_trace[0].to_vec();
-                let second_row = xor_trace[1].to_vec();
-                let third_row = xor_trace[2].to_vec();
-
-                decompose_8_config.populate_row_from_values(&mut region, &first_row, 0)?;
-                decompose_8_config.populate_row_from_values(&mut region, &second_row, 1)?;
-                decompose_8_config.populate_row_from_values(&mut region, &third_row, 2)?;
-
-                Ok(())
-            },
-        )?;
-        Ok(())
     }
 
     pub fn unknown_trace<F: PrimeField>() -> [[Value<F>; 9]; 3] {

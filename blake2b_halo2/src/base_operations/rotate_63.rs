@@ -8,7 +8,7 @@ use num_bigint::BigUint;
 /// greater than 2^65.
 #[derive(Clone, Debug)]
 pub struct Rotate63Config<const T: usize, const R: usize> {
-    q_rot63: Selector,
+    pub q_rot63: Selector,
 }
 
 impl<const T: usize, const R: usize> Rotate63Config<T, R> {
@@ -38,32 +38,6 @@ impl<const T: usize, const R: usize> Rotate63Config<T, R> {
         });
 
         Self { q_rot63 }
-    }
-
-    // [Inigo comment - answered] Where are you using this function? Is it only in tests? why is it public?
-    //
-    // This function is used for testing. We use it to be able to have tests that checks that the
-    // gate is correctly defined. If we use the generate_rotation_rows_from_cells, we wouldn't be able
-    // to fill the circuit with incorrect values and check that the proof is rejected.
-    // We need to make it public to be able to call it from the tests.
-    /// Receives a trace and populates the rows for the rotation of 63 bits to the right
-    pub fn populate_rotation_rows<F: PrimeField>(
-        &self,
-        layouter: &mut impl Layouter<F>,
-        decompose_config: &mut impl Decomposition<T>,
-        trace: [[Value<F>; R]; 2],
-    ) -> Result<(), Error> {
-        layouter.assign_region(
-            || "rotate 63",
-            |mut region| {
-                let first_row = trace[0].to_vec();
-                let second_row = trace[1].to_vec();
-                decompose_config.populate_row_from_values(&mut region, &first_row, 0)?;
-                decompose_config.populate_row_from_values(&mut region, &second_row, 1)?;
-                self.q_rot63.enable(&mut region, 1)
-            },
-        )?;
-        Ok(())
     }
 
     /// Receives a row of cells, generates a row for the rotation of 63 bits to the right

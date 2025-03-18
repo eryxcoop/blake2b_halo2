@@ -8,7 +8,7 @@ use std::marker::PhantomData;
 use crate::base_operations::xor::Xor;
 
 #[derive(Clone)]
-pub struct XorConfig<F: PrimeField> {
+pub struct XorCircuitConfig<F: PrimeField> {
     _ph: PhantomData<F>,
     xor_config: XorTableConfig,
     decompose_8_config: Decompose8Config,
@@ -29,7 +29,7 @@ impl<F: PrimeField> XorCircuit<F> {
 }
 
 impl<F: PrimeField> Circuit<F> for XorCircuit<F> {
-    type Config = XorConfig<F>;
+    type Config = XorCircuitConfig<F>;
     type FloorPlanner = SimpleFloorPlanner;
 
     fn without_witnesses(&self) -> Self {
@@ -67,5 +67,34 @@ impl<F: PrimeField> Circuit<F> for XorCircuit<F> {
             self.trace,
             &mut config.decompose_8_config,
         )
+    }
+}
+
+impl XorTableConfig {
+    /// Given 3 explicit rows of values, it assigns the full number and the limbs of the operands
+    /// and the result in the trace
+    pub fn populate_xor_region<F: PrimeField>(
+        &self,
+        layouter: &mut impl Layouter<F>,
+        xor_trace: [[Value<F>; 9]; 3],
+        decompose_8_config: &mut Decompose8Config,
+    ) -> Result<(), Error> {
+        layouter.assign_region(
+            || "xor",
+            |mut region| {
+                self.q_xor.enable(&mut region, 0)?;
+
+                let first_row = xor_trace[0].to_vec();
+                let second_row = xor_trace[1].to_vec();
+                let third_row = xor_trace[2].to_vec();
+
+                decompose_8_config.populate_row_from_values(&mut region, &first_row, 0)?;
+                decompose_8_config.populate_row_from_values(&mut region, &second_row, 1)?;
+                decompose_8_config.populate_row_from_values(&mut region, &third_row, 2)?;
+
+                Ok(())
+            },
+        )?;
+        Ok(())
     }
 }

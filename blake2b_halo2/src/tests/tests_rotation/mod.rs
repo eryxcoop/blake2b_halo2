@@ -39,3 +39,25 @@ pub struct LimbRotationCircuitConfig<F: PrimeField> {
     decompose_8_config: Decompose8Config,
     limb_rotation_config: LimbRotation,
 }
+
+impl<const T: usize, const R: usize> Rotate63Config<T, R> {
+    /// Receives a trace and populates the rows for the rotation of 63 bits to the right
+    fn populate_rotation_rows<F: PrimeField>(
+        &self,
+        layouter: &mut impl Layouter<F>,
+        decompose_config: &mut impl Decomposition<T>,
+        trace: [[Value<F>; R]; 2],
+    ) -> Result<(), Error> {
+        layouter.assign_region(
+            || "rotate 63",
+            |mut region| {
+                let first_row = trace[0].to_vec();
+                let second_row = trace[1].to_vec();
+                decompose_config.populate_row_from_values(&mut region, &first_row, 0)?;
+                decompose_config.populate_row_from_values(&mut region, &second_row, 1)?;
+                self.q_rot63.enable(&mut region, 1)
+            },
+        )?;
+        Ok(())
+    }
+}
