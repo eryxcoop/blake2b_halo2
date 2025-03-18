@@ -6,7 +6,6 @@ use std::marker::PhantomData;
 
 mod test_blake2b;
 mod test_negate;
-mod tests_8bits_addition;
-mod tests_addition_mod_64;
+mod tests_addition;
 mod tests_rotation;
 mod tests_xor;

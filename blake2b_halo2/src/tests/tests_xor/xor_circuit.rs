@@ -73,7 +73,7 @@ impl<F: PrimeField> Circuit<F> for XorCircuit<F> {
 impl XorTableConfig {
     /// Given 3 explicit rows of values, it assigns the full number and the limbs of the operands
     /// and the result in the trace
-    pub fn populate_xor_region<F: PrimeField>(
+    fn populate_xor_region<F: PrimeField>(
         &self,
         layouter: &mut impl Layouter<F>,
         xor_trace: [[Value<F>; 9]; 3],

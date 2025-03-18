@@ -12,8 +12,8 @@ pub type AdditionConfigWith8Limbs = AdditionMod64Config<8, 10>;
 /// R is used to define the total number of columns in the trace.
 /// It will allways be T + 2 (full number and carry)
 pub struct AdditionMod64Config<const T: usize, const R: usize> {
-    carry: Column<Advice>,
-    q_add: Selector,
+    pub carry: Column<Advice>,
+    pub q_add: Selector,
 }
 
 impl<const T: usize, const R: usize> AdditionMod64Config<T, R> {
@@ -50,46 +50,6 @@ impl<const T: usize, const R: usize> AdditionMod64Config<T, R> {
         Self { carry, q_add }
     }
 
-    /// This method is meant to receive a valid addition_trace, and populate the circuit with it
-    /// The addition trace is a matrix with 3 rows and R columns. The rows represent the two
-    /// parameters of the addition and its result.
-    /// Each row has the following format:
-    ///    [full_number, limb_0, ..., limb_R-2, carry]
-    /// Note that the carry value is not used in the parameters of the addition, but it is used
-    /// to calculate its result.
-    pub fn populate_addition_rows<F: PrimeField>(
-        &self,
-        layouter: &mut impl Layouter<F>,
-        addition_trace: [[Value<F>; R]; 3],
-        decompose_config: &impl Decomposition<T>,
-    ) -> Result<(), Error> {
-        layouter.assign_region(
-            || "decompose",
-            |mut region| {
-                self.q_add.enable(&mut region, 0)?;
-
-                self.populate_row_from_values(
-                    &mut region,
-                    addition_trace[0].to_vec(),
-                    0,
-                    decompose_config,
-                )?;
-                self.populate_row_from_values(
-                    &mut region,
-                    addition_trace[1].to_vec(),
-                    1,
-                    decompose_config,
-                )?;
-                self.populate_row_from_values(
-                    &mut region,
-                    addition_trace[2].to_vec(),
-                    2,
-                    decompose_config,
-                )
-            },
-        )?;
-        Ok(())
-    }
     /// This method receives two cells, and generates the rows for the addition of their values.
     /// We copy the values of the cells to the trace, and then calculate the result and carry
     /// of the addition and write it in a third row.
@@ -137,17 +97,5 @@ impl<const T: usize, const R: usize> AdditionMod64Config<T, R> {
             .transpose_array();
 
         (result_value, carry_value)
-    }
-
-    fn populate_row_from_values<F: PrimeField>(
-        &self,
-        region: &mut Region<F>,
-        row: Vec<Value<F>>,
-        offset: usize,
-        decompose_config: &impl Decomposition<T>,
-    ) -> Result<(), Error> {
-        decompose_config.populate_row_from_values(region, &row, offset)?;
-        region.assign_advice(|| "carry", self.carry, offset, || row[R - 1])?;
-        Ok(())
     }
 }

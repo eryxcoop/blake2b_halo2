@@ -1,7 +1,6 @@
 use super::*;
-use crate::base_operations::decompose_8::Decompose8Config;
 use ff::{PrimeField};
-use halo2_proofs::circuit::{AssignedCell, Layouter, Value};
+use halo2_proofs::circuit::{AssignedCell, Value};
 
 #[derive(Default, Clone, Debug)]
 pub struct LimbRotation;
@@ -12,41 +11,6 @@ pub struct LimbRotation;
 impl LimbRotation {
     pub fn unknown_trace<F: PrimeField>() -> [[Value<F>; 9]; 2] {
         [[Value::unknown(); 9]; 2]
-    }
-
-    /// This method is meant to receive a valid rotation_trace, and populate the circuit with it
-    /// The rotation trace is a 2x9 matrix. The rows represent the input and output of the rotation,
-    /// and the columns represent the limbs of each number.
-    /// In the end of the method, the circuit will have the correct constraints to ensure that
-    /// the output is the input rotated to the right by the number of limbs specified in the
-    /// limb_rotations_right parameter.
-    /// This method is not used in the actual circuit, but it is useful for testing if you want to
-    /// write a test where the values are incorrect and check that the contstaints fail.
-    pub fn populate_rotation_rows<F: PrimeField>(
-        &self,
-        layouter: &mut impl Layouter<F>,
-        decompose_config: &mut Decompose8Config,
-        trace: [[Value<F>; 9]; 2],
-        limb_rotations_right: usize,
-    ) -> Result<(), Error> {
-        layouter.assign_region(
-            || format!("rotate {}", limb_rotations_right),
-            |mut region| {
-                let first_row =
-                    decompose_config.populate_row_from_values(&mut region, &trace[0].to_vec(), 0)?;
-                let second_row =
-                    decompose_config.populate_row_from_values(&mut region, &trace[1].to_vec(), 1)?;
-
-                Self::constrain_result_with_input_row(
-                    &mut region,
-                    &first_row,
-                    &second_row,
-                    limb_rotations_right,
-                )?;
-                Ok(())
-            },
-        )?;
-        Ok(())
     }
 
     /// This method receives a row of cells, and rotates the limbs to the right by the number
@@ -89,7 +53,7 @@ impl LimbRotation {
     // so we preferred to avoid breaking encapsulation and just compute the limbs again (only
     // because computing the limbs is not an expensive operation)
     #[allow(clippy::ptr_arg)]
-    fn constrain_result_with_input_row<F: PrimeField>(
+    pub fn constrain_result_with_input_row<F: PrimeField>(
         region: &mut Region<F>,
         input_row: &Vec<AssignedCell<F, F>>,
         result_row: &Vec<AssignedCell<F, F>>,

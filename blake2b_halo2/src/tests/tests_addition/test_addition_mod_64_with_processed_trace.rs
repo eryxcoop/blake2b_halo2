@@ -1,5 +1,5 @@
 use crate::auxiliar_functions::{generate_row_8bits, value_for};
-use crate::tests::tests_8bits_addition::addition_mod_64_circuit_8bits::AdditionMod64Circuit8Bits;
+use crate::tests::tests_addition::addition_mod_64_circuit_8bits::AdditionMod64Circuit8Bits;
 use halo2_proofs::dev::MockProver;
 use halo2_proofs::halo2curves::bn256::Fr;
 use rand::Rng;

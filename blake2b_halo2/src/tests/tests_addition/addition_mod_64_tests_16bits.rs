@@ -1,8 +1,8 @@
-mod addition_mod_64_circuit_16bits;
-
-use super::*;
-use crate::tests::tests_addition_mod_64::addition_mod_64_circuit_16bits::AdditionMod64Circuit16Bits;
+use halo2_proofs::circuit::Value;
 use halo2_proofs::dev::MockProver;
+use halo2_proofs::halo2curves::bn256::Fr;
+use crate::auxiliar_functions::{max_u16, max_u64, one, zero};
+use crate::tests::tests_addition::addition_mod_64_circuit_16bits::AdditionMod64Circuit16Bits;
 
 #[test]
 fn test_positive_addition() {
