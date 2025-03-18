@@ -79,10 +79,6 @@ impl Decompose8Config {
             F::from(constant as u64),
         )
     }
-
-    pub fn get_full_number_u64_column(&self) -> Column<Advice> {
-        self.full_number_u64.clone()
-    }
 }
 
 impl Decomposition<8> for Decompose8Config {
@@ -97,7 +93,7 @@ impl Decomposition<8> for Decompose8Config {
         // [Inigo comment - answered] If you know this value is going to have size 9, you should use an array here
         // row: [Value<F>; 9]
         //
-        // This is because the method is implemented for the decompose 8 and the decompose 4 trait.
+        // This is because the method is implemented for the Decompose8 and the Decompose4 trait.
         // we used a vector to be able to keep the same signature for both implementations.
         // We can also use &[Value<F>]
         row: &[Value<F>],
@@ -172,5 +168,9 @@ impl Decomposition<8> for Decompose8Config {
 
     fn get_limb_from<F: PrimeField>(value: Value<F>, limb_number: usize) -> Value<F> {
         value.map(|v| field_for(get_limb_from_field(v, limb_number)))
+    }
+
+    fn get_full_number_u64_column(&self) -> Column<Advice> {
+        self.full_number_u64.clone()
     }
 }

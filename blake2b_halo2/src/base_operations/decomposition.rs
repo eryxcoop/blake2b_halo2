@@ -110,4 +110,6 @@ pub trait Decomposition<const T: usize> {
 
     /// Given a value and a limb index, it returns the value of the limb
     fn get_limb_from<F: PrimeField>(value: Value<F>, limb_number: usize) -> Value<F>;
+
+    fn get_full_number_u64_column(&self) -> Column<Advice>;
 }

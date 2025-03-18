@@ -128,4 +128,8 @@ impl Decomposition<4> for Decompose16Config {
             F::from(a_bytes[2 * limb_number] as u64 + 256u64 * a_bytes[2 * limb_number + 1] as u64)
         })
     }
+
+    fn get_full_number_u64_column(&self) -> Column<Advice> {
+        self.full_number_u64.clone()
+    }
 }

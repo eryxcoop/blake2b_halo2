@@ -40,14 +40,13 @@ impl<const T: usize, const R: usize> Rotate63Config<T, R> {
         Self { q_rot63 }
     }
 
-    /// Receives a trace and populates the rows for the rotation of 63 bits to the right
     // [Inigo comment - answered] Where are you using this function? Is it only in tests? why is it public?
     //
     // This function is used for testing. We use it to be able to have tests that checks that the
     // gate is correctly defined. If we use the generate_rotation_rows_from_cells, we wouldn't be able
     // to fill the circuit with incorrect values and check that the proof is rejected.
     // We need to make it public to be able to call it from the tests.
-
+    /// Receives a trace and populates the rows for the rotation of 63 bits to the right
     pub fn populate_rotation_rows<F: PrimeField>(
         &self,
         layouter: &mut impl Layouter<F>,
@@ -82,9 +81,14 @@ impl<const T: usize, const R: usize> Rotate63Config<T, R> {
             .value()
             .map(|input| auxiliar_functions::rotate_right_field_element(*input, 63));
 
-        // [Inigo comment] Why do you decompose? can't you work directly on the rotation of the value?
-        let result_cell =
-            decompose_config.generate_row_from_value(region, result_value, *offset)?;
+        // [Inigo comment - solved] Why do you decompose? can't you work directly on the rotation of the value?
+        //
+        // Changed the usage of limb decomposition by the .assign_advice() method
+        let result_cell = region.assign_advice(
+            ||"Rotate63 output",
+            decompose_config.get_full_number_u64_column(),
+            *offset,
+            || result_value)?;
         *offset += 1;
         Ok(result_cell)
     }
