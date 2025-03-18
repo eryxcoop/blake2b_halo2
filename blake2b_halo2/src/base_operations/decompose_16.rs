@@ -65,7 +65,7 @@ impl Decomposition<4> for Decompose16Config {
     fn populate_row_from_values<F: PrimeField>(
         &self,
         region: &mut Region<F>,
-        row: &Vec<Value<F>>,
+        row: &[Value<F>],
         offset: usize,
     ) -> Result<Vec<AssignedCell<F, F>>, Error> {
         self.q_decompose.enable(region, offset)?;

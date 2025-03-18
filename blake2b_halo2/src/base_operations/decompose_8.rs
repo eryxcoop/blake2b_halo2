@@ -95,7 +95,8 @@ impl Decomposition<8> for Decompose8Config {
         //
         // This is because the method is implemented for the decompose 8 and the decompose 4 trait.
         // we used a vector to be able to keep the same signature for both implementations.
-        row: &Vec<Value<F>>,
+        // We can also use &[Value<F>]
+        row: &[Value<F>],
         offset: usize,
     ) -> Result<Vec<AssignedCell<F, F>>, Error> {
         self.q_decompose.enable(region, offset)?;
