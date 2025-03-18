@@ -1,14 +1,14 @@
 use ff::PrimeField;
 use halo2_proofs::circuit::{AssignedCell, Layouter, Value};
 use halo2_proofs::plonk::{Column, Error, Instance};
-use crate::blake2b::chips::blake2b_generic::Blake2bGeneric;
+use crate::blake2b::chips::blake2b_generic::Blake2bInstructions;
 
 /// Main gadget to compute Blake2b hash function
-pub struct Blake2b<C: Blake2bGeneric> {
+pub struct Blake2b<C: Blake2bInstructions> {
     chip: C,
 }
 
-impl<C: Blake2bGeneric> Blake2b<C> {
+impl<C: Blake2bInstructions> Blake2b<C> {
     pub fn new(chip: C) -> Result<Self, Error> {
         Ok(Self { chip })
     }

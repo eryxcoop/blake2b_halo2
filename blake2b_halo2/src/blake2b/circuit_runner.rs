@@ -11,7 +11,7 @@ use halo2_proofs::{
     },
     transcript::{CircuitTranscript, Transcript},
 };
-use crate::blake2b::chips::blake2b_generic::Blake2bGeneric;
+use crate::blake2b::chips::blake2b_generic::Blake2bInstructions;
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "opt_4_limbs")] {
@@ -65,7 +65,7 @@ impl CircuitRunner {
         MockProver::run(17, &circuit, vec![expected_output_fields]).unwrap()
     }
 
-    pub fn mock_prove_with_public_inputs_ref<OptimizationChip: Blake2bGeneric>(
+    pub fn mock_prove_with_public_inputs_ref<OptimizationChip: Blake2bInstructions>(
         expected_output_fields: &[Fr],
         circuit: &Blake2bCircuitGeneric<Fr, OptimizationChip>,
     ) -> MockProver<Fr> {
@@ -82,7 +82,7 @@ impl CircuitRunner {
         Blake2bCircuit::<Fr>::new_for(input_values, input_size, key_values, key_size, output_size)
     }
 
-    pub fn create_circuit_for_inputs_optimization<OptimizationChip: Blake2bGeneric>(
+    pub fn create_circuit_for_inputs_optimization<OptimizationChip: Blake2bInstructions>(
         ci: Blake2bCircuitInputs,
     ) -> Blake2bCircuitGeneric<Fr, OptimizationChip> {
         Blake2bCircuitGeneric::<Fr, OptimizationChip>::new_for(ci.0, ci.1, ci.2, ci.3, ci.5)
@@ -149,21 +149,21 @@ impl CircuitRunner {
         Self::verify(&expected_output_fields, &params, pk, &proof)
     }
 
-    pub fn create_vk<OptimizationChip: Blake2bGeneric>(
+    pub fn create_vk<OptimizationChip: Blake2bInstructions>(
         circuit: &Blake2bCircuitGeneric<Fr, OptimizationChip>,
         params: &ParamsKZG<Bn256>,
     ) -> VerifyingKey<Fr, KZGCommitmentScheme<Bn256>> {
         keygen_vk_with_k(params, circuit, 17).expect("Verifying key should be created")
     }
 
-    pub fn create_pk<OptimizationChip: Blake2bGeneric>(
+    pub fn create_pk<OptimizationChip: Blake2bInstructions>(
         circuit: &Blake2bCircuitGeneric<Fr, OptimizationChip>,
         vk: VerifyingKey<Fr, KZGCommitmentScheme<Bn256>>,
     ) -> ProvingKey<Fr, KZGCommitmentScheme<Bn256>> {
         keygen_pk(vk.clone(), circuit).expect("Proving key should be created")
     }
 
-    pub fn create_proof<OptimizationChip: Blake2bGeneric>(
+    pub fn create_proof<OptimizationChip: Blake2bInstructions>(
         expected_output_fields: &[Fr],
         circuit: Blake2bCircuitGeneric<Fr, OptimizationChip>,
         params: &ParamsKZG<Bn256>,

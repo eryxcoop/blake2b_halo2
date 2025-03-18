@@ -5,7 +5,7 @@ use blake2b_halo2::blake2b::chips::opt_4_limbs::Blake2bChipOpt4Limbs;
 use blake2b_halo2::blake2b::chips::opt_recycle::Blake2bChipOptRecycle;
 use blake2b_halo2::blake2b::chips::opt_spread::Blake2bChipOptSpread;
 use criterion::measurement::WallTime;
-use blake2b_halo2::blake2b::chips::blake2b_generic::Blake2bGeneric;
+use blake2b_halo2::blake2b::chips::blake2b_generic::Blake2bInstructions;
 use blake2b_halo2::blake2b::circuit_runner::CircuitRunner;
 
 pub mod utils;
@@ -40,7 +40,7 @@ pub fn benchmark_mocked_proving(c: &mut Criterion) {
     group.finish()
 }
 
-fn benchmark_optimization_with_amount_of_blocks<OptimizationChip: Blake2bGeneric>(
+fn benchmark_optimization_with_amount_of_blocks<OptimizationChip: Blake2bInstructions>(
     group: &mut BenchmarkGroup<WallTime>,
     amount_of_blocks: usize,
     optimization_name: &str,

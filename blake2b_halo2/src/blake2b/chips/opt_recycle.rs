@@ -8,7 +8,7 @@ use crate::base_operations::negate::NegateConfig;
 use crate::base_operations::rotate_63::Rotate63Config;
 use crate::base_operations::xor::Xor;
 use crate::base_operations::xor_table::XorTableConfig;
-use crate::blake2b::chips::blake2b_generic::Blake2bGeneric;
+use crate::blake2b::chips::blake2b_generic::Blake2bInstructions;
 
 /// This is the main chip for the Blake2b hash function. It is responsible for the entire hash computation.
 /// It contains all the necessary chips and some extra columns.
@@ -28,7 +28,7 @@ pub struct Blake2bChipOptRecycle {
     negate_config: NegateConfig,
 }
 
-impl Blake2bGeneric for Blake2bChipOptRecycle {
+impl Blake2bInstructions for Blake2bChipOptRecycle {
     fn configure<F: PrimeField>(
         meta: &mut ConstraintSystem<F>,
         full_number_u64: Column<Advice>,
