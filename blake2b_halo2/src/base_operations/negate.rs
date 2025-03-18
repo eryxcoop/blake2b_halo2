@@ -34,11 +34,6 @@ impl NegateConfig {
 
     /// Receives a cell, generates a new row for that cell and generates the row for the negation
     /// of the value
-    // [Inigo comment - answered] If you only want to negate, why are you assigning the decomposition of the value?
-    //
-    // Not operation is used only once in the last block of input. So we think it's better to
-    // leave this function using the decomposition for simplicity, since it won't change the circuit
-    // performance. Is just to keep the uniformity in the way we represent operations in the trace.
     pub fn generate_rows_from_cell<F: PrimeField>(
         &self,
         region: &mut Region<F>,
@@ -46,17 +41,27 @@ impl NegateConfig {
         input: &AssignedCell<F, F>,
         decompose_config: &mut Decompose8Config,
     ) -> Result<AssignedCell<F, F>, Error> {
+        // [Inigo comment - solved] If you only want to negate, why are you assigning the decomposition of the value?
         // [Inigo comment - solved] You are unlinking the cell with the actual value - this might be a
         // soundness issue.
         //
-        // Solution - We changed generate_row_from_value for generate_row_from_cell which adds a
-        // copy constraint between input and the new cell
+        // Solution - We changed generate_row_from_value for copy_advice which adds a
+        // copy constraint between input and the new cell and stops using the limb decomposition
         self.q_negate.enable(region, *offset)?;
-        let result_value = input.value().map(|v0| F::from(((1u128 << 64) - 1) as u64) - *v0);
-        decompose_config.generate_row_from_cell(region, input, *offset)?;
+        let full_number_column = decompose_config.get_full_number_u64_column();
+        input.copy_advice(
+            ||"Negation input",
+            region,
+            full_number_column,
+            *offset)?;
         *offset += 1;
-        let result_cell =
-            decompose_config.generate_row_from_value(region, result_value, *offset)?;
+
+        let result_value = input.value().map(|v0| F::from(((1u128 << 64) - 1) as u64) - *v0);
+        let result_cell = region.assign_advice(
+            ||"Negation output",
+            full_number_column,
+            *offset,
+            ||result_value)?;
         *offset += 1;
         Ok(result_cell)
     }

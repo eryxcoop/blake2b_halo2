@@ -79,6 +79,10 @@ impl Decompose8Config {
             F::from(constant as u64),
         )
     }
+
+    pub fn get_full_number_u64_column(&self) -> Column<Advice> {
+        self.full_number_u64.clone()
+    }
 }
 
 impl Decomposition<8> for Decompose8Config {
