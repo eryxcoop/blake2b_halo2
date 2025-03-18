@@ -9,9 +9,8 @@ use crate::base_operations::rotate_63::Rotate63Config;
 use crate::base_operations::xor::Xor;
 use crate::blake2b::chips::utils::{
     compute_processed_bytes_count_value_for_iteration, constrain_initial_state,
-    constrain_padding_cells_to_equal_zero, enforce_input_sizes,
-    get_full_number_of_each, get_total_blocks_count, iv_constant_values, iv_constants, ABCD,
-    BLAKE2B_BLOCK_SIZE, SIGMA,
+    constrain_padding_cells_to_equal_zero, enforce_input_sizes, get_full_number_of_each,
+    get_total_blocks_count, iv_constant_values, iv_constants, ABCD, BLAKE2B_BLOCK_SIZE, SIGMA,
 };
 
 /// This is the trait that groups the 3 optimization chips. Most of their code is the same, so the
@@ -28,7 +27,10 @@ pub trait Blake2bGeneric: Clone {
     ) -> Self;
 
     // Populate all lookup tables needed for the chip
-    fn populate_lookup_tables<F: PrimeField>(&self, layouter: &mut impl Layouter<F>) -> Result<(), Error>;
+    fn populate_lookup_tables<F: PrimeField>(
+        &self,
+        layouter: &mut impl Layouter<F>,
+    ) -> Result<(), Error>;
 
     // Getters for the internal members of the chip
     fn decompose_8_config(&self) -> Decompose8Config;
@@ -115,8 +117,12 @@ pub trait Blake2bGeneric: Clone {
         let iv_constant_cells: [AssignedCell<F, F>; 8] =
             self.assign_iv_constants_to_fixed_cells(&mut region, &mut advice_offset)?;
         *advice_offset += 1;
-        let init_const_state_0 =
-            region.assign_advice_from_constant(|| "state 0 xor", self.decompose_8_config().get_limb_column(0), *advice_offset, F::from(0x01010000u64))?;
+        let init_const_state_0 = region.assign_advice_from_constant(
+            || "state 0 xor",
+            self.decompose_8_config().get_limb_column(0),
+            *advice_offset,
+            F::from(0x01010000u64),
+        )?;
         let output_size_constant = region.assign_advice_from_constant(
             || "output size",
             self.decompose_8_config().get_limb_column(1),
@@ -125,21 +131,19 @@ pub trait Blake2bGeneric: Clone {
         )?;
         let constant = key_size << 8;
         let offset1 = *advice_offset;
-        let key_size_constant_shifted =
-            region.assign_advice_from_constant(
-                || "key size",
-                self.decompose_8_config().get_limb_column(2),
-                offset1,
-                F::from(constant as u64),
-            )?;
+        let key_size_constant_shifted = region.assign_advice_from_constant(
+            || "key size",
+            self.decompose_8_config().get_limb_column(2),
+            offset1,
+            F::from(constant as u64),
+        )?;
         let offset1 = *advice_offset;
-        let zero_constant =
-            region.assign_advice_from_constant(
-                || "zero",
-                self.decompose_8_config().get_limb_column(3),
-                offset1,
-                F::from(0 as u64),
-            )?;
+        let zero_constant = region.assign_advice_from_constant(
+            || "zero",
+            self.decompose_8_config().get_limb_column(3),
+            offset1,
+            F::from(0 as u64),
+        )?;
         *advice_offset += 1;
 
         Ok((
@@ -218,73 +222,75 @@ pub trait Blake2bGeneric: Clone {
         let last_input_block_index = if is_input_empty { 0 } else { input_blocks - 1 };
 
         /// Main loop
-        (0..total_blocks).map(|i| {
-            let is_last_block = i == total_blocks - 1;
-            let is_key_block = !is_key_empty && i == 0;
+        (0..total_blocks)
+            .map(|i| {
+                let is_last_block = i == total_blocks - 1;
+                let is_key_block = !is_key_empty && i == 0;
 
-            /// This is an intermediate value in the Blake2b algorithm. It represents the amount of
-            /// bytes processed so far.
-            let processed_bytes_count = compute_processed_bytes_count_value_for_iteration(
-                i,
-                is_last_block,
-                input_size,
-                is_key_empty,
-            );
+                /// This is an intermediate value in the Blake2b algorithm. It represents the amount of
+                /// bytes processed so far.
+                let processed_bytes_count = compute_processed_bytes_count_value_for_iteration(
+                    i,
+                    is_last_block,
+                    input_size,
+                    is_key_empty,
+                );
 
-            /// This is the part where the inputs/key are organized inside the trace. Each iteration
-            /// processes 128 bytes, or as we represent them: 16 words of 64 bits.
-            let current_block_rows = self.build_current_block_rows(
-                region,
-                advice_offset,
-                input,
-                key,
-                i,
-                last_input_block_index,
-                is_key_empty,
-                is_last_block,
-                is_key_block,
-            )?;
-
-            /// Padding for the last block, in case the key block is not the only one.
-            if is_last_block && !is_key_block {
-                let zeros_amount_for_input_padding = if input_size == 0 {
-                    128
-                } else {
-                    // Complete the block with zeroes
-                    (BLAKE2B_BLOCK_SIZE - input_size % BLAKE2B_BLOCK_SIZE) % BLAKE2B_BLOCK_SIZE
-                };
-                constrain_padding_cells_to_equal_zero(
+                /// This is the part where the inputs/key are organized inside the trace. Each iteration
+                /// processes 128 bytes, or as we represent them: 16 words of 64 bits.
+                let current_block_rows = self.build_current_block_rows(
                     region,
-                    zeros_amount_for_input_padding,
-                    &current_block_rows,
-                    &zero_constant_cell,
+                    advice_offset,
+                    input,
+                    key,
+                    i,
+                    last_input_block_index,
+                    is_key_empty,
+                    is_last_block,
+                    is_key_block,
                 )?;
-            }
-            /// Padding for the key block, in all cases that it exists. It is always the first block.
-            if is_key_block {
-                /// Complete the block with zeroes
-                let zeros_amount_for_key_padding = BLAKE2B_BLOCK_SIZE - key.len();
-                constrain_padding_cells_to_equal_zero(
+
+                /// Padding for the last block, in case the key block is not the only one.
+                if is_last_block && !is_key_block {
+                    let zeros_amount_for_input_padding = if input_size == 0 {
+                        128
+                    } else {
+                        // Complete the block with zeroes
+                        (BLAKE2B_BLOCK_SIZE - input_size % BLAKE2B_BLOCK_SIZE) % BLAKE2B_BLOCK_SIZE
+                    };
+                    constrain_padding_cells_to_equal_zero(
+                        region,
+                        zeros_amount_for_input_padding,
+                        &current_block_rows,
+                        &zero_constant_cell,
+                    )?;
+                }
+                /// Padding for the key block, in all cases that it exists. It is always the first block.
+                if is_key_block {
+                    /// Complete the block with zeroes
+                    let zeros_amount_for_key_padding = BLAKE2B_BLOCK_SIZE - key.len();
+                    constrain_padding_cells_to_equal_zero(
+                        region,
+                        zeros_amount_for_key_padding,
+                        &current_block_rows,
+                        &zero_constant_cell,
+                    )?;
+                }
+
+                let current_block_cells = get_full_number_of_each(current_block_rows);
+
+                self.compress(
                     region,
-                    zeros_amount_for_key_padding,
-                    &current_block_rows,
-                    &zero_constant_cell,
-                )?;
-            }
-
-            let current_block_cells = get_full_number_of_each(current_block_rows);
-
-            self.compress(
-                region,
-                advice_offset,
-                iv_constants,
-                global_state,
-                current_block_cells,
-                processed_bytes_count,
-                is_last_block,
-            )
-
-        }).last().unwrap_or_else(|| Err(Error::Synthesis))
+                    advice_offset,
+                    iv_constants,
+                    global_state,
+                    current_block_cells,
+                    processed_bytes_count,
+                    is_last_block,
+                )
+            })
+            .last()
+            .unwrap_or_else(|| Err(Error::Synthesis))
     }
 
     /// This method computes a compression round of Blake2b. If the algorithm is in its last round,
@@ -584,13 +590,14 @@ pub trait Blake2bGeneric: Clone {
             .map(|(index, constant)| {
                 let constant1 = *constant as usize;
                 let offset1 = *offset;
-                region.assign_advice_from_constant(
-                    || "iv constants",
-                    self.decompose_8_config().get_limb_column(index),
-                    offset1,
-                    F::from(constant1 as u64),
-                )
-                .unwrap()
+                region
+                    .assign_advice_from_constant(
+                        || "iv constants",
+                        self.decompose_8_config().get_limb_column(index),
+                        offset1,
+                        F::from(constant1 as u64),
+                    )
+                    .unwrap()
             })
             .collect::<Vec<AssignedCell<F, F>>>()
             .try_into()

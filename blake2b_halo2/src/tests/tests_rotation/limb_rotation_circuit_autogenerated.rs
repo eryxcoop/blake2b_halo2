@@ -81,14 +81,13 @@ impl<F: PrimeField, const T: usize> Circuit<F> for LimbRotationCircuitAutogenera
             || format!("Rotate {} limbs", limbs_to_rotate_to_the_right),
             |mut region| {
                 let mut offset = 0;
-                let input_row =
-                    config.limb_rotation_config.decompose_8_config.generate_row_from_value_and_keep_row(
-                        &mut region, self.input, offset)?;
+                let input_row = config
+                    .limb_rotation_config
+                    .decompose_8_config
+                    .generate_row_from_value_and_keep_row(&mut region, self.input, offset)?;
                 offset += 1;
 
-                let self1 = &config
-                    .limb_rotation_config
-                    .limb_rotation_config;
+                let self1 = &config.limb_rotation_config.limb_rotation_config;
                 let decompose_config = &mut config.limb_rotation_config.decompose_8_config;
                 let result = self1.generate_rotation_rows_from_input_row(
                     &mut region,

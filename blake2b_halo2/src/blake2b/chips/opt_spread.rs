@@ -42,7 +42,8 @@ impl Blake2bGeneric for Blake2bChipOptSpread {
         let addition_config = AdditionMod64Config::<8, 10>::configure(meta, full_number_u64, carry);
 
         /// We must provide the spread config all the columns, not just the limbs
-        let xor_config = XorSpreadConfig::configure(meta, limbs, full_number_u64, carry, &decompose_8_config);
+        let xor_config =
+            XorSpreadConfig::configure(meta, limbs, full_number_u64, carry, &decompose_8_config);
 
         Self {
             addition_config,
@@ -54,7 +55,10 @@ impl Blake2bGeneric for Blake2bChipOptSpread {
         }
     }
 
-    fn populate_lookup_tables<F: PrimeField>(&self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
+    fn populate_lookup_tables<F: PrimeField>(
+        &self,
+        layouter: &mut impl Layouter<F>,
+    ) -> Result<(), Error> {
         self.populate_lookup_table_8(layouter)?;
         self.populate_xor_lookup_table(layouter)
     }

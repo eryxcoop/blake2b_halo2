@@ -54,7 +54,10 @@ impl Blake2bGeneric for Blake2bChipOptRecycle {
         }
     }
 
-    fn populate_lookup_tables<F: PrimeField>(&self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
+    fn populate_lookup_tables<F: PrimeField>(
+        &self,
+        layouter: &mut impl Layouter<F>,
+    ) -> Result<(), Error> {
         self.populate_lookup_table_8(layouter)?;
         self.populate_xor_lookup_table(layouter)
     }

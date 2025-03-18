@@ -5,20 +5,19 @@ use crate::blake2b::chips::blake2b_generic::Blake2bGeneric;
 
 /// Main gadget to compute Blake2b hash function
 pub struct Blake2b<C: Blake2bGeneric> {
-    chip: C
+    chip: C,
 }
 
 impl<C: Blake2bGeneric> Blake2b<C> {
-    pub fn new(
-        chip: C
-    ) -> Result<Self, Error> {
-        Ok(Self {
-            chip
-        })
+    pub fn new(chip: C) -> Result<Self, Error> {
+        Ok(Self { chip })
     }
 
     /// This method should be called only once in the circuit
-    pub fn initialize<F: PrimeField>(&mut self, layouter: &mut impl Layouter<F>) -> Result<(), Error>{
+    pub fn initialize<F: PrimeField>(
+        &mut self,
+        layouter: &mut impl Layouter<F>,
+    ) -> Result<(), Error> {
         self.chip.populate_lookup_tables(layouter)
     }
 
@@ -27,10 +26,16 @@ impl<C: Blake2bGeneric> Blake2b<C> {
         layouter: &mut impl Layouter<F>,
         input: &[Value<F>],
         key: &[Value<F>],
-        output_size: usize
+        output_size: usize,
     ) -> Result<[AssignedCell<F, F>; 64], Error> {
         self.chip.compute_blake2b_hash_for_inputs(
-            layouter, output_size, input.len(), key.len(), input, key)
+            layouter,
+            output_size,
+            input.len(),
+            key.len(),
+            input,
+            key,
+        )
     }
 
     /// This is optional, the circuit can opt not to check the result if the hash digest is to
@@ -47,7 +52,7 @@ impl<C: Blake2bGeneric> Blake2b<C> {
             layouter,
             global_state_bytes,
             output_size,
-            public_inputs_instance_column
+            public_inputs_instance_column,
         )
     }
 }

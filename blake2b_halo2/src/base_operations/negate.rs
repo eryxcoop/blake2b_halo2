@@ -49,19 +49,16 @@ impl NegateConfig {
         // copy constraint between input and the new cell and stops using the limb decomposition
         self.q_negate.enable(region, *offset)?;
         let full_number_column = decompose_config.get_full_number_u64_column();
-        input.copy_advice(
-            ||"Negation input",
-            region,
-            full_number_column,
-            *offset)?;
+        input.copy_advice(|| "Negation input", region, full_number_column, *offset)?;
         *offset += 1;
 
         let result_value = input.value().map(|v0| F::from(((1u128 << 64) - 1) as u64) - *v0);
         let result_cell = region.assign_advice(
-            ||"Negation output",
+            || "Negation output",
             full_number_column,
             *offset,
-            ||result_value)?;
+            || result_value,
+        )?;
         *offset += 1;
         Ok(result_cell)
     }

@@ -35,10 +35,10 @@ impl Decompose16Config {
             vec![
                 q_decompose
                     * (full_number
-                    - limbs[0].clone()
-                    - limbs[1].clone() * Expression::Constant(F::from(1 << 16))
-                    - limbs[2].clone() * Expression::Constant(F::from(1 << 32))
-                    - limbs[3].clone() * Expression::Constant(F::from(1 << 48))),
+                        - limbs[0].clone()
+                        - limbs[1].clone() * Expression::Constant(F::from(1 << 16))
+                        - limbs[2].clone() * Expression::Constant(F::from(1 << 32))
+                        - limbs[3].clone() * Expression::Constant(F::from(1 << 48))),
             ]
         });
 
@@ -111,7 +111,7 @@ impl Decomposition<4> for Decompose16Config {
         let mut result = vec![full_number_cell];
 
         let limbs: [Value<F>; 4] =
-            (0..4). map(|i| Self::get_limb_from(value, i)).collect::<Vec<_>>().try_into().unwrap();
+            (0..4).map(|i| Self::get_limb_from(value, i)).collect::<Vec<_>>().try_into().unwrap();
 
         for (i, limb) in limbs.iter().enumerate() {
             let limb_cell =

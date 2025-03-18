@@ -63,7 +63,10 @@ impl Blake2bGeneric for Blake2bChipOpt4Limbs {
         }
     }
 
-    fn populate_lookup_tables<F: PrimeField>(&self, layouter: &mut impl Layouter<F>) -> Result<(), Error> {
+    fn populate_lookup_tables<F: PrimeField>(
+        &self,
+        layouter: &mut impl Layouter<F>,
+    ) -> Result<(), Error> {
         self.populate_lookup_table_8(layouter)?;
         self.populate_xor_lookup_table(layouter)?;
         self.populate_lookup_table_16(layouter)

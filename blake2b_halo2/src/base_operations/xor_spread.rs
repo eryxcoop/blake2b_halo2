@@ -142,10 +142,8 @@ impl XorSpreadConfig {
                     grid[row][col] = meta.query_advice(columns[col], Rotation(row as i32));
                 }
             }
-            let z_expr = z_limb_positions
-                .iter()
-                .map(|&(row, col)| &grid[row][col])
-                .collect::<Vec<_>>();
+            let z_expr =
+                z_limb_positions.iter().map(|&(row, col)| &grid[row][col]).collect::<Vec<_>>();
 
             let mut gates = vec![];
             for i in 0..8 {
@@ -173,8 +171,7 @@ impl XorSpreadConfig {
         for (row, column_index) in z_limb_positions.iter() {
             meta.lookup("reminder spread", |meta| {
                 let q_xor = meta.query_selector(q_xor);
-                let z_limb =
-                    meta.query_advice(columns[*column_index], Rotation(*row as i32));
+                let z_limb = meta.query_advice(columns[*column_index], Rotation(*row as i32));
 
                 vec![(q_xor.clone() * z_limb, t_spread)]
             });
@@ -189,7 +186,12 @@ impl XorSpreadConfig {
         }
     }
 
-    fn populate_spread_limbs_of<F: PrimeField>(&self, region: &mut Region<F>, offset: usize, limbs: [u8; 8]) {
+    fn populate_spread_limbs_of<F: PrimeField>(
+        &self,
+        region: &mut Region<F>,
+        offset: usize,
+        limbs: [u8; 8],
+    ) {
         for (i, limb) in limbs.iter().enumerate() {
             region
                 .assign_advice(
