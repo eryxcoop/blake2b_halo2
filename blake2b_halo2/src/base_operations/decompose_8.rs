@@ -61,23 +61,8 @@ impl Decompose8Config {
         }
     }
 
-    // [Zhiyong comment - answered] no need to implement this method, unless we would use wrapping types
-    //
-    // We need this to be able to access the limbs column. We don't have access outside the chip
-    pub fn assign_constant_in_cell<F: PrimeField>(
-        &self,
-        region: &mut Region<F>,
-        constant: usize,
-        offset: usize,
-        name: &str,
-        limb_index: usize,
-    ) -> Result<AssignedCell<F, F>, Error> {
-        region.assign_advice_from_constant(
-            || name,
-            self.limbs[limb_index],
-            offset,
-            F::from(constant as u64),
-        )
+    pub fn get_limb_column(&self, index: usize) -> Column<Advice> {
+        self.limbs[index].clone()
     }
 }
 

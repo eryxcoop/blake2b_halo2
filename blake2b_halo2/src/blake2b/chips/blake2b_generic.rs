@@ -116,18 +116,30 @@ pub trait Blake2bGeneric: Clone {
             self.assign_iv_constants_to_fixed_cells(&mut region, &mut advice_offset)?;
         *advice_offset += 1;
         let init_const_state_0 =
-            self.assign_constant_in_cell(&mut region, advice_offset, 0x01010000, "state 0 xor", 0)?;
-        let output_size_constant = self.assign_constant_in_cell(
-            &mut region,
-            advice_offset,
-            output_size,
-            "output size",
-            1,
+            region.assign_advice_from_constant(|| "state 0 xor", self.decompose_8_config().get_limb_column(0), *advice_offset, F::from(0x01010000u64))?;
+        let output_size_constant = region.assign_advice_from_constant(
+            || "output size",
+            self.decompose_8_config().get_limb_column(1),
+            *advice_offset,
+            F::from(output_size as u64),
         )?;
+        let constant = key_size << 8;
+        let offset1 = *advice_offset;
         let key_size_constant_shifted =
-            self.assign_constant_in_cell(&mut region, advice_offset, key_size << 8, "key size", 2)?;
+            region.assign_advice_from_constant(
+                || "key size",
+                self.decompose_8_config().get_limb_column(2),
+                offset1,
+                F::from(constant as u64),
+            )?;
+        let offset1 = *advice_offset;
         let zero_constant =
-            self.assign_constant_in_cell(&mut region, advice_offset, 0, "zero", 3)?;
+            region.assign_advice_from_constant(
+                || "zero",
+                self.decompose_8_config().get_limb_column(3),
+                offset1,
+                F::from(0 as u64),
+            )?;
         *advice_offset += 1;
 
         Ok((
@@ -137,19 +149,6 @@ pub trait Blake2bGeneric: Clone {
             key_size_constant_shifted,
             zero_constant,
         ))
-    }
-
-    /// Assign constants to advice cell to use later on
-    fn assign_constant_in_cell<F: PrimeField>(
-        &self,
-        region: &mut Region<F>,
-        offset: &usize,
-        constant: usize,
-        name: &str,
-        limb_index: usize,
-    ) -> Result<AssignedCell<F, F>, Error> {
-        self.decompose_8_config()
-            .assign_constant_in_cell(region, constant, *offset, name, limb_index)
     }
 
     /// This method handles the part of the configuration that is generic to all optimizations.
@@ -583,12 +582,13 @@ pub trait Blake2bGeneric: Clone {
             .iter()
             .enumerate()
             .map(|(index, constant)| {
-                self.assign_constant_in_cell(
-                    region,
-                    offset,
-                    *constant as usize,
-                    "iv constants",
-                    index,
+                let constant1 = *constant as usize;
+                let offset1 = *offset;
+                region.assign_advice_from_constant(
+                    || "iv constants",
+                    self.decompose_8_config().get_limb_column(index),
+                    offset1,
+                    F::from(constant1 as u64),
                 )
                 .unwrap()
             })
