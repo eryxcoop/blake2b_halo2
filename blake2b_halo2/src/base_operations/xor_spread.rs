@@ -54,13 +54,11 @@ impl Xor for XorSpreadConfig {
         if !use_previous_cell {
             self.q_xor.enable(region, *offset)?;
             decompose_8_config.generate_row_from_cell(region, previous_cell, *offset)?;
-            *offset += 1;
         } else {
             self.q_xor.enable(region, *offset - 1)?;
         }
 
-        decompose_8_config.generate_row_from_cell(region, cell_to_copy, *offset)?;
-        *offset += 1;
+        decompose_8_config.generate_row_from_cell(region, cell_to_copy, *offset + 1)?;
 
         let value_result =
             value_lhs.zip(value_rhs).map(|(v0, v1)| auxiliar_functions::xor_field_elements(v0, v1));
@@ -76,9 +74,9 @@ impl Xor for XorSpreadConfig {
             // For the inputs, the .generate_row_from_cell() guarantees soundness with the internal copy
             // constraint. Then, all the spreads are constrained with lookups in the "xor with spread" gate.
 
-            self.populate_spread_limbs_of(region, *offset, lhs_limb_values);
-            self.populate_spread_limbs_of(region, *offset + 1, rhs_limb_values);
-            self.populate_spread_limbs_of(region, *offset + 2, result_limb_values);
+            self.populate_spread_limbs_of(region, *offset + 2, lhs_limb_values);
+            self.populate_spread_limbs_of(region, *offset + 3, rhs_limb_values);
+            self.populate_spread_limbs_of(region, *offset + 4, result_limb_values);
 
             let z_limb_positions = Self::z_limb_positions::<F>();
             let columns_in_order =
@@ -96,8 +94,7 @@ impl Xor for XorSpreadConfig {
                     .assign_advice(
                         || format!("reminder z_{}", i),
                         columns_in_order[z_limb_positions[i].1],
-                        // We need to subtract 5 since we are in the offset 5 because we already assigned all rows
-                        *offset + 3 + z_limb_positions[i].0 - 5,
+                        *offset + z_limb_positions[i].0,
                         || value_for::<u16, F>(z_i),
                     )
                     .unwrap();
@@ -105,14 +102,13 @@ impl Xor for XorSpreadConfig {
             Value::<F>::unknown()
         });
 
-        *offset += 3;
-
         let result_row = decompose_8_config.generate_row_from_value_and_keep_row(
             region,
             value_result,
-            *offset,
+            *offset + 5,
         )?;
-        *offset += 1;
+
+        *offset += 6;
         Ok(result_row.try_into().unwrap())
     }
 }
