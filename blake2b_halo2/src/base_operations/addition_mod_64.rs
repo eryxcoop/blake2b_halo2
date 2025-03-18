@@ -11,7 +11,6 @@ pub type AdditionConfigWith8Limbs = AdditionMod64Config<8, 10>;
 ///
 /// R is used to define the total number of columns in the trace.
 /// It will allways be T + 2 (full number and carry)
-// [Inigo comment - solved] Configs do not need the generic F. please change throughout the whole codebase.
 pub struct AdditionMod64Config<const T: usize, const R: usize> {
     carry: Column<Advice>,
     q_add: Selector,
