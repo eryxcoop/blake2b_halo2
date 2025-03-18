@@ -65,23 +65,31 @@ impl Xor for XorSpreadConfig {
         let value_result =
             value_lhs.zip(value_rhs).map(|(v0, v1)| auxiliar_functions::xor_field_elements(v0, v1));
 
-        let result_row = decompose_8_config.generate_row_from_value_and_keep_row(
-            region,
-            value_result,
-            *offset + 3,
-        )?;
+        // [Inigo comment - answered] It is a bit unclear what is going on here. How do you guarantee that the value being
+        // assigned here is the same as the input?
+        // Maybe soundness issue? copy constraint missing
+        //
+        // The gate is guaranteeing soundness here, since it is checking that these two following
+        // rows contains the spread of the limbs of the input values (in the two previous rows)
 
+        println!("value_lhs {:?}", value_lhs);
+        println!("value_rhs {:?}", value_rhs);
+        println!("value_result {:?}", value_result);
         value_lhs.zip(value_rhs).zip(value_result).map(|((lhs, rhs), result)| {
             let lhs_limb_values = auxiliar_functions::decompose_field_8bit_limbs(lhs);
             let rhs_limb_values = auxiliar_functions::decompose_field_8bit_limbs(rhs);
             let result_limb_values = auxiliar_functions::decompose_field_8bit_limbs(result);
 
-            self.populate_spread_limbs_of2(region, offset, lhs_limb_values);
+            println!("offset 2 {:?}", *offset);
+            self.populate_spread_limbs_of2(region, *offset, lhs_limb_values);
             *offset += 1;
-            self.populate_spread_limbs_of2(region, offset, rhs_limb_values);
+            println!("offset 3 {:?}", *offset);
+            self.populate_spread_limbs_of2(region, *offset, rhs_limb_values);
             *offset += 1;
-            self.populate_spread_limbs_of2(region, offset, result_limb_values);
+            println!("offset 4 {:?}", *offset);
+            self.populate_spread_limbs_of2(region, *offset, result_limb_values);
             *offset += 1;
+            println!("offset 5 {:?}", *offset);
 
             let z_limb_positions = Self::z_limb_positions::<F>();
             let columns_in_order =
@@ -105,8 +113,15 @@ impl Xor for XorSpreadConfig {
             }
             Value::<F>::unknown()
         });
-        *offset += 1; // we need to add 1 to offset because we didn't do it in line 67 where we assigned the result row
 
+        println!("offset after value zip {:?}", *offset);
+        println!("============================");
+        let result_row = decompose_8_config.generate_row_from_value_and_keep_row(
+            region,
+            value_result,
+            *offset,
+        )?;
+        *offset += 1; // we need to add 1 to offset because we didn't do it in line 67 where we assigned the result row
         Ok(result_row.try_into().unwrap())
     }
     // fn generate_xor_rows_from_cells<F: PrimeField>(
@@ -133,12 +148,7 @@ impl Xor for XorSpreadConfig {
     //     decompose_8_config.generate_row_from_cell(region, cell_to_copy, *offset)?;
     //     *offset += 1;
     //
-    //     // [Inigo comment - answered] It is a bit unclear what is going on here. How do you guarantee that the value being
-    //     // assigned here is the same as the input?
-    //     // Maybe soundness issue? copy constraint missing
-    //     //
-    //     // The gate is guaranteeing soundness here, since it is checking that these two following
-    //     // rows contains the spread of the limbs of the input values (in the two previous rows)
+
     //     self.populate_spread_limbs_of(region, offset, value_lhs);
     //     *offset += 1;
     //
@@ -265,26 +275,26 @@ impl XorSpreadConfig {
         }
     }
 
-    // fn populate_spread_limbs_of<F: PrimeField>(
-    //     &self,
-    //     region: &mut Region<F>,
-    //     offset: &mut usize,
-    //     value: Value<F>,
-    // ) {
-    //     value.and_then(|v| {
-    //         let lhs_limb_values = auxiliar_functions::decompose_field_8bit_limbs(v);
-    //         self.populate_spread_limbs_of2(region, offset, lhs_limb_values);
-    //         Value::<F>::unknown()
-    //     });
-    // }
+    fn populate_spread_limbs_of<F: PrimeField>(
+        &self,
+        region: &mut Region<F>,
+        offset: &mut usize,
+        value: Value<F>,
+    ) {
+        value.and_then(|v| {
+            let lhs_limb_values = auxiliar_functions::decompose_field_8bit_limbs(v);
+            self.populate_spread_limbs_of2(region, *offset, lhs_limb_values);
+            Value::<F>::unknown()
+        });
+    }
 
-    fn populate_spread_limbs_of2<F: PrimeField>(&self, region: &mut Region<F>, offset: &mut usize, limbs: [u8; 8]) {
+    fn populate_spread_limbs_of2<F: PrimeField>(&self, region: &mut Region<F>, offset: usize, limbs: [u8; 8]) {
         for (i, limb) in limbs.iter().enumerate() {
             region
                 .assign_advice(
                     || "spread",
                     self.limbs[i],
-                    *offset,
+                    offset,
                     || value_for::<u16, F>(Self::spread_bits::<F>(*limb)),
                 )
                 .unwrap();
