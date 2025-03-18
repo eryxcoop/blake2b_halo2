@@ -54,12 +54,17 @@ impl Xor for XorSpreadConfig {
         if !use_previous_cell {
             self.q_xor.enable(region, *offset)?;
             decompose_8_config.generate_row_from_cell(region, previous_cell, *offset)?;
+            // println!("offset first row {:?}", *offset);
+
             *offset += 1;
         } else {
             self.q_xor.enable(region, *offset - 1)?;
+            // println!("offset first row {:?}", *offset - 1);
         }
 
         decompose_8_config.generate_row_from_cell(region, cell_to_copy, *offset)?;
+        // println!("offset second row {:?}", *offset);
+
         *offset += 1;
 
         let value_result =
@@ -77,22 +82,30 @@ impl Xor for XorSpreadConfig {
             // constraint. Then, all the spreads are constrained with lookups in the "xor with spread" gate.
 
             self.populate_spread_limbs_of(region, *offset, lhs_limb_values);
+            // println!("offset third row {:?}", *offset);
             *offset += 1;
             self.populate_spread_limbs_of(region, *offset, rhs_limb_values);
+            // println!("offset fourth row {:?}", *offset);
             *offset += 1;
             self.populate_spread_limbs_of(region, *offset, result_limb_values);
+            // println!("offset fifth row {:?}", *offset);
             *offset += 1;
+            // println!("offset result row {:?}", *offset);
 
             let z_limb_positions = Self::z_limb_positions::<F>();
             let columns_in_order =
                 Self::advice_columns_in_order::<F>(self.full_number_u64, self.limbs, self.extra);
-            // [Zhiyong comment] a handling error when z_i not divided by 2
+            // [Zhiyong comment - answered] a handling error when z_i not divided by 2
+            //
+            // I think I don't understand this. Z = x + y - xor(x,y) should be always divisible by 2
             for i in 0..8 {
                 let z_i = (Self::spread_bits::<F>(lhs_limb_values[i])
                     + Self::spread_bits::<F>(rhs_limb_values[i])
                     - Self::spread_bits::<F>(result_limb_values[i]))
                     / 2;
 
+                // println!("offset z_{:?} row {:?}", i, *offset + z_limb_positions[i].0 - 5);
+                // println!("offset z_{:?} column {:?}", i, columns_in_order[z_limb_positions[i].1]);
                 region
                     .assign_advice(
                         || format!("reminder z_{}", i),
@@ -105,7 +118,7 @@ impl Xor for XorSpreadConfig {
             }
             Value::<F>::unknown()
         });
-
+        // println!("======================");
         let result_row = decompose_8_config.generate_row_from_value_and_keep_row(
             region,
             value_result,
