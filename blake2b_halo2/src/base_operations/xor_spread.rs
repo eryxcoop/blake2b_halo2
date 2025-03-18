@@ -83,7 +83,9 @@ impl Xor for XorSpreadConfig {
             let z_limb_positions = Self::z_limb_positions::<F>();
             let columns_in_order =
                 Self::advice_columns_in_order::<F>(self.full_number_u64, self.limbs, self.extra);
-            // [Zhiyong comment] a handling error when z_i not divided by 2
+            // [Zhiyong comment - answered] a handling error when z_i not divided by 2
+            //
+            // I think I don't understand this. Z = x + y - xor(x,y) should be always divisible by 2
             for i in 0..8 {
                 let z_i = (Self::spread_bits::<F>(lhs_limb_values[i])
                     + Self::spread_bits::<F>(rhs_limb_values[i])
