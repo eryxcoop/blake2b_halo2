@@ -77,11 +77,8 @@ impl Xor for XorSpreadConfig {
             // constraint. Then, all the spreads are constrained with lookups in the "xor with spread" gate.
 
             self.populate_spread_limbs_of(region, *offset, lhs_limb_values);
-            *offset += 1;
-            self.populate_spread_limbs_of(region, *offset, rhs_limb_values);
-            *offset += 1;
-            self.populate_spread_limbs_of(region, *offset, result_limb_values);
-            *offset += 1;
+            self.populate_spread_limbs_of(region, *offset + 1, rhs_limb_values);
+            self.populate_spread_limbs_of(region, *offset + 2, result_limb_values);
 
             let z_limb_positions = Self::z_limb_positions::<F>();
             let columns_in_order =
@@ -98,13 +95,15 @@ impl Xor for XorSpreadConfig {
                         || format!("reminder z_{}", i),
                         columns_in_order[z_limb_positions[i].1],
                         // We need to subtract 5 since we are in the offset 5 because we already assigned all rows
-                        *offset + z_limb_positions[i].0 - 5,
+                        *offset + 3 + z_limb_positions[i].0 - 5,
                         || value_for::<u16, F>(z_i),
                     )
                     .unwrap();
             }
             Value::<F>::unknown()
         });
+
+        *offset += 3;
 
         let result_row = decompose_8_config.generate_row_from_value_and_keep_row(
             region,
