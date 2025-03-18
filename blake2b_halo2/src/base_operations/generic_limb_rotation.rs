@@ -45,13 +45,13 @@ impl LimbRotation {
         Ok(result_cell)
     }
 
-    /// Here the rotation is enforced by copy constraints
     // [Zhiyong comment - answered] instead of computing again the limbs of shifted-rotation, how about copy-advice directly between the two
     // relevant limbs for input_row and result_row
     //
     // This object does not have access to the limbs, the only one who has it is the DecomposeConfig
     // so we preferred to avoid breaking encapsulation and just compute the limbs again (only
     // because computing the limbs is not an expensive operation)
+    /// Here the rotation is enforced by copy constraints
     #[allow(clippy::ptr_arg)]
     pub fn constrain_result_with_input_row<F: PrimeField>(
         region: &mut Region<F>,

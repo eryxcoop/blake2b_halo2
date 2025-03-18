@@ -142,7 +142,7 @@ pub trait Blake2bGeneric: Clone {
             || "zero",
             self.decompose_8_config().get_limb_column(3),
             offset1,
-            F::from(0 as u64),
+            F::from(0),
         )?;
         *advice_offset += 1;
 
