@@ -588,14 +588,12 @@ pub trait Blake2bInstructions: Clone {
             .iter()
             .enumerate()
             .map(|(index, constant)| {
-                let constant1 = *constant as usize;
-                let offset1 = *offset;
                 region
                     .assign_advice_from_constant(
                         || "iv constants",
                         self.decompose_8_config().get_limb_column(index),
-                        offset1,
-                        F::from(constant1 as u64),
+                        *offset,
+                        F::from(*constant),
                     )
                     .unwrap()
             })
