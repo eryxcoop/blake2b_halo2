@@ -21,6 +21,8 @@ impl<C: Blake2bInstructions> Blake2b<C> {
         self.chip.populate_lookup_tables(layouter)
     }
 
+    /// The hash function doesn't expect the input and key to be range-checked because that
+    /// responsibility is part of the underlying chip.
     pub fn hash<F: PrimeField>(
         &self,
         layouter: &mut impl Layouter<F>,
@@ -31,8 +33,6 @@ impl<C: Blake2bInstructions> Blake2b<C> {
         self.chip.compute_blake2b_hash_for_inputs(
             layouter,
             output_size,
-            input.len(),
-            key.len(),
             input,
             key,
         )

@@ -79,8 +79,13 @@ impl<F: PrimeField, OptimizationChip: Blake2bInstructions> Circuit<F>
         config: Self::Config,
         mut layouter: impl Layouter<F>,
     ) -> Result<(), Error> {
+        /// The input bytes are assigned in the circuit before calling the hash function.
+        /// They're not constrained to be in the range [0,255] here, but they are when used inside
+        /// the blake2b chip. This means that the chip does not expect the inputs to be bytes, but
+        /// the execution will fail if they're not.
         let assigned_input = Self::assign_inputs_to_the_trace(config.clone(), &mut layouter, &self.input)?;
         let assigned_key = Self::assign_inputs_to_the_trace(config.clone(), &mut layouter, &self.key)?;
+
         /// The initialization function should be called before the hash computation. For many hash
         /// computations it should be called only once.
         let mut blake2b = Blake2b::new(config.blake2b_chip)?;
@@ -117,6 +122,8 @@ impl<F: PrimeField, OptimizationChip: Blake2bInstructions> Blake2bCircuit<F, Opt
         }
     }
 
+    /// Here the inputs are stored in the trace. It doesn't really matter how they're stored, this
+    /// specific circuit uses the limb columns to do it but that's arbitrary.
     fn assign_inputs_to_the_trace(
         config: Blake2bConfig<F, OptimizationChip>,
         layouter: &mut impl Layouter<F>,

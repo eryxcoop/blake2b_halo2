@@ -42,18 +42,17 @@ pub trait Blake2bInstructions: Clone {
     // ---------- MAIN METHODS ---------- //
 
     /// This is the main method of the chips. It computes the Blake2b hash for the given inputs.
-    /// The inputs and key cells should be filled with bytes, but the range check hasn't been
-    /// done yet. This will be done when the corresponding block is processed.
+    /// The inputs and key cells SHOULD be filled with bytes (otherwise the proof generation will
+    /// fail) but nothing guaranties that the range check is done yet. This will be done in the chip
     fn compute_blake2b_hash_for_inputs<F: PrimeField>(
         &self,
         layouter: &mut impl Layouter<F>,
         output_size: usize,
-        input_size: usize,
-        key_size: usize,
         input: &[AssignedCell<F,F>],
         key: &[AssignedCell<F,F>],
     ) -> Result<[AssignedCell<F, F>; 64], Error> {
-        enforce_input_sizes(output_size, key_size);
+        enforce_input_sizes(output_size, key.len());
+
 
         /// All the computation is performed inside a single region. Some optimizations take advantage
         /// of this fact, since we want to avoid copying cells between regions.
@@ -71,7 +70,7 @@ pub trait Blake2bInstructions: Clone {
                     zero_constant,
                 ) = self.assign_constant_advice_cells(
                     output_size,
-                    key_size,
+                    key.len(),
                     &mut region,
                     &mut advice_offset,
                 )?;
@@ -88,7 +87,6 @@ pub trait Blake2bInstructions: Clone {
                 self.perform_blake2b_iterations(
                     &mut region,
                     &mut advice_offset,
-                    input_size,
                     input,
                     key,
                     &iv_constant_cells,
@@ -209,13 +207,13 @@ pub trait Blake2bInstructions: Clone {
         &self,
         region: &mut Region<F>,
         advice_offset: &mut usize,
-        input_size: usize,
         input: &[AssignedCell<F,F>],
         key: &[AssignedCell<F,F>],
         iv_constants: &[AssignedCell<F, F>; 8],
         global_state: &mut [AssignedCell<F, F>; 8],
         zero_constant_cell: AssignedCell<F, F>,
     ) -> Result<[AssignedCell<F, F>; 64], Error> {
+        let input_size = input.len();
         let is_key_empty = key.is_empty();
         let is_input_empty = input_size == 0;
 
@@ -238,8 +236,6 @@ pub trait Blake2bInstructions: Clone {
                     is_key_empty,
                 );
 
-                /// This is the part where the inputs/key are organized inside the trace. Each iteration
-                /// processes 128 bytes, or as we represent them: 16 words of 64 bits.
                 let current_block_rows = self.build_current_block_rows(
                     region,
                     advice_offset,
@@ -619,6 +615,8 @@ pub trait Blake2bInstructions: Clone {
         ret
     }
 
+    /// This is the part where the inputs/key are organized inside the trace. Each iteration
+    /// processes 128 bytes, or as we represent them: 16 words of 64 bits.
     #[allow(clippy::too_many_arguments)]
     fn build_current_block_rows<F: PrimeField>(
         &self,
