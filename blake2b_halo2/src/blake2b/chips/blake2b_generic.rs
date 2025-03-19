@@ -42,14 +42,16 @@ pub trait Blake2bInstructions: Clone {
     // ---------- MAIN METHODS ---------- //
 
     /// This is the main method of the chips. It computes the Blake2b hash for the given inputs.
+    /// The inputs and key cells should be filled with bytes, but the range check hasn't been
+    /// done yet. This will be done when the corresponding block is processed.
     fn compute_blake2b_hash_for_inputs<F: PrimeField>(
         &self,
         layouter: &mut impl Layouter<F>,
         output_size: usize,
         input_size: usize,
         key_size: usize,
-        input: &[Value<F>],
-        key: &[Value<F>],
+        input: &[AssignedCell<F,F>],
+        key: &[AssignedCell<F,F>],
     ) -> Result<[AssignedCell<F, F>; 64], Error> {
         enforce_input_sizes(output_size, key_size);
 
@@ -208,8 +210,8 @@ pub trait Blake2bInstructions: Clone {
         region: &mut Region<F>,
         advice_offset: &mut usize,
         input_size: usize,
-        input: &[Value<F>],
-        key: &[Value<F>],
+        input: &[AssignedCell<F,F>],
+        key: &[AssignedCell<F,F>],
         iv_constants: &[AssignedCell<F, F>; 8],
         global_state: &mut [AssignedCell<F, F>; 8],
         zero_constant_cell: AssignedCell<F, F>,
@@ -248,6 +250,7 @@ pub trait Blake2bInstructions: Clone {
                     is_key_empty,
                     is_last_block,
                     is_key_block,
+                    zero_constant_cell.clone(),
                 )?;
 
                 /// Padding for the last block, in case the key block is not the only one.
@@ -621,13 +624,14 @@ pub trait Blake2bInstructions: Clone {
         &self,
         region: &mut Region<F>,
         offset: &mut usize,
-        input: &[Value<F>],
-        key: &[Value<F>],
+        input: &[AssignedCell<F,F>],
+        key: &[AssignedCell<F,F>],
         block_number: usize,
         last_input_block_index: usize,
         is_key_empty: bool,
         is_last_block: bool,
         is_key_block: bool,
+        zero_constant_cell: AssignedCell<F, F>,
     ) -> Result<[Vec<AssignedCell<F, F>>; 16], Error> {
         let current_block_values = Self::build_values_for_current_block(
             input,
@@ -637,6 +641,7 @@ pub trait Blake2bInstructions: Clone {
             is_key_empty,
             is_last_block,
             is_key_block,
+            zero_constant_cell,
         );
 
         let current_block_rows =
@@ -647,25 +652,25 @@ pub trait Blake2bInstructions: Clone {
     /// Computes the values of the current block in the blake2b algorithm, based on the input and
     /// the block number we're on.
     fn build_values_for_current_block<F: PrimeField>(
-        input: &[Value<F>],
-        key: &[Value<F>],
+        input: &[AssignedCell<F,F>],
+        key: &[AssignedCell<F,F>],
         block_number: usize,
         last_input_block_index: usize,
         is_key_empty: bool,
         is_last_block: bool,
         is_key_block: bool,
-    ) -> Vec<Value<F>> {
+        zero_constant_cell: AssignedCell<F, F>,
+    ) -> Vec<AssignedCell<F, F>> {
         if is_last_block && !is_key_block {
             let mut result = input[last_input_block_index * BLAKE2B_BLOCK_SIZE..].to_vec();
-            result.resize(128, Value::known(F::ZERO));
+            result.resize(128, zero_constant_cell);
             result
         } else if is_key_block {
             let mut result = key.to_vec();
-            result.resize(128, Value::known(F::ZERO));
+            result.resize(128, zero_constant_cell);
             result
         } else {
-            let current_input_block_index =
-                if is_key_empty { block_number } else { block_number - 1 };
+            let current_input_block_index = if is_key_empty { block_number } else { block_number - 1 };
             input[current_input_block_index * BLAKE2B_BLOCK_SIZE
                 ..(current_input_block_index + 1) * BLAKE2B_BLOCK_SIZE]
                 .to_vec()
@@ -676,12 +681,12 @@ pub trait Blake2bInstructions: Clone {
         &self,
         region: &mut Region<F>,
         offset: &mut usize,
-        block: [Value<F>; 128],
+        block: [AssignedCell<F, F>; 128],
     ) -> Result<[Vec<AssignedCell<F, F>>; 16], Error> {
         let mut current_block_rows: Vec<Vec<AssignedCell<F, F>>> = Vec::new();
         for i in 0..16 {
-            let bytes: [Value<F>; 8] = block[i * 8..(i + 1) * 8].try_into().unwrap();
-            let current_row_cells = self.new_row_from_bytes(bytes, region, offset)?;
+            let bytes: &[AssignedCell<F, F>; 8] = block[i * 8..(i + 1) * 8].try_into().unwrap();
+            let current_row_cells = self.new_row_from_assigned_bytes(bytes, region, offset)?;
             current_block_rows.push(current_row_cells);
         }
         let current_block_words = current_block_rows.try_into().unwrap();
@@ -690,13 +695,13 @@ pub trait Blake2bInstructions: Clone {
 
     /// Given an array of byte-values, it puts in the circuit a full row with those bytes in the
     /// limbs and the resulting full number in the first column.
-    fn new_row_from_bytes<F: PrimeField>(
+    fn new_row_from_assigned_bytes<F: PrimeField>(
         &self,
-        bytes: [Value<F>; 8],
+        bytes: &[AssignedCell<F, F>; 8],
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<Vec<AssignedCell<F, F>>, Error> {
-        let ret = self.decompose_8_config().generate_row_from_bytes(region, bytes, *offset);
+        let ret = self.decompose_8_config().generate_row_from_assigned_bytes(region, bytes, *offset);
         *offset += 1;
         ret
     }

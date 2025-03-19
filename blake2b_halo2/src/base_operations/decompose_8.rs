@@ -64,6 +64,42 @@ impl Decompose8Config {
     pub fn get_limb_column(&self, index: usize) -> Column<Advice> {
         self.limbs[index].clone()
     }
+
+    pub fn generate_row_from_assigned_bytes<F: PrimeField>(
+        &self,
+        region: &mut Region<F>,
+        bytes: &[AssignedCell<F, F>; 8],
+        offset: usize,
+    ) -> Result<Vec<AssignedCell<F, F>>, Error> {
+        let value = Self::compute_full_value_u64_from_bytes(bytes);
+
+        self.q_decompose.enable(region, offset)?;
+        let full_number_cell =
+            region.assign_advice(|| "full number", self.full_number_u64, offset, || value)?;
+
+        let mut result = vec![full_number_cell];
+        for (index, byte_cell) in bytes.iter().enumerate() {
+            result.push(
+                byte_cell.copy_advice(
+                    || "Copied input byte", region, self.limbs[index], offset)?
+            );
+        }
+
+        Ok(result)
+    }
+
+    fn compute_full_value_u64_from_bytes<F: PrimeField>(bytes: &[AssignedCell<F, F>; 8]) -> Value<F> {
+        let mut full_number = F::ZERO;
+        for byte_cell in bytes.iter().rev() {
+            byte_cell.value().and_then(|v| {
+                full_number *= F::from(256u64);
+                full_number += *v;
+                Value::<F>::unknown()
+            });
+        }
+        let value = Value::known(full_number);
+        value
+    }
 }
 
 impl Decomposition<8> for Decompose8Config {
@@ -107,24 +143,6 @@ impl Decomposition<8> for Decompose8Config {
         let full_number_cell =
             self.generate_row_from_value_and_keep_row(region, value, offset)?[0].clone();
         Ok(full_number_cell)
-    }
-
-    fn generate_row_from_bytes<F: PrimeField>(
-        &self,
-        region: &mut Region<F>,
-        bytes: [Value<F>; 8],
-        offset: usize,
-    ) -> Result<Vec<AssignedCell<F, F>>, Error> {
-        let mut full_number = F::ZERO;
-
-        for byte in bytes.iter().rev() {
-            byte.and_then(|v| {
-                full_number *= F::from(256u64);
-                full_number += v;
-                Value::<F>::unknown()
-            });
-        }
-        self.generate_row_from_value_and_keep_row(region, Value::known(full_number), offset)
     }
 
     fn generate_row_from_value_and_keep_row<F: PrimeField>(

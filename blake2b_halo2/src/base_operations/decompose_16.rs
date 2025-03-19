@@ -89,15 +89,6 @@ impl Decomposition<4> for Decompose16Config {
         Ok(full_number_cell)
     }
 
-    fn generate_row_from_bytes<F: PrimeField>(
-        &self,
-        _region: &mut Region<F>,
-        _bytes: [Value<F>; 8],
-        _offset: usize,
-    ) -> Result<Vec<AssignedCell<F, F>>, Error> {
-        panic!("Not implemented");
-    }
-
     fn generate_row_from_value_and_keep_row<F: PrimeField>(
         &self,
         region: &mut Region<F>,

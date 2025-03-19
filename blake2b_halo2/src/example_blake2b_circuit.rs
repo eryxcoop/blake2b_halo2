@@ -1,7 +1,7 @@
 use ff::PrimeField;
 use std::marker::PhantomData;
 use halo2_proofs::plonk::{Advice, Circuit, Column, ConstraintSystem, Error, Instance};
-use halo2_proofs::circuit::{Layouter, SimpleFloorPlanner, Value};
+use halo2_proofs::circuit::{AssignedCell, Layouter, SimpleFloorPlanner, Value};
 use std::array;
 use crate::blake2b::blake2b::Blake2b;
 use crate::blake2b::chips::blake2b_generic::Blake2bInstructions;
@@ -26,6 +26,7 @@ pub struct Blake2bConfig<F: PrimeField, OptimizationChip: Blake2bInstructions> {
     blake2b_chip: OptimizationChip,
     /// Column that will hold the expected output of the hash in the form of public inputs
     expected_final_state: Column<Instance>,
+    limbs: [Column<Advice>; 8],
 }
 
 impl<F: PrimeField, OptimizationChip: Blake2bInstructions> Circuit<F>
@@ -68,6 +69,7 @@ impl<F: PrimeField, OptimizationChip: Blake2bInstructions> Circuit<F>
             _ph: PhantomData,
             blake2b_chip,
             expected_final_state,
+            limbs
         }
     }
 
@@ -77,13 +79,15 @@ impl<F: PrimeField, OptimizationChip: Blake2bInstructions> Circuit<F>
         config: Self::Config,
         mut layouter: impl Layouter<F>,
     ) -> Result<(), Error> {
+        let assigned_input = Self::assign_inputs_to_the_trace(config.clone(), &mut layouter, &self.input)?;
+        let assigned_key = Self::assign_inputs_to_the_trace(config.clone(), &mut layouter, &self.key)?;
         /// The initialization function should be called before the hash computation. For many hash
         /// computations it should be called only once.
         let mut blake2b = Blake2b::new(config.blake2b_chip)?;
         blake2b.initialize(&mut layouter)?;
 
         /// Call to the blake2b function
-        let result = blake2b.hash(&mut layouter, &self.input, &self.key, self.output_size)?;
+        let result = blake2b.hash(&mut layouter, &assigned_input, &assigned_key, self.output_size)?;
 
         /// Assert results
         blake2b.constrain_result(
@@ -111,5 +115,26 @@ impl<F: PrimeField, OptimizationChip: Blake2bInstructions> Blake2bCircuit<F, Opt
             key_size,
             output_size,
         }
+    }
+
+    fn assign_inputs_to_the_trace(
+        config: Blake2bConfig<F, OptimizationChip>,
+        layouter: &mut impl Layouter<F>,
+        input: &[Value<F>],
+    ) -> Result<Vec<AssignedCell<F,F>>, Error> {
+        let result = layouter.assign_region(|| "Inputs", |mut region|{
+            let inner_result = input.into_iter().enumerate().map(|(index, input_byte)|{
+                let row = index / 8;
+                let column = index % 8;
+                region.assign_advice(
+                    || format!("Input column: {}, row: {}", row, column),
+                    config.limbs[column],
+                    row,
+                    || *input_byte
+                ).unwrap()
+            }).collect::<Vec<_>>().try_into().unwrap();
+            Ok(inner_result)
+        })?;
+        Ok(result)
     }
 }

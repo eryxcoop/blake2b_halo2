@@ -67,14 +67,6 @@ pub trait Decomposition<const T: usize> {
         offset: usize,
     ) -> Result<AssignedCell<F, F>, Error>;
 
-    /// Given 8 8-bit limbs, it returns a row with the assigned cells for the full number and the limbs
-    fn generate_row_from_bytes<F: PrimeField>(
-        &self,
-        _region: &mut Region<F>,
-        _bytes: [Value<F>; 8],
-        _offset: usize,
-    ) -> Result<Vec<AssignedCell<F, F>>, Error>;
-
     /// Given a cell with a 64-bit value, it returns a new row with the copied full number and the
     /// decomposition in 8-bit limbs
     fn generate_row_from_cell<F: PrimeField>(
