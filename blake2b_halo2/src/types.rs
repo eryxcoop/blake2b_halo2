@@ -1,3 +1,4 @@
+use std::fmt::Debug;
 use ff::PrimeField;
 use halo2_proofs::circuit::{AssignedCell, Value};
 use num_bigint::BigUint;
@@ -22,7 +23,8 @@ pub type AssignedNative<F> = AssignedCell<F, F>;
 #[must_use]
 pub struct AssignedByte<F: PrimeField>(AssignedNative<F>);
 
-impl<F: PrimeField> AssignedByte<F> {
+impl<F: PrimeField> InnerValue for AssignedByte<F> {
+    type Element = Byte;
 
     fn value(&self) -> Value<Byte> {
         self.0.value().map(|v| {
@@ -38,7 +40,9 @@ impl<F: PrimeField> AssignedByte<F> {
 #[must_use]
 pub struct AssignedU64<F: PrimeField>(AssignedNative<F>);
 
-impl<F: PrimeField> AssignedU64<F> {
+impl<F: PrimeField> InnerValue for AssignedU64<F> {
+    type Element = BlockWord;
+
     fn value(&self) -> Value<BlockWord> {
         self.0.value().map(|v| {
             let bi_v = fe_to_big(*v);
@@ -52,4 +56,13 @@ impl<F: PrimeField> AssignedU64<F> {
 
 pub fn fe_to_big<F: PrimeField>(fe: F) -> BigUint {
     BigUint::from_bytes_le(fe.to_repr().as_ref())
+}
+
+/// Trait for accessing the value inside assigned circuit elements.
+pub trait InnerValue: Clone + Debug {
+    /// Represents the unassigned type corresponding to the [midnight_circuits::types::InnerValue]
+    type Element: Clone + Debug;
+
+    /// Returns the value of the assigned element.
+    fn value(&self) -> Value<Self::Element>;
 }
