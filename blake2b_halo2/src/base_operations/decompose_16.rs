@@ -1,6 +1,6 @@
 use super::*;
 use crate::base_operations::decomposition::Decomposition;
-use halo2_proofs::circuit::AssignedCell;
+use crate::types::AssignedNative;
 
 /// This config handles the decomposition of 64-bit numbers into 16-bit limbs in the trace
 #[derive(Clone, Debug)]
@@ -67,7 +67,7 @@ impl Decomposition<4> for Decompose16Config {
         region: &mut Region<F>,
         row: &[Value<F>],
         offset: usize,
-    ) -> Result<Vec<AssignedCell<F, F>>, Error> {
+    ) -> Result<Vec<AssignedNative<F>>, Error> {
         self.q_decompose.enable(region, offset)?;
         region.assign_advice(|| "full number", self.full_number_u64, offset, || row[0])?;
         let limb_0 = region.assign_advice(|| "limb0", self.limbs[0], offset, || row[1])?;
@@ -83,7 +83,7 @@ impl Decomposition<4> for Decompose16Config {
         region: &mut Region<F>,
         value: Value<F>,
         offset: usize,
-    ) -> Result<AssignedCell<F, F>, Error> {
+    ) -> Result<AssignedNative<F>, Error> {
         let full_number_cell =
             self.generate_row_from_value_and_keep_row(region, value, offset)?[0].clone();
         Ok(full_number_cell)
@@ -94,7 +94,7 @@ impl Decomposition<4> for Decompose16Config {
         region: &mut Region<F>,
         value: Value<F>,
         offset: usize,
-    ) -> Result<Vec<AssignedCell<F, F>>, Error> {
+    ) -> Result<Vec<AssignedNative<F>>, Error> {
         self.q_decompose.enable(region, offset)?;
         let full_number_cell =
             region.assign_advice(|| "full number", self.full_number_u64, offset, || value)?;

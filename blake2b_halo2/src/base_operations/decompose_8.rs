@@ -1,6 +1,6 @@
 use super::*;
-use halo2_proofs::circuit::AssignedCell;
 use crate::auxiliar_functions::{field_for, get_limb_from_field};
+use crate::types::AssignedNative;
 
 /// This config handles the decomposition of 64-bit numbers into 8-bit limbs in the trace
 #[derive(Clone, Debug)]
@@ -68,9 +68,9 @@ impl Decompose8Config {
     pub fn generate_row_from_assigned_bytes<F: PrimeField>(
         &self,
         region: &mut Region<F>,
-        bytes: &[AssignedCell<F, F>; 8],
+        bytes: &[AssignedNative<F>; 8],
         offset: usize,
-    ) -> Result<Vec<AssignedCell<F, F>>, Error> {
+    ) -> Result<Vec<AssignedNative<F>>, Error> {
         let value = Self::compute_full_value_u64_from_bytes(bytes);
 
         self.q_decompose.enable(region, offset)?;
@@ -88,7 +88,7 @@ impl Decompose8Config {
         Ok(result)
     }
 
-    fn compute_full_value_u64_from_bytes<F: PrimeField>(bytes: &[AssignedCell<F, F>; 8]) -> Value<F> {
+    fn compute_full_value_u64_from_bytes<F: PrimeField>(bytes: &[AssignedNative<F>; 8]) -> Value<F> {
         let mut full_number = F::ZERO;
         for byte_cell in bytes.iter().rev() {
             byte_cell.value().and_then(|v| {
@@ -119,7 +119,7 @@ impl Decomposition<8> for Decompose8Config {
         // We can also use &[Value<F>]
         row: &[Value<F>],
         offset: usize,
-    ) -> Result<Vec<AssignedCell<F, F>>, Error> {
+    ) -> Result<Vec<AssignedNative<F>>, Error> {
         self.q_decompose.enable(region, offset)?;
         let full_number =
             region.assign_advice(|| "full number", self.full_number_u64, offset, || row[0])?;
@@ -139,7 +139,7 @@ impl Decomposition<8> for Decompose8Config {
         region: &mut Region<F>,
         value: Value<F>,
         offset: usize,
-    ) -> Result<AssignedCell<F, F>, Error> {
+    ) -> Result<AssignedNative<F>, Error> {
         let full_number_cell =
             self.generate_row_from_value_and_keep_row(region, value, offset)?[0].clone();
         Ok(full_number_cell)
@@ -150,7 +150,7 @@ impl Decomposition<8> for Decompose8Config {
         region: &mut Region<F>,
         value: Value<F>,
         offset: usize,
-    ) -> Result<Vec<AssignedCell<F, F>>, Error> {
+    ) -> Result<Vec<AssignedNative<F>>, Error> {
         self.q_decompose.enable(region, offset)?;
         let full_number_cell =
             region.assign_advice(|| "full number", self.full_number_u64, offset, || value)?;

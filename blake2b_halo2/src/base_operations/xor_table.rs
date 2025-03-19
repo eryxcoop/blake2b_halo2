@@ -1,7 +1,7 @@
 use super::*;
 use crate::base_operations::decompose_8::Decompose8Config;
-use halo2_proofs::circuit::AssignedCell;
 use crate::base_operations::xor::Xor;
+use crate::types::AssignedNative;
 
 /// This config handles the xor operation in the trace. Requires a representation in 8-bit limbs
 /// because it utilices a lookup table like this one:
@@ -76,11 +76,11 @@ impl Xor for XorTableConfig {
         &self,
         region: &mut Region<F>,
         offset: &mut usize,
-        previous_cell: &AssignedCell<F, F>,
-        cell_to_copy: &AssignedCell<F, F>,
+        previous_cell: &AssignedNative<F>,
+        cell_to_copy: &AssignedNative<F>,
         decompose_8_config: &Decompose8Config,
         use_previous_cell: bool,
-    ) -> Result<[AssignedCell<F, F>; 9], Error> {
+    ) -> Result<[AssignedNative<F>; 9], Error> {
         let difference_offset = if use_previous_cell { 1 } else { 0 };
         self.q_xor.enable(region, *offset - difference_offset)?;
 

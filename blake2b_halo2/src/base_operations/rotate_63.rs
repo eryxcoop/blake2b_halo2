@@ -1,5 +1,5 @@
 use super::*;
-use halo2_proofs::circuit::AssignedCell;
+use crate::types::AssignedNative;
 use num_bigint::BigUint;
 
 /// This config handles the 63-right-bit rotation of a 64-bit number, which is the same as the
@@ -46,9 +46,9 @@ impl<const T: usize, const R: usize> Rotate63Config<T, R> {
         &self,
         region: &mut Region<F>,
         offset: &mut usize,
-        input: &AssignedCell<F, F>,
+        input: &AssignedNative<F>,
         decompose_config: &mut impl Decomposition<T>,
-    ) -> Result<AssignedCell<F, F>, Error> {
+    ) -> Result<AssignedNative<F>, Error> {
         self.q_rot63.enable(region, *offset)?;
 
         let result_value =

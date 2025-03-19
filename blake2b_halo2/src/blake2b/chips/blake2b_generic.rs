@@ -1,6 +1,3 @@
-use ff::PrimeField;
-use halo2_proofs::circuit::{AssignedCell, Layouter, Region, Value};
-use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Error, Instance};
 use crate::base_operations::decompose_8::Decompose8Config;
 use crate::base_operations::decomposition::Decomposition;
 use crate::base_operations::generic_limb_rotation::LimbRotation;
@@ -12,6 +9,10 @@ use crate::blake2b::chips::utils::{
     constrain_padding_cells_to_equal_zero, enforce_input_sizes, get_full_number_of_each,
     get_total_blocks_count, iv_constant_values, iv_constants, ABCD, BLAKE2B_BLOCK_SIZE, SIGMA,
 };
+use crate::types::AssignedNative;
+use ff::PrimeField;
+use halo2_proofs::circuit::{AssignedCell, Layouter, Region, Value};
+use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Error, Instance};
 
 /// This is the trait that groups the 3 optimization chips. Most of their code is the same, so the
 /// behaviour was encapsulated here. Each optimization has to override only 3 or 4 methods, besides
@@ -50,7 +51,7 @@ pub trait Blake2bInstructions: Clone {
         output_size: usize,
         input: &[AssignedCell<F,F>],
         key: &[AssignedCell<F,F>],
-    ) -> Result<[AssignedCell<F, F>; 64], Error> {
+    ) -> Result<[AssignedNative<F>; 64], Error> {
         enforce_input_sizes(output_size, key.len());
 
 
@@ -106,15 +107,15 @@ pub trait Blake2bInstructions: Clone {
         mut advice_offset: &mut usize,
     ) -> Result<
         (
-            [AssignedCell<F, F>; 8],
-            AssignedCell<F, F>,
-            AssignedCell<F, F>,
-            AssignedCell<F, F>,
-            AssignedCell<F, F>,
+            [AssignedNative<F>; 8],
+            AssignedNative<F>,
+            AssignedNative<F>,
+            AssignedNative<F>,
+            AssignedNative<F>,
         ),
         Error,
     > {
-        let iv_constant_cells: [AssignedCell<F, F>; 8] =
+        let iv_constant_cells: [AssignedNative<F>; 8] =
             self.assign_iv_constants_to_fixed_cells(&mut region, &mut advice_offset)?;
         *advice_offset += 1;
         let init_const_state_0 = region.assign_advice_from_constant(
@@ -180,11 +181,11 @@ pub trait Blake2bInstructions: Clone {
         &self,
         region: &mut Region<F>,
         offset: &mut usize,
-        iv_constant_cells: &[AssignedCell<F, F>; 8],
-        init_const_state_0: AssignedCell<F, F>,
-        output_size_constant: AssignedCell<F, F>,
-        key_size_constant_shifted: AssignedCell<F, F>,
-    ) -> Result<[AssignedCell<F, F>; 8], Error> {
+        iv_constant_cells: &[AssignedNative<F>; 8],
+        init_const_state_0: AssignedNative<F>,
+        output_size_constant: AssignedNative<F>,
+        key_size_constant_shifted: AssignedNative<F>,
+    ) -> Result<[AssignedNative<F>; 8], Error> {
         let mut global_state = iv_constant_values()
             .map(|constant| self.new_row_from_value(constant, region, offset).unwrap());
 
@@ -209,10 +210,10 @@ pub trait Blake2bInstructions: Clone {
         advice_offset: &mut usize,
         input: &[AssignedCell<F,F>],
         key: &[AssignedCell<F,F>],
-        iv_constants: &[AssignedCell<F, F>; 8],
-        global_state: &mut [AssignedCell<F, F>; 8],
-        zero_constant_cell: AssignedCell<F, F>,
-    ) -> Result<[AssignedCell<F, F>; 64], Error> {
+        iv_constants: &[AssignedNative<F>; 8],
+        global_state: &mut [AssignedNative<F>; 8],
+        zero_constant_cell: AssignedNative<F>,
+    ) -> Result<[AssignedNative<F>; 64], Error> {
         let input_size = input.len();
         let is_key_empty = key.is_empty();
         let is_input_empty = input_size == 0;
@@ -299,17 +300,17 @@ pub trait Blake2bInstructions: Clone {
         &self,
         region: &mut Region<F>,
         row_offset: &mut usize,
-        iv_constants: &[AssignedCell<F, F>; 8],
-        global_state: &mut [AssignedCell<F, F>; 8],
-        current_block_cells: [AssignedCell<F, F>; 16],
+        iv_constants: &[AssignedNative<F>; 8],
+        global_state: &mut [AssignedNative<F>; 8],
+        current_block_cells: [AssignedNative<F>; 16],
         processed_bytes_count: Value<F>,
         is_last_block: bool,
-    ) -> Result<[AssignedCell<F, F>; 64], Error> {
-        let mut state_vector: Vec<AssignedCell<F, F>> = Vec::new();
+    ) -> Result<[AssignedNative<F>; 64], Error> {
+        let mut state_vector: Vec<AssignedNative<F>> = Vec::new();
         state_vector.extend_from_slice(global_state);
         state_vector.extend_from_slice(iv_constants);
 
-        let mut state: [AssignedCell<F, F>; 16] = state_vector.try_into().unwrap();
+        let mut state: [AssignedNative<F>; 16] = state_vector.try_into().unwrap();
 
         // accumulative_state[12] ^= processed_bytes_count
         let processed_bytes_count_cell =
@@ -362,8 +363,8 @@ pub trait Blake2bInstructions: Clone {
         d_: usize,
         sigma_even: usize,
         sigma_odd: usize,
-        state: &mut [AssignedCell<F, F>; 16],
-        current_block_words: &[AssignedCell<F, F>; 16],
+        state: &mut [AssignedNative<F>; 16],
+        current_block_words: &[AssignedNative<F>; 16],
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<(), Error> {
@@ -418,11 +419,11 @@ pub trait Blake2bInstructions: Clone {
     /// need it to constrain the result.
     fn xor_with_full_rows<F: PrimeField>(
         &self,
-        lhs: &AssignedCell<F, F>,
-        rhs: &AssignedCell<F, F>,
+        lhs: &AssignedNative<F>,
+        rhs: &AssignedNative<F>,
         region: &mut Region<F>,
         offset: &mut usize,
-    ) -> Result<[AssignedCell<F, F>; 9], Error> {
+    ) -> Result<[AssignedNative<F>; 9], Error> {
         let decompose_8_config = self.decompose_8_config();
         self.xor_config().generate_xor_rows_from_cells(
             region,
@@ -436,10 +437,10 @@ pub trait Blake2bInstructions: Clone {
 
     fn not<F: PrimeField>(
         &self,
-        input_cell: &AssignedCell<F, F>,
+        input_cell: &AssignedNative<F>,
         region: &mut Region<F>,
         offset: &mut usize,
-    ) -> Result<AssignedCell<F, F>, Error> {
+    ) -> Result<AssignedNative<F>, Error> {
         let mut decompose_8_config = self.decompose_8_config();
         self.negate_config().generate_rows_from_cell(
             region,
@@ -451,11 +452,11 @@ pub trait Blake2bInstructions: Clone {
 
     fn xor<F: PrimeField>(
         &self,
-        lhs: &AssignedCell<F, F>,
-        rhs: &AssignedCell<F, F>,
+        lhs: &AssignedNative<F>,
+        rhs: &AssignedNative<F>,
         region: &mut Region<F>,
         offset: &mut usize,
-    ) -> Result<AssignedCell<F, F>, Error> {
+    ) -> Result<AssignedNative<F>, Error> {
         let decompose_8_config = self.decompose_8_config();
         let full_number_cell = self.xor_config().generate_xor_rows_from_cells(
             region,
@@ -471,38 +472,38 @@ pub trait Blake2bInstructions: Clone {
 
     fn add<F: PrimeField>(
         &self,
-        lhs: &AssignedCell<F, F>,
-        rhs: &AssignedCell<F, F>,
+        lhs: &AssignedNative<F>,
+        rhs: &AssignedNative<F>,
         region: &mut Region<F>,
         offset: &mut usize,
-    ) -> Result<AssignedCell<F, F>, Error>;
+    ) -> Result<AssignedNative<F>, Error>;
 
     /// Sometimes we can reutilice an output row to be the input row of the next operation. This is
     /// a convenience method for that in the case of the sum operation.
     fn add_copying_one_parameter<F: PrimeField>(
         &self,
-        previous_cell: &AssignedCell<F, F>,
-        cell_to_copy: &AssignedCell<F, F>,
+        previous_cell: &AssignedNative<F>,
+        cell_to_copy: &AssignedNative<F>,
         region: &mut Region<F>,
         offset: &mut usize,
-    ) -> Result<AssignedCell<F, F>, Error>;
+    ) -> Result<AssignedNative<F>, Error>;
 
     /// Sometimes we can reutilice an output row to be the input row of the next operation. This is
     /// a convenience method for that in the case of the xor operation.
     fn xor_for_mix<F: PrimeField>(
         &self,
-        previous_cell: &AssignedCell<F, F>,
-        cell_to_copy: &AssignedCell<F, F>,
+        previous_cell: &AssignedNative<F>,
+        cell_to_copy: &AssignedNative<F>,
         region: &mut Region<F>,
         offset: &mut usize,
-    ) -> Result<[AssignedCell<F, F>; 9], Error>;
+    ) -> Result<[AssignedNative<F>; 9], Error>;
 
     fn rotate_right_63<F: PrimeField>(
         &self,
-        input_row: [AssignedCell<F, F>; 9],
+        input_row: [AssignedNative<F>; 9],
         region: &mut Region<F>,
         offset: &mut usize,
-    ) -> Result<AssignedCell<F, F>, Error> {
+    ) -> Result<AssignedNative<F>, Error> {
         let mut decompose_8_config = self.decompose_8_config();
         self.rotate_63_config().generate_rotation_rows_from_cells(
             region,
@@ -514,10 +515,10 @@ pub trait Blake2bInstructions: Clone {
 
     fn rotate_right_16<F: PrimeField>(
         &self,
-        input_row: [AssignedCell<F, F>; 9],
+        input_row: [AssignedNative<F>; 9],
         region: &mut Region<F>,
         offset: &mut usize,
-    ) -> Result<AssignedCell<F, F>, Error> {
+    ) -> Result<AssignedNative<F>, Error> {
         let mut decompose_8_config = self.decompose_8_config();
         self.generic_limb_rotation_config().generate_rotation_rows_from_input_row(
             region,
@@ -530,10 +531,10 @@ pub trait Blake2bInstructions: Clone {
 
     fn rotate_right_24<F: PrimeField>(
         &self,
-        input_row: [AssignedCell<F, F>; 9],
+        input_row: [AssignedNative<F>; 9],
         region: &mut Region<F>,
         offset: &mut usize,
-    ) -> Result<AssignedCell<F, F>, Error> {
+    ) -> Result<AssignedNative<F>, Error> {
         let mut decompose_8_config = self.decompose_8_config();
         self.generic_limb_rotation_config().generate_rotation_rows_from_input_row(
             region,
@@ -546,10 +547,10 @@ pub trait Blake2bInstructions: Clone {
 
     fn rotate_right_32<F: PrimeField>(
         &self,
-        input_row: [AssignedCell<F, F>; 9],
+        input_row: [AssignedNative<F>; 9],
         region: &mut Region<F>,
         offset: &mut usize,
-    ) -> Result<AssignedCell<F, F>, Error> {
+    ) -> Result<AssignedNative<F>, Error> {
         let mut decompose_8_config = self.decompose_8_config();
         self.generic_limb_rotation_config().generate_rotation_rows_from_input_row(
             region,
@@ -582,8 +583,8 @@ pub trait Blake2bInstructions: Clone {
         &self,
         region: &mut Region<F>,
         offset: &usize,
-    ) -> Result<[AssignedCell<F, F>; 8], Error> {
-        let ret: [AssignedCell<F, F>; 8] = iv_constants()
+    ) -> Result<[AssignedNative<F>; 8], Error> {
+        let ret: [AssignedNative<F>; 8] = iv_constants()
             .iter()
             .enumerate()
             .map(|(index, constant)| {
@@ -596,7 +597,7 @@ pub trait Blake2bInstructions: Clone {
                     )
                     .unwrap()
             })
-            .collect::<Vec<AssignedCell<F, F>>>()
+            .collect::<Vec<AssignedNative<F>>>()
             .try_into()
             .unwrap();
         Ok(ret)
@@ -609,7 +610,7 @@ pub trait Blake2bInstructions: Clone {
         value: Value<F>,
         region: &mut Region<F>,
         offset: &mut usize,
-    ) -> Result<AssignedCell<F, F>, Error> {
+    ) -> Result<AssignedNative<F>, Error> {
         let ret = self.decompose_8_config().generate_row_from_value(region, value, *offset);
         *offset += 1;
         ret
@@ -629,8 +630,8 @@ pub trait Blake2bInstructions: Clone {
         is_key_empty: bool,
         is_last_block: bool,
         is_key_block: bool,
-        zero_constant_cell: AssignedCell<F, F>,
-    ) -> Result<[Vec<AssignedCell<F, F>>; 16], Error> {
+        zero_constant_cell: AssignedNative<F>,
+    ) -> Result<[Vec<AssignedNative<F>>; 16], Error> {
         let current_block_values = Self::build_values_for_current_block(
             input,
             key,
@@ -657,8 +658,8 @@ pub trait Blake2bInstructions: Clone {
         is_key_empty: bool,
         is_last_block: bool,
         is_key_block: bool,
-        zero_constant_cell: AssignedCell<F, F>,
-    ) -> Vec<AssignedCell<F, F>> {
+        zero_constant_cell: AssignedNative<F>,
+    ) -> Vec<AssignedNative<F>> {
         if is_last_block && !is_key_block {
             let mut result = input[last_input_block_index * BLAKE2B_BLOCK_SIZE..].to_vec();
             result.resize(128, zero_constant_cell);
@@ -679,11 +680,11 @@ pub trait Blake2bInstructions: Clone {
         &self,
         region: &mut Region<F>,
         offset: &mut usize,
-        block: [AssignedCell<F, F>; 128],
-    ) -> Result<[Vec<AssignedCell<F, F>>; 16], Error> {
-        let mut current_block_rows: Vec<Vec<AssignedCell<F, F>>> = Vec::new();
+        block: [AssignedNative<F>; 128],
+    ) -> Result<[Vec<AssignedNative<F>>; 16], Error> {
+        let mut current_block_rows: Vec<Vec<AssignedNative<F>>> = Vec::new();
         for i in 0..16 {
-            let bytes: &[AssignedCell<F, F>; 8] = block[i * 8..(i + 1) * 8].try_into().unwrap();
+            let bytes: &[AssignedNative<F>; 8] = block[i * 8..(i + 1) * 8].try_into().unwrap();
             let current_row_cells = self.new_row_from_assigned_bytes(bytes, region, offset)?;
             current_block_rows.push(current_row_cells);
         }
@@ -695,10 +696,10 @@ pub trait Blake2bInstructions: Clone {
     /// limbs and the resulting full number in the first column.
     fn new_row_from_assigned_bytes<F: PrimeField>(
         &self,
-        bytes: &[AssignedCell<F, F>; 8],
+        bytes: &[AssignedNative<F>; 8],
         region: &mut Region<F>,
         offset: &mut usize,
-    ) -> Result<Vec<AssignedCell<F, F>>, Error> {
+    ) -> Result<Vec<AssignedNative<F>>, Error> {
         let ret = self.decompose_8_config().generate_row_from_assigned_bytes(region, bytes, *offset);
         *offset += 1;
         ret
@@ -710,7 +711,7 @@ pub trait Blake2bInstructions: Clone {
     fn constraint_public_inputs_to_equal_computation_results<F: PrimeField>(
         &self,
         layouter: &mut impl Layouter<F>,
-        global_state_bytes: [AssignedCell<F, F>; 64],
+        global_state_bytes: [AssignedNative<F>; 64],
         output_size: usize,
         public_inputs_instance_column: Column<Instance>,
     ) -> Result<(), Error> {

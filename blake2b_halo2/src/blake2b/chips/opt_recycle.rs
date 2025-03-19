@@ -1,6 +1,3 @@
-use ff::PrimeField;
-use halo2_proofs::circuit::{AssignedCell, Layouter, Region};
-use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Error};
 use crate::base_operations::addition_mod_64::AdditionMod64Config;
 use crate::base_operations::decompose_8::Decompose8Config;
 use crate::base_operations::generic_limb_rotation::LimbRotation;
@@ -9,6 +6,10 @@ use crate::base_operations::rotate_63::Rotate63Config;
 use crate::base_operations::xor::Xor;
 use crate::base_operations::xor_table::XorTableConfig;
 use crate::blake2b::chips::blake2b_generic::Blake2bInstructions;
+use crate::types::AssignedNative;
+use ff::PrimeField;
+use halo2_proofs::circuit::{Layouter, Region};
+use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Error};
 
 /// This is the main chip for the Blake2b hash function. It is responsible for the entire hash computation.
 /// It contains all the necessary chips and some extra columns.
@@ -89,11 +90,11 @@ impl Blake2bInstructions for Blake2bChipOptRecycle {
     /// decompose_8_config for the sum operation instead of the decompose_16_config.
     fn add<F: PrimeField>(
         &self,
-        lhs: &AssignedCell<F, F>,
-        rhs: &AssignedCell<F, F>,
+        lhs: &AssignedNative<F>,
+        rhs: &AssignedNative<F>,
         region: &mut Region<F>,
         offset: &mut usize,
-    ) -> Result<AssignedCell<F, F>, Error> {
+    ) -> Result<AssignedNative<F>, Error> {
         let addition_cell = self.addition_config.generate_addition_rows_from_cells(
             region,
             offset,
@@ -111,11 +112,11 @@ impl Blake2bInstructions for Blake2bChipOptRecycle {
     /// one parameter because the other is already on the trace.
     fn add_copying_one_parameter<F: PrimeField>(
         &self,
-        previous_cell: &AssignedCell<F, F>,
-        cell_to_copy: &AssignedCell<F, F>,
+        previous_cell: &AssignedNative<F>,
+        cell_to_copy: &AssignedNative<F>,
         region: &mut Region<F>,
         offset: &mut usize,
-    ) -> Result<AssignedCell<F, F>, Error> {
+    ) -> Result<AssignedNative<F>, Error> {
         Ok(self.addition_config.generate_addition_rows_from_cells(
             region,
             offset,
@@ -133,11 +134,11 @@ impl Blake2bInstructions for Blake2bChipOptRecycle {
     /// the limb rotation without copying the operand.
     fn xor_for_mix<F: PrimeField>(
         &self,
-        previous_cell: &AssignedCell<F, F>,
-        cell_to_copy: &AssignedCell<F, F>,
+        previous_cell: &AssignedNative<F>,
+        cell_to_copy: &AssignedNative<F>,
         region: &mut Region<F>,
         offset: &mut usize,
-    ) -> Result<[AssignedCell<F, F>; 9], Error> {
+    ) -> Result<[AssignedNative<F>; 9], Error> {
         self.xor_copying_one_parameter(previous_cell, cell_to_copy, region, offset)
     }
 }
@@ -148,11 +149,11 @@ impl Blake2bChipOptRecycle {
     /// can recycle the result row of the addition and use it as its first operand.
     fn xor_copying_one_parameter<F: PrimeField>(
         &self,
-        previous_cell: &AssignedCell<F, F>,
-        cell_to_copy: &AssignedCell<F, F>,
+        previous_cell: &AssignedNative<F>,
+        cell_to_copy: &AssignedNative<F>,
         region: &mut Region<F>,
         offset: &mut usize,
-    ) -> Result<[AssignedCell<F, F>; 9], Error> {
+    ) -> Result<[AssignedNative<F>; 9], Error> {
         self.xor_config.generate_xor_rows_from_cells(
             region,
             offset,

@@ -1,7 +1,7 @@
 use super::*;
 use crate::auxiliar_functions::field_for;
 use crate::base_operations::decompose_8::Decompose8Config;
-use halo2_proofs::circuit::AssignedCell;
+use crate::types::AssignedNative;
 
 /// This config handles the bitwise negation of a 64-bit number.
 #[derive(Clone, Debug)]
@@ -38,9 +38,9 @@ impl NegateConfig {
         &self,
         region: &mut Region<F>,
         offset: &mut usize,
-        input: &AssignedCell<F, F>,
+        input: &AssignedNative<F>,
         decompose_config: &mut Decompose8Config,
-    ) -> Result<AssignedCell<F, F>, Error> {
+    ) -> Result<AssignedNative<F>, Error> {
         // [Inigo comment - solved] If you only want to negate, why are you assigning the decomposition of the value?
         // [Inigo comment - solved] You are unlinking the cell with the actual value - this might be a
         // soundness issue.

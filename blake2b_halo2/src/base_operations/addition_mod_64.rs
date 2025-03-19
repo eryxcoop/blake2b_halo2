@@ -1,6 +1,6 @@
 use super::*;
+use crate::types::AssignedNative;
 use auxiliar_functions::field_for;
-use halo2_proofs::circuit::AssignedCell;
 
 pub type AdditionConfigWith8Limbs = AdditionMod64Config<8, 10>;
 
@@ -61,11 +61,11 @@ impl<const T: usize, const R: usize> AdditionMod64Config<T, R> {
         &self,
         region: &mut Region<F>,
         offset: &mut usize,
-        previous_cell: &AssignedCell<F, F>,
-        cell_to_copy: &AssignedCell<F, F>,
+        previous_cell: &AssignedNative<F>,
+        cell_to_copy: &AssignedNative<F>,
         decompose_config: &impl Decomposition<T>,
         use_last_cell_as_first_operand: bool,
-    ) -> Result<[AssignedCell<F, F>; 2], Error> {
+    ) -> Result<[AssignedNative<F>; 2], Error> {
         let (result_value, carry_value) =
             Self::calculate_result_and_carry(previous_cell.value(), cell_to_copy.value());
         let offset_to_enable = *offset - if use_last_cell_as_first_operand { 1 } else { 0 };

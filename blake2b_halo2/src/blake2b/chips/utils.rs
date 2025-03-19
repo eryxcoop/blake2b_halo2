@@ -1,7 +1,8 @@
-use ff::PrimeField;
-use halo2_proofs::circuit::{AssignedCell, Region, Value};
-use halo2_proofs::plonk::Error;
 use crate::auxiliar_functions::value_for;
+use crate::types::AssignedNative;
+use ff::PrimeField;
+use halo2_proofs::circuit::{Region, Value};
+use halo2_proofs::plonk::Error;
 
 /// Enforces the output and key sizes.
 /// Output size must be between 1 and 64 bytes.
@@ -15,8 +16,8 @@ pub fn enforce_input_sizes(output_size: usize, key_size: usize) {
 /// Sets copy constraints to the part of the state that is copied from iv_constants.
 pub fn constrain_initial_state<F: PrimeField>(
     region: &mut Region<F>,
-    global_state: &[AssignedCell<F, F>; 8],
-    iv_constant_cells: &[AssignedCell<F, F>; 8],
+    global_state: &[AssignedNative<F>; 8],
+    iv_constant_cells: &[AssignedNative<F>; 8],
 ) -> Result<(), Error> {
     for i in 0..8 {
         region.constrain_equal(iv_constant_cells[i].cell(), global_state[i].cell())?;
@@ -26,8 +27,8 @@ pub fn constrain_initial_state<F: PrimeField>(
 
 /// Extracts the full number cell of each of the state rows
 pub fn get_full_number_of_each<F: PrimeField>(
-    current_block_rows: [Vec<AssignedCell<F, F>>; 16],
-) -> [AssignedCell<F, F>; 16] {
+    current_block_rows: [Vec<AssignedNative<F>>; 16],
+) -> [AssignedNative<F>; 16] {
     current_block_rows.iter().map(|row| row[0].clone()).collect::<Vec<_>>().try_into().unwrap()
 }
 
@@ -79,8 +80,8 @@ pub fn get_total_blocks_count(
 pub fn constrain_padding_cells_to_equal_zero<F: PrimeField>(
     region: &mut Region<F>,
     zeros_amount: usize,
-    current_block_rows: &[Vec<AssignedCell<F, F>>; 16],
-    zero_constant_cell: &AssignedCell<F, F>,
+    current_block_rows: &[Vec<AssignedNative<F>>; 16],
+    zero_constant_cell: &AssignedNative<F>,
 ) -> Result<(), Error> {
     let mut constrained_padding_cells = 0;
     for row in (0..16).rev() {

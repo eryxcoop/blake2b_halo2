@@ -1,5 +1,6 @@
+use crate::types::AssignedNative;
 use ff::PrimeField;
-use halo2_proofs::circuit::{AssignedCell, Layouter, Region, Value};
+use halo2_proofs::circuit::{Layouter, Region, Value};
 use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Error, Expression, Selector, TableColumn};
 use halo2_proofs::poly::Rotation;
 
@@ -22,7 +23,7 @@ pub trait Decomposition<const T: usize> {
         region: &mut Region<F>,
         row: &[Value<F>],
         offset: usize,
-    ) -> Result<Vec<AssignedCell<F, F>>, Error>;
+    ) -> Result<Vec<AssignedNative<F>>, Error>;
 
     /// Populates the table for the range check
     fn populate_lookup_table<F: PrimeField>(
@@ -65,16 +66,16 @@ pub trait Decomposition<const T: usize> {
         region: &mut Region<F>,
         value: Value<F>,
         offset: usize,
-    ) -> Result<AssignedCell<F, F>, Error>;
+    ) -> Result<AssignedNative<F>, Error>;
 
     /// Given a cell with a 64-bit value, it returns a new row with the copied full number and the
     /// decomposition in 8-bit limbs
     fn generate_row_from_cell<F: PrimeField>(
         &self,
         region: &mut Region<F>,
-        cell: &AssignedCell<F, F>,
+        cell: &AssignedNative<F>,
         offset: usize,
-    ) -> Result<Vec<AssignedCell<F, F>>, Error> {
+    ) -> Result<Vec<AssignedNative<F>>, Error> {
         let value = cell.value().copied();
         let new_cells = self.generate_row_from_value_and_keep_row(region, value, offset)?;
         // [Inigo comment - solved] This seems very dangerous, and food for bugs. `generate_row_from_value_and_keep_row`
@@ -98,7 +99,7 @@ pub trait Decomposition<const T: usize> {
         _region: &mut Region<F>,
         _value: Value<F>,
         _offset: usize,
-    ) -> Result<Vec<AssignedCell<F, F>>, Error>;
+    ) -> Result<Vec<AssignedNative<F>>, Error>;
 
     /// Given a value and a limb index, it returns the value of the limb
     fn get_limb_from<F: PrimeField>(value: Value<F>, limb_number: usize) -> Value<F>;

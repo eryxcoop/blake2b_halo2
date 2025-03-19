@@ -1,6 +1,6 @@
-use halo2_proofs::circuit::AssignedCell;
-use crate::base_operations::decompose_8::Decompose8Config;
 use super::*;
+use crate::base_operations::decompose_8::Decompose8Config;
+use crate::types::AssignedNative;
 
 pub trait Xor {
     fn populate_xor_lookup_table<F: PrimeField>(
@@ -12,9 +12,9 @@ pub trait Xor {
         &self,
         region: &mut Region<F>,
         offset: &mut usize,
-        previous_cell: &AssignedCell<F, F>,
-        cell_to_copy: &AssignedCell<F, F>,
+        previous_cell: &AssignedNative<F>,
+        cell_to_copy: &AssignedNative<F>,
         decompose_8_config: &Decompose8Config,
         use_previous_cell: bool,
-    ) -> Result<[AssignedCell<F, F>; 9], Error>;
+    ) -> Result<[AssignedNative<F>; 9], Error>;
 }

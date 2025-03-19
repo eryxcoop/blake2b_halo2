@@ -1,9 +1,9 @@
-use std::array;
-use halo2_proofs::circuit::AssignedCell;
-use crate::auxiliar_functions::{value_for, field_for};
+use super::*;
+use crate::auxiliar_functions::{field_for, value_for};
 use crate::base_operations::decompose_8::Decompose8Config;
 use crate::base_operations::xor::Xor;
-use super::*;
+use crate::types::AssignedNative;
+use std::array;
 
 /// This config produces a trace of the following shape (see our documentation for more details):
 /// 0: [x, l_0(x), l_1(x), l_2(x), l_3(x), l_4(x), l_5(x), l_6(x), l_7(x), - ]
@@ -43,11 +43,11 @@ impl Xor for XorSpreadConfig {
         &self,
         region: &mut Region<F>,
         offset: &mut usize,
-        previous_cell: &AssignedCell<F, F>,
-        cell_to_copy: &AssignedCell<F, F>,
+        previous_cell: &AssignedNative<F>,
+        cell_to_copy: &AssignedNative<F>,
         decompose_8_config: &Decompose8Config,
         use_previous_cell: bool,
-    ) -> Result<[AssignedCell<F, F>; 9], Error> {
+    ) -> Result<[AssignedNative<F>; 9], Error> {
         let value_lhs = previous_cell.value().copied();
         let value_rhs = cell_to_copy.value().copied();
 

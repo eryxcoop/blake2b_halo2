@@ -11,13 +11,16 @@ pub struct Byte(pub u8);
 #[derive(Copy, Clone, Debug)]
 pub struct BlockWord(pub u64);
 
+pub type AssignedNative<F> = AssignedCell<F, F>;
+
+
 /// This wrapper type on `AssignedNative<F>` is designed to enforce type safety
 /// on assigned bytes. It prevents the user from creating an `AssignedByte`
 /// without using the designated entry points, which guarantee (with
 /// constraints) that the assigned value is indeed in the range [0, 256).
 #[derive(Clone, Debug)]
 #[must_use]
-pub struct AssignedByte<F: PrimeField>(AssignedCell<F, F>);
+pub struct AssignedByte<F: PrimeField>(AssignedNative<F>);
 
 impl<F: PrimeField> AssignedByte<F> {
 
@@ -33,7 +36,7 @@ impl<F: PrimeField> AssignedByte<F> {
 
 #[derive(Clone, Debug)]
 #[must_use]
-pub struct AssignedU64<F: PrimeField>(AssignedCell<F, F>);
+pub struct AssignedU64<F: PrimeField>(AssignedNative<F>);
 
 impl<F: PrimeField> AssignedU64<F> {
     fn value(&self) -> Value<BlockWord> {
@@ -41,7 +44,7 @@ impl<F: PrimeField> AssignedU64<F> {
             let bi_v = fe_to_big(*v);
             #[cfg(not(test))]
             assert!(bi_v <= BigUint::from((1u128 << 64) - 1));
-            let first_8_bytes: [u8; 8] = bi_v.to_bytes_le()[0..8].iter().try_into().unwrap();
+            let first_8_bytes: [u8; 8] = bi_v.to_bytes_le()[..8].try_into().unwrap();
             BlockWord(u64::from_le_bytes(first_8_bytes))
         })
     }

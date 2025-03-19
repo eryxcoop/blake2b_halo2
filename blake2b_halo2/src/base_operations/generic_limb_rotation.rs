@@ -1,6 +1,7 @@
 use super::*;
-use ff::{PrimeField};
-use halo2_proofs::circuit::{AssignedCell, Value};
+use crate::types::AssignedNative;
+use ff::PrimeField;
+use halo2_proofs::circuit::Value;
 
 #[derive(Default, Clone, Debug)]
 pub struct LimbRotation;
@@ -23,9 +24,9 @@ impl LimbRotation {
         region: &mut Region<F>,
         offset: &mut usize,
         decompose_config: &mut impl Decomposition<8>,
-        input_row: [AssignedCell<F, F>; 9],
+        input_row: [AssignedNative<F>; 9],
         limbs_to_rotate_to_the_right: usize,
-    ) -> Result<AssignedCell<F, F>, Error> {
+    ) -> Result<AssignedNative<F>, Error> {
         let result_value =
             Self::right_rotation_value(input_row[0].value(), limbs_to_rotate_to_the_right);
 
@@ -55,8 +56,8 @@ impl LimbRotation {
     #[allow(clippy::ptr_arg)]
     pub fn constrain_result_with_input_row<F: PrimeField>(
         region: &mut Region<F>,
-        input_row: &Vec<AssignedCell<F, F>>,
-        result_row: &Vec<AssignedCell<F, F>>,
+        input_row: &Vec<AssignedNative<F>>,
+        result_row: &Vec<AssignedNative<F>>,
         limbs_to_rotate: usize,
     ) -> Result<(), Error> {
         for i in 0..8 {
