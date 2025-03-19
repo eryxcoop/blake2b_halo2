@@ -1,7 +1,7 @@
 use crate::blake2b::chips::blake2b_generic::Blake2bInstructions;
 use crate::types::AssignedNative;
 use ff::PrimeField;
-use halo2_proofs::circuit::{AssignedCell, Layouter};
+use halo2_proofs::circuit::Layouter;
 use halo2_proofs::plonk::{Column, Error, Instance};
 
 /// Main gadget to compute Blake2b hash function
@@ -27,8 +27,8 @@ impl<C: Blake2bInstructions> Blake2b<C> {
     pub fn hash<F: PrimeField>(
         &self,
         layouter: &mut impl Layouter<F>,
-        input: &[AssignedCell<F,F>],
-        key: &[AssignedCell<F,F>],
+        input: &[AssignedNative<F>],
+        key: &[AssignedNative<F>],
         output_size: usize,
     ) -> Result<[AssignedNative<F>; 64], Error> {
         self.chip.compute_blake2b_hash_for_inputs(

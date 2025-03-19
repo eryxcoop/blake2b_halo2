@@ -1,10 +1,11 @@
-use ff::PrimeField;
-use std::marker::PhantomData;
-use halo2_proofs::plonk::{Advice, Circuit, Column, ConstraintSystem, Error, Instance};
-use halo2_proofs::circuit::{AssignedCell, Layouter, SimpleFloorPlanner, Value};
-use std::array;
 use crate::blake2b::blake2b::Blake2b;
 use crate::blake2b::chips::blake2b_generic::Blake2bInstructions;
+use crate::types::AssignedNative;
+use ff::PrimeField;
+use halo2_proofs::circuit::{Layouter, SimpleFloorPlanner, Value};
+use halo2_proofs::plonk::{Advice, Circuit, Column, ConstraintSystem, Error, Instance};
+use std::array;
+use std::marker::PhantomData;
 
 /// This is an example circuit of how you should use the Blake2b chip.
 #[derive(Clone)]
@@ -128,7 +129,7 @@ impl<F: PrimeField, OptimizationChip: Blake2bInstructions> Blake2bCircuit<F, Opt
         config: Blake2bConfig<F, OptimizationChip>,
         layouter: &mut impl Layouter<F>,
         input: &[Value<F>],
-    ) -> Result<Vec<AssignedCell<F,F>>, Error> {
+    ) -> Result<Vec<AssignedNative<F>>, Error> {
         let result = layouter.assign_region(|| "Inputs", |mut region|{
             let inner_result = input.into_iter().enumerate().map(|(index, input_byte)|{
                 let row = index / 8;

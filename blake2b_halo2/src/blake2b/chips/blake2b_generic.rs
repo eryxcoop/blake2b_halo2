@@ -11,7 +11,7 @@ use crate::blake2b::chips::utils::{
 };
 use crate::types::AssignedNative;
 use ff::PrimeField;
-use halo2_proofs::circuit::{AssignedCell, Layouter, Region, Value};
+use halo2_proofs::circuit::{Layouter, Region, Value};
 use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Error, Instance};
 
 /// This is the trait that groups the 3 optimization chips. Most of their code is the same, so the
@@ -49,8 +49,8 @@ pub trait Blake2bInstructions: Clone {
         &self,
         layouter: &mut impl Layouter<F>,
         output_size: usize,
-        input: &[AssignedCell<F,F>],
-        key: &[AssignedCell<F,F>],
+        input: &[AssignedNative<F>],
+        key: &[AssignedNative<F>],
     ) -> Result<[AssignedNative<F>; 64], Error> {
         enforce_input_sizes(output_size, key.len());
 
@@ -208,8 +208,8 @@ pub trait Blake2bInstructions: Clone {
         &self,
         region: &mut Region<F>,
         advice_offset: &mut usize,
-        input: &[AssignedCell<F,F>],
-        key: &[AssignedCell<F,F>],
+        input: &[AssignedNative<F>],
+        key: &[AssignedNative<F>],
         iv_constants: &[AssignedNative<F>; 8],
         global_state: &mut [AssignedNative<F>; 8],
         zero_constant_cell: AssignedNative<F>,
@@ -623,8 +623,8 @@ pub trait Blake2bInstructions: Clone {
         &self,
         region: &mut Region<F>,
         offset: &mut usize,
-        input: &[AssignedCell<F,F>],
-        key: &[AssignedCell<F,F>],
+        input: &[AssignedNative<F>],
+        key: &[AssignedNative<F>],
         block_number: usize,
         last_input_block_index: usize,
         is_key_empty: bool,
@@ -651,8 +651,8 @@ pub trait Blake2bInstructions: Clone {
     /// Computes the values of the current block in the blake2b algorithm, based on the input and
     /// the block number we're on.
     fn build_values_for_current_block<F: PrimeField>(
-        input: &[AssignedCell<F,F>],
-        key: &[AssignedCell<F,F>],
+        input: &[AssignedNative<F>],
+        key: &[AssignedNative<F>],
         block_number: usize,
         last_input_block_index: usize,
         is_key_empty: bool,
