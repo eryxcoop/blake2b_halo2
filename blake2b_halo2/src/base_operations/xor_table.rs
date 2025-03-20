@@ -1,7 +1,7 @@
 use super::*;
 use crate::base_operations::decompose_8::Decompose8Config;
 use crate::base_operations::xor::Xor;
-use crate::types::AssignedNative;
+use crate::types::{AssignedBlake2bWord, AssignedElement, AssignedNative};
 
 /// This config handles the xor operation in the trace. Requires a representation in 8-bit limbs
 /// because it utilices a lookup table like this one:
@@ -76,8 +76,8 @@ impl Xor for XorTableConfig {
         &self,
         region: &mut Region<F>,
         offset: &mut usize,
-        previous_cell: &AssignedNative<F>,
-        cell_to_copy: &AssignedNative<F>,
+        previous_cell: &AssignedBlake2bWord<F>,
+        cell_to_copy: &AssignedBlake2bWord<F>,
         decompose_8_config: &Decompose8Config,
         use_previous_cell: bool,
     ) -> Result<[AssignedNative<F>; 9], Error> {
@@ -87,19 +87,19 @@ impl Xor for XorTableConfig {
         let result_value = previous_cell
             .value()
             .zip(cell_to_copy.value())
-            .map(|(v0, v1)| auxiliar_functions::xor_field_elements(*v0, *v1));
+            .map(|(v0, v1)| auxiliar_functions::xor_words(v0, v1));
 
-        decompose_8_config.generate_row_from_cell(region, cell_to_copy, *offset)?;
+        decompose_8_config.generate_row_from_cell(region, &cell_to_copy.inner_value(), *offset)?;
         *offset += 1;
 
         if !use_previous_cell {
-            decompose_8_config.generate_row_from_cell(region, previous_cell, *offset)?;
+            decompose_8_config.generate_row_from_cell(region, &previous_cell.inner_value(), *offset)?;
             *offset += 1;
         }
 
         let result_row = decompose_8_config.generate_row_from_value_and_keep_row(
             region,
-            result_value,
+            result_value.and_then(|word| Value::known(F::from(word.0))),
             *offset,
         )?;
         *offset += 1;

@@ -346,7 +346,7 @@ pub trait Blake2bInstructions: Clone {
         for i in 0..8 {
             global_state[i] = self.xor(&global_state[i], &state[i], region, row_offset)?;
             let row =
-                self.xor_with_full_rows(&global_state[i].inner_value(), &state[i + 8].inner_value(), region, row_offset)?;
+                self.xor_with_full_rows(&global_state[i], &state[i + 8], region, row_offset)?;
             let mut row_limbs: Vec<_> = row[1..].iter().map(|cell| AssignedByte::<F>::new((*cell).clone())).collect();
             global_state_bytes.append(&mut row_limbs);
             global_state[i] = AssignedBlake2bWord::<F>::new(row[0].clone());
@@ -383,14 +383,14 @@ pub trait Blake2bInstructions: Clone {
         let a = self.add_copying_one_parameter(&a_plus_b, &x, region, offset)?;
 
         // v[d] = rotr_64(v[d] ^ v[a], 32);
-        let d_xor_a = self.xor_for_mix(&a, &v_d, region, offset)?;
+        let d_xor_a = self.xor_for_mix(&AssignedBlake2bWord::<F>::new(a.clone()), &AssignedBlake2bWord::<F>::new(v_d.clone()), region, offset)?;
         let d = self.rotate_right_32(d_xor_a, region, offset)?;
 
         // v[c] = ((v[c] as u128 + v[d] as u128) % (1 << 64)) as u64;
         let c = self.add_copying_one_parameter(&d, &v_c, region, offset)?;
 
         // v[b] = rotr_64(v[b] ^ v[c], 24);
-        let b_xor_c = self.xor_for_mix(&c, &v_b, region, offset)?;
+        let b_xor_c = self.xor_for_mix(&AssignedBlake2bWord::<F>::new(c.clone()), &AssignedBlake2bWord::<F>::new(v_b.clone()), region, offset)?;
         let b = self.rotate_right_24(b_xor_c, region, offset)?;
 
         // v[a] = ((v[a] as u128 + v[b] as u128 + y as u128) % (1 << 64)) as u64;
@@ -398,14 +398,14 @@ pub trait Blake2bInstructions: Clone {
         let a = self.add_copying_one_parameter(&a_plus_b, &y, region, offset)?;
 
         // v[d] = rotr_64(v[d] ^ v[a], 16);
-        let d_xor_a = self.xor_for_mix(&a, &d, region, offset)?;
+        let d_xor_a = self.xor_for_mix(&AssignedBlake2bWord::<F>::new(a.clone()), &AssignedBlake2bWord::<F>::new(d.clone()), region, offset)?;
         let d = self.rotate_right_16(d_xor_a, region, offset)?;
 
         // v[c] = ((v[c] as u128 + v[d] as u128) % (1 << 64)) as u64;
         let c = self.add_copying_one_parameter(&d, &c, region, offset)?;
 
         // v[b] = rotr_64(v[b] ^ v[c], 63);
-        let b_xor_c = self.xor_for_mix(&c, &b, region, offset)?;
+        let b_xor_c = self.xor_for_mix(&AssignedBlake2bWord::<F>::new(c.clone()), &AssignedBlake2bWord::<F>::new(b.clone()), region, offset)?;
         let b = self.rotate_right_63(b_xor_c, region, offset)?;
 
         state[a_] = AssignedBlake2bWord::<F>::new(a);
@@ -439,8 +439,8 @@ pub trait Blake2bInstructions: Clone {
     //TODO rename to xor_with_full_row
     fn xor_with_full_rows<F: PrimeField>(
         &self,
-        lhs: &AssignedNative<F>,
-        rhs: &AssignedNative<F>,
+        lhs: &AssignedBlake2bWord<F>,
+        rhs: &AssignedBlake2bWord<F>,
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<[AssignedNative<F>; 9], Error> {
@@ -466,8 +466,8 @@ pub trait Blake2bInstructions: Clone {
         let full_number_cell = self.xor_config().generate_xor_rows_from_cells(
             region,
             offset,
-            &lhs.inner_value(),
-            &rhs.inner_value(),
+            &lhs,
+            &rhs,
             &decompose_8_config,
             false,
         )?[0]
@@ -497,8 +497,8 @@ pub trait Blake2bInstructions: Clone {
     /// a convenience method for that in the case of the xor operation.
     fn xor_for_mix<F: PrimeField>(
         &self,
-        previous_cell: &AssignedNative<F>,
-        cell_to_copy: &AssignedNative<F>,
+        previous_cell: &AssignedBlake2bWord<F>,
+        cell_to_copy: &AssignedBlake2bWord<F>,
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<[AssignedNative<F>; 9], Error>;

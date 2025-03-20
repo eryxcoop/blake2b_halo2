@@ -20,9 +20,6 @@ cfg_if::cfg_if! {
     } else if #[cfg(feature = "opt_recycle")] {
         use crate::blake2b::chips::opt_recycle::Blake2bChipOptRecycle;
         type Blake2bChip = Blake2bChipOptRecycle;
-    } else if #[cfg(feature = "opt_spread")] {
-        use crate::blake2b::chips::opt_spread::Blake2bChipOptSpread;
-        type Blake2bChip = Blake2bChipOptSpread;
     } else {
         compile_error!("No feature selected");
     }

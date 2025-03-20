@@ -1,6 +1,7 @@
 use ff::{Field, PrimeField};
 use halo2_proofs::circuit::Value;
 use halo2_proofs::halo2curves::bn256::Fr;
+use crate::types::{Blake2bWord, Byte};
 
 pub fn max_u64() -> Value<Fr> {
     value_for((1u128 << 64) - 1)
@@ -38,8 +39,8 @@ where
     F::from(hi) * field_pow64 + F::from(lo)
 }
 
-pub fn decompose_field_8bit_limbs<F: PrimeField>(number: F) -> [u8; 8] {
-    (0..8).map(|i| get_limb_from_field(number, i)).collect::<Vec<_>>().try_into().unwrap()
+pub fn decompose_field_8bit_limbs(number: Blake2bWord) -> [Byte; 8] {
+    (0..8).map(|i| get_limb_word(number, i)).collect::<Vec<_>>().try_into().unwrap()
 }
 
 pub fn generate_row_8bits<T, F>(number: T) -> [Value<F>; 10]
@@ -83,11 +84,14 @@ pub fn convert_to_u64<F: PrimeField>(a: F) -> u64 {
     a_value
 }
 
-pub fn xor_field_elements<F: PrimeField>(a: F, b: F) -> F {
-    let a_value = convert_to_u64(a);
-    let b_value = convert_to_u64(b);
+pub fn xor_words(a: Blake2bWord, b: Blake2bWord) -> Blake2bWord {
+    Blake2bWord(a.0 ^ b.0)
+}
 
-    F::from(a_value ^ b_value)
+pub fn get_limb_word(word: Blake2bWord, limb_number: usize) -> Byte {
+    let word_bytes: [u8; 8] = word.0.to_le_bytes();
+    let limb = word_bytes[limb_number];
+    Byte(limb)
 }
 
 pub fn get_limb_from_field<F: PrimeField>(field: F, limb_number: usize) -> u8 {

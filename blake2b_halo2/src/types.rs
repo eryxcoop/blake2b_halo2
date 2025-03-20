@@ -49,6 +49,8 @@ impl<F: PrimeField> AssignedElement<F> for AssignedByte<F> {
     fn value(&self) -> Value<Byte> {
         self.0.value().map(|v| {
             let bi_v = fe_to_big(*v);
+            #[cfg(not(test))]
+            assert!(bi_v <= BigUint::from(255u8));
             Byte(bi_v.to_bytes_le().first().copied().unwrap_or(0u8))
         })
     }
@@ -78,7 +80,9 @@ impl<F: PrimeField> AssignedElement<F> for AssignedBlake2bWord<F> {
             let bi_v = fe_to_big(*v);
             #[cfg(not(test))]
             assert!(bi_v <= BigUint::from((1u128 << 64) - 1));
-            let first_8_bytes: [u8; 8] = bi_v.to_bytes_le()[..8].try_into().unwrap();
+            let mut bytes = bi_v.to_bytes_le();
+            bytes.resize(8, 0);
+            let first_8_bytes: [u8; 8] = bytes[..8].try_into().unwrap();
             Blake2bWord(u64::from_le_bytes(first_8_bytes))
         })
     }

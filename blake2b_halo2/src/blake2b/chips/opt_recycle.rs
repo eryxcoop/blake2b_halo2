@@ -6,7 +6,7 @@ use crate::base_operations::rotate_63::Rotate63Config;
 use crate::base_operations::xor::Xor;
 use crate::base_operations::xor_table::XorTableConfig;
 use crate::blake2b::chips::blake2b_generic::Blake2bInstructions;
-use crate::types::AssignedNative;
+use crate::types::{AssignedBlake2bWord, AssignedNative};
 use ff::PrimeField;
 use halo2_proofs::circuit::{Layouter, Region};
 use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Error};
@@ -134,8 +134,8 @@ impl Blake2bInstructions for Blake2bChipOptRecycle {
     /// the limb rotation without copying the operand.
     fn xor_for_mix<F: PrimeField>(
         &self,
-        previous_cell: &AssignedNative<F>,
-        cell_to_copy: &AssignedNative<F>,
+        previous_cell: &AssignedBlake2bWord<F>,
+        cell_to_copy: &AssignedBlake2bWord<F>,
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<[AssignedNative<F>; 9], Error> {
@@ -149,8 +149,8 @@ impl Blake2bChipOptRecycle {
     /// can recycle the result row of the addition and use it as its first operand.
     fn xor_copying_one_parameter<F: PrimeField>(
         &self,
-        previous_cell: &AssignedNative<F>,
-        cell_to_copy: &AssignedNative<F>,
+        previous_cell: &AssignedBlake2bWord<F>,
+        cell_to_copy: &AssignedBlake2bWord<F>,
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<[AssignedNative<F>; 9], Error> {
