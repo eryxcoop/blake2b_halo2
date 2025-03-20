@@ -4,6 +4,8 @@ use crate::types::{AssignedBit, AssignedBlake2bWord, AssignedElement, Blake2bWor
 use auxiliar_functions::field_for;
 
 #[derive(Clone, Debug)]
+// how about include decompoisition_config here and use decoposition_config.configure(), other than
+// remembering always this is implicit
 pub struct AdditionMod64Config {
     carry: Column<Advice>,
     pub q_add: Selector,
