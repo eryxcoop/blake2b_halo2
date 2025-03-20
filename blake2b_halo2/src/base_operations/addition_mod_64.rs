@@ -11,6 +11,9 @@ pub type AdditionConfigWith8Limbs = AdditionMod64Config<8, 10>;
 ///
 /// R is used to define the total number of columns in the trace.
 /// It will allways be T + 2 (full number and carry)
+
+// how about include decompoisition_config here and use decoposition_config.configure(), other than
+// remembering always this is implicit
 pub struct AdditionMod64Config<const T: usize, const R: usize> {
     pub carry: Column<Advice>,
     pub q_add: Selector,

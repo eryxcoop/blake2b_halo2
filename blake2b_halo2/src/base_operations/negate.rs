@@ -4,6 +4,7 @@ use crate::base_operations::decompose_8::Decompose8Config;
 use halo2_proofs::circuit::AssignedCell;
 
 /// This config handles the bitwise negation of a 64-bit number.
+// the same doubt as in addition_mod_64, to make out a full config struct
 #[derive(Clone, Debug)]
 pub struct NegateConfig {
     q_negate: Selector,
@@ -47,6 +48,9 @@ impl NegateConfig {
         //
         // Solution - We changed generate_row_from_value for copy_advice which adds a
         // copy constraint between input and the new cell and stops using the limb decomposition
+
+        // if immediately after negate, we're gonna use the decomposition of the result, I think
+        // it is good to use the optimization trick of previous_row to save one row and one copy_advice.
         self.q_negate.enable(region, *offset)?;
         let full_number_column = decompose_config.get_full_number_u64_column();
         input.copy_advice(|| "Negation input", region, full_number_column, *offset)?;

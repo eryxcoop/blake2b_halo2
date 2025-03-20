@@ -301,15 +301,16 @@ pub trait Blake2bInstructions: Clone {
         region: &mut Region<F>,
         row_offset: &mut usize,
         iv_constants: &[AssignedCell<F, F>; 8],
-        global_state: &mut [AssignedCell<F, F>; 8],
-        current_block_cells: [AssignedCell<F, F>; 16],
-        processed_bytes_count: Value<F>,
-        is_last_block: bool,
+        global_state: &mut [AssignedCell<F, F>; 8], // h
+        // rename by: current_block?
+        current_block_cells: [AssignedCell<F, F>; 16], // m
+        processed_bytes_count: Value<F>, // t
+        is_last_block: bool, // f
     ) -> Result<[AssignedCell<F, F>; 64], Error> {
         let mut state_vector: Vec<AssignedCell<F, F>> = Vec::new();
         state_vector.extend_from_slice(global_state);
         state_vector.extend_from_slice(iv_constants);
-
+        // local_state v?
         let mut state: [AssignedCell<F, F>; 16] = state_vector.try_into().unwrap();
 
         // accumulative_state[12] ^= processed_bytes_count
@@ -318,6 +319,7 @@ pub trait Blake2bInstructions: Clone {
         state[12] = self.xor(&state[12], &processed_bytes_count_cell, region, row_offset)?;
         // accumulative_state[13] ^= ctx.processed_bytes_count[1]; This is 0 so we ignore it
 
+        // not sure, the conditional constraint should be in circuit (select gate)?
         if is_last_block {
             state[14] = self.not(&state[14], region, row_offset)?;
         }
@@ -333,6 +335,8 @@ pub trait Blake2bInstructions: Clone {
                     SIGMA[i][2 * j],
                     SIGMA[i][2 * j + 1],
                     &mut state,
+                    // can we remove the input of current_block_cells, and 
+                    // pass m[SIGMA[i][2 * j]], m[SIGMA[i][2 * j + 1]], as showed in the spec?
                     &current_block_cells,
                     region,
                     row_offset,
@@ -342,6 +346,10 @@ pub trait Blake2bInstructions: Clone {
 
         let mut global_state_bytes = Vec::new();
         for i in 0..8 {
+            // why these two xor's are different methods
+            // we have a trick for the operation of two xor's:
+            // to compute res = x \oplus y \oplus z, it suffices to compute M_even for 
+            // M = spread(x) + spread(y) + spread(z) over F
             global_state[i] = self.xor(&global_state[i], &state[i], region, row_offset)?;
             let row =
                 self.xor_with_full_rows(&global_state[i], &state[i + 8], region, row_offset)?;

@@ -86,7 +86,11 @@ impl Xor for XorSpreadConfig {
             let columns_in_order =
                 Self::advice_columns_in_order::<F>(self.full_number_u64, self.limbs, self.extra);
             // [Zhiyong comment - answered] a handling error when z_i not divided by 2
-            //
+            // e.g, say 3/2 is not in Integers (which is a ring), but it is in any field F, 
+            // take F = Mod 5, then 3/2 = 3 * 1/2 = 3 * 3 = 4 in F, as 1/2 = 3 Mod 5
+            // I still believe the good way is exactly like what SHA256 did which use even_bits and odd_bits of M,
+            // other than by dividing 2.
+
             // I think I don't understand this. Z = x + y - xor(x,y) should be always divisible by 2
             for i in 0..8 {
                 let z_i = (Self::spread_bits::<F>(lhs_limb_values[i])
@@ -140,6 +144,7 @@ impl XorSpreadConfig {
             #[allow(clippy::needless_range_loop)]
             for row in 0..6 {
                 for col in 0..10 {
+                    // large nb of rows in one gate might cause significant cost, need to be double checked.
                     grid[row][col] = meta.query_advice(columns[col], Rotation(row as i32));
                 }
             }

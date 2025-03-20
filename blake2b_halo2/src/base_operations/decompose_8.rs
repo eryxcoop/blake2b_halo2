@@ -112,6 +112,7 @@ impl Decomposition<8> for Decompose8Config {
     fn generate_row_from_bytes<F: PrimeField>(
         &self,
         region: &mut Region<F>,
+        // how about a type Value<Bits<8>>?
         bytes: [Value<F>; 8],
         offset: usize,
     ) -> Result<Vec<AssignedCell<F, F>>, Error> {

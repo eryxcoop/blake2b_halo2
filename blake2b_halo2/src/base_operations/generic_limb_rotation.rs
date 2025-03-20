@@ -1,5 +1,5 @@
 use super::*;
-use ff::{PrimeField};
+use ff::PrimeField;
 use halo2_proofs::circuit::{AssignedCell, Value};
 
 #[derive(Default, Clone, Debug)]
@@ -28,7 +28,8 @@ impl LimbRotation {
     ) -> Result<AssignedCell<F, F>, Error> {
         let result_value =
             Self::right_rotation_value(input_row[0].value(), limbs_to_rotate_to_the_right);
-
+        // given the shifted value, I think it suffices to make equality constraints over the related limbs. However,
+        // the decomposition gate also range check each limbs, which is over-constrained here.
         let result_row =
             decompose_config.generate_row_from_value_and_keep_row(region, result_value, *offset)?;
         *offset += 1;
@@ -51,6 +52,9 @@ impl LimbRotation {
     // This object does not have access to the limbs, the only one who has it is the DecomposeConfig
     // so we preferred to avoid breaking encapsulation and just compute the limbs again (only
     // because computing the limbs is not an expensive operation)
+
+    // how about: input_row[i].copy_advice(...), as we don't need a full decomposition_config (see the above comment)
+
     /// Here the rotation is enforced by copy constraints
     #[allow(clippy::ptr_arg)]
     pub fn constrain_result_with_input_row<F: PrimeField>(

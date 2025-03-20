@@ -2,6 +2,13 @@ use ff::PrimeField;
 use halo2_proofs::circuit::{AssignedCell, Layouter, Region, Value};
 use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Error, Expression, Selector, TableColumn};
 use halo2_proofs::poly::Rotation;
+// I suggest to remove this trait and the gate of decomposition_limb_range_check. Instead, we define a gate API like:
+// fn decomposition_gate(number: Expression<F>, limbs: &[Expressions]) who takes inputs of expressions and integrate this 
+// into the operation gates, such as addition_mod_64 and xor_spread. On the other hand, we only
+// use decomposition (without range check) for generic_limb_rotation and negate. Then the assignment methods can be used
+// as utilities without enabling the gates. And we let each gate to enable the selectors. This manner would be beneficial 
+// for flexibity of the assignment (without enabling the gates) and making each gates complete (you should include all needed 
+// columns and constraints, not only the extra ones)
 
 /// This trait enables indistinct decomposition of a number into a set of limbs, where each limbs is range checked regarding the
 /// designated limb size.
@@ -77,6 +84,8 @@ pub trait Decomposition<const T: usize> {
 
     /// Given a cell with a 64-bit value, it returns a new row with the copied full number and the
     /// decomposition in 8-bit limbs
+    // not necessarily 8-bit limbs? 
+    // rename like: generate_row_copy_from_cell (maybe too long...)
     fn generate_row_from_cell<F: PrimeField>(
         &self,
         region: &mut Region<F>,
