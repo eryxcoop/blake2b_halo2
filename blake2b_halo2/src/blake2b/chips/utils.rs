@@ -1,5 +1,5 @@
 use crate::auxiliar_functions::value_for;
-use crate::types::AssignedNative;
+use crate::types::{AssignedBlake2bWord, AssignedNative};
 use ff::PrimeField;
 use halo2_proofs::circuit::{Region, Value};
 use halo2_proofs::plonk::Error;
@@ -16,8 +16,8 @@ pub fn enforce_input_sizes(output_size: usize, key_size: usize) {
 /// Sets copy constraints to the part of the state that is copied from iv_constants.
 pub fn constrain_initial_state<F: PrimeField>(
     region: &mut Region<F>,
-    global_state: &[AssignedNative<F>; 8],
-    iv_constant_cells: &[AssignedNative<F>; 8],
+    global_state: &[AssignedBlake2bWord<F>; 8],
+    iv_constant_cells: &[AssignedBlake2bWord<F>; 8],
 ) -> Result<(), Error> {
     for i in 0..8 {
         region.constrain_equal(iv_constant_cells[i].cell(), global_state[i].cell())?;

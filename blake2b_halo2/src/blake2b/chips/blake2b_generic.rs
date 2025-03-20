@@ -301,8 +301,8 @@ pub trait Blake2bInstructions: Clone {
         &self,
         region: &mut Region<F>,
         row_offset: &mut usize,
-        iv_constants: &[AssignedNative<F>; 8],
-        global_state: &mut [AssignedNative<F>; 8],
+        iv_constants: &[AssignedBlake2bWord<F>; 8],
+        global_state: &mut [AssignedBlake2bWord<F>; 8],
         current_block_cells: [AssignedNative<F>; 16],
         processed_bytes_count: Value<F>,
         is_last_block: bool,
@@ -625,7 +625,7 @@ pub trait Blake2bInstructions: Clone {
         &self,
         region: &mut Region<F>,
         offset: &mut usize,
-        input: &[AssignedNative<F>],
+        input: &[AssignedByte<F>],
         key: &[AssignedNative<F>],
         block_number: usize,
         last_input_block_index: usize,
@@ -633,7 +633,7 @@ pub trait Blake2bInstructions: Clone {
         is_last_block: bool,
         is_key_block: bool,
         zero_constant_cell: AssignedNative<F>,
-    ) -> Result<[Vec<AssignedNative<F>>; 16], Error> {
+    ) -> Result<[Vec<AssignedByte<F>>; 16], Error> {
         let current_block_values = Self::build_values_for_current_block(
             input,
             key,
@@ -653,7 +653,7 @@ pub trait Blake2bInstructions: Clone {
     /// Computes the values of the current block in the blake2b algorithm, based on the input and
     /// the block number we're on.
     fn build_values_for_current_block<F: PrimeField>(
-        input: &[AssignedNative<F>],
+        input: &[AssignedByte<F>],
         key: &[AssignedNative<F>],
         block_number: usize,
         last_input_block_index: usize,
@@ -661,10 +661,10 @@ pub trait Blake2bInstructions: Clone {
         is_last_block: bool,
         is_key_block: bool,
         zero_constant_cell: AssignedNative<F>,
-    ) -> Vec<AssignedNative<F>> {
+    ) -> Vec<AssignedByte<F>> {
         if is_last_block && !is_key_block {
             let mut result = input[last_input_block_index * BLAKE2B_BLOCK_SIZE..].to_vec();
-            result.resize(128, zero_constant_cell);
+            result.resize(128, AssignedByte::<F>::new(zero_constant_cell));
             result
         } else if is_key_block {
             let mut result = key.to_vec();
