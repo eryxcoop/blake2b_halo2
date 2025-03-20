@@ -101,6 +101,7 @@ impl Xor for XorSpreadConfig {
                         local_offset + z_limb_positions[i].0,
                         || value_for::<u16, F>(z_i),
                     )
+                    // [inigo] should not unwrap
                     .unwrap();
             }
             Value::<F>::unknown()
@@ -140,6 +141,7 @@ impl XorSpreadConfig {
             #[allow(clippy::needless_range_loop)]
             for row in 0..6 {
                 for col in 0..10 {
+                    // [inigo] The more rotations one has, the larger the proof.
                     grid[row][col] = meta.query_advice(columns[col], Rotation(row as i32));
                 }
             }
@@ -201,6 +203,7 @@ impl XorSpreadConfig {
                     offset,
                     || value_for::<u16, F>(Self::spread_bits::<F>(*limb)),
                 )
+                // [inigo] should not unwrap
                 .unwrap();
         }
     }

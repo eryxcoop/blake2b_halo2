@@ -42,6 +42,7 @@ pub trait Blake2bInstructions: Clone {
     // ---------- MAIN METHODS ---------- //
 
     /// This is the main method of the chips. It computes the Blake2b hash for the given inputs.
+    // [inigo] Is this method now needed? Why not implement this directly in the gadget?
     fn compute_blake2b_hash_for_inputs<F: PrimeField>(
         &self,
         layouter: &mut impl Layouter<F>,
@@ -51,10 +52,14 @@ pub trait Blake2bInstructions: Clone {
         input: &[Value<F>],
         key: &[Value<F>],
     ) -> Result<[AssignedCell<F, F>; 64], Error> {
+        // [inigo] If this needs to be enforced, why not define the output size from the given key?
+        // and document it accordingly
         enforce_input_sizes(output_size, key_size);
 
         /// All the computation is performed inside a single region. Some optimizations take advantage
         /// of this fact, since we want to avoid copying cells between regions.
+        // [inigo] Which optimisations could not be applied if we split this into different regions, e.g.
+        // one per compression round?
         layouter.assign_region(
             || "single region",
             |mut region| {
@@ -103,6 +108,7 @@ pub trait Blake2bInstructions: Clone {
         output_size: usize,
         key_size: usize,
         mut region: &mut Region<F>,
+        // [inigo] This is a weird notation in rust - either you want a mutable value or a mutable reference. What do you want here?
         mut advice_offset: &mut usize,
     ) -> Result<
         (
@@ -116,13 +122,16 @@ pub trait Blake2bInstructions: Clone {
     > {
         let iv_constant_cells: [AssignedCell<F, F>; 8] =
             self.assign_iv_constants_to_fixed_cells(&mut region, &mut advice_offset)?;
+        // [inigo] If you are sending the offset as mutable, why not do +1 inside the function
         *advice_offset += 1;
+
         let init_const_state_0 = region.assign_advice_from_constant(
             || "state 0 xor",
             self.decompose_8_config().get_limb_column(0),
             *advice_offset,
             F::from(0x01010000u64),
         )?;
+
         let output_size_constant = region.assign_advice_from_constant(
             || "output size",
             self.decompose_8_config().get_limb_column(1),
@@ -137,6 +146,7 @@ pub trait Blake2bInstructions: Clone {
             offset1,
             F::from(constant as u64),
         )?;
+        // [inigo] why these declarations?
         let offset1 = *advice_offset;
         let zero_constant = region.assign_advice_from_constant(
             || "zero",
@@ -176,6 +186,7 @@ pub trait Blake2bInstructions: Clone {
     /// Computes the initial global state of Blake2b. It only depends on the key size and the
     /// output size, which are values known at circuit building time. This computation should
     /// also be verified by the circuit.
+    // [inigo] Why does this computation need to be verified by the circuit if it is fixed?
     fn compute_initial_state<F: PrimeField>(
         &self,
         region: &mut Region<F>,
@@ -313,6 +324,7 @@ pub trait Blake2bInstructions: Clone {
         let mut state: [AssignedCell<F, F>; 16] = state_vector.try_into().unwrap();
 
         // accumulative_state[12] ^= processed_bytes_count
+        // [inigo] Processed bytes count can be defined as a constant
         let processed_bytes_count_cell =
             self.new_row_from_value(processed_bytes_count, region, row_offset)?;
         state[12] = self.xor(&state[12], &processed_bytes_count_cell, region, row_offset)?;
@@ -588,8 +600,11 @@ pub trait Blake2bInstructions: Clone {
             .iter()
             .enumerate()
             .map(|(index, constant)| {
+                // [inigo] why are you making these declarations? you are converting `constant` to usize
+                // and then back to `u64`?
                 let constant1 = *constant as usize;
                 let offset1 = *offset;
+
                 region
                     .assign_advice_from_constant(
                         || "iv constants",
@@ -597,6 +612,7 @@ pub trait Blake2bInstructions: Clone {
                         offset1,
                         F::from(constant1 as u64),
                     )
+                    // [inigo] ?
                     .unwrap()
             })
             .collect::<Vec<AssignedCell<F, F>>>()
@@ -706,17 +722,21 @@ pub trait Blake2bInstructions: Clone {
     /// Here we want to make sure that the public inputs are equal to the final state of the hash.
     /// The amount of constrains is equal to the output size, which is known at circuit building time.
     /// We should only constrain those, even tho the state contains the entire output.
-    fn constraint_public_inputs_to_equal_computation_results<F: PrimeField>(
+    // [inigo] We can only constrain values from the instance column between 0 and 64. What if we have
+    // other PIs in other places of the circuit?
+    // This function does not need to be here. If the developer wants to constrain the output
+    // as PI, it can do it on its own.
+    fn constrain_instance<F: PrimeField>(
         &self,
         layouter: &mut impl Layouter<F>,
         global_state_bytes: [AssignedCell<F, F>; 64],
         output_size: usize,
-        public_inputs_instance_column: Column<Instance>,
+        instance_column: Column<Instance>,
     ) -> Result<(), Error> {
         for (i, global_state_byte_cell) in global_state_bytes.iter().enumerate().take(output_size) {
             layouter.constrain_instance(
                 global_state_byte_cell.cell(),
-                public_inputs_instance_column,
+                instance_column,
                 i,
             )?;
         }

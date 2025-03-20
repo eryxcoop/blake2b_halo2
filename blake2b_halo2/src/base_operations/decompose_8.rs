@@ -117,6 +117,7 @@ impl Decomposition<8> for Decompose8Config {
     ) -> Result<Vec<AssignedCell<F, F>>, Error> {
         let mut full_number = F::ZERO;
 
+        // [inigo] You are composing to decompose in the next function - its very hard to follow
         for byte in bytes.iter().rev() {
             byte.and_then(|v| {
                 full_number *= F::from(256u64);

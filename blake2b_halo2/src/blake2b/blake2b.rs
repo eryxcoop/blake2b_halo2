@@ -24,6 +24,7 @@ impl<C: Blake2bInstructions> Blake2b<C> {
     pub fn hash<F: PrimeField>(
         &self,
         layouter: &mut impl Layouter<F>,
+        // [inigo] what if we want to use the input somewhere else in the circuit?
         input: &[Value<F>],
         key: &[Value<F>],
         output_size: usize,
@@ -45,14 +46,14 @@ impl<C: Blake2bInstructions> Blake2b<C> {
         &self,
         layouter: &mut impl Layouter<F>,
         global_state_bytes: [AssignedCell<F, F>; 64],
-        public_inputs_instance_column: Column<Instance>,
+        instance_column: Column<Instance>,
         output_size: usize,
     ) -> Result<(), Error> {
-        self.chip.constraint_public_inputs_to_equal_computation_results(
+        self.chip.constrain_instance(
             layouter,
             global_state_bytes,
             output_size,
-            public_inputs_instance_column,
+            instance_column,
         )
     }
 }
