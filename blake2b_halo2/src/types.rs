@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 use ff::PrimeField;
-use halo2_proofs::circuit::{AssignedCell, Value};
+use halo2_proofs::circuit::{AssignedCell, Cell, Value};
 use num_bigint::BigUint;
 
 /// The inner type of AssignedByte.
@@ -13,6 +13,23 @@ pub struct Byte(pub u8);
 pub struct Blake2bWord(pub u64);
 
 pub type AssignedNative<F> = AssignedCell<F, F>;
+
+/// Trait for accessing the value inside assigned circuit elements.
+pub trait AssignedElement<F: PrimeField>: Clone + Debug {
+    /// Represents the unassigned type corresponding to the [midnight_circuits::types::InnerValue]
+    type Element: Clone + Debug;
+
+    //constructor
+    fn new(value: AssignedNative<F>) -> Self;
+
+    /// Returns the value of the assigned element.
+    fn value(&self) -> Value<Self::Element>;
+
+    fn cell(&self) -> Cell;
+
+    // TODO solo para pasos intermedios del refactor, despues se deberia sacar
+    fn inner_value(&self) -> AssignedNative<F>;
+}
 
 /// This wrapper type on `AssignedNative<F>` is designed to enforce type safety
 /// on assigned bytes. It prevents the user from creating an `AssignedByte`
@@ -34,6 +51,14 @@ impl<F: PrimeField> AssignedElement<F> for AssignedByte<F> {
             let bi_v = fe_to_big(*v);
             Byte(bi_v.to_bytes_le().first().copied().unwrap_or(0u8))
         })
+    }
+
+    fn cell(&self) -> Cell {
+        self.0.cell()
+    }
+
+    fn inner_value(&self) -> AssignedNative<F> {
+        self.0.clone()
     }
 }
 
@@ -57,62 +82,58 @@ impl<F: PrimeField> AssignedElement<F> for AssignedBlake2bWord<F> {
             Blake2bWord(u64::from_le_bytes(first_8_bytes))
         })
     }
+
+    fn inner_value(&self) -> AssignedNative<F> {
+        self.0.clone()
+    }
+
+    fn cell(&self) -> Cell {
+        self.0.cell()
+    }
 }
 
 pub fn fe_to_big<F: PrimeField>(fe: F) -> BigUint {
     BigUint::from_bytes_le(fe.to_repr().as_ref())
 }
 
-/// Trait for accessing the value inside assigned circuit elements.
-pub trait AssignedElement<F: PrimeField>: Clone + Debug {
-    /// Represents the unassigned type corresponding to the [midnight_circuits::types::InnerValue]
-    type Element: Clone + Debug;
-
-    //constructor
-    fn new(value: AssignedNative<F>) -> Self;
-
-    /// Returns the value of the assigned element.
-    fn value(&self) -> Value<Self::Element>;
-}
-
-pub struct Row8Limbs<F: PrimeField> {
-    full_number: AssignedBlake2bWord<F>,
-    limbs: Vec<AssignedByte<F>>,
-}
-
-impl<F: PrimeField> Row8Limbs<F> {
-    pub fn new(full_number: AssignedBlake2bWord<F>, limbs: Vec<impl AssignedElement<F>>) -> Self {
-        #[cfg(not(test))]
-        assert!(limbs.len() == 8);
-        Self { full_number, limbs }
-    }
-}
-
-pub struct Row4Limbs<F: PrimeField> {
-    full_number: AssignedBlake2bWord<F>,
-    limbs: Vec<AssignedNative<F>>,
-}
-
-impl<F: PrimeField> Row4Limbs<F> {
-    pub fn new(full_number: AssignedBlake2bWord<F>, limbs: Vec<impl AssignedElement<F>>) -> Self {
-        #[cfg(not(test))]
-        assert!(limbs.len() == 4);
-        Self { full_number, limbs }
-    }
-}
-
-pub trait RowLimb <F: PrimeField> {
-    fn full_number(&self) -> AssignedBlake2bWord<F>;
-    fn limbs(&self) -> Vec<impl AssignedElement<F>>;
-}
-
-impl<F: PrimeField> RowLimb<F> for Row8Limbs<F> {
-    fn full_number(&self) -> AssignedBlake2bWord<F> {
-        self.full_number
-    }
-
-    fn limbs(&self) -> Vec<impl AssignedElement<F>> {
-        self.limbs.clone()
-    }
-}
+// pub struct Row8Limbs<F: PrimeField> {
+//     full_number: AssignedBlake2bWord<F>,
+//     limbs: Vec<AssignedByte<F>>,
+// }
+//
+// impl<F: PrimeField> Row8Limbs<F> {
+//     pub fn new(full_number: AssignedBlake2bWord<F>, limbs: Vec<impl AssignedElement<F>>) -> Self {
+//         #[cfg(not(test))]
+//         assert!(limbs.len() == 8);
+//         Self { full_number, limbs }
+//     }
+// }
+//
+// pub struct Row4Limbs<F: PrimeField> {
+//     full_number: AssignedBlake2bWord<F>,
+//     limbs: Vec<AssignedByte<F>>,
+// }
+//
+// impl<F: PrimeField> Row4Limbs<F> {
+//     pub fn new(full_number: AssignedBlake2bWord<F>, limbs: Vec<impl AssignedElement<F>>) -> Self {
+//         #[cfg(not(test))]
+//         assert!(limbs.len() == 4);
+//         Self { full_number, limbs }
+//     }
+// }
+//
+// pub trait RowLimb <F: PrimeField> {
+//     fn full_number(&self) -> AssignedBlake2bWord<F>;
+//     fn limbs(&self) -> Vec<impl AssignedElement<F>>;
+// }
+//
+// impl<F: PrimeField> RowLimb<F> for Row8Limbs<F> {
+//     fn full_number(&self) -> AssignedBlake2bWord<F> {
+//         self.full_number
+//     }
+//
+//     fn limbs(&self) -> Vec<impl AssignedElement<F>> {
+//         self.limbs.clone()
+//     }
+// }
 

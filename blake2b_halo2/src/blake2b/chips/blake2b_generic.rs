@@ -9,9 +9,9 @@ use crate::blake2b::chips::utils::{
     constrain_padding_cells_to_equal_zero, enforce_input_sizes, get_full_number_of_each,
     get_total_blocks_count, iv_constant_values, iv_constants, ABCD, BLAKE2B_BLOCK_SIZE, SIGMA,
 };
-use crate::types::{AssignedBlake2bWord, AssignedByte, AssignedNative, Row8Limbs};
+use crate::types::{AssignedBlake2bWord, AssignedByte, AssignedNative};
 use ff::PrimeField;
-use halo2_proofs::circuit::{AssignedCell, Layouter, Region, Value};
+use halo2_proofs::circuit::{Layouter, Region, Value};
 use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Error, Instance};
 use crate::types::AssignedElement;
 
@@ -52,10 +52,11 @@ pub trait Blake2bInstructions: Clone {
         output_size: usize,
         input: &[AssignedNative<F>],
         key: &[AssignedNative<F>],
-    ) -> Result<[AssignedNative<F>; 64], Error> {
+    ) -> Result<[AssignedByte<F>; 64], Error> {
         enforce_input_sizes(output_size, key.len());
         // TODO no me cierra esto
-        let input_bytes = input.iter().map(|x| AssignedByte::<F>::new(x.clone())).collect();
+        let input_bytes: Vec<_> = input.iter().map(|x| AssignedByte::<F>::new(x.clone())).collect();
+        let key_bytes: Vec<_> = key.iter().map(|x| AssignedByte::<F>::new(x.clone())).collect();
 
         /// All the computation is performed inside a single region. Some optimizations take advantage
         /// of this fact, since we want to avoid copying cells between regions.
@@ -73,7 +74,7 @@ pub trait Blake2bInstructions: Clone {
                     zero_constant,
                 ) = self.assign_constant_advice_cells(
                     output_size,
-                    key.len(),
+                    key_bytes.len(),
                     &mut region,
                     &mut advice_offset,
                 )?;
@@ -90,8 +91,8 @@ pub trait Blake2bInstructions: Clone {
                 self.perform_blake2b_iterations(
                     &mut region,
                     &mut advice_offset,
-                    input_bytes,
-                    key,
+                    &input_bytes,
+                    &key_bytes,
                     &iv_constant_cells,
                     &mut global_state,
                     zero_constant,
@@ -209,12 +210,12 @@ pub trait Blake2bInstructions: Clone {
         &self,
         region: &mut Region<F>,
         advice_offset: &mut usize,
-        input: &[AssignedNative<F>],
-        key: &[AssignedNative<F>],
+        input: &[AssignedByte<F>],
+        key: &[AssignedByte<F>],
         iv_constants: &[AssignedBlake2bWord<F>; 8],
         global_state: &mut [AssignedBlake2bWord<F>; 8],
         zero_constant_cell: AssignedNative<F>,
-    ) -> Result<[AssignedNative<F>; 64], Error> {
+    ) -> Result<[AssignedByte<F>; 64], Error> {
         let input_size = input.len();
         let is_key_empty = key.is_empty();
         let is_input_empty = input_size == 0;
@@ -241,8 +242,8 @@ pub trait Blake2bInstructions: Clone {
                 let current_block_rows = self.build_current_block_rows(
                     region,
                     advice_offset,
-                    input,
-                    key,
+                    &input,
+                    &key,
                     i,
                     last_input_block_index,
                     is_key_empty,
@@ -303,15 +304,15 @@ pub trait Blake2bInstructions: Clone {
         row_offset: &mut usize,
         iv_constants: &[AssignedBlake2bWord<F>; 8],
         global_state: &mut [AssignedBlake2bWord<F>; 8],
-        current_block_cells: [AssignedNative<F>; 16],
+        current_block_cells: [AssignedBlake2bWord<F>; 16],
         processed_bytes_count: Value<F>,
         is_last_block: bool,
-    ) -> Result<[AssignedNative<F>; 64], Error> {
-        let mut state_vector: Vec<AssignedNative<F>> = Vec::new();
+    ) -> Result<[AssignedByte<F>; 64], Error> {
+        let mut state_vector: Vec<AssignedBlake2bWord<F>> = Vec::new();
         state_vector.extend_from_slice(global_state);
         state_vector.extend_from_slice(iv_constants);
 
-        let mut state: [AssignedNative<F>; 16] = state_vector.try_into().unwrap();
+        let mut state: [AssignedBlake2bWord<F>; 16] = state_vector.try_into().unwrap();
 
         // accumulative_state[12] ^= processed_bytes_count
         let processed_bytes_count_cell =
@@ -341,13 +342,14 @@ pub trait Blake2bInstructions: Clone {
             }
         }
 
-        let mut global_state_bytes = Vec::new();
+        let mut global_state_bytes: Vec<AssignedByte<F>> = Vec::new();
         for i in 0..8 {
             global_state[i] = self.xor(&global_state[i], &state[i], region, row_offset)?;
             let row =
-                self.xor_with_full_rows(&global_state[i], &state[i + 8], region, row_offset)?;
-            global_state_bytes.extend_from_slice(&row[1..]);
-            global_state[i] = row[0].clone();
+                self.xor_with_full_rows(&global_state[i].inner_value(), &state[i + 8].inner_value(), region, row_offset)?;
+            let mut row_limbs: Vec<_> = row[1..].iter().map(|cell| AssignedByte::<F>::new((*cell).clone())).collect();
+            global_state_bytes.append(&mut row_limbs);
+            global_state[i] = AssignedBlake2bWord::<F>::new(row[0].clone());
         }
         let global_state_bytes_array = global_state_bytes.try_into().unwrap();
         Ok(global_state_bytes_array)
@@ -364,17 +366,17 @@ pub trait Blake2bInstructions: Clone {
         d_: usize,
         sigma_even: usize,
         sigma_odd: usize,
-        state: &mut [AssignedNative<F>; 16],
-        current_block_words: &[AssignedNative<F>; 16],
+        state: &mut [AssignedBlake2bWord<F>; 16],
+        current_block_words: &[AssignedBlake2bWord<F>; 16],
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<(), Error> {
-        let v_a = state[a_].clone();
-        let v_b = state[b_].clone();
-        let v_c = state[c_].clone();
-        let v_d = state[d_].clone();
-        let x = current_block_words[sigma_even].clone();
-        let y = current_block_words[sigma_odd].clone();
+        let v_a = state[a_].clone().inner_value();
+        let v_b = state[b_].clone().inner_value();
+        let v_c = state[c_].clone().inner_value();
+        let v_d = state[d_].clone().inner_value();
+        let x = current_block_words[sigma_even].clone().inner_value();
+        let y = current_block_words[sigma_odd].clone().inner_value();
 
         // v[a] = ((v[a] as u128 + v[b] as u128 + x as u128) % (1 << 64)) as u64;
         let a_plus_b = self.add(&v_a, &v_b, region, offset)?;
@@ -406,18 +408,35 @@ pub trait Blake2bInstructions: Clone {
         let b_xor_c = self.xor_for_mix(&c, &b, region, offset)?;
         let b = self.rotate_right_63(b_xor_c, region, offset)?;
 
-        state[a_] = a;
-        state[b_] = b;
-        state[c_] = c;
-        state[d_] = d;
+        state[a_] = AssignedBlake2bWord::<F>::new(a);
+        state[b_] = AssignedBlake2bWord::<F>::new(b);
+        state[c_] = AssignedBlake2bWord::<F>::new(c);
+        state[d_] = AssignedBlake2bWord::<F>::new(d);
 
         Ok(())
     }
 
     // ----- Basic operations ----- //
 
+    fn not<F: PrimeField>(
+        &self,
+        input_cell: &AssignedBlake2bWord<F>,
+        region: &mut Region<F>,
+        offset: &mut usize,
+    ) -> Result<AssignedBlake2bWord<F>, Error> {
+        let mut decompose_8_config = self.decompose_8_config();
+        let cell = self.negate_config().generate_rows_from_cell(
+            region,
+            offset,
+            &input_cell.inner_value(),
+            &mut decompose_8_config,
+        )?;
+        Ok(AssignedBlake2bWord::<F>::new(cell))
+    }
+
     /// In this case we need to perform the xor operation and return the entire row, because we
     /// need it to constrain the result.
+    //TODO rename to xor_with_full_row
     fn xor_with_full_rows<F: PrimeField>(
         &self,
         lhs: &AssignedNative<F>,
@@ -436,21 +455,6 @@ pub trait Blake2bInstructions: Clone {
         )
     }
 
-    fn not<F: PrimeField>(
-        &self,
-        input_cell: &AssignedNative<F>,
-        region: &mut Region<F>,
-        offset: &mut usize,
-    ) -> Result<AssignedNative<F>, Error> {
-        let mut decompose_8_config = self.decompose_8_config();
-        self.negate_config().generate_rows_from_cell(
-            region,
-            offset,
-            input_cell,
-            &mut decompose_8_config,
-        )
-    }
-
     fn xor<F: PrimeField>(
         &self,
         lhs: &AssignedBlake2bWord<F>,
@@ -462,8 +466,8 @@ pub trait Blake2bInstructions: Clone {
         let full_number_cell = self.xor_config().generate_xor_rows_from_cells(
             region,
             offset,
-            lhs,
-            rhs,
+            &lhs.inner_value(),
+            &rhs.inner_value(),
             &decompose_8_config,
             false,
         )?[0]
@@ -597,7 +601,7 @@ pub trait Blake2bInstructions: Clone {
                         F::from(*constant),
                     )
                     .unwrap();
-                AssignedBlake2bWord::<F>(cell)
+                AssignedBlake2bWord::<F>::new(cell)
             })
             .collect::<Vec<AssignedBlake2bWord<F>>>()
             .try_into()
@@ -613,9 +617,9 @@ pub trait Blake2bInstructions: Clone {
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<AssignedBlake2bWord<F>, Error> {
-        let ret = self.decompose_8_config().generate_row_from_value(region, value, *offset);
+        let ret = self.decompose_8_config().generate_row_from_value(region, value, *offset)?;
         *offset += 1;
-        Ok(AssignedBlake2bWord::<F>(ret[0]))
+        Ok(AssignedBlake2bWord::<F>::new(ret))
     }
 
     /// This is the part where the inputs/key are organized inside the trace. Each iteration
@@ -626,14 +630,14 @@ pub trait Blake2bInstructions: Clone {
         region: &mut Region<F>,
         offset: &mut usize,
         input: &[AssignedByte<F>],
-        key: &[AssignedNative<F>],
+        key: &[AssignedByte<F>],
         block_number: usize,
         last_input_block_index: usize,
         is_key_empty: bool,
         is_last_block: bool,
         is_key_block: bool,
         zero_constant_cell: AssignedNative<F>,
-    ) -> Result<[Vec<AssignedByte<F>>; 16], Error> {
+    ) -> Result<[Vec<AssignedBlake2bWord<F>>; 16], Error> {
         let current_block_values = Self::build_values_for_current_block(
             input,
             key,
@@ -654,7 +658,7 @@ pub trait Blake2bInstructions: Clone {
     /// the block number we're on.
     fn build_values_for_current_block<F: PrimeField>(
         input: &[AssignedByte<F>],
-        key: &[AssignedNative<F>],
+        key: &[AssignedByte<F>],
         block_number: usize,
         last_input_block_index: usize,
         is_key_empty: bool,
@@ -668,7 +672,7 @@ pub trait Blake2bInstructions: Clone {
             result
         } else if is_key_block {
             let mut result = key.to_vec();
-            result.resize(128, zero_constant_cell);
+            result.resize(128, AssignedByte::<F>::new(zero_constant_cell));
             result
         } else {
             let current_input_block_index = if is_key_empty { block_number } else { block_number - 1 };
@@ -682,11 +686,11 @@ pub trait Blake2bInstructions: Clone {
         &self,
         region: &mut Region<F>,
         offset: &mut usize,
-        block: [AssignedNative<F>; 128],
-    ) -> Result<[Vec<AssignedNative<F>>; 16], Error> {
-        let mut current_block_rows: Vec<Vec<AssignedNative<F>>> = Vec::new();
+        block: [AssignedByte<F>; 128],
+    ) -> Result<[Vec<AssignedBlake2bWord<F>>; 16], Error> {
+        let mut current_block_rows: Vec<Vec<AssignedBlake2bWord<F>>> = Vec::new();
         for i in 0..16 {
-            let bytes: &[AssignedNative<F>; 8] = block[i * 8..(i + 1) * 8].try_into().unwrap();
+            let bytes: &[AssignedByte<F>; 8] = block[i * 8..(i + 1) * 8].try_into().unwrap();
             let current_row_cells = self.new_row_from_assigned_bytes(bytes, region, offset)?;
             current_block_rows.push(current_row_cells);
         }
@@ -698,13 +702,16 @@ pub trait Blake2bInstructions: Clone {
     /// limbs and the resulting full number in the first column.
     fn new_row_from_assigned_bytes<F: PrimeField>(
         &self,
-        bytes: &[AssignedNative<F>; 8],
+        bytes: &[AssignedByte<F>; 8],
         region: &mut Region<F>,
         offset: &mut usize,
-    ) -> Result<Vec<AssignedNative<F>>, Error> {
-        let ret = self.decompose_8_config().generate_row_from_assigned_bytes(region, bytes, *offset);
+    ) -> Result<Vec<AssignedBlake2bWord<F>>, Error> {
+        let bytes_as_cells = bytes.iter().map(|byte| byte.inner_value()).collect::<Vec<_>>();
+        let ret = self.decompose_8_config().generate_row_from_assigned_bytes(region, &bytes_as_cells.try_into().unwrap(), *offset)?;
         *offset += 1;
-        ret
+        Ok(ret.iter()
+            .map(|cell| AssignedBlake2bWord::<F>::new(cell.clone()))
+            .collect())
     }
 
     /// Here we want to make sure that the public inputs are equal to the final state of the hash.
@@ -713,7 +720,7 @@ pub trait Blake2bInstructions: Clone {
     fn constraint_public_inputs_to_equal_computation_results<F: PrimeField>(
         &self,
         layouter: &mut impl Layouter<F>,
-        global_state_bytes: [AssignedNative<F>; 64],
+        global_state_bytes: [AssignedByte<F>; 64],
         output_size: usize,
         public_inputs_instance_column: Column<Instance>,
     ) -> Result<(), Error> {

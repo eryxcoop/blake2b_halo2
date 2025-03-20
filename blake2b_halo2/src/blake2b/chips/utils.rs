@@ -1,5 +1,5 @@
 use crate::auxiliar_functions::value_for;
-use crate::types::{AssignedBlake2bWord, AssignedNative};
+use crate::types::{AssignedBlake2bWord, AssignedByte, AssignedElement, AssignedNative};
 use ff::PrimeField;
 use halo2_proofs::circuit::{Region, Value};
 use halo2_proofs::plonk::Error;
@@ -27,8 +27,8 @@ pub fn constrain_initial_state<F: PrimeField>(
 
 /// Extracts the full number cell of each of the state rows
 pub fn get_full_number_of_each<F: PrimeField>(
-    current_block_rows: [Vec<AssignedNative<F>>; 16],
-) -> [AssignedNative<F>; 16] {
+    current_block_rows: [Vec<AssignedBlake2bWord<F>>; 16],
+) -> [AssignedBlake2bWord<F>; 16] {
     current_block_rows.iter().map(|row| row[0].clone()).collect::<Vec<_>>().try_into().unwrap()
 }
 
@@ -80,7 +80,7 @@ pub fn get_total_blocks_count(
 pub fn constrain_padding_cells_to_equal_zero<F: PrimeField>(
     region: &mut Region<F>,
     zeros_amount: usize,
-    current_block_rows: &[Vec<AssignedNative<F>>; 16],
+    current_block_rows: &[Vec<AssignedBlake2bWord<F>>; 16],
     zero_constant_cell: &AssignedNative<F>,
 ) -> Result<(), Error> {
     let mut constrained_padding_cells = 0;
