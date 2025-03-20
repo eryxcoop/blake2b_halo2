@@ -9,10 +9,11 @@ use crate::blake2b::chips::utils::{
     constrain_padding_cells_to_equal_zero, enforce_input_sizes, get_full_number_of_each,
     get_total_blocks_count, iv_constant_values, iv_constants, ABCD, BLAKE2B_BLOCK_SIZE, SIGMA,
 };
-use crate::types::AssignedNative;
+use crate::types::{AssignedBlake2bWord, AssignedByte, AssignedNative, Row8Limbs};
 use ff::PrimeField;
-use halo2_proofs::circuit::{Layouter, Region, Value};
+use halo2_proofs::circuit::{AssignedCell, Layouter, Region, Value};
 use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Error, Instance};
+use crate::types::AssignedElement;
 
 /// This is the trait that groups the 3 optimization chips. Most of their code is the same, so the
 /// behaviour was encapsulated here. Each optimization has to override only 3 or 4 methods, besides
@@ -53,7 +54,8 @@ pub trait Blake2bInstructions: Clone {
         key: &[AssignedNative<F>],
     ) -> Result<[AssignedNative<F>; 64], Error> {
         enforce_input_sizes(output_size, key.len());
-
+        // TODO no me cierra esto
+        let input_bytes = input.iter().map(|x| AssignedByte::<F>::new(x.clone())).collect();
 
         /// All the computation is performed inside a single region. Some optimizations take advantage
         /// of this fact, since we want to avoid copying cells between regions.
@@ -88,7 +90,7 @@ pub trait Blake2bInstructions: Clone {
                 self.perform_blake2b_iterations(
                     &mut region,
                     &mut advice_offset,
-                    input,
+                    input_bytes,
                     key,
                     &iv_constant_cells,
                     &mut global_state,
@@ -107,42 +109,32 @@ pub trait Blake2bInstructions: Clone {
         mut advice_offset: &mut usize,
     ) -> Result<
         (
-            [AssignedNative<F>; 8],
-            AssignedNative<F>,
-            AssignedNative<F>,
-            AssignedNative<F>,
-            AssignedNative<F>,
+            [AssignedBlake2bWord<F>; 8],
+            AssignedBlake2bWord<F>,
+            AssignedBlake2bWord<F>,
+            AssignedBlake2bWord<F>,
+            AssignedNative<F>, // we need this to be a byte or a word
         ),
         Error,
     > {
-        let iv_constant_cells: [AssignedNative<F>; 8] =
+        let iv_constant_cells: [AssignedBlake2bWord<F>; 8] =
             self.assign_iv_constants_to_fixed_cells(&mut region, &mut advice_offset)?;
         *advice_offset += 1;
-        let init_const_state_0 = region.assign_advice_from_constant(
-            || "state 0 xor",
-            self.decompose_8_config().get_limb_column(0),
-            *advice_offset,
-            F::from(0x01010000u64),
-        )?;
-        let output_size_constant = region.assign_advice_from_constant(
-            || "output size",
-            self.decompose_8_config().get_limb_column(1),
-            *advice_offset,
-            F::from(output_size as u64),
-        )?;
+        let init_const_state_0 = Self::assign_constant(
+            &mut region, &mut advice_offset, 0x01010000u64, "state 0 xor",
+            self.decompose_8_config().get_limb_column(0))?;
+        let output_size_constant = Self::assign_constant
+            (&mut region, &mut advice_offset, output_size as u64, "output size",
+             self.decompose_8_config().get_limb_column(1))?;
         let constant = key_size << 8;
-        let offset1 = *advice_offset;
-        let key_size_constant_shifted = region.assign_advice_from_constant(
-            || "key size",
-            self.decompose_8_config().get_limb_column(2),
-            offset1,
-            F::from(constant as u64),
-        )?;
-        let offset1 = *advice_offset;
+        let key_size_constant_shifted = Self::assign_constant
+            (&mut region, &mut advice_offset, constant as u64, "key size",
+             self.decompose_8_config().get_limb_column(2))?;
+
         let zero_constant = region.assign_advice_from_constant(
             || "zero",
             self.decompose_8_config().get_limb_column(3),
-            offset1,
+            *advice_offset,
             F::from(0),
         )?;
         *advice_offset += 1;
@@ -154,6 +146,15 @@ pub trait Blake2bInstructions: Clone {
             key_size_constant_shifted,
             zero_constant,
         ))
+    }
+
+    fn assign_constant<F: PrimeField>(region: &mut &mut Region<F>, advice_offset: &mut usize, constant: u64, name: &str, column: Column<Advice>) -> Result<AssignedBlake2bWord<F>, Error> {
+        Ok(AssignedBlake2bWord::<F>::new(region.assign_advice_from_constant(
+            || name,
+            column,
+            *advice_offset,
+            F::from(constant),
+        )?))
     }
 
     /// This method handles the part of the configuration that is generic to all optimizations.
@@ -181,11 +182,11 @@ pub trait Blake2bInstructions: Clone {
         &self,
         region: &mut Region<F>,
         offset: &mut usize,
-        iv_constant_cells: &[AssignedNative<F>; 8],
-        init_const_state_0: AssignedNative<F>,
-        output_size_constant: AssignedNative<F>,
-        key_size_constant_shifted: AssignedNative<F>,
-    ) -> Result<[AssignedNative<F>; 8], Error> {
+        iv_constant_cells: &[AssignedBlake2bWord<F>; 8],
+        init_const_state_0: AssignedBlake2bWord<F>,
+        output_size_constant: AssignedBlake2bWord<F>,
+        key_size_constant_shifted: AssignedBlake2bWord<F>,
+    ) -> Result<[AssignedBlake2bWord<F>; 8], Error> {
         let mut global_state = iv_constant_values()
             .map(|constant| self.new_row_from_value(constant, region, offset).unwrap());
 
@@ -210,8 +211,8 @@ pub trait Blake2bInstructions: Clone {
         advice_offset: &mut usize,
         input: &[AssignedNative<F>],
         key: &[AssignedNative<F>],
-        iv_constants: &[AssignedNative<F>; 8],
-        global_state: &mut [AssignedNative<F>; 8],
+        iv_constants: &[AssignedBlake2bWord<F>; 8],
+        global_state: &mut [AssignedBlake2bWord<F>; 8],
         zero_constant_cell: AssignedNative<F>,
     ) -> Result<[AssignedNative<F>; 64], Error> {
         let input_size = input.len();
@@ -452,11 +453,11 @@ pub trait Blake2bInstructions: Clone {
 
     fn xor<F: PrimeField>(
         &self,
-        lhs: &AssignedNative<F>,
-        rhs: &AssignedNative<F>,
+        lhs: &AssignedBlake2bWord<F>,
+        rhs: &AssignedBlake2bWord<F>,
         region: &mut Region<F>,
         offset: &mut usize,
-    ) -> Result<AssignedNative<F>, Error> {
+    ) -> Result<AssignedBlake2bWord<F>, Error> {
         let decompose_8_config = self.decompose_8_config();
         let full_number_cell = self.xor_config().generate_xor_rows_from_cells(
             region,
@@ -467,7 +468,7 @@ pub trait Blake2bInstructions: Clone {
             false,
         )?[0]
             .clone();
-        Ok(full_number_cell)
+        Ok(AssignedBlake2bWord::<F>::new(full_number_cell))
     }
 
     fn add<F: PrimeField>(
@@ -583,21 +584,22 @@ pub trait Blake2bInstructions: Clone {
         &self,
         region: &mut Region<F>,
         offset: &usize,
-    ) -> Result<[AssignedNative<F>; 8], Error> {
-        let ret: [AssignedNative<F>; 8] = iv_constants()
+    ) -> Result<[AssignedBlake2bWord<F>; 8], Error> {
+        let ret: [AssignedBlake2bWord<F>; 8] = iv_constants()
             .iter()
             .enumerate()
             .map(|(index, constant)| {
-                region
+                let cell = region
                     .assign_advice_from_constant(
                         || "iv constants",
                         self.decompose_8_config().get_limb_column(index),
                         *offset,
                         F::from(*constant),
                     )
-                    .unwrap()
+                    .unwrap();
+                AssignedBlake2bWord::<F>(cell)
             })
-            .collect::<Vec<AssignedNative<F>>>()
+            .collect::<Vec<AssignedBlake2bWord<F>>>()
             .try_into()
             .unwrap();
         Ok(ret)
@@ -610,10 +612,10 @@ pub trait Blake2bInstructions: Clone {
         value: Value<F>,
         region: &mut Region<F>,
         offset: &mut usize,
-    ) -> Result<AssignedNative<F>, Error> {
+    ) -> Result<AssignedBlake2bWord<F>, Error> {
         let ret = self.decompose_8_config().generate_row_from_value(region, value, *offset);
         *offset += 1;
-        ret
+        Ok(AssignedBlake2bWord::<F>(ret[0]))
     }
 
     /// This is the part where the inputs/key are organized inside the trace. Each iteration
