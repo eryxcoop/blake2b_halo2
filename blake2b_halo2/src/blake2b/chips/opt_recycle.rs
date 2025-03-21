@@ -41,7 +41,6 @@ impl Blake2bInstructions for Blake2bChipOptRecycle {
 
         /// Config that is optimization-specific
         /// An extra carry column is needed for the sum operation with 8 limbs.
-        // let carry = meta.advice_column();
         let addition_config = AdditionMod64Config::<8, 10>::configure(meta, full_number_u64, limbs[0]);
         let xor_config = XorTableConfig::configure(meta, limbs);
 
