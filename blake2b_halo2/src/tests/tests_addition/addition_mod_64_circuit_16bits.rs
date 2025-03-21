@@ -34,11 +34,10 @@ impl<F: PrimeField> Circuit<F> for AdditionMod64Circuit16Bits<F> {
     fn configure(meta: &mut ConstraintSystem<F>) -> Self::Config {
         let full_number_u64 = meta.advice_column();
         let limbs: [Column<Advice>; 4] = array::from_fn(|_| meta.advice_column());
-        let carry = meta.advice_column();
 
         let decompose_16_config = Decompose16Config::configure(meta, full_number_u64, limbs);
         let addition_mod_64_config =
-            AdditionMod64Config::<4, 6>::configure(meta, full_number_u64, carry);
+            AdditionMod64Config::<4, 6>::configure(meta, full_number_u64, limbs[0]);
 
         Self::Config {
             addition_mod_64_config,

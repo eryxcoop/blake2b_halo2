@@ -37,38 +37,17 @@ impl<const T: usize, const R: usize> AdditionMod64Config<T, R> {
             |mut region| {
                 self.q_add.enable(&mut region, 0)?;
 
-                self.populate_row_from_values(
-                    &mut region,
-                    addition_trace[0].to_vec(),
-                    0,
-                    decompose_config,
-                )?;
-                self.populate_row_from_values(
-                    &mut region,
-                    addition_trace[1].to_vec(),
-                    1,
-                    decompose_config,
-                )?;
-                self.populate_row_from_values(
-                    &mut region,
-                    addition_trace[2].to_vec(),
-                    2,
-                    decompose_config,
-                )
+                let row = addition_trace[0].to_vec();
+                decompose_config.populate_row_from_values(&mut region, &row, 0, false)?;
+
+                let row = addition_trace[1].to_vec();
+                decompose_config.populate_row_from_values(&mut region, &row, 1, false)?;
+
+                let row = addition_trace[2].to_vec();
+                decompose_config.populate_row_from_values(&mut region, &row, 2, true)?;
+                Ok(())
             },
         )?;
-        Ok(())
-    }
-
-    fn populate_row_from_values<F: PrimeField>(
-        &self,
-        region: &mut Region<F>,
-        row: Vec<Value<F>>,
-        offset: usize,
-        decompose_config: &impl Decomposition<T>,
-    ) -> Result<(), Error> {
-        decompose_config.populate_row_from_values(region, &row, offset)?;
-        region.assign_advice(|| "carry", self.carry, offset, || row[R - 1])?;
         Ok(())
     }
 }

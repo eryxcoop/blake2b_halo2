@@ -67,8 +67,11 @@ impl Decomposition<4> for Decompose16Config {
         region: &mut Region<F>,
         row: &[Value<F>],
         offset: usize,
+        check_decomposition: bool,
     ) -> Result<Vec<AssignedNative<F>>, Error> {
-        self.q_decompose.enable(region, offset)?;
+        if check_decomposition {
+            self.q_decompose.enable(region, offset)?;
+        }
         region.assign_advice(|| "full number", self.full_number_u64, offset, || row[0])?;
         let limb_0 = region.assign_advice(|| "limb0", self.limbs[0], offset, || row[1])?;
         let limb_1 = region.assign_advice(|| "limb1", self.limbs[1], offset, || row[2])?;

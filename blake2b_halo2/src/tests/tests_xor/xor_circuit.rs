@@ -88,9 +88,9 @@ impl XorTableConfig {
                 let second_row = xor_trace[1].to_vec();
                 let third_row = xor_trace[2].to_vec();
 
-                decompose_8_config.populate_row_from_values(&mut region, &first_row, 0)?;
-                decompose_8_config.populate_row_from_values(&mut region, &second_row, 1)?;
-                decompose_8_config.populate_row_from_values(&mut region, &third_row, 2)?;
+                decompose_8_config.populate_row_from_values(&mut region, &first_row, 0, true)?;
+                decompose_8_config.populate_row_from_values(&mut region, &second_row, 1, true)?;
+                decompose_8_config.populate_row_from_values(&mut region, &third_row, 2, true)?;
 
                 Ok(())
             },

@@ -31,11 +31,10 @@ impl<F: PrimeField> Circuit<F> for AdditionMod64Circuit8Bits<F> {
     fn configure(meta: &mut ConstraintSystem<F>) -> Self::Config {
         let full_number_u64 = meta.advice_column();
         let limbs: [Column<Advice>; 8] = array::from_fn(|_| meta.advice_column());
-        let carry = meta.advice_column();
 
         let decompose_8_config = Decompose8Config::configure(meta, full_number_u64, limbs);
 
-        let sum_8bits_config = AdditionConfigWith8Limbs::configure(meta, full_number_u64, carry);
+        let sum_8bits_config = AdditionConfigWith8Limbs::configure(meta, full_number_u64, limbs[0]);
 
         Self::Config {
             _ph: PhantomData,

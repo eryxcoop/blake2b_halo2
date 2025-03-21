@@ -48,7 +48,7 @@ impl Blake2bInstructions for Blake2bChipOpt4Limbs {
 
         /// Config that is optimization-specific
         let addition_config =
-            AdditionMod64Config::<4, 6>::configure(meta, full_number_u64, limbs[4]);
+            AdditionMod64Config::<4, 6>::configure(meta, full_number_u64, limbs[0]);
         let xor_config = XorTableConfig::configure(meta, limbs);
         let decompose_16_config =
             Decompose16Config::configure(meta, full_number_u64, limbs[0..4].try_into().unwrap());

@@ -7,6 +7,10 @@ pub fn max_u64() -> Value<Fr> {
     value_for((1u128 << 64) - 1)
 }
 
+pub fn trash() -> Value<Fr> {
+    zero()
+}
+
 pub fn max_u16() -> Value<Fr> {
     let number = (1u64 << 16) - 1;
     value_for(number)

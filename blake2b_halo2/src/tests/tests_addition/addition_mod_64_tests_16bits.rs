@@ -1,7 +1,7 @@
 use halo2_proofs::circuit::Value;
 use halo2_proofs::dev::MockProver;
 use halo2_proofs::halo2curves::bn256::Fr;
-use crate::auxiliar_functions::{max_u16, max_u64, one, zero};
+use crate::auxiliar_functions::{max_u16, max_u64, one, trash, zero};
 use crate::tests::tests_addition::addition_mod_64_circuit_16bits::AdditionMod64Circuit16Bits;
 
 #[test]
@@ -43,9 +43,9 @@ fn test_negative_wrong_decomposition() {
 #[should_panic]
 fn test_negative_wrong_carry() {
     let trace = [
-        [max_u64(), max_u16(), max_u16(), max_u16(), max_u16(), zero()],
-        [one(), one(), zero(), zero(), zero(), zero()],
-        [zero(), zero(), zero(), zero(), zero(), one() + one()],
+        [max_u64(), max_u16(), max_u16(), max_u16(), max_u16(), trash()],
+        [one(), zero(), trash(), trash(), trash(), trash()],
+        [zero(), zero(), zero(), zero(), zero(), trash()],
     ];
 
     let circuit = AdditionMod64Circuit16Bits::<Fr>::new_for_trace(trace);
@@ -57,9 +57,9 @@ fn test_negative_wrong_carry() {
 #[should_panic]
 fn test_negative_wrong_rangecheck() {
     let trace = [
-        [max_u16() + one(), max_u16() + one(), zero(), zero(), zero(), zero()],
+        [max_u16() + one(), zero(), zero(), zero(), zero(), zero()],
         [zero(), zero(), zero(), zero(), zero(), zero()],
-        [max_u16() + one(), zero(), one(), zero(), zero(), zero()],
+        [max_u16() + one(), max_u16() + one(), zero(), zero(), zero(), zero()],
     ];
 
     let circuit = AdditionMod64Circuit16Bits::<Fr>::new_for_trace(trace);
@@ -70,7 +70,7 @@ fn test_negative_wrong_rangecheck() {
 fn valid_addition_trace() -> [[Value<Fr>; 6]; 3] {
     [
         [max_u64(), max_u16(), max_u16(), max_u16(), max_u16(), zero()],
-        [one(), one(), zero(), zero(), zero(), zero()],
-        [zero(), zero(), zero(), zero(), zero(), one()],
+        [one(), one(), trash(), trash(), trash(), trash()],
+        [zero(), zero(), zero(), zero(), zero(), trash()],
     ]
 }

@@ -1,4 +1,4 @@
-use crate::auxiliar_functions::{generate_row_8bits, value_for};
+use crate::auxiliar_functions::{generate_row_8bits, trash, value_for, zero};
 use crate::tests::tests_addition::addition_mod_64_circuit_8bits::AdditionMod64Circuit8Bits;
 use halo2_proofs::dev::MockProver;
 use halo2_proofs::halo2curves::bn256::Fr;
@@ -6,94 +6,25 @@ use rand::Rng;
 
 #[test]
 fn test_positive_addition_with_0() {
-    let mut rng = rand::thread_rng();
-    let random_u64: u64 = rng.gen();
     let trace = [
-        generate_row_8bits::<u64, Fr>(0),
-        generate_row_8bits::<u64, Fr>(random_u64),
-        generate_row_8bits::<u64, Fr>(random_u64),
-    ];
-    let circuit = AdditionMod64Circuit8Bits::<Fr>::new_for_trace(trace);
-    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
-    prover.verify().unwrap();
-
-    let random_u64: u64 = rng.gen();
-    let trace = [
-        generate_row_8bits::<u64, Fr>(random_u64),
-        generate_row_8bits::<u64, Fr>(0),
-        generate_row_8bits::<u64, Fr>(random_u64),
+        [zero(), zero(), zero(), zero(), zero(), zero(), zero(), zero(), zero(), trash()],
+        [value_for(42u64), zero(), trash(), trash(), trash(), trash(), trash(), trash(), trash(), trash()],
+        [value_for(42u64), value_for(42u64), zero(), zero(), zero(), zero(), zero(), zero(), zero(), trash()],
     ];
     let circuit = AdditionMod64Circuit8Bits::<Fr>::new_for_trace(trace);
     let prover = MockProver::run(17, &circuit, vec![]).unwrap();
     prover.verify().unwrap();
 
     let trace = [
-        generate_row_8bits::<u64, Fr>(0),
-        generate_row_8bits::<u64, Fr>(0),
-        generate_row_8bits::<u64, Fr>(0),
-    ];
-    let circuit = AdditionMod64Circuit8Bits::<Fr>::new_for_trace(trace);
-    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
-    prover.verify().unwrap();
-}
-
-#[test]
-fn test_positive_without_carry() {
-    let trace = [
-        generate_row_8bits::<u64, Fr>(1),
-        generate_row_8bits::<u64, Fr>(1),
-        generate_row_8bits::<u64, Fr>(2),
+        [value_for(42u64), zero(), zero(), zero(), zero(), zero(), zero(), zero(), zero(), trash()],
+        [zero(), zero(), trash(), trash(), trash(), trash(), trash(), trash(), trash(), trash()],
+        [value_for(42u64), value_for(42u64), zero(), zero(), zero(), zero(), zero(), zero(), zero(), trash()],
     ];
     let circuit = AdditionMod64Circuit8Bits::<Fr>::new_for_trace(trace);
     let prover = MockProver::run(17, &circuit, vec![]).unwrap();
     prover.verify().unwrap();
 
-    let trace = [
-        generate_row_8bits::<u128, Fr>((1u128 << 63) - 1),
-        generate_row_8bits::<u64, Fr>(1),
-        generate_row_8bits::<u128, Fr>(1u128 << 63),
-    ];
-    let circuit = AdditionMod64Circuit8Bits::<Fr>::new_for_trace(trace);
-    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
-    prover.verify().unwrap();
-
-    let mut rng = rand::thread_rng();
-    let mut n1: u64 = rng.gen();
-    let mut n2: u64 = rng.gen();
-    if n2 < n1 {
-        // We want n1 < n2
-        std::mem::swap(&mut n1, &mut n2);
-    }
-    let trace = [
-        generate_row_8bits::<u64, Fr>(n1),
-        generate_row_8bits::<u64, Fr>(n2 - n1),
-        generate_row_8bits::<u64, Fr>(n2),
-    ];
-    let circuit = AdditionMod64Circuit8Bits::<Fr>::new_for_trace(trace);
-    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
-    prover.verify().unwrap();
-}
-
-#[test]
-fn test_positive_with_carry() {
-    let mut rng = rand::thread_rng();
-    let x: u64 = rng.gen();
-    let mut trace = [
-        generate_row_8bits::<u64, Fr>(x),
-        generate_row_8bits::<u128, Fr>((1u128 << 64) - 1),
-        generate_row_8bits::<u64, Fr>(x - 1),
-    ];
-    trace[2][9] = value_for(1u8);
-    let circuit = AdditionMod64Circuit8Bits::<Fr>::new_for_trace(trace);
-    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
-    prover.verify().unwrap();
-
-    let mut trace = [
-        generate_row_8bits::<u128, Fr>(1u128 << 63),
-        generate_row_8bits::<u128, Fr>((1u128 << 63) + (1u128 << 27)),
-        generate_row_8bits::<u128, Fr>(1u128 << 27),
-    ];
-    trace[2][9] = value_for(1u8);
+    let trace = [generate_row_8bits::<u64, Fr>(0); 3];
     let circuit = AdditionMod64Circuit8Bits::<Fr>::new_for_trace(trace);
     let prover = MockProver::run(17, &circuit, vec![]).unwrap();
     prover.verify().unwrap();

@@ -94,11 +94,13 @@ impl LimbRotation {
                     &mut region,
                     &trace[0].to_vec(),
                     0,
+                    true,
                 )?;
                 let second_row = decompose_config.populate_row_from_values(
                     &mut region,
                     &trace[1].to_vec(),
                     1,
+                    true,
                 )?;
 
                 for i in 0..8 {

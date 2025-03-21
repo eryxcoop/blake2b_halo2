@@ -37,7 +37,7 @@ impl<const T: usize, const R: usize> AdditionMod64Config<T, R> {
             let full_number_x = meta.query_advice(full_number_u64, Rotation(0));
             let full_number_y = meta.query_advice(full_number_u64, Rotation(1));
             let full_number_result = meta.query_advice(full_number_u64, Rotation(2));
-            let carry = meta.query_advice(carry, Rotation(2));
+            let carry = meta.query_advice(carry, Rotation(1));
 
             vec![
                 q_add.clone()
@@ -75,19 +75,19 @@ impl<const T: usize, const R: usize> AdditionMod64Config<T, R> {
             decompose_config.generate_row_from_cell(region, previous_cell, *offset)?;
             *offset += 1;
         }
-        // decompose_config.generate_row_from_cell(region, cell_to_copy, *offset)?;
         cell_to_copy.copy_advice(
            || "Sum first operand",
            region,
            decompose_config.get_full_number_u64_column(),
            *offset
         )?;
-        *offset += 1;
 
-        let result_cell =
-            decompose_config.generate_row_from_value(region, result_value, *offset)?;
         let carry_cell = region.assign_advice(|| "carry", self.carry, *offset, || carry_value)?;
         *offset += 1;
+        
+        let result_cell = decompose_config.generate_row_from_value(region, result_value, *offset)?;
+        *offset += 1;
+
         Ok([result_cell, carry_cell])
     }
 

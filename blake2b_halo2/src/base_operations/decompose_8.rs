@@ -118,8 +118,11 @@ impl Decomposition<8> for Decompose8Config {
         region: &mut Region<F>,
         row: &[Value<F>],
         offset: usize,
+        check_decomposition: bool,
     ) -> Result<Vec<AssignedNative<F>>, Error> {
-        self.q_decompose.enable(region, offset)?;
+        if check_decomposition {
+            self.q_decompose.enable(region, offset)?;
+        }
         let full_number =
             region.assign_advice(|| "full number", self.full_number_u64, offset, || row[0])?;
 

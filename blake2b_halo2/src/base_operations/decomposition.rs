@@ -23,6 +23,7 @@ pub trait Decomposition<const T: usize> {
         region: &mut Region<F>,
         row: &[Value<F>],
         offset: usize,
+        check_decomposition: bool,
     ) -> Result<Vec<AssignedNative<F>>, Error>;
 
     /// Populates the table for the range check
