@@ -78,10 +78,6 @@ pub trait Decomposition<const T: usize> {
     ) -> Result<Vec<AssignedNative<F>>, Error> {
         let value = cell.value().copied();
         let new_cells = self.generate_row_from_value_and_keep_row(region, value, offset)?;
-        // [Inigo comment - solved] This seems very dangerous, and food for bugs. `generate_row_from_value_and_keep_row`
-        // should be properly document (I think I made this comment somewhere else in the code base)
-        //
-        // Added docs in `generate_row_from_value_and_keep_row` to specify the result row structure
         region.constrain_equal(cell.cell(), new_cells[0].cell())?;
         Ok(new_cells)
     }

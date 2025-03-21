@@ -111,12 +111,6 @@ impl Decomposition<8> for Decompose8Config {
     fn populate_row_from_values<F: PrimeField>(
         &self,
         region: &mut Region<F>,
-        // [Inigo comment - answered] If you know this value is going to have size 9, you should use an array here
-        // row: [Value<F>; 9]
-        //
-        // This is because the method is implemented for the Decompose8 and the Decompose4 trait.
-        // we used a vector to be able to keep the same signature for both implementations.
-        // We can also use &[Value<F>]
         row: &[Value<F>],
         offset: usize,
     ) -> Result<Vec<AssignedNative<F>>, Error> {

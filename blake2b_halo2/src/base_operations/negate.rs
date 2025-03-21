@@ -41,12 +41,6 @@ impl NegateConfig {
         input: &AssignedNative<F>,
         decompose_config: &mut Decompose8Config,
     ) -> Result<AssignedNative<F>, Error> {
-        // [Inigo comment - solved] If you only want to negate, why are you assigning the decomposition of the value?
-        // [Inigo comment - solved] You are unlinking the cell with the actual value - this might be a
-        // soundness issue.
-        //
-        // Solution - We changed generate_row_from_value for copy_advice which adds a
-        // copy constraint between input and the new cell and stops using the limb decomposition
         self.q_negate.enable(region, *offset)?;
         let full_number_column = decompose_config.get_full_number_u64_column();
         input.copy_advice(|| "Negation input", region, full_number_column, *offset)?;

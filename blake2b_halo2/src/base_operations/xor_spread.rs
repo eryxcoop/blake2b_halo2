@@ -20,11 +20,6 @@
 //     full_number_u64: Column<Advice>,
 //     limbs: [Column<Advice>; 8],
 //     extra: Column<Advice>,
-//     // [Zhiyong comment - answered] yeah, pls include Dcompose8Config directly
-//     //
-//     // Response: I think there's no need to include it since the only thing it would be doing is
-//     // exposing the t_range column, but we'll change it in a way we reuse that column. We don't
-//     // even need to hold the column because it's only being used in the config to create the lookups
 //     t_spread: TableColumn,
 //
 //     q_xor: Selector,
@@ -71,12 +66,6 @@
 //             let lhs_limb_values = auxiliar_functions::decompose_field_8bit_limbs(lhs);
 //             let rhs_limb_values = auxiliar_functions::decompose_field_8bit_limbs(rhs);
 //             let result_limb_values = auxiliar_functions::decompose_field_8bit_limbs(result);
-//
-//             // [Inigo comment - answered] It is a bit unclear what is going on here. How do you guarantee that the value being
-//             // assigned here is the same as the input? Maybe soundness issue? copy constraint missing
-//             //
-//             // For the inputs, the .generate_row_from_cell() guarantees soundness with the internal copy
-//             // constraint. Then, all the spreads are constrained with lookups in the "xor with spread" gate.
 //
 //             self.populate_spread_limbs_of(region, local_offset + 2, lhs_limb_values);
 //             self.populate_spread_limbs_of(region, local_offset + 3, rhs_limb_values);
@@ -230,10 +219,6 @@
 //         }
 //     }
 //
-//     // [Inigo comment - answered] this is only used once - why not have it directly in the implementation of the trait?
-//     //
-//     // This is only used for the xor spread implementation, it is not a general method for the xor
-//     // trait.
 //     fn populate_spread_table<F: PrimeField>(
 //         &self,
 //         layouter: &mut impl Layouter<F>,

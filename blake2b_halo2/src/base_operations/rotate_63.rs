@@ -50,13 +50,8 @@ impl<const T: usize, const R: usize> Rotate63Config<T, R> {
         decompose_config: &mut impl Decomposition<T>,
     ) -> Result<AssignedNative<F>, Error> {
         self.q_rot63.enable(region, *offset)?;
-
         let result_value =
             input.value().map(|input| auxiliar_functions::rotate_right_field_element(*input, 63));
-
-        // [Inigo comment - solved] Why do you decompose? can't you work directly on the rotation of the value?
-        //
-        // Changed the usage of limb decomposition by the .assign_advice() method
         let result_cell = region.assign_advice(
             || "Rotate63 output",
             decompose_config.get_full_number_u64_column(),
