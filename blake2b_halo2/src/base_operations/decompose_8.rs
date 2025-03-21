@@ -11,7 +11,7 @@ pub struct Decompose8Config {
     limbs: [Column<Advice>; 8],
 
     /// Selector that turns on the gate that defines if the limbs should add up to the full number
-    q_decompose: Selector,
+    pub q_decompose: Selector,
     /// Table of [0, 2^8) to check if the limb is in the correct range
     t_range: TableColumn,
 }
