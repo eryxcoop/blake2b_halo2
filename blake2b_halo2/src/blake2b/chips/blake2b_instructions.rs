@@ -315,31 +315,31 @@ pub trait Blake2bInstructions: Clone {
         let d = self.rotate_right_32(d_xor_a, region, offset)?;
 
         // v[c] = ((v[c] as u128 + v[d] as u128) % (1 << 64)) as u64;
-        let c = self.add_copying_one_parameter(&AssignedBlake2bWord::<F>::new(d.clone()), &v_c, region, offset)?;
+        let c = self.add_copying_one_parameter(&d, &v_c, region, offset)?;
 
         // v[b] = rotr_64(v[b] ^ v[c], 24);
         let b_xor_c = self.xor_for_mix(&c, &v_b, region, offset)?;
         let b = self.rotate_right_24(b_xor_c, region, offset)?;
 
         // v[a] = ((v[a] as u128 + v[b] as u128 + y as u128) % (1 << 64)) as u64;
-        let a_plus_b = self.add_copying_one_parameter(&AssignedBlake2bWord::<F>::new(b.clone()), &a, region, offset)?;
+        let a_plus_b = self.add_copying_one_parameter(&b, &a, region, offset)?;
         let a = self.add_copying_one_parameter(&a_plus_b, &y, region, offset)?;
 
         // v[d] = rotr_64(v[d] ^ v[a], 16);
-        let d_xor_a = self.xor_for_mix(&a, &AssignedBlake2bWord::<F>::new(d.clone()), region, offset)?;
+        let d_xor_a = self.xor_for_mix(&a, &d, region, offset)?;
         let d = self.rotate_right_16(d_xor_a, region, offset)?;
 
         // v[c] = ((v[c] as u128 + v[d] as u128) % (1 << 64)) as u64;
-        let c = self.add_copying_one_parameter(&AssignedBlake2bWord::<F>::new(d.clone()), &c, region, offset)?;
+        let c = self.add_copying_one_parameter(&d, &c, region, offset)?;
 
         // v[b] = rotr_64(v[b] ^ v[c], 63);
-        let b_xor_c = self.xor_for_mix(&c, &AssignedBlake2bWord::<F>::new(b.clone()), region, offset)?;
+        let b_xor_c = self.xor_for_mix(&c, &b, region, offset)?;
         let b = self.rotate_right_63(b_xor_c, region, offset)?;
 
         state[a_] = a;
-        state[b_] = AssignedBlake2bWord::<F>::new(b);
+        state[b_] = b;
         state[c_] = c;
-        state[d_] = AssignedBlake2bWord::<F>::new(d);
+        state[d_] = d;
 
         Ok(())
     }
@@ -435,14 +435,14 @@ pub trait Blake2bInstructions: Clone {
         input_row: [AssignedNative<F>; 9],
         region: &mut Region<F>,
         offset: &mut usize,
-    ) -> Result<AssignedNative<F>, Error> {
+    ) -> Result<AssignedBlake2bWord<F>, Error> {
         let mut decompose_8_config = self.decompose_8_config();
-        self.rotate_63_config().generate_rotation_rows_from_cells(
+        Ok(AssignedBlake2bWord::<F>::new(self.rotate_63_config().generate_rotation_rows_from_cells(
             region,
             offset,
             &input_row[0],
             &mut decompose_8_config,
-        )
+        )?))
     }
 
     fn rotate_right_16<F: PrimeField>(
@@ -450,15 +450,15 @@ pub trait Blake2bInstructions: Clone {
         input_row: [AssignedNative<F>; 9],
         region: &mut Region<F>,
         offset: &mut usize,
-    ) -> Result<AssignedNative<F>, Error> {
+    ) -> Result<AssignedBlake2bWord<F>, Error> {
         let mut decompose_8_config = self.decompose_8_config();
-        self.generic_limb_rotation_config().generate_rotation_rows_from_input_row(
+        Ok(AssignedBlake2bWord::<F>::new(self.generic_limb_rotation_config().generate_rotation_rows_from_input_row(
             region,
             offset,
             &mut decompose_8_config,
             input_row,
             2,
-        )
+        )?))
     }
 
     fn rotate_right_24<F: PrimeField>(
@@ -466,15 +466,15 @@ pub trait Blake2bInstructions: Clone {
         input_row: [AssignedNative<F>; 9],
         region: &mut Region<F>,
         offset: &mut usize,
-    ) -> Result<AssignedNative<F>, Error> {
+    ) -> Result<AssignedBlake2bWord<F>, Error> {
         let mut decompose_8_config = self.decompose_8_config();
-        self.generic_limb_rotation_config().generate_rotation_rows_from_input_row(
+        Ok(AssignedBlake2bWord::<F>::new(self.generic_limb_rotation_config().generate_rotation_rows_from_input_row(
             region,
             offset,
             &mut decompose_8_config,
             input_row,
             3,
-        )
+        )?))
     }
 
     fn rotate_right_32<F: PrimeField>(
@@ -482,15 +482,15 @@ pub trait Blake2bInstructions: Clone {
         input_row: [AssignedNative<F>; 9],
         region: &mut Region<F>,
         offset: &mut usize,
-    ) -> Result<AssignedNative<F>, Error> {
+    ) -> Result<AssignedBlake2bWord<F>, Error> {
         let mut decompose_8_config = self.decompose_8_config();
-        self.generic_limb_rotation_config().generate_rotation_rows_from_input_row(
+        Ok(AssignedBlake2bWord::<F>::new(self.generic_limb_rotation_config().generate_rotation_rows_from_input_row(
             region,
             offset,
             &mut decompose_8_config,
             input_row,
             4,
-        )
+        )?))
     }
 
     // ----- Auxiliar methods ----- //
