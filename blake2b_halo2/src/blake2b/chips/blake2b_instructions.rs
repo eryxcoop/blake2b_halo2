@@ -274,7 +274,7 @@ pub trait Blake2bInstructions: Clone {
         for i in 0..8 {
             global_state[i] = self.xor(&global_state[i], &state[i], region, row_offset)?;
             let row =
-                self.xor_with_full_rows(&global_state[i], &state[i + 8], region, row_offset)?;
+                self.xor_and_return_full_row(&global_state[i], &state[i + 8], region, row_offset)?;
             let mut row_limbs: Vec<_> = row[1..].iter().map(|cell| AssignedByte::<F>::new((*cell).clone())).collect();
             global_state_bytes.append(&mut row_limbs);
             global_state[i] = AssignedBlake2bWord::<F>::new(row[0].clone());
@@ -364,8 +364,7 @@ pub trait Blake2bInstructions: Clone {
 
     /// In this case we need to perform the xor operation and return the entire row, because we
     /// need it to constrain the result.
-    //TODO rename to xor_with_full_row
-    fn xor_with_full_rows<F: PrimeField>(
+    fn xor_and_return_full_row<F: PrimeField>(
         &self,
         lhs: &AssignedBlake2bWord<F>,
         rhs: &AssignedBlake2bWord<F>,

@@ -149,7 +149,7 @@ impl Blake2bInstructions for Blake2bChipOpt4Limbs {
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<[AssignedNative<F>; 9], Error> {
-        self.xor_with_full_rows(previous_cell, cell_to_copy, region, offset)
+        self.xor_and_return_full_row(previous_cell, cell_to_copy, region, offset)
     }
 }
 
