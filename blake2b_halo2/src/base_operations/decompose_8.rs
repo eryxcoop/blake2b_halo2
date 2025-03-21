@@ -71,26 +71,31 @@ impl Decompose8Config {
         bytes: &[AssignedNative<F>; 8],
         offset: usize,
     ) -> Result<Vec<AssignedNative<F>>, Error> {
-        let value = Self::compute_full_value_u64_from_bytes(bytes);
-
         self.q_decompose.enable(region, offset)?;
-        let full_number_cell =
-            region.assign_advice(|| "full number", self.full_number_u64, offset, || value)?;
 
-        let mut result = vec![full_number_cell];
+        /// Compute the full number from the limbs
+        let full_number_cell = region.assign_advice(
+            || "full number",
+            self.full_number_u64,
+            offset,
+            || Self::compute_full_value_u64_from_bytes(bytes))?;
+
+        let mut full_row = vec![full_number_cell];
+
+        /// Fill the row with copies of the limbs
         for (index, byte_cell) in bytes.iter().enumerate() {
-            result.push(
+            full_row.push(
                 byte_cell.copy_advice(
                     || "Copied input byte", region, self.limbs[index], offset)?
             );
         }
 
-        Ok(result)
+        Ok(full_row)
     }
 
     fn compute_full_value_u64_from_bytes<F: PrimeField>(bytes: &[AssignedNative<F>; 8]) -> Value<F> {
         let mut full_number = F::ZERO;
-        // [inigo] You are composing to decompose in the next function - its very hard to follow
+        // We process the limbs from the most significant to the least significant
         for byte_cell in bytes.iter().rev() {
             byte_cell.value().and_then(|v| {
                 full_number *= F::from(256u64);
@@ -98,8 +103,7 @@ impl Decompose8Config {
                 Value::<F>::unknown()
             });
         }
-        let value = Value::known(full_number);
-        value
+        Value::known(full_number)
     }
 }
 
