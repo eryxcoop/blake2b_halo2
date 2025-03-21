@@ -55,17 +55,10 @@ pub trait Blake2bInstructions: Clone {
         &self,
         layouter: &mut impl Layouter<F>,
         output_size: usize,
-        input: &[AssignedNative<F>],
-        key: &[AssignedNative<F>],
+        input: &[AssignedByte<F>],
+        key: &[AssignedByte<F>],
     ) -> Result<[AssignedByte<F>; 64], Error> {
-        // [inigo] If this needs to be enforced, why not define the output size from the given key?
-        // and document it accordingly
         enforce_input_sizes(output_size, key.len());
-
-        // TODO no me cierra esto
-        let input_bytes: Vec<_> = input.iter().map(|x| AssignedByte::<F>::new(x.clone())).collect();
-        let key_bytes: Vec<_> = key.iter().map(|x| AssignedByte::<F>::new(x.clone())).collect();
-
         /// All the computation is performed inside a single region. Some optimizations take advantage
         /// of this fact, since we want to avoid copying cells between regions.
         // [inigo] Which optimisations could not be applied if we split this into different regions, e.g.
@@ -82,7 +75,7 @@ pub trait Blake2bInstructions: Clone {
                     zero_constant,
                 ) = self.assign_constant_advice_cells(
                     output_size,
-                    key_bytes.len(),
+                    key.len(),
                     &mut region,
                     &mut advice_offset,
                 )?;
@@ -95,8 +88,8 @@ pub trait Blake2bInstructions: Clone {
                 self.perform_blake2b_iterations(
                     &mut region,
                     &mut advice_offset,
-                    &input_bytes,
-                    &key_bytes,
+                    &input,
+                    &key,
                     &iv_constant_cells,
                     &mut initial_global_state,
                     zero_constant,
