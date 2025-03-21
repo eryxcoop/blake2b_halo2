@@ -13,7 +13,6 @@ use crate::types::{AssignedBlake2bWord, AssignedByte, AssignedNative};
 use ff::PrimeField;
 use halo2_proofs::circuit::{Layouter, Region, Value};
 use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Error, Instance};
-use crate::auxiliar_functions::value_for;
 use crate::types::AssignedElement;
 
 /// This is the trait that groups the 3 optimization chips. Most of their code is the same, so the
@@ -292,7 +291,13 @@ pub trait Blake2bInstructions: Clone {
         // accumulative_state[12] ^= processed_bytes_count
         // [inigo] Processed bytes count can be defined as a constant
         // [bruno] the xor is performed with something that is also a constant
-        let processed_bytes_count_cell = self.new_row_from_value(value_for(processed_bytes_count), region, row_offset)?;
+        let processed_bytes_count_cell = AssignedBlake2bWord::<F>::new(
+            region.assign_advice_from_constant(
+                || "Processed bytes count",
+                self.decompose_8_config().get_limb_column(1),
+                *row_offset,
+                F::from(processed_bytes_count),
+            )?);
         state[12] = self.xor(&state[12], &processed_bytes_count_cell, region, row_offset)?;
 
         if is_last_block {
