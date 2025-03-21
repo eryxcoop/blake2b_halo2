@@ -25,7 +25,7 @@ pub fn constrain_initial_state<F: PrimeField>(
 }
 
 /// Extracts the full number cell of each of the state rows
-pub fn get_full_number_of_each<F: PrimeField>(
+pub fn full_number_of_each_state_row<F: PrimeField>(
     current_block_rows: [Vec<AssignedBlake2bWord<F>>; 16],
 ) -> [AssignedBlake2bWord<F>; 16] {
     current_block_rows.iter().map(|row| row[0].clone()).collect::<Vec<_>>().try_into().unwrap()
@@ -127,15 +127,13 @@ pub const ABCD: [[usize; 4]; 8] = [
     [3, 4, 9, 14],
 ];
 
-pub fn iv_constants() -> [u64; 8] {
-    [
-        0x6A09E667F3BCC908u64,
-        0xBB67AE8584CAA73Bu64,
-        0x3C6EF372FE94F82Bu64,
-        0xA54FF53A5F1D36F1u64,
-        0x510E527FADE682D1u64,
-        0x9B05688C2B3E6C1Fu64,
-        0x1F83D9ABFB41BD6Bu64,
-        0x5BE0CD19137E2179u64,
-    ]
-}
+pub const IV_CONSTANTS: [u64; 8] = [
+    0x6A09E667F3BCC908u64,
+    0xBB67AE8584CAA73Bu64,
+    0x3C6EF372FE94F82Bu64,
+    0xA54FF53A5F1D36F1u64,
+    0x510E527FADE682D1u64,
+    0x9B05688C2B3E6C1Fu64,
+    0x1F83D9ABFB41BD6Bu64,
+    0x5BE0CD19137E2179u64,
+];

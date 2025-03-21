@@ -4,11 +4,7 @@ use crate::base_operations::generic_limb_rotation::LimbRotation;
 use crate::base_operations::negate::NegateConfig;
 use crate::base_operations::rotate_63::Rotate63Config;
 use crate::base_operations::xor::Xor;
-use crate::blake2b::chips::utils::{
-    compute_processed_bytes_count_value_for_iteration,
-    constrain_padding_cells_to_equal_zero, enforce_input_sizes, get_full_number_of_each,
-    get_total_blocks_count, iv_constants, ABCD, BLAKE2B_BLOCK_SIZE, SIGMA,
-};
+use crate::blake2b::chips::utils::{compute_processed_bytes_count_value_for_iteration, constrain_padding_cells_to_equal_zero, enforce_input_sizes, full_number_of_each_state_row, get_total_blocks_count, ABCD, BLAKE2B_BLOCK_SIZE, IV_CONSTANTS, SIGMA};
 use crate::types::{AssignedBlake2bWord, AssignedByte, AssignedNative};
 use ff::PrimeField;
 use halo2_proofs::circuit::{Layouter, Region, Value};
@@ -91,7 +87,7 @@ pub trait Blake2bInstructions: Clone {
                     &mut advice_offset,
                 )?;
 
-                let mut global_state = self.compute_initial_state(
+                let mut initial_global_state = self.compute_initial_state(
                     &iv_constant_cells,
                     output_size_constant,
                 )?;
@@ -102,7 +98,7 @@ pub trait Blake2bInstructions: Clone {
                     &input_bytes,
                     &key_bytes,
                     &iv_constant_cells,
-                    &mut global_state,
+                    &mut initial_global_state,
                     zero_constant,
                 )
             },
@@ -127,7 +123,7 @@ pub trait Blake2bInstructions: Clone {
             F::from(0),
         )?;
 
-        let iv_constant_0 = iv_constants()[0];
+        let iv_constant_0 = IV_CONSTANTS[0];
         let out_len = output_size as u64;
         const INIT_CONST_STATE_0: u64 = 0x01010000u64;
         let key_size_shifted= (key_size as u64) << 8;
@@ -261,7 +257,7 @@ pub trait Blake2bInstructions: Clone {
                     )?;
                 }
 
-                let current_block_cells = get_full_number_of_each(current_block_rows);
+                let current_block_cells = full_number_of_each_state_row(current_block_rows);
 
                 self.compress(
                     region,
@@ -297,16 +293,18 @@ pub trait Blake2bInstructions: Clone {
         let mut state: [AssignedBlake2bWord<F>; 16] = state_vector.try_into().unwrap();
 
         // accumulative_state[12] ^= processed_bytes_count
-        // [inigo] Processed bytes count can be defined as a constant
-        // [bruno] the xor is performed with something that is also a constant
-        let processed_bytes_count_cell = AssignedBlake2bWord::<F>::new(
+        // Since accumulative_state[12] is allways IV_CONSTANTS[4] at this point in execution
+        // and processed_bytes_count is public for both parties, the xor between both values
+        // is also a constant.
+        let new_state_12 = processed_bytes_count ^ IV_CONSTANTS[4];
+        state[12] = AssignedBlake2bWord::<F>::new(
             region.assign_advice_from_constant(
-                || "Processed bytes count",
+                || "New state[12]",
                 self.get_full_number_column(),
                 *row_offset,
-                F::from(processed_bytes_count),
+                F::from(new_state_12),
             )?);
-        state[12] = self.xor(&state[12], &processed_bytes_count_cell, region, row_offset)?;
+        *row_offset += 1;
 
         if is_last_block {
             state[14] = self.not(&state[14], region, row_offset)?;
@@ -577,7 +575,7 @@ pub trait Blake2bInstructions: Clone {
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<[AssignedBlake2bWord<F>; 8], Error> {
-        let ret: [AssignedBlake2bWord<F>; 8] = iv_constants()
+        let ret: [AssignedBlake2bWord<F>; 8] = IV_CONSTANTS
             .iter()
             .enumerate()
             .map(|(index, constant)| {
