@@ -11,7 +11,7 @@ use halo2_proofs::{
     },
     transcript::{CircuitTranscript, Transcript},
 };
-use crate::blake2b::chips::blake2b_generic::Blake2bInstructions;
+use crate::blake2b::chips::blake2b_instructions::Blake2bInstructions;
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "opt_4_limbs")] {

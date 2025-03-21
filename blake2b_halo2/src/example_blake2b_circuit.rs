@@ -1,6 +1,6 @@
 use crate::blake2b::blake2b::Blake2b;
-use crate::blake2b::chips::blake2b_generic::Blake2bInstructions;
-use crate::types::{AssignedByte, AssignedElement};
+use crate::blake2b::chips::blake2b_instructions::Blake2bInstructions;
+use crate::types::AssignedNative;
 use ff::PrimeField;
 use halo2_proofs::circuit::{Layouter, SimpleFloorPlanner, Value};
 use halo2_proofs::plonk::{Advice, Circuit, Column, ConstraintSystem, Error, Instance};
