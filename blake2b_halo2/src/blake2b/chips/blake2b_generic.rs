@@ -68,9 +68,7 @@ pub trait Blake2bInstructions: Clone {
 
                 let (
                     iv_constant_cells,
-                    init_const_state_0,
                     output_size_constant,
-                    key_size_constant_shifted,
                     zero_constant,
                 ) = self.assign_constant_advice_cells(
                     output_size,
@@ -80,12 +78,8 @@ pub trait Blake2bInstructions: Clone {
                 )?;
 
                 let mut global_state = self.compute_initial_state(
-                    &mut region,
-                    &mut advice_offset,
                     &iv_constant_cells,
-                    init_const_state_0,
                     output_size_constant,
-                    key_size_constant_shifted,
                 )?;
 
                 self.perform_blake2b_iterations(
@@ -112,8 +106,6 @@ pub trait Blake2bInstructions: Clone {
         (
             [AssignedBlake2bWord<F>; 8],
             AssignedBlake2bWord<F>,
-            AssignedBlake2bWord<F>,
-            AssignedBlake2bWord<F>,
             AssignedNative<F>, // we need this to be a byte or a word
         ),
         Error,
@@ -121,41 +113,37 @@ pub trait Blake2bInstructions: Clone {
         let iv_constant_cells: [AssignedBlake2bWord<F>; 8] =
             self.assign_iv_constants_to_fixed_cells(&mut region, &mut advice_offset)?;
         *advice_offset += 1;
-        let init_const_state_0 = Self::assign_constant(
-            &mut region, &mut advice_offset, 0x01010000u64, "state 0 xor",
-            self.decompose_8_config().get_limb_column(0))?;
-        let output_size_constant = Self::assign_constant
-            (&mut region, &mut advice_offset, output_size as u64, "output size",
-             self.decompose_8_config().get_limb_column(1))?;
-        let constant = key_size << 8;
-        let key_size_constant_shifted = Self::assign_constant
-            (&mut region, &mut advice_offset, constant as u64, "key size",
-             self.decompose_8_config().get_limb_column(2))?;
 
         let zero_constant = region.assign_advice_from_constant(
             || "zero",
-            self.decompose_8_config().get_limb_column(3),
+            self.decompose_8_config().get_limb_column(1),
             *advice_offset,
             F::from(0),
         )?;
+
+        let iv_constant_0 = iv_constants()[0];
+        let out_len = output_size as u64;
+        const INIT_CONST_STATE_0: u64 = 0x01010000u64;
+        let key_size_shifted= (key_size as u64) << 8;
+        // state[0] = state[0] ^ 0x01010000 ^ (key.len() << 8) as u64 ^ outlen as u64;
+        let initial_state_index_0 = iv_constant_0 ^ INIT_CONST_STATE_0 ^ key_size_shifted ^ out_len;
+        let column = self.decompose_8_config().get_limb_column(2);
+
+        let initial_state_0 = AssignedBlake2bWord::<F>::new(
+            region.assign_advice_from_constant(
+            || "initial state index 0",
+            column,
+            *advice_offset,
+            F::from(initial_state_index_0),
+        )?);
+
         *advice_offset += 1;
 
         Ok((
             iv_constant_cells,
-            init_const_state_0,
-            output_size_constant,
-            key_size_constant_shifted,
+            initial_state_0,
             zero_constant,
         ))
-    }
-
-    fn assign_constant<F: PrimeField>(region: &mut &mut Region<F>, advice_offset: &mut usize, constant: u64, name: &str, column: Column<Advice>) -> Result<AssignedBlake2bWord<F>, Error> {
-        Ok(AssignedBlake2bWord::<F>::new(region.assign_advice_from_constant(
-            || name,
-            column,
-            *advice_offset,
-            F::from(constant),
-        )?))
     }
 
     /// This method handles the part of the configuration that is generic to all optimizations.
@@ -177,26 +165,14 @@ pub trait Blake2bInstructions: Clone {
     }
 
     /// Computes the initial global state of Blake2b. It only depends on the key size and the
-    /// output size, which are values known at circuit building time. This computation should
-    /// also be verified by the circuit.
+    /// output size, which are values known at circuit building time.
     fn compute_initial_state<F: PrimeField>(
         &self,
-        region: &mut Region<F>,
-        offset: &mut usize,
         iv_constant_cells: &[AssignedBlake2bWord<F>; 8],
-        init_const_state_0: AssignedBlake2bWord<F>,
-        output_size_constant: AssignedBlake2bWord<F>,
-        key_size_constant_shifted: AssignedBlake2bWord<F>,
+        initial_state_0: AssignedBlake2bWord<F>,
     ) -> Result<[AssignedBlake2bWord<F>; 8], Error> {
-        let mut global_state = iv_constant_values()
-            .map(|constant| self.new_row_from_value(constant, region, offset).unwrap());
-
-        constrain_initial_state(region, &global_state, iv_constant_cells)?;
-
-        // state[0] = state[0] ^ 0x01010000 ^ (key.len() << 8) as u64 ^ outlen as u64;
-        global_state[0] = self.xor(&global_state[0], &init_const_state_0, region, offset)?;
-        global_state[0] = self.xor(&global_state[0], &output_size_constant, region, offset)?;
-        global_state[0] = self.xor(&global_state[0], &key_size_constant_shifted, region, offset)?;
+        let mut global_state = iv_constant_cells.clone();
+        global_state[0] = initial_state_0;
         Ok(global_state)
     }
 
