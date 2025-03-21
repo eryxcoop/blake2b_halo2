@@ -5,9 +5,9 @@ use crate::base_operations::negate::NegateConfig;
 use crate::base_operations::rotate_63::Rotate63Config;
 use crate::base_operations::xor::Xor;
 use crate::blake2b::chips::utils::{
-    compute_processed_bytes_count_value_for_iteration, constrain_initial_state,
+    compute_processed_bytes_count_value_for_iteration,
     constrain_padding_cells_to_equal_zero, enforce_input_sizes, get_full_number_of_each,
-    get_total_blocks_count, iv_constant_values, iv_constants, ABCD, BLAKE2B_BLOCK_SIZE, SIGMA,
+    get_total_blocks_count, iv_constants, ABCD, BLAKE2B_BLOCK_SIZE, SIGMA,
 };
 use crate::types::{AssignedBlake2bWord, AssignedByte, AssignedNative};
 use ff::PrimeField;
@@ -102,21 +102,13 @@ pub trait Blake2bInstructions: Clone {
         key_size: usize,
         mut region: &mut Region<F>,
         mut advice_offset: &mut usize,
-    ) -> Result<
-        (
-            [AssignedBlake2bWord<F>; 8],
-            AssignedBlake2bWord<F>,
-            AssignedNative<F>, // we need this to be a byte or a word
-        ),
-        Error,
-    > {
+    ) -> Result<([AssignedBlake2bWord<F>; 8], AssignedBlake2bWord<F>, AssignedNative<F>), Error> {
         let iv_constant_cells: [AssignedBlake2bWord<F>; 8] =
             self.assign_iv_constants_to_fixed_cells(&mut region, &mut advice_offset)?;
-        *advice_offset += 1;
 
         let zero_constant = region.assign_advice_from_constant(
             || "zero",
-            self.decompose_8_config().get_limb_column(1),
+            self.decompose_8_config().get_limb_column(0),
             *advice_offset,
             F::from(0),
         )?;
@@ -127,7 +119,7 @@ pub trait Blake2bInstructions: Clone {
         let key_size_shifted= (key_size as u64) << 8;
         // state[0] = state[0] ^ 0x01010000 ^ (key.len() << 8) as u64 ^ outlen as u64;
         let initial_state_index_0 = iv_constant_0 ^ INIT_CONST_STATE_0 ^ key_size_shifted ^ out_len;
-        let column = self.decompose_8_config().get_limb_column(2);
+        let column = self.decompose_8_config().get_limb_column(1);
 
         let initial_state_0 = AssignedBlake2bWord::<F>::new(
             region.assign_advice_from_constant(
@@ -563,13 +555,13 @@ pub trait Blake2bInstructions: Clone {
     fn assign_iv_constants_to_fixed_cells<F: PrimeField>(
         &self,
         region: &mut Region<F>,
-        offset: &usize,
+        offset: &mut usize,
     ) -> Result<[AssignedBlake2bWord<F>; 8], Error> {
         let ret: [AssignedBlake2bWord<F>; 8] = iv_constants()
             .iter()
             .enumerate()
             .map(|(index, constant)| {
-                let cell = region
+                let constant_assigned_cell = region
                     .assign_advice_from_constant(
                         || "iv constants",
                         self.decompose_8_config().get_limb_column(index),
@@ -577,11 +569,12 @@ pub trait Blake2bInstructions: Clone {
                         F::from(*constant),
                     )
                     .unwrap();
-                AssignedBlake2bWord::<F>::new(cell)
+                AssignedBlake2bWord::<F>::new(constant_assigned_cell)
             })
             .collect::<Vec<AssignedBlake2bWord<F>>>()
             .try_into()
             .unwrap();
+        *offset += 1;
         Ok(ret)
     }
 

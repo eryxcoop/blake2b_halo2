@@ -1,5 +1,5 @@
 use crate::auxiliar_functions::value_for;
-use crate::types::{AssignedBlake2bWord, AssignedByte, AssignedElement, AssignedNative};
+use crate::types::{AssignedBlake2bWord, AssignedElement, AssignedNative};
 use ff::PrimeField;
 use halo2_proofs::circuit::{Region, Value};
 use halo2_proofs::plonk::Error;
@@ -127,15 +127,6 @@ pub const ABCD: [[usize; 4]; 8] = [
     [2, 7, 8, 13],
     [3, 4, 9, 14],
 ];
-
-pub fn iv_constant_values<F: PrimeField>() -> [Value<F>; 8] {
-    iv_constants()
-        .iter()
-        .map(|constant| value_for(*constant))
-        .collect::<Vec<_>>()
-        .try_into()
-        .unwrap()
-}
 
 pub fn iv_constants() -> [u64; 8] {
     [
