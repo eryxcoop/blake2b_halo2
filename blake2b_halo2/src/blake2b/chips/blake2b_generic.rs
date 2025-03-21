@@ -41,6 +41,14 @@ pub trait Blake2bInstructions: Clone {
     fn xor_config(&self) -> impl Xor;
     fn negate_config(&self) -> NegateConfig;
 
+    fn get_limb_column(&self, index: usize) -> Column<Advice> {
+        self.decompose_8_config().get_limb_column(index)
+    }
+
+    fn get_full_number_column(&self) -> Column<Advice> {
+        self.decompose_8_config().get_full_number_u64_column()
+    }
+
     // ---------- MAIN METHODS ---------- //
 
     /// This is the main method of the chips. It computes the Blake2b hash for the given inputs.
@@ -114,7 +122,7 @@ pub trait Blake2bInstructions: Clone {
 
         let zero_constant = region.assign_advice_from_constant(
             || "zero",
-            self.decompose_8_config().get_limb_column(0),
+            self.get_limb_column(0),
             *advice_offset,
             F::from(0),
         )?;
@@ -125,7 +133,7 @@ pub trait Blake2bInstructions: Clone {
         let key_size_shifted= (key_size as u64) << 8;
         // state[0] = state[0] ^ 0x01010000 ^ (key.len() << 8) as u64 ^ outlen as u64;
         let initial_state_index_0 = iv_constant_0 ^ INIT_CONST_STATE_0 ^ key_size_shifted ^ out_len;
-        let column = self.decompose_8_config().get_limb_column(1);
+        let column = self.get_limb_column(1);
 
         let initial_state_0 = AssignedBlake2bWord::<F>::new(
             region.assign_advice_from_constant(
@@ -294,7 +302,7 @@ pub trait Blake2bInstructions: Clone {
         let processed_bytes_count_cell = AssignedBlake2bWord::<F>::new(
             region.assign_advice_from_constant(
                 || "Processed bytes count",
-                self.decompose_8_config().get_limb_column(1),
+                self.get_full_number_column(),
                 *row_offset,
                 F::from(processed_bytes_count),
             )?);
