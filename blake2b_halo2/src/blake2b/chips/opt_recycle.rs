@@ -6,7 +6,7 @@ use crate::base_operations::rotate_63::Rotate63Config;
 use crate::base_operations::xor::Xor;
 use crate::base_operations::xor_table::XorTableConfig;
 use crate::blake2b::chips::blake2b_generic::Blake2bInstructions;
-use crate::types::{AssignedBlake2bWord, AssignedNative};
+use crate::types::{AssignedBlake2bWord, AssignedElement, AssignedNative};
 use ff::PrimeField;
 use halo2_proofs::circuit::{Layouter, Region};
 use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Error};
@@ -89,21 +89,21 @@ impl Blake2bInstructions for Blake2bChipOptRecycle {
     /// decompose_8_config for the sum operation instead of the decompose_16_config.
     fn add<F: PrimeField>(
         &self,
-        lhs: &AssignedNative<F>,
-        rhs: &AssignedNative<F>,
+        lhs: &AssignedBlake2bWord<F>,
+        rhs: &AssignedBlake2bWord<F>,
         region: &mut Region<F>,
         offset: &mut usize,
-    ) -> Result<AssignedNative<F>, Error> {
+    ) -> Result<AssignedBlake2bWord<F>, Error> {
         let addition_cell = self.addition_config.generate_addition_rows_from_cells(
             region,
             offset,
-            lhs,
-            rhs,
+            &lhs.inner_value(),
+            &rhs.inner_value(),
             &self.decompose_8_config,
             false,
         )?[0]
             .clone();
-        Ok(addition_cell)
+        Ok(AssignedBlake2bWord::<F>::new(addition_cell))
     }
 
     /// This method behaves like 'add', with the difference that it takes advantage of the fact that
@@ -111,20 +111,20 @@ impl Blake2bInstructions for Blake2bChipOptRecycle {
     /// one parameter because the other is already on the trace.
     fn add_copying_one_parameter<F: PrimeField>(
         &self,
-        previous_cell: &AssignedNative<F>,
-        cell_to_copy: &AssignedNative<F>,
+        previous_cell: &AssignedBlake2bWord<F>,
+        cell_to_copy: &AssignedBlake2bWord<F>,
         region: &mut Region<F>,
         offset: &mut usize,
-    ) -> Result<AssignedNative<F>, Error> {
-        Ok(self.addition_config.generate_addition_rows_from_cells(
+    ) -> Result<AssignedBlake2bWord<F>, Error> {
+        Ok(AssignedBlake2bWord::<F>::new(self.addition_config.generate_addition_rows_from_cells(
             region,
             offset,
-            previous_cell,
-            cell_to_copy,
+            &previous_cell.inner_value(),
+            &cell_to_copy.inner_value(),
             &self.decompose_8_config,
             true,
         )?[0]
-            .clone())
+            .clone()))
     }
 
     /// This method performs a regular xor operation with the difference that it returns the full

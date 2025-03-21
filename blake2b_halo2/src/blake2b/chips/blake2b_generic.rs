@@ -299,46 +299,46 @@ pub trait Blake2bInstructions: Clone {
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<(), Error> {
-        let v_a = state[a_].clone().inner_value();
-        let v_b = state[b_].clone().inner_value();
-        let v_c = state[c_].clone().inner_value();
-        let v_d = state[d_].clone().inner_value();
-        let x = current_block_words[sigma_even].clone().inner_value();
-        let y = current_block_words[sigma_odd].clone().inner_value();
+        let v_a = state[a_].clone();
+        let v_b = state[b_].clone();
+        let v_c = state[c_].clone();
+        let v_d = state[d_].clone();
+        let x = current_block_words[sigma_even].clone();
+        let y = current_block_words[sigma_odd].clone();
 
         // v[a] = ((v[a] as u128 + v[b] as u128 + x as u128) % (1 << 64)) as u64;
         let a_plus_b = self.add(&v_a, &v_b, region, offset)?;
         let a = self.add_copying_one_parameter(&a_plus_b, &x, region, offset)?;
 
         // v[d] = rotr_64(v[d] ^ v[a], 32);
-        let d_xor_a = self.xor_for_mix(&AssignedBlake2bWord::<F>::new(a.clone()), &AssignedBlake2bWord::<F>::new(v_d.clone()), region, offset)?;
+        let d_xor_a = self.xor_for_mix(&a, &v_d, region, offset)?;
         let d = self.rotate_right_32(d_xor_a, region, offset)?;
 
         // v[c] = ((v[c] as u128 + v[d] as u128) % (1 << 64)) as u64;
-        let c = self.add_copying_one_parameter(&d, &v_c, region, offset)?;
+        let c = self.add_copying_one_parameter(&AssignedBlake2bWord::<F>::new(d.clone()), &v_c, region, offset)?;
 
         // v[b] = rotr_64(v[b] ^ v[c], 24);
-        let b_xor_c = self.xor_for_mix(&AssignedBlake2bWord::<F>::new(c.clone()), &AssignedBlake2bWord::<F>::new(v_b.clone()), region, offset)?;
+        let b_xor_c = self.xor_for_mix(&c, &v_b, region, offset)?;
         let b = self.rotate_right_24(b_xor_c, region, offset)?;
 
         // v[a] = ((v[a] as u128 + v[b] as u128 + y as u128) % (1 << 64)) as u64;
-        let a_plus_b = self.add_copying_one_parameter(&b, &a, region, offset)?;
+        let a_plus_b = self.add_copying_one_parameter(&AssignedBlake2bWord::<F>::new(b.clone()), &a, region, offset)?;
         let a = self.add_copying_one_parameter(&a_plus_b, &y, region, offset)?;
 
         // v[d] = rotr_64(v[d] ^ v[a], 16);
-        let d_xor_a = self.xor_for_mix(&AssignedBlake2bWord::<F>::new(a.clone()), &AssignedBlake2bWord::<F>::new(d.clone()), region, offset)?;
+        let d_xor_a = self.xor_for_mix(&a, &AssignedBlake2bWord::<F>::new(d.clone()), region, offset)?;
         let d = self.rotate_right_16(d_xor_a, region, offset)?;
 
         // v[c] = ((v[c] as u128 + v[d] as u128) % (1 << 64)) as u64;
-        let c = self.add_copying_one_parameter(&d, &c, region, offset)?;
+        let c = self.add_copying_one_parameter(&AssignedBlake2bWord::<F>::new(d.clone()), &c, region, offset)?;
 
         // v[b] = rotr_64(v[b] ^ v[c], 63);
-        let b_xor_c = self.xor_for_mix(&AssignedBlake2bWord::<F>::new(c.clone()), &AssignedBlake2bWord::<F>::new(b.clone()), region, offset)?;
+        let b_xor_c = self.xor_for_mix(&c, &AssignedBlake2bWord::<F>::new(b.clone()), region, offset)?;
         let b = self.rotate_right_63(b_xor_c, region, offset)?;
 
-        state[a_] = AssignedBlake2bWord::<F>::new(a);
+        state[a_] = a;
         state[b_] = AssignedBlake2bWord::<F>::new(b);
-        state[c_] = AssignedBlake2bWord::<F>::new(c);
+        state[c_] = c;
         state[d_] = AssignedBlake2bWord::<F>::new(d);
 
         Ok(())
@@ -405,21 +405,21 @@ pub trait Blake2bInstructions: Clone {
 
     fn add<F: PrimeField>(
         &self,
-        lhs: &AssignedNative<F>,
-        rhs: &AssignedNative<F>,
+        lhs: &AssignedBlake2bWord<F>,
+        rhs: &AssignedBlake2bWord<F>,
         region: &mut Region<F>,
         offset: &mut usize,
-    ) -> Result<AssignedNative<F>, Error>;
+    ) -> Result<AssignedBlake2bWord<F>, Error>;
 
     /// Sometimes we can reutilice an output row to be the input row of the next operation. This is
     /// a convenience method for that in the case of the sum operation.
     fn add_copying_one_parameter<F: PrimeField>(
         &self,
-        previous_cell: &AssignedNative<F>,
-        cell_to_copy: &AssignedNative<F>,
+        previous_cell: &AssignedBlake2bWord<F>,
+        cell_to_copy: &AssignedBlake2bWord<F>,
         region: &mut Region<F>,
         offset: &mut usize,
-    ) -> Result<AssignedNative<F>, Error>;
+    ) -> Result<AssignedBlake2bWord<F>, Error>;
 
     /// Sometimes we can reutilice an output row to be the input row of the next operation. This is
     /// a convenience method for that in the case of the xor operation.
