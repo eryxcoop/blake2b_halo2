@@ -13,6 +13,7 @@ use crate::types::{AssignedBlake2bWord, AssignedByte, AssignedNative};
 use ff::PrimeField;
 use halo2_proofs::circuit::{Layouter, Region, Value};
 use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Error, Instance};
+use crate::auxiliar_functions::value_for;
 use crate::types::AssignedElement;
 
 /// This is the trait that groups the 3 optimization chips. Most of their code is the same, so the
@@ -279,7 +280,7 @@ pub trait Blake2bInstructions: Clone {
         iv_constants: &[AssignedBlake2bWord<F>; 8],
         global_state: &mut [AssignedBlake2bWord<F>; 8],
         current_block_cells: [AssignedBlake2bWord<F>; 16],
-        processed_bytes_count: Value<F>,
+        processed_bytes_count: u64,
         is_last_block: bool,
     ) -> Result<[AssignedByte<F>; 64], Error> {
         let mut state_vector: Vec<AssignedBlake2bWord<F>> = Vec::new();
@@ -290,10 +291,9 @@ pub trait Blake2bInstructions: Clone {
 
         // accumulative_state[12] ^= processed_bytes_count
         // [inigo] Processed bytes count can be defined as a constant
-        let processed_bytes_count_cell =
-            self.new_row_from_value(processed_bytes_count, region, row_offset)?;
+        // [bruno] the xor is performed with something that is also a constant
+        let processed_bytes_count_cell = self.new_row_from_value(value_for(processed_bytes_count), region, row_offset)?;
         state[12] = self.xor(&state[12], &processed_bytes_count_cell, region, row_offset)?;
-        // accumulative_state[13] ^= ctx.processed_bytes_count[1]; This is 0 so we ignore it
 
         if is_last_block {
             state[14] = self.not(&state[14], region, row_offset)?;

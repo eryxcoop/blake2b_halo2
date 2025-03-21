@@ -1,7 +1,6 @@
-use crate::auxiliar_functions::value_for;
 use crate::types::{AssignedBlake2bWord, AssignedElement, AssignedNative};
 use ff::PrimeField;
-use halo2_proofs::circuit::{Region, Value};
+use halo2_proofs::circuit::{Region};
 use halo2_proofs::plonk::Error;
 
 /// Enforces the output and key sizes.
@@ -34,19 +33,19 @@ pub fn get_full_number_of_each<F: PrimeField>(
 
 /// The 'processed_bytes_count' is a variable in the algorithm that changes with every iteration,
 /// in each iteration we compute the new value for it.
-pub fn compute_processed_bytes_count_value_for_iteration<F: PrimeField>(
+pub fn compute_processed_bytes_count_value_for_iteration(
     iteration: usize,
     is_last_block: bool,
     input_size: usize,
     empty_key: bool,
-) -> Value<F> {
+) -> u64 {
     let processed_bytes_count = if is_last_block {
         input_size + if empty_key { 0 } else { 128 }
     } else {
         128 * (iteration + 1)
     };
 
-    value_for(processed_bytes_count as u64)
+    processed_bytes_count as u64
 }
 
 /// Computes the edge cases in the amount of blocks to process.
