@@ -71,12 +71,18 @@ impl<const T: usize, const R: usize> AdditionMod64Config<T, R> {
         let offset_to_enable = *offset - if use_last_cell_as_first_operand { 1 } else { 0 };
         self.q_add.enable(region, offset_to_enable)?;
 
-        decompose_config.generate_row_from_cell(region, cell_to_copy, *offset)?;
-        *offset += 1;
         if !use_last_cell_as_first_operand {
             decompose_config.generate_row_from_cell(region, previous_cell, *offset)?;
             *offset += 1;
         }
+        // decompose_config.generate_row_from_cell(region, cell_to_copy, *offset)?;
+        cell_to_copy.copy_advice(
+           || "Sum first operand",
+           region,
+           decompose_config.get_full_number_u64_column(),
+           *offset
+        )?;
+        *offset += 1;
 
         let result_cell =
             decompose_config.generate_row_from_value(region, result_value, *offset)?;
