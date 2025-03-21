@@ -4,12 +4,12 @@ use crate::base_operations::generic_limb_rotation::LimbRotation;
 use crate::base_operations::negate::NegateConfig;
 use crate::base_operations::rotate_63::Rotate63Config;
 use crate::base_operations::xor::Xor;
-use crate::blake2b::chips::utils::{compute_processed_bytes_count_value_for_iteration, constrain_padding_cells_to_equal_zero, enforce_input_sizes, full_number_of_each_state_row, get_total_blocks_count, ABCD, BLAKE2B_BLOCK_SIZE, IV_CONSTANTS, SIGMA};
+use crate::blake2b::chips::utils::{compute_processed_bytes_count_value_for_iteration, constrain_padding_cells_to_equal_zero, full_number_of_each_state_row, get_total_blocks_count, ABCD, BLAKE2B_BLOCK_SIZE, IV_CONSTANTS, SIGMA};
+use crate::types::AssignedElement;
 use crate::types::{AssignedBlake2bWord, AssignedByte, AssignedNative};
 use ff::PrimeField;
 use halo2_proofs::circuit::{Layouter, Region, Value};
 use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Error, Instance};
-use crate::types::AssignedElement;
 
 /// This is the trait that groups the 3 optimization chips. Most of their code is the same, so the
 /// behaviour was encapsulated here. Each optimization has to override only 3 or 4 methods, besides
@@ -46,57 +46,6 @@ pub trait Blake2bInstructions: Clone {
     }
 
     // ---------- MAIN METHODS ---------- //
-
-    /// This is the main method of the chips. It computes the Blake2b hash for the given inputs.
-    /// The inputs and key cells SHOULD be filled with bytes (otherwise the proof generation will
-    /// fail) but nothing guaranties that the range check is done yet. This will be done in the chip
-    // [inigo] Is this method now needed? Why not implement this directly in the gadget?
-    fn compute_blake2b_hash_for_inputs<F: PrimeField>(
-        &self,
-        layouter: &mut impl Layouter<F>,
-        output_size: usize,
-        input: &[AssignedByte<F>],
-        key: &[AssignedByte<F>],
-    ) -> Result<[AssignedByte<F>; 64], Error> {
-        enforce_input_sizes(output_size, key.len());
-        /// All the computation is performed inside a single region. Some optimizations take advantage
-        /// of this fact, since we want to avoid copying cells between regions.
-        // [inigo] Which optimisations could not be applied if we split this into different regions, e.g.
-        // one per compression round?
-        layouter.assign_region(
-            || "single region",
-            |mut region| {
-                /// Initialize in 0 the offset for the advice cells in the region
-                let mut advice_offset: usize = 0;
-
-                let (
-                    iv_constant_cells,
-                    output_size_constant,
-                    zero_constant,
-                ) = self.assign_constant_advice_cells(
-                    output_size,
-                    key.len(),
-                    &mut region,
-                    &mut advice_offset,
-                )?;
-
-                let mut initial_global_state = self.compute_initial_state(
-                    &iv_constant_cells,
-                    output_size_constant,
-                )?;
-
-                self.perform_blake2b_iterations(
-                    &mut region,
-                    &mut advice_offset,
-                    &input,
-                    &key,
-                    &iv_constant_cells,
-                    &mut initial_global_state,
-                    zero_constant,
-                )
-            },
-        )
-    }
 
     /// Assign all the constants at the beginning
     fn assign_constant_advice_cells<F: PrimeField>(
