@@ -46,6 +46,7 @@ pub trait Blake2bInstructions: Clone {
     /// This is the main method of the chips. It computes the Blake2b hash for the given inputs.
     /// The inputs and key cells SHOULD be filled with bytes (otherwise the proof generation will
     /// fail) but nothing guaranties that the range check is done yet. This will be done in the chip
+    // [inigo] Is this method now needed? Why not implement this directly in the gadget?
     fn compute_blake2b_hash_for_inputs<F: PrimeField>(
         &self,
         layouter: &mut impl Layouter<F>,
@@ -53,13 +54,18 @@ pub trait Blake2bInstructions: Clone {
         input: &[AssignedNative<F>],
         key: &[AssignedNative<F>],
     ) -> Result<[AssignedByte<F>; 64], Error> {
+        // [inigo] If this needs to be enforced, why not define the output size from the given key?
+        // and document it accordingly
         enforce_input_sizes(output_size, key.len());
+
         // TODO no me cierra esto
         let input_bytes: Vec<_> = input.iter().map(|x| AssignedByte::<F>::new(x.clone())).collect();
         let key_bytes: Vec<_> = key.iter().map(|x| AssignedByte::<F>::new(x.clone())).collect();
 
         /// All the computation is performed inside a single region. Some optimizations take advantage
         /// of this fact, since we want to avoid copying cells between regions.
+        // [inigo] Which optimisations could not be applied if we split this into different regions, e.g.
+        // one per compression round?
         layouter.assign_region(
             || "single region",
             |mut region| {
@@ -101,10 +107,10 @@ pub trait Blake2bInstructions: Clone {
         output_size: usize,
         key_size: usize,
         mut region: &mut Region<F>,
-        mut advice_offset: &mut usize,
+        advice_offset: &mut usize,
     ) -> Result<([AssignedBlake2bWord<F>; 8], AssignedBlake2bWord<F>, AssignedNative<F>), Error> {
         let iv_constant_cells: [AssignedBlake2bWord<F>; 8] =
-            self.assign_iv_constants_to_fixed_cells(&mut region, &mut advice_offset)?;
+            self.assign_iv_constants_to_fixed_cells(&mut region, advice_offset)?;
 
         let zero_constant = region.assign_advice_from_constant(
             || "zero",
@@ -283,6 +289,7 @@ pub trait Blake2bInstructions: Clone {
         let mut state: [AssignedBlake2bWord<F>; 16] = state_vector.try_into().unwrap();
 
         // accumulative_state[12] ^= processed_bytes_count
+        // [inigo] Processed bytes count can be defined as a constant
         let processed_bytes_count_cell =
             self.new_row_from_value(processed_bytes_count, region, row_offset)?;
         state[12] = self.xor(&state[12], &processed_bytes_count_cell, region, row_offset)?;
@@ -686,17 +693,21 @@ pub trait Blake2bInstructions: Clone {
     /// Here we want to make sure that the public inputs are equal to the final state of the hash.
     /// The amount of constrains is equal to the output size, which is known at circuit building time.
     /// We should only constrain those, even tho the state contains the entire output.
-    fn constraint_public_inputs_to_equal_computation_results<F: PrimeField>(
+    // [inigo] We can only constrain values from the instance column between 0 and 64. What if we have
+    // other PIs in other places of the circuit?
+    // This function does not need to be here. If the developer wants to constrain the output
+    // as PI, it can do it on its own.
+    fn constrain_instance<F: PrimeField>(
         &self,
         layouter: &mut impl Layouter<F>,
         global_state_bytes: [AssignedByte<F>; 64],
         output_size: usize,
-        public_inputs_instance_column: Column<Instance>,
+        instance_column: Column<Instance>,
     ) -> Result<(), Error> {
         for (i, global_state_byte_cell) in global_state_bytes.iter().enumerate().take(output_size) {
             layouter.constrain_instance(
                 global_state_byte_cell.cell(),
-                public_inputs_instance_column,
+                instance_column,
                 i,
             )?;
         }

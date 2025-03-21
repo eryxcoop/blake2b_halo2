@@ -90,6 +90,7 @@ impl Decompose8Config {
 
     fn compute_full_value_u64_from_bytes<F: PrimeField>(bytes: &[AssignedNative<F>; 8]) -> Value<F> {
         let mut full_number = F::ZERO;
+        // [inigo] You are composing to decompose in the next function - its very hard to follow
         for byte_cell in bytes.iter().rev() {
             byte_cell.value().and_then(|v| {
                 full_number *= F::from(256u64);
