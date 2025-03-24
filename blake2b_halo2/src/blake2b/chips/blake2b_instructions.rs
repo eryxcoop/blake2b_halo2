@@ -33,7 +33,7 @@ pub trait Blake2bInstructions: Clone {
     // Getters for the internal members of the chip
     fn decompose_8_config(&self) -> Decompose8Config;
     fn generic_limb_rotation_config(&self) -> LimbRotation;
-    fn rotate_63_config(&self) -> Rotate63Config<8, 9>;
+    fn rotate_63_config(&self) -> Rotate63Config;
     fn xor_config(&self) -> impl Xor;
     fn negate_config(&self) -> NegateConfig;
 
@@ -96,7 +96,7 @@ pub trait Blake2bInstructions: Clone {
         meta: &mut ConstraintSystem<F>,
         full_number_u64: Column<Advice>,
         limbs: [Column<Advice>; 8],
-    ) -> (Decompose8Config, LimbRotation, Rotate63Config<8, 9>, NegateConfig) {
+    ) -> (Decompose8Config, LimbRotation, Rotate63Config, NegateConfig) {
         let decompose_8_config = Decompose8Config::configure(meta, full_number_u64, limbs);
         let rotate_63_config = Rotate63Config::configure(meta, full_number_u64);
         let negate_config = NegateConfig::configure(meta, full_number_u64);

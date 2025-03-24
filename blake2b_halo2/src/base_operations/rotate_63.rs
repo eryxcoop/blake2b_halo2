@@ -7,11 +7,11 @@ use num_bigint::BigUint;
 /// For the gate of this config to be sound, it is necessary that the modulus of the field is
 /// greater than 2^65.
 #[derive(Clone, Debug)]
-pub struct Rotate63Config<const T: usize, const R: usize> {
+pub struct Rotate63Config {
     pub q_rot63: Selector,
 }
 
-impl<const T: usize, const R: usize> Rotate63Config<T, R> {
+impl Rotate63Config {
     pub fn configure<F: PrimeField>(
         meta: &mut ConstraintSystem<F>,
         full_number_u64: Column<Advice>,

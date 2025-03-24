@@ -24,7 +24,7 @@ pub struct Blake2bChipOptRecycle {
     /// Base oprerations configs
     addition_config: AdditionMod64Config,
     generic_limb_rotation_config: LimbRotation,
-    rotate_63_config: Rotate63Config<8, 9>,
+    rotate_63_config: Rotate63Config,
     xor_config: XorTableConfig,
     negate_config: NegateConfig,
 }
@@ -71,7 +71,7 @@ impl Blake2bInstructions for Blake2bChipOptRecycle {
         self.generic_limb_rotation_config.clone()
     }
 
-    fn rotate_63_config(&self) -> Rotate63Config<8, 9> {
+    fn rotate_63_config(&self) -> Rotate63Config {
         self.rotate_63_config.clone()
     }
 
