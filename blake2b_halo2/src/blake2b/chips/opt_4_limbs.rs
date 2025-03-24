@@ -29,7 +29,7 @@ pub struct Blake2bChipOpt4Limbs {
     decompose_8_config: Decompose8Config,
     decompose_16_config: Decompose16Config,
     /// Base oprerations configs
-    addition_config: AdditionMod64Config<4, 6>,
+    addition_config: AdditionMod64Config,
     generic_limb_rotation_config: LimbRotation,
     rotate_63_config: Rotate63Config<8, 9>,
     xor_config: XorTableConfig,
@@ -48,7 +48,7 @@ impl Blake2bInstructions for Blake2bChipOpt4Limbs {
 
         /// Config that is optimization-specific
         let addition_config =
-            AdditionMod64Config::<4, 6>::configure(meta, full_number_u64, limbs[0]);
+            AdditionMod64Config::configure(meta, full_number_u64, limbs[0]);
         let xor_config = XorTableConfig::configure(meta, limbs);
         let decompose_16_config =
             Decompose16Config::configure(meta, full_number_u64, limbs[0..4].try_into().unwrap());

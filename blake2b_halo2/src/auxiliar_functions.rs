@@ -47,15 +47,14 @@ pub fn decompose_field_8bit_limbs(number: Blake2bWord) -> [Byte; 8] {
     (0..8).map(|i| get_limb_word(number, i)).collect::<Vec<_>>().try_into().unwrap()
 }
 
-pub fn generate_row_8bits<T, F>(number: T) -> [Value<F>; 10]
+pub fn generate_row_8bits<T, F>(number: T) -> [Value<F>; 9]
 where
     F: PrimeField,
     T: Into<u128>,
 {
     let mut number: u128 = number.into();
-    let mut ans = [Value::unknown(); 10];
+    let mut ans = [Value::unknown(); 9];
     ans[0] = value_for(number);
-    ans[9] = value_for(0u8);
     for ans_item in ans.iter_mut().take(9).skip(1) {
         *ans_item = value_for(number % 256);
         number /= 256;

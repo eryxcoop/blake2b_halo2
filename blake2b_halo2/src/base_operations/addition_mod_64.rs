@@ -2,8 +2,6 @@ use super::*;
 use crate::types::AssignedNative;
 use auxiliar_functions::field_for;
 
-pub type AdditionConfigWith8Limbs = AdditionMod64Config<8, 10>;
-
 #[derive(Clone, Debug)]
 /// This config uses two generics, T and R.
 /// T is used to define the number of limbs we will use to represent numbers in the trace
@@ -11,12 +9,12 @@ pub type AdditionConfigWith8Limbs = AdditionMod64Config<8, 10>;
 ///
 /// R is used to define the total number of columns in the trace.
 /// It will allways be T + 2 (full number and carry)
-pub struct AdditionMod64Config<const T: usize, const R: usize> {
+pub struct AdditionMod64Config {
     pub carry: Column<Advice>,
     pub q_add: Selector,
 }
 
-impl<const T: usize, const R: usize> AdditionMod64Config<T, R> {
+impl AdditionMod64Config {
     pub fn configure<F: PrimeField>(
         meta: &mut ConstraintSystem<F>,
         full_number_u64: Column<Advice>,

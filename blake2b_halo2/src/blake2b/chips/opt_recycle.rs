@@ -22,7 +22,7 @@ pub struct Blake2bChipOptRecycle {
     /// Decomposition configs
     decompose_8_config: Decompose8Config,
     /// Base oprerations configs
-    addition_config: AdditionMod64Config<8, 10>,
+    addition_config: AdditionMod64Config,
     generic_limb_rotation_config: LimbRotation,
     rotate_63_config: Rotate63Config<8, 9>,
     xor_config: XorTableConfig,
@@ -41,7 +41,7 @@ impl Blake2bInstructions for Blake2bChipOptRecycle {
 
         /// Config that is optimization-specific
         /// An extra carry column is needed for the sum operation with 8 limbs.
-        let addition_config = AdditionMod64Config::<8, 10>::configure(meta, full_number_u64, limbs[0]);
+        let addition_config = AdditionMod64Config::configure(meta, full_number_u64, limbs[0]);
         let xor_config = XorTableConfig::configure(meta, limbs);
 
         Self {

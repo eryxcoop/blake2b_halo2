@@ -7,18 +7,18 @@ use rand::Rng;
 #[test]
 fn test_positive_addition_with_0() {
     let trace = [
-        [zero(), zero(), zero(), zero(), zero(), zero(), zero(), zero(), zero(), trash()],
-        [value_for(42u64), zero(), trash(), trash(), trash(), trash(), trash(), trash(), trash(), trash()],
-        [value_for(42u64), value_for(42u64), zero(), zero(), zero(), zero(), zero(), zero(), zero(), trash()],
+        [zero(), zero(), zero(), zero(), zero(), zero(), zero(), zero(), zero()],
+        [value_for(42u64), zero(), trash(), trash(), trash(), trash(), trash(), trash(), trash()],
+        [value_for(42u64), value_for(42u64), zero(), zero(), zero(), zero(), zero(), zero(), zero()],
     ];
     let circuit = AdditionMod64Circuit8Bits::<Fr>::new_for_trace(trace);
     let prover = MockProver::run(17, &circuit, vec![]).unwrap();
     prover.verify().unwrap();
 
     let trace = [
-        [value_for(42u64), zero(), zero(), zero(), zero(), zero(), zero(), zero(), zero(), trash()],
-        [zero(), zero(), trash(), trash(), trash(), trash(), trash(), trash(), trash(), trash()],
-        [value_for(42u64), value_for(42u64), zero(), zero(), zero(), zero(), zero(), zero(), zero(), trash()],
+        [value_for(42u64), zero(), zero(), zero(), zero(), zero(), zero(), zero(), zero()],
+        [zero(), zero(), trash(), trash(), trash(), trash(), trash(), trash(), trash()],
+        [value_for(42u64), value_for(42u64), zero(), zero(), zero(), zero(), zero(), zero(), zero()],
     ];
     let circuit = AdditionMod64Circuit8Bits::<Fr>::new_for_trace(trace);
     let prover = MockProver::run(17, &circuit, vec![]).unwrap();
@@ -84,7 +84,7 @@ fn test_negative_sum_correct_but_unnecessary_carry() {
         generate_row_8bits::<u128, Fr>(2),
         generate_row_8bits::<u64, Fr>(3),
     ];
-    trace[2][9] = value_for(1u8);
+    trace[1][1] = value_for(1u8);
     let circuit = AdditionMod64Circuit8Bits::<Fr>::new_for_trace(trace);
     let prover = MockProver::run(17, &circuit, vec![]).unwrap();
     prover.verify().unwrap();

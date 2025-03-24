@@ -6,12 +6,12 @@ use std::array;
 
 pub struct AdditionMod64Circuit8Bits<F: PrimeField> {
     _ph: PhantomData<F>,
-    trace: [[Value<F>; 10]; 3],
+    trace: [[Value<F>; 9]; 3],
 }
 
 #[derive(Clone, Debug)]
 pub struct AdditionMod64Config8Bits<F: PrimeField + Clone> {
-    sum_8bits_config: AdditionConfigWith8Limbs,
+    sum_8bits_config: AdditionMod64Config,
     decompose_8_config: Decompose8Config,
     _ph: PhantomData<F>,
 }
@@ -23,7 +23,7 @@ impl<F: PrimeField> Circuit<F> for AdditionMod64Circuit8Bits<F> {
     fn without_witnesses(&self) -> Self {
         Self {
             _ph: PhantomData,
-            trace: [[Value::unknown(); 10]; 3],
+            trace: [[Value::unknown(); 9]; 3],
         }
     }
 
@@ -34,7 +34,7 @@ impl<F: PrimeField> Circuit<F> for AdditionMod64Circuit8Bits<F> {
 
         let decompose_8_config = Decompose8Config::configure(meta, full_number_u64, limbs);
 
-        let sum_8bits_config = AdditionConfigWith8Limbs::configure(meta, full_number_u64, limbs[0]);
+        let sum_8bits_config = AdditionMod64Config::configure(meta, full_number_u64, limbs[0]);
 
         Self::Config {
             _ph: PhantomData,
@@ -60,7 +60,7 @@ impl<F: PrimeField> Circuit<F> for AdditionMod64Circuit8Bits<F> {
 }
 
 impl<F: PrimeField> AdditionMod64Circuit8Bits<F> {
-    pub fn new_for_trace(trace: [[Value<F>; 10]; 3]) -> Self {
+    pub fn new_for_trace(trace: [[Value<F>; 9]; 3]) -> Self {
         Self {
             _ph: PhantomData,
             trace,
