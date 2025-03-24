@@ -47,7 +47,7 @@ impl<const T: usize, const R: usize> Rotate63Config<T, R> {
         region: &mut Region<F>,
         offset: &mut usize,
         input: &AssignedNative<F>,
-        decompose_config: &mut impl Decomposition<T>,
+        decompose_config: &mut impl Decomposition,
     ) -> Result<AssignedNative<F>, Error> {
         self.q_rot63.enable(region, *offset)?;
         let result_value =

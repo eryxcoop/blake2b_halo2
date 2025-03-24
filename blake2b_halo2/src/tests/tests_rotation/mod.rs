@@ -45,7 +45,7 @@ impl<const T: usize, const R: usize> Rotate63Config<T, R> {
     fn populate_rotation_rows<F: PrimeField>(
         &self,
         layouter: &mut impl Layouter<F>,
-        decompose_config: &mut impl Decomposition<T>,
+        decompose_config: &mut impl Decomposition,
         trace: [[Value<F>; R]; 2],
     ) -> Result<(), Error> {
         layouter.assign_region(

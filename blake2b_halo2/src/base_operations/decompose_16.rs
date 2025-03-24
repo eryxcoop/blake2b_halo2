@@ -56,7 +56,7 @@ impl Decompose16Config {
     }
 }
 
-impl Decomposition<4> for Decompose16Config {
+impl Decomposition for Decompose16Config {
     const LIMB_SIZE: usize = 16;
     fn range_table_column(&self) -> TableColumn {
         self.t_range

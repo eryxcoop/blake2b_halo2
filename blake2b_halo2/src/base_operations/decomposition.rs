@@ -9,7 +9,7 @@ use halo2_proofs::poly::Rotation;
 /// T is the amount of limbs that the number will be decomposed into.
 /// Little endian representation is used for the limbs.
 /// We also expect F::Repr to be little endian in all usages of this trait.
-pub trait Decomposition<const T: usize> {
+pub trait Decomposition {
     const LIMB_SIZE: usize;
 
     fn range_table_column(&self) -> TableColumn;

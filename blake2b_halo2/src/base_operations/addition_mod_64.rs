@@ -63,7 +63,7 @@ impl<const T: usize, const R: usize> AdditionMod64Config<T, R> {
         offset: &mut usize,
         previous_cell: &AssignedNative<F>,
         cell_to_copy: &AssignedNative<F>,
-        decompose_config: &impl Decomposition<T>,
+        decompose_config: &impl Decomposition,
         use_last_cell_as_first_operand: bool,
     ) -> Result<[AssignedNative<F>; 2], Error> {
         let (result_value, carry_value) =

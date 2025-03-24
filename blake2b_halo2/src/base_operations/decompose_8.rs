@@ -107,7 +107,7 @@ impl Decompose8Config {
     }
 }
 
-impl Decomposition<8> for Decompose8Config {
+impl Decomposition for Decompose8Config {
     const LIMB_SIZE: usize = 8;
     fn range_table_column(&self) -> TableColumn {
         self.t_range

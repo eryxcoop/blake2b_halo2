@@ -30,7 +30,7 @@ impl<const T: usize, const R: usize> AdditionMod64Config<T, R> {
         &self,
         layouter: &mut impl Layouter<F>,
         addition_trace: [[Value<F>; R]; 3],
-        decompose_config: &impl Decomposition<T>,
+        decompose_config: &impl Decomposition,
     ) -> Result<(), Error> {
         layouter.assign_region(
             || "decompose",
