@@ -1,5 +1,5 @@
 use crate::blake2b::chips::blake2b_instructions::Blake2bInstructions;
-use crate::types::{AssignedByte, AssignedNative};
+use crate::types::{AssignedByte};
 use ff::PrimeField;
 use halo2_proofs::circuit::Layouter;
 use halo2_proofs::plonk::{Column, Error, Instance};
