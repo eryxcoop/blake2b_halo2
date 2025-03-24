@@ -81,17 +81,6 @@ impl Decomposition<4> for Decompose16Config {
         Ok(vec![limb_0, limb_1, limb_2, limb_3])
     }
 
-    fn generate_row_from_value<F: PrimeField>(
-        &self,
-        region: &mut Region<F>,
-        value: Value<F>,
-        offset: usize,
-    ) -> Result<AssignedNative<F>, Error> {
-        let full_number_cell =
-            self.generate_row_from_value_and_keep_row(region, value, offset)?[0].clone();
-        Ok(full_number_cell)
-    }
-
     fn generate_row_from_value_and_keep_row<F: PrimeField>(
         &self,
         region: &mut Region<F>,

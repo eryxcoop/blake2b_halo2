@@ -67,7 +67,11 @@ pub trait Decomposition<const T: usize> {
         region: &mut Region<F>,
         value: Value<F>,
         offset: usize,
-    ) -> Result<AssignedNative<F>, Error>;
+    ) -> Result<AssignedNative<F>, Error> {
+        let full_number_cell =
+            self.generate_row_from_value_and_keep_row(region, value, offset)?[0].clone();
+        Ok(full_number_cell)
+    }
 
     /// Given a cell with a 64-bit value, it returns a new row with the copied full number and the
     /// decomposition in 8-bit limbs
