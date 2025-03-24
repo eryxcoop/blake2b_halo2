@@ -33,7 +33,7 @@ impl<const T: usize, const R: usize> AdditionMod64Config<T, R> {
         decompose_config: &impl Decomposition,
     ) -> Result<(), Error> {
         layouter.assign_region(
-            || "decompose",
+            || "sum",
             |mut region| {
                 self.q_add.enable(&mut region, 0)?;
 
