@@ -36,8 +36,3 @@ harness = false
 [[bench]]
 name = "verification"
 harness = false
-
-[features]
-default = ["opt_recycle"]
-opt_4_limbs = []
-opt_recycle = []

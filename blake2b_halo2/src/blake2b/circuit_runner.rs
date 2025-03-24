@@ -13,19 +13,9 @@ use halo2_proofs::{
 };
 use crate::blake2b::chips::blake2b_instructions::Blake2bInstructions;
 
-cfg_if::cfg_if! {
-    if #[cfg(feature = "opt_4_limbs")] {
-        use crate::blake2b::chips::opt_4_limbs::Blake2bChipOpt4Limbs;
-        type Blake2bChip = Blake2bChipOpt4Limbs;
-    } else if #[cfg(feature = "opt_recycle")] {
-        use crate::blake2b::chips::opt_recycle::Blake2bChipOptRecycle;
-        type Blake2bChip = Blake2bChipOptRecycle;
-    } else {
-        compile_error!("No feature selected");
-    }
-}
+use crate::blake2b::chips::opt_recycle::Blake2bChipOptRecycle;
 
-type Blake2bCircuit<F> = Blake2bCircuitGeneric<F, Blake2bChip>;
+type Blake2bCircuit<F> = Blake2bCircuitGeneric<F, Blake2bChipOptRecycle>;
 pub type Blake2bCircuitInputs = (Vec<Value<Fr>>, usize, Vec<Value<Fr>>, usize, [Fr; 64], usize);
 
 pub struct CircuitRunner;

@@ -3,6 +3,4 @@ pub mod blake2b_instructions;
 pub mod utils;
 
 /// These are the separated optimizations
-pub mod opt_4_limbs;
 pub mod opt_recycle;
-pub mod opt_spread;
