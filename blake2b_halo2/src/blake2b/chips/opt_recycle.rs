@@ -209,13 +209,13 @@ impl Blake2bInstructions for Blake2bChipOptRecycle {
         let addition_cell = self.addition_config.generate_addition_rows_from_cells(
             region,
             offset,
-            &lhs.inner_value(),
-            &rhs.inner_value(),
+            lhs,
+            rhs,
             &self.decompose_8_config,
             false,
-        )?[0]
+        )?.0
             .clone();
-        Ok(AssignedBlake2bWord::<F>::new(addition_cell))
+        Ok(addition_cell)
     }
 
     fn rotate_right_63<F: PrimeField>(
@@ -326,15 +326,15 @@ impl Blake2bChipOptRecycle {
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<AssignedBlake2bWord<F>, Error> {
-        Ok(AssignedBlake2bWord::<F>::new(self.addition_config.generate_addition_rows_from_cells(
+        Ok(self.addition_config.generate_addition_rows_from_cells(
             region,
             offset,
-            &previous_cell.inner_value(),
-            &cell_to_copy.inner_value(),
+            previous_cell,
+            cell_to_copy,
             &self.decompose_8_config,
             true,
-        )?[0]
-            .clone()))
+        )?.0
+            .clone())
     }
 
     /// This method performs a regular xor operation with the difference that it returns the full

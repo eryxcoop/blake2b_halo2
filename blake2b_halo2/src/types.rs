@@ -3,6 +3,7 @@ use ff::PrimeField;
 use halo2_proofs::circuit::{AssignedCell, Cell, Value};
 use num_bigint::BigUint;
 
+
 /// The inner type of AssignedByte.
 // A wrapper around `u8` to have a type that we own and for which we can implement some necessary
 // traits like `From<u64>`.
@@ -11,6 +12,18 @@ pub struct Byte(pub u8);
 
 #[derive(Copy, Clone, Debug)]
 pub struct Blake2bWord(pub u64);
+
+impl From<u128> for Blake2bWord {
+    fn from(value: u128) -> Self {
+        Blake2bWord(value as u64)
+    }
+}
+
+impl From<Blake2bWord> for u128 {
+    fn from(value: Blake2bWord) -> Self {
+        value.0 as u128
+    }
+}
 
 pub type AssignedNative<F> = AssignedCell<F, F>;
 
@@ -66,7 +79,40 @@ impl<F: PrimeField> AssignedElement<F> for AssignedByte<F> {
 
 #[derive(Clone, Debug)]
 #[must_use]
-pub struct AssignedBlake2bWord<F: PrimeField>(AssignedNative<F>);
+pub struct AssignedBit<F: PrimeField>(pub AssignedNative<F>);
+
+impl<F: PrimeField> AssignedElement<F> for AssignedBit<F> {
+    type Element = F;
+
+    fn new(value: AssignedNative<F>) -> Self {
+        Self { 0: value }
+    }
+
+    fn value(&self) -> Value<F> {
+        self.0.value().map(|v| {
+            let bi_v = fe_to_big(*v);
+            #[cfg(not(test))]
+            assert!(bi_v == BigUint::from(1u8) || bi_v == BigUint::from(0u8));
+            if bi_v == BigUint::from(1u8) {
+                F::from(1)
+            } else {
+                F::from(0)
+            }
+        })
+    }
+
+    fn cell(&self) -> Cell {
+        self.0.cell()
+    }
+
+    fn inner_value(&self) -> AssignedNative<F> {
+        self.0.clone()
+    }
+}
+
+#[derive(Clone, Debug)]
+#[must_use]
+pub struct AssignedBlake2bWord<F: PrimeField>(pub AssignedNative<F>);
 
 impl<F: PrimeField> AssignedElement<F> for AssignedBlake2bWord<F> {
     type Element = Blake2bWord;
@@ -87,12 +133,12 @@ impl<F: PrimeField> AssignedElement<F> for AssignedBlake2bWord<F> {
         })
     }
 
-    fn inner_value(&self) -> AssignedNative<F> {
-        self.0.clone()
-    }
-
     fn cell(&self) -> Cell {
         self.0.cell()
+    }
+
+    fn inner_value(&self) -> AssignedNative<F> {
+        self.0.clone()
     }
 }
 

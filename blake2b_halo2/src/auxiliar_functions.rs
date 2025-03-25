@@ -62,18 +62,13 @@ where
     ans
 }
 
-pub fn sum_mod_64<F: PrimeField>(a: F, b: F) -> F {
-    let a_value = convert_to_u64(a) as u128;
-    let b_value = convert_to_u64(b) as u128;
-
-    F::from(((a_value + b_value) % (1u128 << 64)) as u64)
+pub fn sum_mod_64(a: Blake2bWord, b: Blake2bWord) -> Blake2bWord {
+    ((a.0 as u128 + b.0 as u128) % (1u128 << 64)).into()
 }
 
-pub fn carry_mod_64<F: PrimeField>(a: F, b: F) -> F {
-    let a_value = convert_to_u64(a) as u128;
-    let b_value = convert_to_u64(b) as u128;
-
-    F::from(((a_value + b_value) / (1u128 << 64)) as u64)
+pub fn carry_mod_64<F: PrimeField>(a: Blake2bWord, b: Blake2bWord) -> F {
+    let carry = (a.0 as u128 + b.0 as u128) / (1u128 << 64);
+    F::from(carry as u64)
 }
 
 pub fn convert_to_u64<F: PrimeField>(a: F) -> u64 {

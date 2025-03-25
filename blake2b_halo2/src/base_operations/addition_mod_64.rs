@@ -1,5 +1,5 @@
 use super::*;
-use crate::types::AssignedNative;
+use crate::types::{AssignedBit, AssignedBlake2bWord, AssignedElement, AssignedNative, Blake2bWord};
 use auxiliar_functions::field_for;
 
 #[derive(Clone, Debug)]
@@ -59,18 +59,18 @@ impl AdditionMod64Config {
         &self,
         region: &mut Region<F>,
         offset: &mut usize,
-        previous_cell: &AssignedNative<F>,
-        cell_to_copy: &AssignedNative<F>,
+        previous_cell: &AssignedBlake2bWord<F>,
+        cell_to_copy: &AssignedBlake2bWord<F>,
         decompose_config: &impl Decomposition,
         use_last_cell_as_first_operand: bool,
-    ) -> Result<[AssignedNative<F>; 2], Error> {
+    ) -> Result<(AssignedBlake2bWord<F>, AssignedBit<F>), Error> {
         let (result_value, carry_value) =
             Self::calculate_result_and_carry(previous_cell.value(), cell_to_copy.value());
         let offset_to_enable = *offset - if use_last_cell_as_first_operand { 1 } else { 0 };
         self.q_add.enable(region, offset_to_enable)?;
 
         if !use_last_cell_as_first_operand {
-            previous_cell.copy_advice(
+            previous_cell.0.copy_advice(
                 || "Sum first operand",
                 region,
                 decompose_config.get_full_number_u64_column(),
@@ -78,33 +78,36 @@ impl AdditionMod64Config {
             )?;
             *offset += 1;
         }
-        cell_to_copy.copy_advice(
+        cell_to_copy.0.copy_advice(
            || "Sum second operand",
            region,
            decompose_config.get_full_number_u64_column(),
            *offset
         )?;
-
-        let carry_cell = region.assign_advice(|| "carry", self.carry, *offset, || carry_value)?;
+        let carry_cell: AssignedNative<F> = region.assign_advice(|| "carry", self.carry, *offset, || carry_value)?;
         *offset += 1;
-        
+
+        // TODO: remove this cast when the refactor reaches the decomposition
+        let result_value = result_value.and_then(|v| Value::known(F::from(v.0)));
         let result_cell = decompose_config.generate_row_from_value(region, result_value, *offset)?;
         *offset += 1;
 
-        Ok([result_cell, carry_cell])
+        // TODO: remove these casts when the refactor reaches the decomposition
+        let result_cell = AssignedBlake2bWord(result_cell);
+        let carry_cell = AssignedBit(carry_cell);
+        Ok((result_cell, carry_cell))
     }
 
     fn calculate_result_and_carry<F: PrimeField>(
-        lhs: Value<&F>,
-        rhs: Value<&F>,
-    ) -> (Value<F>, Value<F>) {
-        let [result_value, carry_value] = lhs
-            .zip(rhs)
-            .map(|(a, b)| {
-                [auxiliar_functions::sum_mod_64(*a, *b), auxiliar_functions::carry_mod_64(*a, *b)]
-            })
-            .transpose_array();
-
+        lhs: Value<Blake2bWord>,
+        rhs: Value<Blake2bWord>,
+    ) -> (Value<Blake2bWord>, Value<F>) {
+        let result_value = lhs.and_then(|l| rhs.and_then(|r| {
+            Value::known(auxiliar_functions::sum_mod_64(l, r))
+        }));
+        let carry_value = lhs.and_then(|l| rhs.and_then(|r| {
+            Value::known(auxiliar_functions::carry_mod_64(l, r))
+        }));
         (result_value, carry_value)
     }
 }
