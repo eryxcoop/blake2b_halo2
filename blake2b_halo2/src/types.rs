@@ -19,11 +19,6 @@ impl From<u128> for Blake2bWord {
     }
 }
 
-impl From<Blake2bWord> for u128 {
-    fn from(value: Blake2bWord) -> Self {
-        value.0 as u128
-    }
-}
 /*
 impl<F: PrimeField> From<&Blake2bWord> for Rational<F> {
     fn from(value: &Blake2bWord) -> Self {
