@@ -18,6 +18,7 @@ pub struct NegateCircuitConfig<F: PrimeField> {
     negate_config: NegateConfig,
     decompose_8_config: Decompose8Config,
     fixed_result: Column<Fixed>,
+    full_number_u64: Column<Advice>
 }
 
 impl<F: PrimeField> Circuit<F> for NegateCircuit<F> {
@@ -48,13 +49,14 @@ impl<F: PrimeField> Circuit<F> for NegateCircuit<F> {
             negate_config,
             decompose_8_config,
             fixed_result,
+            full_number_u64
         }
     }
 
     #[allow(unused_variables)]
     fn synthesize(
         &self,
-        mut config: Self::Config,
+        config: Self::Config,
         mut layouter: impl Layouter<F>,
     ) -> Result<(), Error> {
         config.decompose_8_config.populate_lookup_table(&mut layouter)?;
@@ -74,7 +76,7 @@ impl<F: PrimeField> Circuit<F> for NegateCircuit<F> {
                     &mut region,
                     &mut offset,
                     &cell,
-                    &mut config.decompose_8_config,
+                    config.full_number_u64,
                 )?;
                 let fixed_cell = region.assign_fixed(
                     || "assign fixed",

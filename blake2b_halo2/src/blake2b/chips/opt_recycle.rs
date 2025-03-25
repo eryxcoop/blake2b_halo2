@@ -27,6 +27,9 @@ pub struct Blake2bChipOptRecycle {
     rotate_63_config: Rotate63Config,
     xor_config: XorTableConfig,
     negate_config: NegateConfig,
+    /// Advice columns
+    full_number_u64: Column<Advice>,
+    limbs: [Column<Advice>; 8],
 }
 
 impl Blake2bInstructions for Blake2bChipOptRecycle {
@@ -51,7 +54,17 @@ impl Blake2bInstructions for Blake2bChipOptRecycle {
             rotate_63_config,
             xor_config,
             negate_config,
+            full_number_u64,
+            limbs
         }
+    }
+
+    fn get_limb_column(&self, index: usize) -> Column<Advice> {
+        self.limbs[index]
+    }
+
+    fn get_full_number_column(&self) -> Column<Advice> {
+        self.full_number_u64
     }
 
     fn populate_lookup_tables<F: PrimeField>(

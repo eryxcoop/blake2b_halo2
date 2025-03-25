@@ -8,7 +8,7 @@ use crate::blake2b::chips::utils::{compute_processed_bytes_count_value_for_itera
 use crate::types::AssignedElement;
 use crate::types::{AssignedBlake2bWord, AssignedByte, AssignedNative};
 use ff::PrimeField;
-use halo2_proofs::circuit::{Layouter, Region, Value};
+use halo2_proofs::circuit::{Layouter, Region};
 use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Error, Instance};
 
 /// This is the trait that groups the 3 optimization chips. Most of their code is the same, so the
@@ -37,13 +37,8 @@ pub trait Blake2bInstructions: Clone {
     fn xor_config(&self) -> impl Xor;
     fn negate_config(&self) -> NegateConfig;
 
-    fn get_limb_column(&self, index: usize) -> Column<Advice> {
-        self.decompose_8_config().get_limb_column(index)
-    }
-
-    fn get_full_number_column(&self) -> Column<Advice> {
-        self.decompose_8_config().get_full_number_u64_column()
-    }
+    fn get_limb_column(&self, index: usize) -> Column<Advice>;
+    fn get_full_number_column(&self) -> Column<Advice>;
 
     // ---------- MAIN METHODS ---------- //
 
@@ -352,12 +347,11 @@ pub trait Blake2bInstructions: Clone {
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<AssignedBlake2bWord<F>, Error> {
-        let mut decompose_8_config = self.decompose_8_config();
         let cell = self.negate_config().generate_rows_from_cell(
             region,
             offset,
             &input_cell.inner_value(),
-            &mut decompose_8_config,
+            self.get_full_number_column(),
         )?;
         Ok(AssignedBlake2bWord::<F>::new(cell))
     }
@@ -523,7 +517,7 @@ pub trait Blake2bInstructions: Clone {
                 let constant_assigned_cell = region
                     .assign_advice_from_constant(
                         || "iv constants",
-                        self.decompose_8_config().get_limb_column(index),
+                        self.get_limb_column(index),
                         *offset,
                         F::from(*constant),
                     )
@@ -535,19 +529,6 @@ pub trait Blake2bInstructions: Clone {
             .unwrap();
         *offset += 1;
         Ok(ret)
-    }
-
-    /// Creates a new row with a full number in the first columns and the 8 bit decomposition in
-    /// the following cells. Returns only the AssignedCell with the full number.
-    fn new_row_from_value<F: PrimeField>(
-        &self,
-        value: Value<F>,
-        region: &mut Region<F>,
-        offset: &mut usize,
-    ) -> Result<AssignedBlake2bWord<F>, Error> {
-        let ret = self.decompose_8_config().generate_row_from_value(region, value, *offset)?;
-        *offset += 1;
-        Ok(AssignedBlake2bWord::<F>::new(ret))
     }
 
     /// This is the part where the inputs/key are organized inside the trace. Each iteration

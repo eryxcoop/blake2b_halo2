@@ -1,6 +1,5 @@
 use super::*;
 use crate::auxiliar_functions::field_for;
-use crate::base_operations::decompose_8::Decompose8Config;
 use crate::types::AssignedNative;
 
 /// This config handles the bitwise negation of a 64-bit number.
@@ -39,10 +38,9 @@ impl NegateConfig {
         region: &mut Region<F>,
         offset: &mut usize,
         input: &AssignedNative<F>,
-        decompose_config: &mut Decompose8Config,
+        full_number_column: Column<Advice>,
     ) -> Result<AssignedNative<F>, Error> {
         self.q_negate.enable(region, *offset)?;
-        let full_number_column = decompose_config.get_full_number_u64_column();
         input.copy_advice(|| "Negation input", region, full_number_column, *offset)?;
         *offset += 1;
 
