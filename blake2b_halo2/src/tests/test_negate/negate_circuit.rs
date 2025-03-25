@@ -1,4 +1,3 @@
-use super::*;
 use crate::base_operations::decompose_8::Decompose8Config;
 use crate::base_operations::negate::NegateConfig;
 use ff::PrimeField;

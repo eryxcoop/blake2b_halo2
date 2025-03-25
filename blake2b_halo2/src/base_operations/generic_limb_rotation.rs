@@ -37,6 +37,7 @@ impl LimbRotation {
             decompose_config.get_full_number_u64_column(),
             *offset,
             || result_value.and_then(|v|value_for(v.0)))?;
+
         decompose_config.q_decompose.enable(region, *offset)?;
 
         for i in 0..8 {

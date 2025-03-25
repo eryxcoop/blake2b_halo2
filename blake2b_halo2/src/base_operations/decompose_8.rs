@@ -16,6 +16,10 @@ pub struct Decompose8Config {
 
     /// Selector that turns on the gate that defines if the limbs should add up to the full number
     pub q_decompose: Selector,
+
+    /// Selector that turns on the gate that defines if the limbs should be range-checked
+    q_range: Selector,
+
     /// Table of [0, 2^8) to check if the limb is in the correct range
     t_range: TableColumn,
 }
@@ -29,6 +33,7 @@ impl Decompose8Config {
         full_number_u64: Column<Advice>,
         limbs: [Column<Advice>; 8],
     ) -> Self {
+        let q_range = meta.complex_selector();
         let t_range = meta.lookup_table_column();
         let q_decompose = meta.complex_selector();
 
@@ -53,10 +58,8 @@ impl Decompose8Config {
         });
 
         /// Range checks for all the limbs
-        /// I think its fine to explicitly add the lookup call here rather than having the function
-        /// call (at the end of the day you use it only twice).
         for limb in limbs {
-            Self::range_check_for_limb(meta, &limb, &q_decompose, &t_range);
+            Self::range_check_for_limb(meta, &limb, &q_range, &t_range);
         }
 
         Self {
@@ -64,6 +67,7 @@ impl Decompose8Config {
             limbs,
             q_decompose,
             t_range,
+            q_range
         }
     }
 
@@ -78,6 +82,7 @@ impl Decompose8Config {
         offset: usize,
     ) -> Result<Vec<AssignedNative<F>>, Error> {
         self.q_decompose.enable(region, offset)?;
+        self.q_range.enable(region, offset)?;
 
         /// Compute the full number from the limbs
         let full_number_cell = region.assign_advice(
@@ -129,6 +134,7 @@ impl Decompose8Config {
     ) -> Result<Vec<AssignedNative<F>>, Error> {
         if check_decomposition {
             self.q_decompose.enable(region, offset)?;
+            self.q_range.enable(region, offset)?;
         }
         let full_number =
             region.assign_advice(|| "full number", self.full_number_u64, offset, || row[0])?;
@@ -178,6 +184,7 @@ impl Decompose8Config {
         offset: usize,
     ) -> Result<Vec<AssignedNative<F>>, Error> {
         self.q_decompose.enable(region, offset)?;
+        self.q_range.enable(region, offset)?;
         let full_number_cell =
             region.assign_advice(|| "full number", self.full_number_u64, offset, || value)?;
 
@@ -207,13 +214,13 @@ impl Decompose8Config {
     fn range_check_for_limb<F: PrimeField>(
         meta: &mut ConstraintSystem<F>,
         limb: &Column<Advice>,
-        q_decompose: &Selector,
+        q_range: &Selector,
         t_range: &TableColumn,
     ) {
         meta.lookup(format!("lookup limb {:?}", limb), |meta| {
             let limb: Expression<F> = meta.query_advice(*limb, Rotation::cur());
-            let q_decompose = meta.query_selector(*q_decompose);
-            vec![(q_decompose * limb, *t_range)]
+            let q_range = meta.query_selector(*q_range);
+            vec![(q_range * limb, *t_range)]
         });
     }
 
