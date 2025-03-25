@@ -12,9 +12,3 @@ hex = "0.4.3"
 halo2_proofs = { git = "https://github.com/input-output-hk/halo2", features = ["cost-estimator"] }
 cfg-if = "1.0.0"
 blake2-rfc = "0.2.18"
-
-[features]
-default = ["opt_spread"]
-opt_4_limbs = []
-opt_recycle = []
-opt_spread  = []
