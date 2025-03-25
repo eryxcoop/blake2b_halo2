@@ -6,6 +6,7 @@ use halo2_proofs::circuit::{Layouter, SimpleFloorPlanner, Value};
 use halo2_proofs::plonk::{Advice, Circuit, Column, ConstraintSystem, Error, Fixed};
 use std::array;
 use std::marker::PhantomData;
+use crate::types::{AssignedBlake2bWord, AssignedElement};
 
 pub struct NegateCircuit<F: PrimeField> {
     value: Value<F>,
@@ -75,7 +76,7 @@ impl<F: PrimeField> Circuit<F> for NegateCircuit<F> {
                 let result = config.negate_config.generate_rows_from_cell(
                     &mut region,
                     &mut offset,
-                    &cell,
+                    &AssignedBlake2bWord(cell),
                     config.full_number_u64,
                 )?;
                 let fixed_cell = region.assign_fixed(

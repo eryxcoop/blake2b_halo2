@@ -1,6 +1,6 @@
 use super::*;
-use crate::auxiliar_functions::field_for;
-use crate::types::AssignedNative;
+use crate::auxiliar_functions::{field_for, value_for};
+use crate::types::{AssignedBlake2bWord, AssignedElement, AssignedNative, Blake2bWord};
 
 /// This config handles the bitwise negation of a 64-bit number.
 #[derive(Clone, Debug)]
@@ -37,21 +37,22 @@ impl NegateConfig {
         &self,
         region: &mut Region<F>,
         offset: &mut usize,
-        input: &AssignedNative<F>,
+        input: &AssignedBlake2bWord<F>,
         full_number_column: Column<Advice>,
-    ) -> Result<AssignedNative<F>, Error> {
+    ) -> Result<AssignedBlake2bWord<F>, Error> {
         self.q_negate.enable(region, *offset)?;
-        input.copy_advice(|| "Negation input", region, full_number_column, *offset)?;
+        input.0.copy_advice(|| "Negation input", region, full_number_column, *offset)?;
         *offset += 1;
 
-        let result_value = input.value().map(|v0| F::from(((1u128 << 64) - 1) as u64) - *v0);
-        let result_cell = region.assign_advice(
+        let result_value: Value<Blake2bWord> = input.value().map(|input| Blake2bWord(((1u128 << 64) - 1) as u64 - input.0));
+
+        let result_cell: AssignedNative<F> = region.assign_advice(
             || "Negation output",
             full_number_column,
             *offset,
-            || result_value,
+            || result_value.and_then(|v|value_for(v.0)),
         )?;
         *offset += 1;
-        Ok(result_cell)
+        Ok(AssignedBlake2bWord(result_cell))
     }
 }

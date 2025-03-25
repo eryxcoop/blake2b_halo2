@@ -1,16 +1,16 @@
 use crate::base_operations::addition_mod_64::AdditionMod64Config;
 use crate::base_operations::decompose_8::Decompose8Config;
+use crate::base_operations::decomposition::Decomposition;
 use crate::base_operations::generic_limb_rotation::LimbRotation;
 use crate::base_operations::negate::NegateConfig;
 use crate::base_operations::rotate_63::Rotate63Config;
 use crate::base_operations::xor::Xor;
 use crate::base_operations::xor_table::XorTableConfig;
 use crate::blake2b::chips::blake2b_instructions::Blake2bInstructions;
-use crate::types::{AssignedBlake2bWord, AssignedElement, AssignedRow};
+use crate::types::{AssignedBlake2bWord, AssignedRow};
 use ff::PrimeField;
 use halo2_proofs::circuit::{Layouter, Region};
 use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Error};
-use crate::base_operations::decomposition::Decomposition;
 
 /// This is the main chip for the Blake2b hash function. It is responsible for the entire hash computation.
 /// It contains all the necessary chips and some extra columns.
@@ -148,13 +148,12 @@ impl Blake2bInstructions for Blake2bChipOptRecycle {
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<AssignedBlake2bWord<F>, Error> {
-        let cell = self.negate_config.generate_rows_from_cell(
+        self.negate_config.generate_rows_from_cell(
             region,
             offset,
-            &input_cell.inner_value(),
+            input_cell,
             self.get_full_number_column(),
-        )?;
-        Ok(AssignedBlake2bWord::<F>::new(cell))
+        )
     }
 
     fn xor_and_return_full_row<F: PrimeField>(
