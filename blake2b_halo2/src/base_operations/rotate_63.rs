@@ -47,14 +47,14 @@ impl Rotate63Config {
         region: &mut Region<F>,
         offset: &mut usize,
         input: &AssignedNative<F>,
-        decompose_config: &mut impl Decomposition,
+        full_number_u64: Column<Advice>,
     ) -> Result<AssignedNative<F>, Error> {
         self.q_rot63.enable(region, *offset)?;
         let result_value =
             input.value().map(|input| auxiliar_functions::rotate_right_field_element(*input, 63));
         let result_cell = region.assign_advice(
             || "Rotate63 output",
-            decompose_config.get_full_number_u64_column(),
+            full_number_u64,
             *offset,
             || result_value,
         )?;

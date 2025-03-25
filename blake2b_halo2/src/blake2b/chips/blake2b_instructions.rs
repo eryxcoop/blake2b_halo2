@@ -430,12 +430,11 @@ pub trait Blake2bInstructions: Clone {
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<AssignedBlake2bWord<F>, Error> {
-        let mut decompose_8_config = self.decompose_8_config();
         Ok(AssignedBlake2bWord::<F>::new(self.rotate_63_config().generate_rotation_rows_from_cells(
             region,
             offset,
             &input_row[0],
-            &mut decompose_8_config,
+            self.get_full_number_column(),
         )?))
     }
 
