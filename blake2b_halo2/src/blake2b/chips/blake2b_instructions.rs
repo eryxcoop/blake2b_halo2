@@ -3,7 +3,7 @@ use crate::base_operations::generic_limb_rotation::LimbRotation;
 use crate::base_operations::negate::NegateConfig;
 use crate::base_operations::rotate_63::Rotate63Config;
 use crate::blake2b::chips::utils::{compute_processed_bytes_count_value_for_iteration, constrain_padding_cells_to_equal_zero, full_number_of_each_state_row, get_total_blocks_count, ABCD, BLAKE2B_BLOCK_SIZE, IV_CONSTANTS, SIGMA};
-use crate::types::AssignedElement;
+use crate::types::{AssignedElement, AssignedRow};
 use crate::types::{AssignedBlake2bWord, AssignedByte, AssignedNative};
 use ff::PrimeField;
 use halo2_proofs::circuit::{Layouter, Region};
@@ -263,9 +263,9 @@ pub trait Blake2bInstructions: Clone {
             global_state[i] = self.xor(&global_state[i], &state[i], region, row_offset)?;
             let row =
                 self.xor_and_return_full_row(&global_state[i], &state[i + 8], region, row_offset)?;
-            let mut row_limbs: Vec<_> = row[1..].iter().map(|cell| AssignedByte::<F>::new((*cell).clone())).collect();
+            let mut row_limbs: Vec<_> = row.limbs.try_into().unwrap();
             global_state_bytes.append(&mut row_limbs);
-            global_state[i] = AssignedBlake2bWord::<F>::new(row[0].clone());
+            global_state[i] = row.full_number;
         }
         let global_state_bytes_array = global_state_bytes.try_into().unwrap();
         Ok(global_state_bytes_array)
@@ -305,7 +305,7 @@ pub trait Blake2bInstructions: Clone {
         rhs: &AssignedBlake2bWord<F>,
         region: &mut Region<F>,
         offset: &mut usize,
-    ) -> Result<[AssignedNative<F>; 9], Error>;
+    ) -> Result<AssignedRow<F>, Error>;
 
     fn xor<F: PrimeField>(
         &self,

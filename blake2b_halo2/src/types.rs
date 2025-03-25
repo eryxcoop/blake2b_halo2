@@ -100,44 +100,22 @@ pub fn fe_to_big<F: PrimeField>(fe: F) -> BigUint {
     BigUint::from_bytes_le(fe.to_repr().as_ref())
 }
 
-// pub struct Row8Limbs<F: PrimeField> {
-//     full_number: AssignedBlake2bWord<F>,
-//     limbs: Vec<AssignedByte<F>>,
-// }
-//
-// impl<F: PrimeField> Row8Limbs<F> {
-//     pub fn new(full_number: AssignedBlake2bWord<F>, limbs: Vec<impl AssignedElement<F>>) -> Self {
-//         #[cfg(not(test))]
-//         assert!(limbs.len() == 8);
-//         Self { full_number, limbs }
-//     }
-// }
-//
-// pub struct Row4Limbs<F: PrimeField> {
-//     full_number: AssignedBlake2bWord<F>,
-//     limbs: Vec<AssignedByte<F>>,
-// }
-//
-// impl<F: PrimeField> Row4Limbs<F> {
-//     pub fn new(full_number: AssignedBlake2bWord<F>, limbs: Vec<impl AssignedElement<F>>) -> Self {
-//         #[cfg(not(test))]
-//         assert!(limbs.len() == 4);
-//         Self { full_number, limbs }
-//     }
-// }
-//
-// pub trait RowLimb <F: PrimeField> {
-//     fn full_number(&self) -> AssignedBlake2bWord<F>;
-//     fn limbs(&self) -> Vec<impl AssignedElement<F>>;
-// }
-//
-// impl<F: PrimeField> RowLimb<F> for Row8Limbs<F> {
-//     fn full_number(&self) -> AssignedBlake2bWord<F> {
-//         self.full_number
-//     }
-//
-//     fn limbs(&self) -> Vec<impl AssignedElement<F>> {
-//         self.limbs.clone()
-//     }
-// }
+pub struct AssignedRow<F: PrimeField> {
+    pub full_number: AssignedBlake2bWord<F>,
+    pub limbs: [AssignedByte<F>; 8],
+}
+
+impl<F: PrimeField> AssignedRow<F> {
+    pub fn new(full_number: AssignedBlake2bWord<F>, limbs: [AssignedByte<F>; 8]) -> Self {
+        Self { full_number, limbs }
+    }
+
+    pub fn new_from_native(row: [AssignedNative<F>; 9]) -> Self {
+        let full_number = AssignedBlake2bWord::<F>::new(row[0].clone());
+        let limbs = row[1..].iter().map(|byte|
+            AssignedByte::<F>::new(byte.clone())
+        ).collect::<Vec<_>>();
+        Self::new(full_number, limbs.try_into().unwrap())
+    }
+}
 

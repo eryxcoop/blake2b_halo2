@@ -6,7 +6,7 @@ use crate::base_operations::rotate_63::Rotate63Config;
 use crate::base_operations::xor::Xor;
 use crate::base_operations::xor_table::XorTableConfig;
 use crate::blake2b::chips::blake2b_instructions::Blake2bInstructions;
-use crate::types::{AssignedBlake2bWord, AssignedElement, AssignedNative};
+use crate::types::{AssignedBlake2bWord, AssignedElement, AssignedNative, AssignedRow};
 use ff::PrimeField;
 use halo2_proofs::circuit::{Layouter, Region};
 use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Error};
@@ -163,16 +163,18 @@ impl Blake2bInstructions for Blake2bChipOptRecycle {
         rhs: &AssignedBlake2bWord<F>,
         region: &mut Region<F>,
         offset: &mut usize,
-    ) -> Result<[AssignedNative<F>; 9], Error> {
+    ) -> Result<AssignedRow<F>, Error> {
         let decompose_8_config = self.decompose_8_config();
-        self.xor_config.generate_xor_rows_from_cells(
+        let row = self.xor_config.generate_xor_rows_from_cells(
             region,
             offset,
             lhs,
             rhs,
             &decompose_8_config,
             false,
-        )
+        )?;
+
+        Ok(AssignedRow::<F>::new_from_native(row))
     }
 
     fn xor<F: PrimeField>(
