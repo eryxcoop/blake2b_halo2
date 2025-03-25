@@ -224,12 +224,12 @@ impl Blake2bInstructions for Blake2bChipOptRecycle {
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<AssignedBlake2bWord<F>, Error> {
-        Ok(AssignedBlake2bWord::<F>::new(self.rotate_63_config.generate_rotation_rows_from_cells(
+        self.rotate_63_config.generate_rotation_rows_from_cells(
             region,
             offset,
-            &input_row.full_number.inner_value(),
+            &input_row.full_number,
             self.get_full_number_column(),
-        )?))
+        )
     }
 
     fn rotate_right_16<F: PrimeField>(
@@ -239,13 +239,13 @@ impl Blake2bInstructions for Blake2bChipOptRecycle {
         offset: &mut usize,
     ) -> Result<AssignedBlake2bWord<F>, Error> {
         let mut decompose_8_config = self.decompose_8_config();
-        Ok(AssignedBlake2bWord::<F>::new(self.generic_limb_rotation_config.generate_rotation_rows_from_input_row(
+        self.generic_limb_rotation_config.generate_rotation_rows_from_input_row(
             region,
             offset,
             &mut decompose_8_config,
             input_row,
             2,
-        )?))
+        )
     }
 
     fn rotate_right_24<F: PrimeField>(
@@ -255,13 +255,13 @@ impl Blake2bInstructions for Blake2bChipOptRecycle {
         offset: &mut usize,
     ) -> Result<AssignedBlake2bWord<F>, Error> {
         let mut decompose_8_config = self.decompose_8_config();
-        Ok(AssignedBlake2bWord::<F>::new(self.generic_limb_rotation_config.generate_rotation_rows_from_input_row(
+        self.generic_limb_rotation_config.generate_rotation_rows_from_input_row(
             region,
             offset,
             &mut decompose_8_config,
             input_row,
             3,
-        )?))
+        )
     }
 
     fn rotate_right_32<F: PrimeField>(
@@ -271,13 +271,13 @@ impl Blake2bInstructions for Blake2bChipOptRecycle {
         offset: &mut usize,
     ) -> Result<AssignedBlake2bWord<F>, Error> {
         let mut decompose_8_config = self.decompose_8_config();
-        Ok(AssignedBlake2bWord::<F>::new(self.generic_limb_rotation_config.generate_rotation_rows_from_input_row(
+        self.generic_limb_rotation_config.generate_rotation_rows_from_input_row(
             region,
             offset,
             &mut decompose_8_config,
             input_row,
             4,
-        )?))
+        )
     }
 }
 

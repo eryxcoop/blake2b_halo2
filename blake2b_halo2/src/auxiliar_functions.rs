@@ -98,15 +98,15 @@ pub fn get_limb_from_field<F: PrimeField>(field: F, limb_number: usize) -> u8 {
     a_bytes[limb_number]
 }
 
-pub(crate) fn rotate_right_field_element<F: PrimeField>(
-    value_to_rotate: F,
+pub(crate) fn rotate_right_field_element(
+    value_to_rotate: Blake2bWord,
     rotation_degree: usize,
-) -> F {
-    let value_to_rotate = convert_to_u64(value_to_rotate);
+) -> Blake2bWord {
+    let value_to_rotate = value_to_rotate.0;
     let rotation_degree = rotation_degree % 64;
     let rotated_value = ((value_to_rotate as u128) >> rotation_degree)
         | ((value_to_rotate as u128) << (64 - rotation_degree));
-    F::from(rotated_value as u64)
+    Blake2bWord(rotated_value as u64)
 }
 
 pub fn unknown_trace_for_rot63<F: PrimeField, const R: usize>() -> [[Value<F>; R]; 2] {

@@ -1,5 +1,6 @@
 use super::*;
-use crate::types::AssignedNative;
+use crate::auxiliar_functions::value_for;
+use crate::types::{AssignedBlake2bWord, AssignedElement};
 use num_bigint::BigUint;
 
 /// This config handles the 63-right-bit rotation of a 64-bit number, which is the same as the
@@ -46,20 +47,21 @@ impl Rotate63Config {
         &self,
         region: &mut Region<F>,
         offset: &mut usize,
-        input: &AssignedNative<F>,
+        input: &AssignedBlake2bWord<F>,
         full_number_u64: Column<Advice>,
-    ) -> Result<AssignedNative<F>, Error> {
+    ) -> Result<AssignedBlake2bWord<F>, Error> {
         self.q_rot63.enable(region, *offset)?;
         let result_value =
-            input.value().map(|input| auxiliar_functions::rotate_right_field_element(*input, 63));
+            input.value().map(|input| auxiliar_functions::rotate_right_field_element(input, 63));
+
         let result_cell = region.assign_advice(
             || "Rotate63 output",
             full_number_u64,
             *offset,
-            || result_value,
+            || result_value.and_then(|v|value_for(v.0)),
         )?;
         *offset += 1;
-        Ok(result_cell)
+        Ok(AssignedBlake2bWord(result_cell))
     }
 
     /// Enforces the field's modulus to be greater than 2^65

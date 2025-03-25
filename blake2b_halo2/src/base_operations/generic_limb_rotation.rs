@@ -1,7 +1,8 @@
 use super::*;
-use crate::types::{AssignedElement, AssignedNative, AssignedRow};
+use crate::types::{AssignedBlake2bWord, AssignedElement, AssignedRow, Blake2bWord};
 use ff::PrimeField;
 use halo2_proofs::circuit::Value;
+use crate::auxiliar_functions::value_for;
 use crate::base_operations::decompose_8::Decompose8Config;
 
 #[derive(Default, Clone, Debug)]
@@ -27,15 +28,15 @@ impl LimbRotation {
         decompose_config: &mut Decompose8Config,
         input_row: AssignedRow<F>,
         limbs_to_rotate_to_the_right: usize,
-    ) -> Result<AssignedNative<F>, Error> {
-        let full_number = input_row.full_number.inner_value();
-        let result_value = Self::right_rotation_value(full_number.value(), limbs_to_rotate_to_the_right);
+    ) -> Result<AssignedBlake2bWord<F>, Error> {
+        let result_value =
+            Self::right_rotation_value(input_row.full_number.value(), limbs_to_rotate_to_the_right);
+
         let result_cell = region.assign_advice(
             ||"Full number rotation output",
             decompose_config.get_full_number_u64_column(),
             *offset,
-            || result_value
-        )?;
+            || result_value.and_then(|v|value_for(v.0)))?;
         decompose_config.q_decompose.enable(region, *offset)?;
 
         for i in 0..8 {
@@ -52,14 +53,14 @@ impl LimbRotation {
         }
 
         *offset += 1;
-        Ok(result_cell)
+        Ok(AssignedBlake2bWord(result_cell))
     }
 
     /// Computes the actual value of the rotation of the number
-    fn right_rotation_value<F: PrimeField>(value: Value<&F>, limbs_to_rotate: usize) -> Value<F> {
+    fn right_rotation_value(value: Value<Blake2bWord>, limbs_to_rotate: usize) -> Value<Blake2bWord> {
         value.map(|input| {
             let bits_to_rotate = limbs_to_rotate * 8;
-            auxiliar_functions::rotate_right_field_element(*input, bits_to_rotate)
+            auxiliar_functions::rotate_right_field_element(input, bits_to_rotate)
         })
     }
 }

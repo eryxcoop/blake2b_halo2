@@ -1,7 +1,7 @@
-use std::fmt::Debug;
 use ff::PrimeField;
 use halo2_proofs::circuit::{AssignedCell, Cell, Value};
 use num_bigint::BigUint;
+use std::fmt::Debug;
 
 
 /// The inner type of AssignedByte.
@@ -24,6 +24,12 @@ impl From<Blake2bWord> for u128 {
         value.0 as u128
     }
 }
+/*
+impl<F: PrimeField> From<&Blake2bWord> for Rational<F> {
+    fn from(value: &Blake2bWord) -> Self {
+        Self::Trivial(F::from(value.0))
+    }
+}*/
 
 pub type AssignedNative<F> = AssignedCell<F, F>;
 
