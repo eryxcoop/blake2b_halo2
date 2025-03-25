@@ -1,9 +1,7 @@
 use criterion::{criterion_group, criterion_main, BenchmarkGroup, BenchmarkId, Criterion, Throughput};
 use halo2_proofs::poly::kzg::params::ParamsKZG;
 use halo2_proofs::halo2curves::bn256::{Bn256};
-use blake2b_halo2::blake2b::chips::opt_4_limbs::Blake2bChipOpt4Limbs;
 use blake2b_halo2::blake2b::chips::opt_recycle::Blake2bChipOptRecycle;
-use blake2b_halo2::blake2b::chips::opt_spread::Blake2bChipOptSpread;
 use criterion::measurement::WallTime;
 use blake2b_halo2::blake2b::chips::blake2b_instructions::Blake2bInstructions;
 use blake2b_halo2::blake2b::circuit_runner::CircuitRunner;
@@ -23,23 +21,11 @@ pub fn benchmark_proof_generation(c: &mut Criterion) {
     for amount_of_blocks in benchmarking_block_sizes() {
         group.throughput(Throughput::Bytes(amount_of_blocks as u64));
 
-        benchmark_proof::<Blake2bChipOpt4Limbs>(
-            &params,
-            &mut group,
-            amount_of_blocks,
-            "opt_4_limbs",
-        );
         benchmark_proof::<Blake2bChipOptRecycle>(
             &params,
             &mut group,
             amount_of_blocks,
             "opt_recycle",
-        );
-        benchmark_proof::<Blake2bChipOptSpread>(
-            &params,
-            &mut group,
-            amount_of_blocks,
-            "opt_spread",
         );
     }
     group.finish()

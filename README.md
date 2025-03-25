@@ -14,66 +14,31 @@ The repo is divided into three parts:
 ## Documentation
 
 We have a [documentation](https://hackmd.io/@BjOWve_hTxGZidE1ii0HJg/HkVu20JFkx) where you can find more detail about 
-every implementation and the optimizations we made. Also you can find more explanation of all our gates.
+out blake implementation. Also you can find more explanation of all our gates.
 
-## Implementations
-
-We use features to toggle between different implementations. Right now we have three implementations (for more information about them you can see our documentation).
-
-To use our 'opt_4_limbs' implementation, set the `opt_4_limbs` feature.
-
-To use our 'opt_recycle' implementation, set the `opt_recycle` feature.
-
-To use our 'opt_spread' implementation, set the `opt_spread` feature.
-
-
-To give a quick summary:
-
-opt_4_limbs ----> turns on the sum operation with 4 limbs instead of 8 and xor with a precomputed table.
-
-opt_recycle ----> turns on the sum operation with 8 limbs and xor with a precomputed table.
-
-opt_spread  ----> turns on the sum operation with 8 limbs and xor with an 8-bit spread table.
 
 # Trying the implementation
 Under the directory ```interface``` you can try the halo2 implementation of Blake2b.
 Just fill the ```src/inputs.json``` file with the message, key and desired output length (in bytes) and run the following commands:
 
-To try the optimization 'opt_4_limbs': 
+To try the implementation run: 
 
-```cargo run --release --features interface/opt_4_limbs```
-
-To try the optimization 'opt_recycle':
-
-```cargo run --release --features interface/opt_recycle```
-
-To try the optimization 'opt_spread':
-
-```cargo run --release --features interface/opt_spread```
+```cargo run --release```
 
 
 # Running the tests
 
 We have unit tests for all our auxiliar chips and the vector tests for the Blake2b implementation. All the tests should be executed on the ```blake2b_halo2``` directory.
 
-To test the optimization 'opt_4_limbs':
+To run tests of our Halo2 implementation':
 
-```cargo test --release --features blake2b_halo2/opt_4_limbs test_hashes_in_circuit_```
-
-To test the optimization 'opt_recycle':
-
-```cargo test --release --features blake2b_halo2/opt_recycle test_hashes_in_circuit_```
-
-To test the optimization 'opt_spread':
-
-```cargo test --release --features blake2b_halo2/opt_spread test_hashes_in_circuit_```
-
+```cargo test --release test_hashes_in_circuit_```
 
 Those tests use the same test vector than the plain Rust implementation. Running the above tests can take some time since there are 512 tests in the test vector, and each one repeats all the static procedures (like creating big lookup tables), but it shouldn't take more than 2 minutes in release mode.
 
 To test the auxiliar chips:
 
-```cargo test --release --features blake2b_halo2/opt_recycle -- --skip test_hashes_in_circuit_```
+```cargo test --release -- --skip test_hashes_in_circuit_```
 
 # Benchmarking
 Just run

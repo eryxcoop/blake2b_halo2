@@ -86,7 +86,6 @@ name = "blake2b_halo2"
 version = "0.1.0"
 dependencies = [
  "blake2-rfc",
- "cfg-if",
  "criterion",
  "ff",
  "halo2_proofs",
