@@ -1,9 +1,7 @@
 use crate::base_operations::decompose_8::Decompose8Config;
-use crate::base_operations::decomposition::Decomposition;
 use crate::base_operations::generic_limb_rotation::LimbRotation;
 use crate::base_operations::negate::NegateConfig;
 use crate::base_operations::rotate_63::Rotate63Config;
-use crate::base_operations::xor::Xor;
 use crate::blake2b::chips::utils::{compute_processed_bytes_count_value_for_iteration, constrain_padding_cells_to_equal_zero, full_number_of_each_state_row, get_total_blocks_count, ABCD, BLAKE2B_BLOCK_SIZE, IV_CONSTANTS, SIGMA};
 use crate::types::AssignedElement;
 use crate::types::{AssignedBlake2bWord, AssignedByte, AssignedNative};
@@ -24,19 +22,14 @@ pub trait Blake2bInstructions: Clone {
         limbs: [Column<Advice>; 8],
     ) -> Self;
 
-    // Populate all lookup tables needed for the chip
+    /// Populate all lookup tables needed for the chip
     fn populate_lookup_tables<F: PrimeField>(
         &self,
         layouter: &mut impl Layouter<F>,
     ) -> Result<(), Error>;
 
-    // Getters for the internal members of the chip
+    // Getters for some internal members of the chip
     fn decompose_8_config(&self) -> Decompose8Config;
-    fn generic_limb_rotation_config(&self) -> LimbRotation;
-    fn rotate_63_config(&self) -> Rotate63Config;
-    fn xor_config(&self) -> impl Xor;
-    fn negate_config(&self) -> NegateConfig;
-
     fn get_limb_column(&self, index: usize) -> Column<Advice>;
     fn get_full_number_column(&self) -> Column<Advice>;
 
@@ -346,15 +339,7 @@ pub trait Blake2bInstructions: Clone {
         input_cell: &AssignedBlake2bWord<F>,
         region: &mut Region<F>,
         offset: &mut usize,
-    ) -> Result<AssignedBlake2bWord<F>, Error> {
-        let cell = self.negate_config().generate_rows_from_cell(
-            region,
-            offset,
-            &input_cell.inner_value(),
-            self.get_full_number_column(),
-        )?;
-        Ok(AssignedBlake2bWord::<F>::new(cell))
-    }
+    ) -> Result<AssignedBlake2bWord<F>, Error>;
 
     /// In this case we need to perform the xor operation and return the entire row, because we
     /// need it to constrain the result.
@@ -364,17 +349,7 @@ pub trait Blake2bInstructions: Clone {
         rhs: &AssignedBlake2bWord<F>,
         region: &mut Region<F>,
         offset: &mut usize,
-    ) -> Result<[AssignedNative<F>; 9], Error> {
-        let decompose_8_config = self.decompose_8_config();
-        self.xor_config().generate_xor_rows_from_cells(
-            region,
-            offset,
-            lhs,
-            rhs,
-            &decompose_8_config,
-            false,
-        )
-    }
+    ) -> Result<[AssignedNative<F>; 9], Error>;
 
     fn xor<F: PrimeField>(
         &self,
@@ -382,19 +357,7 @@ pub trait Blake2bInstructions: Clone {
         rhs: &AssignedBlake2bWord<F>,
         region: &mut Region<F>,
         offset: &mut usize,
-    ) -> Result<AssignedBlake2bWord<F>, Error> {
-        let decompose_8_config = self.decompose_8_config();
-        let full_number_cell = self.xor_config().generate_xor_rows_from_cells(
-            region,
-            offset,
-            &lhs,
-            &rhs,
-            &decompose_8_config,
-            false,
-        )?[0]
-            .clone();
-        Ok(AssignedBlake2bWord::<F>::new(full_number_cell))
-    }
+    ) -> Result<AssignedBlake2bWord<F>, Error>;
 
     fn add<F: PrimeField>(
         &self,
@@ -429,78 +392,30 @@ pub trait Blake2bInstructions: Clone {
         input_row: [AssignedNative<F>; 9],
         region: &mut Region<F>,
         offset: &mut usize,
-    ) -> Result<AssignedBlake2bWord<F>, Error> {
-        Ok(AssignedBlake2bWord::<F>::new(self.rotate_63_config().generate_rotation_rows_from_cells(
-            region,
-            offset,
-            &input_row[0],
-            self.get_full_number_column(),
-        )?))
-    }
+    ) -> Result<AssignedBlake2bWord<F>, Error>;
 
     fn rotate_right_16<F: PrimeField>(
         &self,
         input_row: [AssignedNative<F>; 9],
         region: &mut Region<F>,
         offset: &mut usize,
-    ) -> Result<AssignedBlake2bWord<F>, Error> {
-        let mut decompose_8_config = self.decompose_8_config();
-        Ok(AssignedBlake2bWord::<F>::new(self.generic_limb_rotation_config().generate_rotation_rows_from_input_row(
-            region,
-            offset,
-            &mut decompose_8_config,
-            input_row,
-            2,
-        )?))
-    }
+    ) -> Result<AssignedBlake2bWord<F>, Error>;
 
     fn rotate_right_24<F: PrimeField>(
         &self,
         input_row: [AssignedNative<F>; 9],
         region: &mut Region<F>,
         offset: &mut usize,
-    ) -> Result<AssignedBlake2bWord<F>, Error> {
-        let mut decompose_8_config = self.decompose_8_config();
-        Ok(AssignedBlake2bWord::<F>::new(self.generic_limb_rotation_config().generate_rotation_rows_from_input_row(
-            region,
-            offset,
-            &mut decompose_8_config,
-            input_row,
-            3,
-        )?))
-    }
+    ) -> Result<AssignedBlake2bWord<F>, Error>;
 
     fn rotate_right_32<F: PrimeField>(
         &self,
         input_row: [AssignedNative<F>; 9],
         region: &mut Region<F>,
         offset: &mut usize,
-    ) -> Result<AssignedBlake2bWord<F>, Error> {
-        let mut decompose_8_config = self.decompose_8_config();
-        Ok(AssignedBlake2bWord::<F>::new(self.generic_limb_rotation_config().generate_rotation_rows_from_input_row(
-            region,
-            offset,
-            &mut decompose_8_config,
-            input_row,
-            4,
-        )?))
-    }
+    ) -> Result<AssignedBlake2bWord<F>, Error>;
 
     // ----- Auxiliar methods ----- //
-
-    fn populate_lookup_table_8<F: PrimeField>(
-        &self,
-        layouter: &mut impl Layouter<F>,
-    ) -> Result<(), Error> {
-        self.decompose_8_config().populate_lookup_table(layouter)
-    }
-
-    fn populate_xor_lookup_table<F: PrimeField>(
-        &self,
-        layouter: &mut impl Layouter<F>,
-    ) -> Result<(), Error> {
-        self.xor_config().populate_xor_lookup_table(layouter)
-    }
 
     /// Blake2b uses an initialization vector (iv) that is hardcoded. This method assigns those
     /// values to fixed cells to use later on.

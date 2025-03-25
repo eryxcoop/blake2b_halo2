@@ -10,6 +10,7 @@ use crate::types::{AssignedBlake2bWord, AssignedElement, AssignedNative};
 use ff::PrimeField;
 use halo2_proofs::circuit::{Layouter, Region};
 use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Error};
+use crate::base_operations::decomposition::Decomposition;
 
 /// This is the main chip for the Blake2b hash function. It is responsible for the entire hash computation.
 /// It contains all the necessary chips and some extra columns.
@@ -80,22 +81,6 @@ impl Blake2bInstructions for Blake2bChipOptRecycle {
         self.decompose_8_config.clone()
     }
 
-    fn generic_limb_rotation_config(&self) -> LimbRotation {
-        self.generic_limb_rotation_config.clone()
-    }
-
-    fn rotate_63_config(&self) -> Rotate63Config {
-        self.rotate_63_config.clone()
-    }
-
-    fn xor_config(&self) -> impl Xor {
-        self.xor_config.clone()
-    }
-
-    fn negate_config(&self) -> NegateConfig {
-        self.negate_config.clone()
-    }
-
     // Functions that are optimization-specific
 
     /// opt_recycle optimization decomposes the sum operands in 8-bit limbs, so we need to use the
@@ -153,6 +138,121 @@ impl Blake2bInstructions for Blake2bChipOptRecycle {
     ) -> Result<[AssignedNative<F>; 9], Error> {
         self.xor_copying_one_parameter(previous_cell, cell_to_copy, region, offset)
     }
+
+    fn rotate_right_63<F: PrimeField>(
+        &self,
+        input_row: [AssignedNative<F>; 9],
+        region: &mut Region<F>,
+        offset: &mut usize,
+    ) -> Result<AssignedBlake2bWord<F>, Error> {
+        Ok(AssignedBlake2bWord::<F>::new(self.rotate_63_config.generate_rotation_rows_from_cells(
+            region,
+            offset,
+            &input_row[0],
+            self.get_full_number_column(),
+        )?))
+    }
+
+    fn rotate_right_16<F: PrimeField>(
+        &self,
+        input_row: [AssignedNative<F>; 9],
+        region: &mut Region<F>,
+        offset: &mut usize,
+    ) -> Result<AssignedBlake2bWord<F>, Error> {
+        let mut decompose_8_config = self.decompose_8_config();
+        Ok(AssignedBlake2bWord::<F>::new(self.generic_limb_rotation_config.generate_rotation_rows_from_input_row(
+            region,
+            offset,
+            &mut decompose_8_config,
+            input_row,
+            2,
+        )?))
+    }
+
+    fn rotate_right_24<F: PrimeField>(
+        &self,
+        input_row: [AssignedNative<F>; 9],
+        region: &mut Region<F>,
+        offset: &mut usize,
+    ) -> Result<AssignedBlake2bWord<F>, Error> {
+        let mut decompose_8_config = self.decompose_8_config();
+        Ok(AssignedBlake2bWord::<F>::new(self.generic_limb_rotation_config.generate_rotation_rows_from_input_row(
+            region,
+            offset,
+            &mut decompose_8_config,
+            input_row,
+            3,
+        )?))
+    }
+
+    fn rotate_right_32<F: PrimeField>(
+        &self,
+        input_row: [AssignedNative<F>; 9],
+        region: &mut Region<F>,
+        offset: &mut usize,
+    ) -> Result<AssignedBlake2bWord<F>, Error> {
+        let mut decompose_8_config = self.decompose_8_config();
+        Ok(AssignedBlake2bWord::<F>::new(self.generic_limb_rotation_config.generate_rotation_rows_from_input_row(
+            region,
+            offset,
+            &mut decompose_8_config,
+            input_row,
+            4,
+        )?))
+    }
+
+    fn not<F: PrimeField>(
+        &self,
+        input_cell: &AssignedBlake2bWord<F>,
+        region: &mut Region<F>,
+        offset: &mut usize,
+    ) -> Result<AssignedBlake2bWord<F>, Error> {
+        let cell = self.negate_config.generate_rows_from_cell(
+            region,
+            offset,
+            &input_cell.inner_value(),
+            self.get_full_number_column(),
+        )?;
+        Ok(AssignedBlake2bWord::<F>::new(cell))
+    }
+
+    fn xor<F: PrimeField>(
+        &self,
+        lhs: &AssignedBlake2bWord<F>,
+        rhs: &AssignedBlake2bWord<F>,
+        region: &mut Region<F>,
+        offset: &mut usize,
+    ) -> Result<AssignedBlake2bWord<F>, Error> {
+        let decompose_8_config = self.decompose_8_config();
+        let full_number_cell = self.xor_config.generate_xor_rows_from_cells(
+            region,
+            offset,
+            &lhs,
+            &rhs,
+            &decompose_8_config,
+            false,
+        )?[0]
+            .clone();
+        Ok(AssignedBlake2bWord::<F>::new(full_number_cell))
+    }
+
+    fn xor_and_return_full_row<F: PrimeField>(
+        &self,
+        lhs: &AssignedBlake2bWord<F>,
+        rhs: &AssignedBlake2bWord<F>,
+        region: &mut Region<F>,
+        offset: &mut usize,
+    ) -> Result<[AssignedNative<F>; 9], Error> {
+        let decompose_8_config = self.decompose_8_config();
+        self.xor_config.generate_xor_rows_from_cells(
+            region,
+            offset,
+            lhs,
+            rhs,
+            &decompose_8_config,
+            false,
+        )
+    }
 }
 
 impl Blake2bChipOptRecycle {
@@ -174,5 +274,19 @@ impl Blake2bChipOptRecycle {
             &self.decompose_8_config,
             true,
         )
+    }
+
+    fn populate_lookup_table_8<F: PrimeField>(
+        &self,
+        layouter: &mut impl Layouter<F>,
+    ) -> Result<(), Error> {
+        self.decompose_8_config().populate_lookup_table(layouter)
+    }
+
+    fn populate_xor_lookup_table<F: PrimeField>(
+        &self,
+        layouter: &mut impl Layouter<F>,
+    ) -> Result<(), Error> {
+        self.xor_config.populate_xor_lookup_table(layouter)
     }
 }
