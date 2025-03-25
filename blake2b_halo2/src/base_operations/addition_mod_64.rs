@@ -1,6 +1,7 @@
 use super::*;
 use crate::types::{AssignedBit, AssignedBlake2bWord, AssignedElement, AssignedNative, Blake2bWord};
 use auxiliar_functions::field_for;
+use crate::base_operations::decompose_8::Decompose8Config;
 
 #[derive(Clone, Debug)]
 /// This config uses two generics, T and R.
@@ -61,7 +62,7 @@ impl AdditionMod64Config {
         offset: &mut usize,
         previous_cell: &AssignedBlake2bWord<F>,
         cell_to_copy: &AssignedBlake2bWord<F>,
-        decompose_config: &impl Decomposition,
+        decompose_config: &Decompose8Config,
         use_last_cell_as_first_operand: bool,
     ) -> Result<(AssignedBlake2bWord<F>, AssignedBit<F>), Error> {
         let (result_value, carry_value) =

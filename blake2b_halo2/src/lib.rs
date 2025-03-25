@@ -2,7 +2,6 @@
 
 use halo2_proofs::{circuit::Layouter, plonk::ConstraintSystem};
 
-use crate::base_operations::decomposition::Decomposition;
 use ff::{PrimeField};
 use halo2_proofs::circuit::{Region, Value};
 use halo2_proofs::plonk::{Advice, Column, Error, Expression, Selector, TableColumn};

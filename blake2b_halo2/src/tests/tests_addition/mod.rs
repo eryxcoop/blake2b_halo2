@@ -27,7 +27,7 @@ impl AdditionMod64Config {
         &self,
         layouter: &mut impl Layouter<F>,
         addition_trace: [[Value<F>; 9]; 3],
-        decompose_config: &impl Decomposition,
+        decompose_config: &Decompose8Config,
     ) -> Result<(), Error> {
         layouter.assign_region(
             || "sum",
