@@ -43,7 +43,7 @@ impl<C: Blake2bInstructions> Blake2b<C> {
 
                 let (
                     iv_constant_cells,
-                    output_size_constant,
+                    initial_state_0,
                     zero_constant,
                 ) = self.chip.assign_constant_advice_cells(
                     output_size,
@@ -54,7 +54,7 @@ impl<C: Blake2bInstructions> Blake2b<C> {
 
                 let mut initial_global_state = self.chip.compute_initial_state(
                     &iv_constant_cells,
-                    output_size_constant,
+                    initial_state_0,
                 )?;
 
                 self.chip.perform_blake2b_iterations(
