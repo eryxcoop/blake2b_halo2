@@ -6,7 +6,7 @@ use crate::base_operations::rotate_63::Rotate63Config;
 use crate::base_operations::xor::Xor;
 use crate::base_operations::xor_table::XorTableConfig;
 use crate::blake2b::chips::blake2b_instructions::Blake2bInstructions;
-use crate::types::{AssignedBlake2bWord, AssignedElement, AssignedNative, AssignedRow};
+use crate::types::{AssignedBlake2bWord, AssignedElement, AssignedRow};
 use ff::PrimeField;
 use halo2_proofs::circuit::{Layouter, Region};
 use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Error};
@@ -174,7 +174,7 @@ impl Blake2bInstructions for Blake2bChipOptRecycle {
             false,
         )?;
 
-        Ok(AssignedRow::<F>::new_from_native(row))
+        Ok(row)
     }
 
     fn xor<F: PrimeField>(
@@ -192,9 +192,9 @@ impl Blake2bInstructions for Blake2bChipOptRecycle {
             &rhs,
             &decompose_8_config,
             false,
-        )?[0]
+        )?.full_number
             .clone();
-        Ok(AssignedBlake2bWord::<F>::new(full_number_cell))
+        Ok(full_number_cell)
     }
 
     /// opt_recycle optimization decomposes the sum operands in 8-bit limbs, so we need to use the
@@ -220,21 +220,21 @@ impl Blake2bInstructions for Blake2bChipOptRecycle {
 
     fn rotate_right_63<F: PrimeField>(
         &self,
-        input_row: [AssignedNative<F>; 9],
+        input_row: AssignedRow<F>,
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<AssignedBlake2bWord<F>, Error> {
         Ok(AssignedBlake2bWord::<F>::new(self.rotate_63_config.generate_rotation_rows_from_cells(
             region,
             offset,
-            &input_row[0],
+            &input_row.full_number.inner_value(),
             self.get_full_number_column(),
         )?))
     }
 
     fn rotate_right_16<F: PrimeField>(
         &self,
-        input_row: [AssignedNative<F>; 9],
+        input_row: AssignedRow<F>,
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<AssignedBlake2bWord<F>, Error> {
@@ -250,7 +250,7 @@ impl Blake2bInstructions for Blake2bChipOptRecycle {
 
     fn rotate_right_24<F: PrimeField>(
         &self,
-        input_row: [AssignedNative<F>; 9],
+        input_row: AssignedRow<F>,
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<AssignedBlake2bWord<F>, Error> {
@@ -266,7 +266,7 @@ impl Blake2bInstructions for Blake2bChipOptRecycle {
 
     fn rotate_right_32<F: PrimeField>(
         &self,
-        input_row: [AssignedNative<F>; 9],
+        input_row: AssignedRow<F>,
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<AssignedBlake2bWord<F>, Error> {
@@ -291,7 +291,7 @@ impl Blake2bChipOptRecycle {
         cell_to_copy: &AssignedBlake2bWord<F>,
         region: &mut Region<F>,
         offset: &mut usize,
-    ) -> Result<[AssignedNative<F>; 9], Error> {
+    ) -> Result<AssignedRow<F>, Error> {
         self.xor_config.generate_xor_rows_from_cells(
             region,
             offset,
@@ -347,7 +347,7 @@ impl Blake2bChipOptRecycle {
         cell_to_copy: &AssignedBlake2bWord<F>,
         region: &mut Region<F>,
         offset: &mut usize,
-    ) -> Result<[AssignedNative<F>; 9], Error> {
+    ) -> Result<AssignedRow<F>, Error> {
         self.xor_copying_one_parameter(previous_cell, cell_to_copy, region, offset)
     }
 }

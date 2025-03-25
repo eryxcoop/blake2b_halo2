@@ -325,28 +325,28 @@ pub trait Blake2bInstructions: Clone {
 
     fn rotate_right_63<F: PrimeField>(
         &self,
-        input_row: [AssignedNative<F>; 9],
+        input_row: AssignedRow<F>,
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<AssignedBlake2bWord<F>, Error>;
 
     fn rotate_right_16<F: PrimeField>(
         &self,
-        input_row: [AssignedNative<F>; 9],
+        input_row: AssignedRow<F>,
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<AssignedBlake2bWord<F>, Error>;
 
     fn rotate_right_24<F: PrimeField>(
         &self,
-        input_row: [AssignedNative<F>; 9],
+        input_row: AssignedRow<F>,
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<AssignedBlake2bWord<F>, Error>;
 
     fn rotate_right_32<F: PrimeField>(
         &self,
-        input_row: [AssignedNative<F>; 9],
+        input_row: AssignedRow<F>,
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<AssignedBlake2bWord<F>, Error>;

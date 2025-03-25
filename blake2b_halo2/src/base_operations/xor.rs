@@ -1,6 +1,6 @@
 use super::*;
 use crate::base_operations::decompose_8::Decompose8Config;
-use crate::types::{AssignedBlake2bWord, AssignedNative};
+use crate::types::{AssignedBlake2bWord, AssignedRow};
 
 pub trait Xor {
     fn populate_xor_lookup_table<F: PrimeField>(
@@ -16,5 +16,5 @@ pub trait Xor {
         cell_to_copy: &AssignedBlake2bWord<F>,
         decompose_8_config: &Decompose8Config,
         use_previous_cell: bool,
-    ) -> Result<[AssignedNative<F>; 9], Error>;
+    ) -> Result<AssignedRow<F>, Error>;
 }

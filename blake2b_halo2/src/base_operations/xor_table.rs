@@ -1,7 +1,7 @@
 use super::*;
 use crate::base_operations::decompose_8::Decompose8Config;
 use crate::base_operations::xor::Xor;
-use crate::types::{AssignedBlake2bWord, AssignedElement, AssignedNative};
+use crate::types::{AssignedBlake2bWord, AssignedElement, AssignedRow};
 
 /// This config handles the xor operation in the trace. Requires a representation in 8-bit limbs
 /// because it utilices a lookup table like this one:
@@ -80,7 +80,7 @@ impl Xor for XorTableConfig {
         cell_to_copy: &AssignedBlake2bWord<F>,
         decompose_8_config: &Decompose8Config,
         use_previous_cell: bool,
-    ) -> Result<[AssignedNative<F>; 9], Error> {
+    ) -> Result<AssignedRow<F>, Error> {
         let difference_offset = if use_previous_cell { 1 } else { 0 };
         self.q_xor.enable(region, *offset - difference_offset)?;
 
@@ -104,8 +104,9 @@ impl Xor for XorTableConfig {
         )?;
         *offset += 1;
 
-        let result_row_array = result_row.try_into().unwrap();
-        Ok(result_row_array)
+        let result_assigned_row = AssignedRow::<F>::new_from_native(
+            result_row.try_into().unwrap());
+        Ok(result_assigned_row)
     }
 }
 

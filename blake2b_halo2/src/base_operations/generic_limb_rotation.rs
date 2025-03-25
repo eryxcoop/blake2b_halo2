@@ -1,5 +1,5 @@
 use super::*;
-use crate::types::AssignedNative;
+use crate::types::{AssignedElement, AssignedNative, AssignedRow};
 use ff::PrimeField;
 use halo2_proofs::circuit::Value;
 use crate::base_operations::decompose_8::Decompose8Config;
@@ -25,10 +25,11 @@ impl LimbRotation {
         region: &mut Region<F>,
         offset: &mut usize,
         decompose_config: &mut Decompose8Config,
-        input_row: [AssignedNative<F>; 9],
+        input_row: AssignedRow<F>,
         limbs_to_rotate_to_the_right: usize,
     ) -> Result<AssignedNative<F>, Error> {
-        let result_value = Self::right_rotation_value(input_row[0].value(), limbs_to_rotate_to_the_right);
+        let full_number = input_row.full_number.inner_value();
+        let result_value = Self::right_rotation_value(full_number.value(), limbs_to_rotate_to_the_right);
         let result_cell = region.assign_advice(
             ||"Full number rotation output",
             decompose_config.get_full_number_u64_column(),
@@ -40,9 +41,9 @@ impl LimbRotation {
         for i in 0..8 {
             // We must subtract limb_rotations_right because if a number is expressed bitwise
             // as x = l1|l2|...|l7|l8, the limbs are stored as [l8, l7, ..., l2, l1]
-            let top_assigned_cell = input_row[i + 1].clone();
+            let top_assigned_cell = input_row.limbs[i].clone();
             let out_limb_index = (8 + i - limbs_to_rotate_to_the_right) % 8;
-            top_assigned_cell.copy_advice(
+            top_assigned_cell.inner_value().copy_advice(
                 || "Limb rotation output",
                 region,
                 decompose_config.get_limb_column(out_limb_index),
