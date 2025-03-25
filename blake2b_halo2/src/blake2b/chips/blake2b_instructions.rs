@@ -286,51 +286,7 @@ pub trait Blake2bInstructions: Clone {
         current_block_words: &[AssignedBlake2bWord<F>; 16],
         region: &mut Region<F>,
         offset: &mut usize,
-    ) -> Result<(), Error> {
-        let v_a = state[a_index].clone();
-        let v_b = state[b_index].clone();
-        let v_c = state[c_index].clone();
-        let v_d = state[d_index].clone();
-        let x = current_block_words[sigma_even].clone();
-        let y = current_block_words[sigma_odd].clone();
-
-        // v[a] = ((v[a] as u128 + v[b] as u128 + x as u128) % (1 << 64)) as u64;
-        let a_plus_b = self.add(&v_a, &v_b, region, offset)?;
-        let a = self.add_copying_one_parameter(&a_plus_b, &x, region, offset)?;
-
-        // v[d] = rotr_64(v[d] ^ v[a], 32);
-        let d_xor_a = self.xor_for_mix(&a, &v_d, region, offset)?;
-        let d = self.rotate_right_32(d_xor_a, region, offset)?;
-
-        // v[c] = ((v[c] as u128 + v[d] as u128) % (1 << 64)) as u64;
-        let c = self.add_copying_one_parameter(&d, &v_c, region, offset)?;
-
-        // v[b] = rotr_64(v[b] ^ v[c], 24);
-        let b_xor_c = self.xor_for_mix(&c, &v_b, region, offset)?;
-        let b = self.rotate_right_24(b_xor_c, region, offset)?;
-
-        // v[a] = ((v[a] as u128 + v[b] as u128 + y as u128) % (1 << 64)) as u64;
-        let a_plus_b = self.add_copying_one_parameter(&b, &a, region, offset)?;
-        let a = self.add_copying_one_parameter(&a_plus_b, &y, region, offset)?;
-
-        // v[d] = rotr_64(v[d] ^ v[a], 16);
-        let d_xor_a = self.xor_for_mix(&a, &d, region, offset)?;
-        let d = self.rotate_right_16(d_xor_a, region, offset)?;
-
-        // v[c] = ((v[c] as u128 + v[d] as u128) % (1 << 64)) as u64;
-        let c = self.add_copying_one_parameter(&d, &c, region, offset)?;
-
-        // v[b] = rotr_64(v[b] ^ v[c], 63);
-        let b_xor_c = self.xor_for_mix(&c, &b, region, offset)?;
-        let b = self.rotate_right_63(b_xor_c, region, offset)?;
-
-        state[a_index] = a;
-        state[b_index] = b;
-        state[c_index] = c;
-        state[d_index] = d;
-
-        Ok(())
-    }
+    ) -> Result<(), Error>;
 
     // ----- Basic operations ----- //
 
@@ -366,26 +322,6 @@ pub trait Blake2bInstructions: Clone {
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<AssignedBlake2bWord<F>, Error>;
-
-    /// Sometimes we can reutilice an output row to be the input row of the next operation. This is
-    /// a convenience method for that in the case of the sum operation.
-    fn add_copying_one_parameter<F: PrimeField>(
-        &self,
-        previous_cell: &AssignedBlake2bWord<F>,
-        cell_to_copy: &AssignedBlake2bWord<F>,
-        region: &mut Region<F>,
-        offset: &mut usize,
-    ) -> Result<AssignedBlake2bWord<F>, Error>;
-
-    /// Sometimes we can reutilice an output row to be the input row of the next operation. This is
-    /// a convenience method for that in the case of the xor operation.
-    fn xor_for_mix<F: PrimeField>(
-        &self,
-        previous_cell: &AssignedBlake2bWord<F>,
-        cell_to_copy: &AssignedBlake2bWord<F>,
-        region: &mut Region<F>,
-        offset: &mut usize,
-    ) -> Result<[AssignedNative<F>; 9], Error>;
 
     fn rotate_right_63<F: PrimeField>(
         &self,

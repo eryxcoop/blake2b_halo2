@@ -60,14 +60,6 @@ impl Blake2bInstructions for Blake2bChipOptRecycle {
         }
     }
 
-    fn get_limb_column(&self, index: usize) -> Column<Advice> {
-        self.limbs[index]
-    }
-
-    fn get_full_number_column(&self) -> Column<Advice> {
-        self.full_number_u64
-    }
-
     fn populate_lookup_tables<F: PrimeField>(
         &self,
         layouter: &mut impl Layouter<F>,
@@ -81,7 +73,127 @@ impl Blake2bInstructions for Blake2bChipOptRecycle {
         self.decompose_8_config.clone()
     }
 
+    fn get_limb_column(&self, index: usize) -> Column<Advice> {
+        self.limbs[index]
+    }
+
+    fn get_full_number_column(&self) -> Column<Advice> {
+        self.full_number_u64
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn mix<F: PrimeField>(
+        &self,
+        a_index: usize,
+        b_index: usize,
+        c_index: usize,
+        d_index: usize,
+        sigma_even: usize,
+        sigma_odd: usize,
+        state: &mut [AssignedBlake2bWord<F>; 16],
+        current_block_words: &[AssignedBlake2bWord<F>; 16],
+        region: &mut Region<F>,
+        offset: &mut usize,
+    ) -> Result<(), Error> {
+        let v_a = state[a_index].clone();
+        let v_b = state[b_index].clone();
+        let v_c = state[c_index].clone();
+        let v_d = state[d_index].clone();
+        let x = current_block_words[sigma_even].clone();
+        let y = current_block_words[sigma_odd].clone();
+
+        // v[a] = ((v[a] as u128 + v[b] as u128 + x as u128) % (1 << 64)) as u64;
+        let a_plus_b = self.add(&v_a, &v_b, region, offset)?;
+        let a = self.add_copying_one_parameter(&a_plus_b, &x, region, offset)?;
+
+        // v[d] = rotr_64(v[d] ^ v[a], 32);
+        let d_xor_a = self.xor_for_mix(&a, &v_d, region, offset)?;
+        let d = self.rotate_right_32(d_xor_a, region, offset)?;
+
+        // v[c] = ((v[c] as u128 + v[d] as u128) % (1 << 64)) as u64;
+        let c = self.add_copying_one_parameter(&d, &v_c, region, offset)?;
+
+        // v[b] = rotr_64(v[b] ^ v[c], 24);
+        let b_xor_c = self.xor_for_mix(&c, &v_b, region, offset)?;
+        let b = self.rotate_right_24(b_xor_c, region, offset)?;
+
+        // v[a] = ((v[a] as u128 + v[b] as u128 + y as u128) % (1 << 64)) as u64;
+        let a_plus_b = self.add_copying_one_parameter(&b, &a, region, offset)?;
+        let a = self.add_copying_one_parameter(&a_plus_b, &y, region, offset)?;
+
+        // v[d] = rotr_64(v[d] ^ v[a], 16);
+        let d_xor_a = self.xor_for_mix(&a, &d, region, offset)?;
+        let d = self.rotate_right_16(d_xor_a, region, offset)?;
+
+        // v[c] = ((v[c] as u128 + v[d] as u128) % (1 << 64)) as u64;
+        let c = self.add_copying_one_parameter(&d, &c, region, offset)?;
+
+        // v[b] = rotr_64(v[b] ^ v[c], 63);
+        let b_xor_c = self.xor_for_mix(&c, &b, region, offset)?;
+        let b = self.rotate_right_63(b_xor_c, region, offset)?;
+
+        state[a_index] = a;
+        state[b_index] = b;
+        state[c_index] = c;
+        state[d_index] = d;
+
+        Ok(())
+    }
+
     // Functions that are optimization-specific
+
+    fn not<F: PrimeField>(
+        &self,
+        input_cell: &AssignedBlake2bWord<F>,
+        region: &mut Region<F>,
+        offset: &mut usize,
+    ) -> Result<AssignedBlake2bWord<F>, Error> {
+        let cell = self.negate_config.generate_rows_from_cell(
+            region,
+            offset,
+            &input_cell.inner_value(),
+            self.get_full_number_column(),
+        )?;
+        Ok(AssignedBlake2bWord::<F>::new(cell))
+    }
+
+    fn xor_and_return_full_row<F: PrimeField>(
+        &self,
+        lhs: &AssignedBlake2bWord<F>,
+        rhs: &AssignedBlake2bWord<F>,
+        region: &mut Region<F>,
+        offset: &mut usize,
+    ) -> Result<[AssignedNative<F>; 9], Error> {
+        let decompose_8_config = self.decompose_8_config();
+        self.xor_config.generate_xor_rows_from_cells(
+            region,
+            offset,
+            lhs,
+            rhs,
+            &decompose_8_config,
+            false,
+        )
+    }
+
+    fn xor<F: PrimeField>(
+        &self,
+        lhs: &AssignedBlake2bWord<F>,
+        rhs: &AssignedBlake2bWord<F>,
+        region: &mut Region<F>,
+        offset: &mut usize,
+    ) -> Result<AssignedBlake2bWord<F>, Error> {
+        let decompose_8_config = self.decompose_8_config();
+        let full_number_cell = self.xor_config.generate_xor_rows_from_cells(
+            region,
+            offset,
+            &lhs,
+            &rhs,
+            &decompose_8_config,
+            false,
+        )?[0]
+            .clone();
+        Ok(AssignedBlake2bWord::<F>::new(full_number_cell))
+    }
 
     /// opt_recycle optimization decomposes the sum operands in 8-bit limbs, so we need to use the
     /// decompose_8_config for the sum operation instead of the decompose_16_config.
@@ -102,41 +214,6 @@ impl Blake2bInstructions for Blake2bChipOptRecycle {
         )?[0]
             .clone();
         Ok(AssignedBlake2bWord::<F>::new(addition_cell))
-    }
-
-    /// This method behaves like 'add', with the difference that it takes advantage of the fact that
-    /// the last row in the circuit is one of the operands of the addition, so it only needs to copy
-    /// one parameter because the other is already on the trace.
-    fn add_copying_one_parameter<F: PrimeField>(
-        &self,
-        previous_cell: &AssignedBlake2bWord<F>,
-        cell_to_copy: &AssignedBlake2bWord<F>,
-        region: &mut Region<F>,
-        offset: &mut usize,
-    ) -> Result<AssignedBlake2bWord<F>, Error> {
-        Ok(AssignedBlake2bWord::<F>::new(self.addition_config.generate_addition_rows_from_cells(
-            region,
-            offset,
-            &previous_cell.inner_value(),
-            &cell_to_copy.inner_value(),
-            &self.decompose_8_config,
-            true,
-        )?[0]
-            .clone()))
-    }
-
-    /// This method performs a regular xor operation with the difference that it returns the full
-    /// row in the trace, instead of just the cell holding the value. This allows an optimization
-    /// where the next operation (which is a rotation) can just read the limbs directly and apply
-    /// the limb rotation without copying the operand.
-    fn xor_for_mix<F: PrimeField>(
-        &self,
-        previous_cell: &AssignedBlake2bWord<F>,
-        cell_to_copy: &AssignedBlake2bWord<F>,
-        region: &mut Region<F>,
-        offset: &mut usize,
-    ) -> Result<[AssignedNative<F>; 9], Error> {
-        self.xor_copying_one_parameter(previous_cell, cell_to_copy, region, offset)
     }
 
     fn rotate_right_63<F: PrimeField>(
@@ -200,59 +277,6 @@ impl Blake2bInstructions for Blake2bChipOptRecycle {
             4,
         )?))
     }
-
-    fn not<F: PrimeField>(
-        &self,
-        input_cell: &AssignedBlake2bWord<F>,
-        region: &mut Region<F>,
-        offset: &mut usize,
-    ) -> Result<AssignedBlake2bWord<F>, Error> {
-        let cell = self.negate_config.generate_rows_from_cell(
-            region,
-            offset,
-            &input_cell.inner_value(),
-            self.get_full_number_column(),
-        )?;
-        Ok(AssignedBlake2bWord::<F>::new(cell))
-    }
-
-    fn xor<F: PrimeField>(
-        &self,
-        lhs: &AssignedBlake2bWord<F>,
-        rhs: &AssignedBlake2bWord<F>,
-        region: &mut Region<F>,
-        offset: &mut usize,
-    ) -> Result<AssignedBlake2bWord<F>, Error> {
-        let decompose_8_config = self.decompose_8_config();
-        let full_number_cell = self.xor_config.generate_xor_rows_from_cells(
-            region,
-            offset,
-            &lhs,
-            &rhs,
-            &decompose_8_config,
-            false,
-        )?[0]
-            .clone();
-        Ok(AssignedBlake2bWord::<F>::new(full_number_cell))
-    }
-
-    fn xor_and_return_full_row<F: PrimeField>(
-        &self,
-        lhs: &AssignedBlake2bWord<F>,
-        rhs: &AssignedBlake2bWord<F>,
-        region: &mut Region<F>,
-        offset: &mut usize,
-    ) -> Result<[AssignedNative<F>; 9], Error> {
-        let decompose_8_config = self.decompose_8_config();
-        self.xor_config.generate_xor_rows_from_cells(
-            region,
-            offset,
-            lhs,
-            rhs,
-            &decompose_8_config,
-            false,
-        )
-    }
 }
 
 impl Blake2bChipOptRecycle {
@@ -288,5 +312,40 @@ impl Blake2bChipOptRecycle {
         layouter: &mut impl Layouter<F>,
     ) -> Result<(), Error> {
         self.xor_config.populate_xor_lookup_table(layouter)
+    }
+
+    /// This method behaves like 'add', with the difference that it takes advantage of the fact that
+    /// the last row in the circuit is one of the operands of the addition, so it only needs to copy
+    /// one parameter because the other is already on the trace.
+    fn add_copying_one_parameter<F: PrimeField>(
+        &self,
+        previous_cell: &AssignedBlake2bWord<F>,
+        cell_to_copy: &AssignedBlake2bWord<F>,
+        region: &mut Region<F>,
+        offset: &mut usize,
+    ) -> Result<AssignedBlake2bWord<F>, Error> {
+        Ok(AssignedBlake2bWord::<F>::new(self.addition_config.generate_addition_rows_from_cells(
+            region,
+            offset,
+            &previous_cell.inner_value(),
+            &cell_to_copy.inner_value(),
+            &self.decompose_8_config,
+            true,
+        )?[0]
+            .clone()))
+    }
+
+    /// This method performs a regular xor operation with the difference that it returns the full
+    /// row in the trace, instead of just the cell holding the value. This allows an optimization
+    /// where the next operation (which is a rotation) can just read the limbs directly and apply
+    /// the limb rotation without copying the operand.
+    fn xor_for_mix<F: PrimeField>(
+        &self,
+        previous_cell: &AssignedBlake2bWord<F>,
+        cell_to_copy: &AssignedBlake2bWord<F>,
+        region: &mut Region<F>,
+        offset: &mut usize,
+    ) -> Result<[AssignedNative<F>; 9], Error> {
+        self.xor_copying_one_parameter(previous_cell, cell_to_copy, region, offset)
     }
 }
