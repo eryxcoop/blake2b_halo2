@@ -25,20 +25,22 @@ impl LimbRotation {
         &self,
         region: &mut Region<F>,
         offset: &mut usize,
-        decompose_config: &mut Decompose8Config,
+        decompose_config: &Decompose8Config,
         input_row: AssignedRow<F>,
         limbs_to_rotate_to_the_right: usize,
+        full_number_u64_column: Column<Advice>,
+        limbs: [Column<Advice>; 8],
     ) -> Result<AssignedBlake2bWord<F>, Error> {
         let result_value =
             Self::right_rotation_value(input_row.full_number.value(), limbs_to_rotate_to_the_right);
 
         let result_cell = region.assign_advice(
             ||"Full number rotation output",
-            decompose_config.get_full_number_u64_column(),
+            full_number_u64_column,
             *offset,
-            || result_value.and_then(|v|value_for(v.0)))?;
+            || result_value.and_then(|v| value_for(v.0)))?;
 
-        decompose_config.q_decompose.enable(region, *offset)?;
+        decompose_config.check_row_decomposition(region, offset)?;
 
         for i in 0..8 {
             // We must subtract limb_rotations_right because if a number is expressed bitwise
@@ -48,7 +50,7 @@ impl LimbRotation {
             top_assigned_cell.inner_value().copy_advice(
                 || "Limb rotation output",
                 region,
-                decompose_config.get_limb_column(out_limb_index),
+                limbs[out_limb_index],
                 *offset
             )?;
         }

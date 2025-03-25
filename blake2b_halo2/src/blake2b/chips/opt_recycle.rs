@@ -236,13 +236,15 @@ impl Blake2bInstructions for Blake2bChipOptRecycle {
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<AssignedBlake2bWord<F>, Error> {
-        let mut decompose_8_config = self.decompose_8_config();
+        let decompose_8_config = self.decompose_8_config();
         self.generic_limb_rotation_config.generate_rotation_rows_from_input_row(
             region,
             offset,
-            &mut decompose_8_config,
+            &decompose_8_config,
             input_row,
             2,
+            self.full_number_u64,
+            self.limbs,
         )
     }
 
@@ -252,13 +254,15 @@ impl Blake2bInstructions for Blake2bChipOptRecycle {
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<AssignedBlake2bWord<F>, Error> {
-        let mut decompose_8_config = self.decompose_8_config();
+        let decompose_8_config = self.decompose_8_config();
         self.generic_limb_rotation_config.generate_rotation_rows_from_input_row(
             region,
             offset,
-            &mut decompose_8_config,
+            &decompose_8_config,
             input_row,
             3,
+            self.full_number_u64,
+            self.limbs,
         )
     }
 
@@ -268,13 +272,15 @@ impl Blake2bInstructions for Blake2bChipOptRecycle {
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<AssignedBlake2bWord<F>, Error> {
-        let mut decompose_8_config = self.decompose_8_config();
+        let decompose_8_config = self.decompose_8_config();
         self.generic_limb_rotation_config.generate_rotation_rows_from_input_row(
             region,
             offset,
-            &mut decompose_8_config,
+            &decompose_8_config,
             input_row,
             4,
+            self.full_number_u64,
+            self.limbs,
         )
     }
 }

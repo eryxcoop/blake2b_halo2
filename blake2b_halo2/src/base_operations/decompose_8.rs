@@ -15,7 +15,7 @@ pub struct Decompose8Config {
     limbs: [Column<Advice>; 8],
 
     /// Selector that turns on the gate that defines if the limbs should add up to the full number
-    pub q_decompose: Selector,
+    q_decompose: Selector,
 
     /// Selector that turns on the gate that defines if the limbs should be range-checked
     q_range: Selector,
@@ -25,8 +25,6 @@ pub struct Decompose8Config {
 }
 
 impl Decompose8Config {
-    const LIMB_SIZE: usize = 8;
-
     /// The full number and the limbs are not owned by the config.
     pub fn configure<F: PrimeField>(
         meta: &mut ConstraintSystem<F>,
@@ -69,10 +67,6 @@ impl Decompose8Config {
             t_range,
             q_range
         }
-    }
-
-    pub fn get_limb_column(&self, index: usize) -> Column<Advice> {
-        self.limbs[index].clone()
     }
 
     pub fn generate_row_from_assigned_bytes<F: PrimeField>(
@@ -153,10 +147,11 @@ impl Decompose8Config {
         &self,
         layouter: &mut impl Layouter<F>,
     ) -> Result<(), Error> {
+        const LIMB_SIZE_IN_BITS: usize = 8;
         layouter.assign_table(
-            || format!("range {}-bit check table", Self::LIMB_SIZE),
+            || format!("range {}-bit check table", LIMB_SIZE_IN_BITS),
             |mut table| {
-                for i in 0..1 << Self::LIMB_SIZE {
+                for i in 0..1 << LIMB_SIZE_IN_BITS {
                     table.assign_cell(
                         || "value",
                         self.range_table_column(),
@@ -249,5 +244,12 @@ impl Decompose8Config {
         let new_cells = self.generate_row_from_value_and_keep_row(region, value, offset)?;
         region.constrain_equal(cell.cell(), new_cells[0].cell())?;
         Ok(new_cells)
+    }
+
+    /// This method is ment to be used when an operation wants to range-check the limb decomposition
+    /// is correct in certain row. This means that the limb decomposition should add-up to the full
+    /// number in that row.
+    pub fn check_row_decomposition<F: PrimeField>(&self, region: &mut Region<F>, offset: &mut usize) -> Result<(), Error> {
+        self.q_decompose.enable(region, *offset)
     }
 }
