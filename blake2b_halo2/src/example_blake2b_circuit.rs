@@ -96,12 +96,14 @@ impl<F: PrimeField, OptimizationChip: Blake2bInstructions> Circuit<F>
         let result = blake2b.hash(&mut layouter, &assigned_input, &assigned_key, self.output_size)?;
 
         /// Assert results
-        blake2b.constrain_result(
-            &mut layouter,
-            result,
-            config.expected_final_state,
-            self.output_size,
-        )
+        for (i, global_state_byte_cell) in result.iter().enumerate().take(self.output_size) {
+            layouter.constrain_instance(
+                global_state_byte_cell.cell(),
+                config.expected_final_state,
+                i,
+            )?;
+        }
+        Ok(())
     }
 }
 

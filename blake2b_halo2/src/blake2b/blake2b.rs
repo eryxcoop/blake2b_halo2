@@ -2,7 +2,7 @@ use crate::blake2b::chips::blake2b_instructions::Blake2bInstructions;
 use crate::types::{AssignedByte};
 use ff::PrimeField;
 use halo2_proofs::circuit::Layouter;
-use halo2_proofs::plonk::{Column, Error, Instance};
+use halo2_proofs::plonk::Error;
 use crate::blake2b::chips::utils::enforce_input_sizes;
 
 /// Main gadget to compute Blake2b hash function
@@ -67,24 +67,6 @@ impl<C: Blake2bInstructions> Blake2b<C> {
                     zero_constant,
                 )
             },
-        )
-    }
-
-    /// This is optional, the circuit can opt not to check the result if the hash digest is to
-    /// remain private. This just establishes copy constraints between the expected result and the
-    /// obtained digest
-    pub fn constrain_result<F: PrimeField>(
-        &self,
-        layouter: &mut impl Layouter<F>,
-        global_state_bytes: [AssignedByte<F>; 64],
-        instance_column: Column<Instance>,
-        output_size: usize,
-    ) -> Result<(), Error> {
-        self.chip.constrain_instance(
-            layouter,
-            global_state_bytes,
-            output_size,
-            instance_column,
         )
     }
 }

@@ -7,7 +7,7 @@ use crate::types::AssignedElement;
 use crate::types::{AssignedBlake2bWord, AssignedByte, AssignedNative};
 use ff::PrimeField;
 use halo2_proofs::circuit::{Layouter, Region};
-use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Error, Instance};
+use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Error};
 
 /// This is the trait that groups the 3 optimization chips. Most of their code is the same, so the
 /// behaviour was encapsulated here. Each optimization has to override only 3 or 4 methods, besides
@@ -276,10 +276,10 @@ pub trait Blake2bInstructions: Clone {
     #[allow(clippy::too_many_arguments)]
     fn mix<F: PrimeField>(
         &self,
-        a_: usize,
-        b_: usize,
-        c_: usize,
-        d_: usize,
+        a_index: usize,
+        b_index: usize,
+        c_index: usize,
+        d_index: usize,
         sigma_even: usize,
         sigma_odd: usize,
         state: &mut [AssignedBlake2bWord<F>; 16],
@@ -287,10 +287,10 @@ pub trait Blake2bInstructions: Clone {
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<(), Error> {
-        let v_a = state[a_].clone();
-        let v_b = state[b_].clone();
-        let v_c = state[c_].clone();
-        let v_d = state[d_].clone();
+        let v_a = state[a_index].clone();
+        let v_b = state[b_index].clone();
+        let v_c = state[c_index].clone();
+        let v_d = state[d_index].clone();
         let x = current_block_words[sigma_even].clone();
         let y = current_block_words[sigma_odd].clone();
 
@@ -324,10 +324,10 @@ pub trait Blake2bInstructions: Clone {
         let b_xor_c = self.xor_for_mix(&c, &b, region, offset)?;
         let b = self.rotate_right_63(b_xor_c, region, offset)?;
 
-        state[a_] = a;
-        state[b_] = b;
-        state[c_] = c;
-        state[d_] = d;
+        state[a_index] = a;
+        state[b_index] = b;
+        state[c_index] = c;
+        state[d_index] = d;
 
         Ok(())
     }
@@ -535,29 +535,5 @@ pub trait Blake2bInstructions: Clone {
         Ok(ret.iter()
             .map(|cell| AssignedBlake2bWord::<F>::new(cell.clone()))
             .collect())
-    }
-
-    /// Here we want to make sure that the public inputs are equal to the final state of the hash.
-    /// The amount of constrains is equal to the output size, which is known at circuit building time.
-    /// We should only constrain those, even tho the state contains the entire output.
-    // [inigo] We can only constrain values from the instance column between 0 and 64. What if we have
-    // other PIs in other places of the circuit?
-    // This function does not need to be here. If the developer wants to constrain the output
-    // as PI, it can do it on its own.
-    fn constrain_instance<F: PrimeField>(
-        &self,
-        layouter: &mut impl Layouter<F>,
-        global_state_bytes: [AssignedByte<F>; 64],
-        output_size: usize,
-        instance_column: Column<Instance>,
-    ) -> Result<(), Error> {
-        for (i, global_state_byte_cell) in global_state_bytes.iter().enumerate().take(output_size) {
-            layouter.constrain_instance(
-                global_state_byte_cell.cell(),
-                instance_column,
-                i,
-            )?;
-        }
-        Ok(())
     }
 }
