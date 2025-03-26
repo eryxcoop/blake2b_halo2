@@ -10,15 +10,15 @@ use crate::types::AssignedNative;
 #[derive(Clone, Debug)]
 pub struct Decompose8Config {
     /// The full number and the limbs are not owned by the config.
-    full_number_u64: Column<Advice>,
+    pub full_number_u64: Column<Advice>,
     /// There are 8 limbs of 8 bits each
-    limbs: [Column<Advice>; 8],
+    pub limbs: [Column<Advice>; 8],
 
     /// Selector that turns on the gate that defines if the limbs should add up to the full number
     pub q_decompose: Selector,
 
     /// Selector that turns on the gate that defines if the limbs should be range-checked
-    q_range: Selector,
+    pub q_range: Selector,
 
     /// Table of [0, 2^8) to check if the limb is in the correct range
     t_range: TableColumn,
@@ -124,34 +124,6 @@ impl Decompose8Config {
         Value::known(full_number)
     }
 
-    /// Given an explicit vector of values, it assigns the full number and the limbs in a row of the trace
-    /// row size is T + 1
-    /// row[0] is the full number
-    /// row[1..T] are the limbs representation of row[0]
-    pub fn populate_row_from_values<F: PrimeField>(
-        &self,
-        region: &mut Region<F>,
-        row: &[Value<F>],
-        offset: usize,
-        check_decomposition: bool,
-    ) -> Result<Vec<AssignedNative<F>>, Error> {
-        if check_decomposition {
-            self.q_decompose.enable(region, offset)?;
-            self.q_range.enable(region, offset)?;
-        }
-        let full_number =
-            region.assign_advice(|| "full number", self.full_number_u64, offset, || row[0])?;
-
-        let limbs = (0..8)
-            .map(|i| {
-                region.assign_advice(|| format!("limb{}", i), self.limbs[i], offset, || row[i + 1])
-            })
-            .collect::<Result<Vec<_>, _>>()?;
-
-        //return the full number and the limbs
-        Ok(std::iter::once(full_number).chain(limbs).collect())
-    }
-
     pub fn populate_lookup_table<F: PrimeField>(
         &self,
         layouter: &mut impl Layouter<F>,
@@ -209,10 +181,6 @@ impl Decompose8Config {
     /// Given a value and a limb index, it returns the value of the limb
     fn get_limb_from<F: PrimeField>(value: Value<F>, limb_number: usize) -> Value<F> {
         value.map(|v| field_for(get_limb_from_field(v, limb_number)))
-    }
-
-    pub fn get_full_number_u64_column(&self) -> Column<Advice> {
-        self.full_number_u64.clone()
     }
 
     /// Given a value of 64 bits, it generates a row with the assigned cells for the full number

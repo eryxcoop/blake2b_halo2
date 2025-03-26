@@ -11,7 +11,7 @@ use crate::base_operations::decompose_8::Decompose8Config;
 /// R is used to define the total number of columns in the trace.
 /// It will allways be T + 2 (full number and carry)
 pub struct AdditionMod64Config {
-    pub carry: Column<Advice>,
+    carry: Column<Advice>,
     pub q_add: Selector,
 }
 
