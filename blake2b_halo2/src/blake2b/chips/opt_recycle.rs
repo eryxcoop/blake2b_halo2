@@ -226,6 +226,7 @@ impl Blake2bInstructions for Blake2bChipOptRecycle {
             rhs,
             &self.decompose_8_config,
             false,
+            self.full_number_u64,
         )?.0
             .clone();
         Ok(addition_cell)
@@ -382,6 +383,7 @@ impl Blake2bChipOptRecycle {
             cell_to_copy,
             &self.decompose_8_config,
             true,
+            self.full_number_u64,
         )?.0
             .clone())
     }

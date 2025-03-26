@@ -69,6 +69,19 @@ impl Decompose8Config {
         }
     }
 
+    fn range_check_for_limb<F: PrimeField>(
+        meta: &mut ConstraintSystem<F>,
+        limb: &Column<Advice>,
+        q_range: &Selector,
+        t_range: &TableColumn,
+    ) {
+        meta.lookup(format!("lookup limb {:?}", limb), |meta| {
+            let limb: Expression<F> = meta.query_advice(*limb, Rotation::cur());
+            let q_range = meta.query_selector(*q_range);
+            vec![(q_range * limb, *t_range)]
+        });
+    }
+
     pub fn generate_row_from_assigned_bytes<F: PrimeField>(
         &self,
         region: &mut Region<F>,
@@ -111,10 +124,6 @@ impl Decompose8Config {
         Value::known(full_number)
     }
 
-    fn range_table_column(&self) -> TableColumn {
-        self.t_range
-    }
-
     /// Given an explicit vector of values, it assigns the full number and the limbs in a row of the trace
     /// row size is T + 1
     /// row[0] is the full number
@@ -154,7 +163,7 @@ impl Decompose8Config {
                 for i in 0..1 << LIMB_SIZE_IN_BITS {
                     table.assign_cell(
                         || "value",
-                        self.range_table_column(),
+                        self.t_range,
                         i,
                         || Value::known(F::from(i as u64)),
                     )?;
@@ -204,19 +213,6 @@ impl Decompose8Config {
 
     pub fn get_full_number_u64_column(&self) -> Column<Advice> {
         self.full_number_u64.clone()
-    }
-
-    fn range_check_for_limb<F: PrimeField>(
-        meta: &mut ConstraintSystem<F>,
-        limb: &Column<Advice>,
-        q_range: &Selector,
-        t_range: &TableColumn,
-    ) {
-        meta.lookup(format!("lookup limb {:?}", limb), |meta| {
-            let limb: Expression<F> = meta.query_advice(*limb, Rotation::cur());
-            let q_range = meta.query_selector(*q_range);
-            vec![(q_range * limb, *t_range)]
-        });
     }
 
     /// Given a value of 64 bits, it generates a row with the assigned cells for the full number

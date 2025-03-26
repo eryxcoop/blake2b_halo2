@@ -64,6 +64,7 @@ impl AdditionMod64Config {
         cell_to_copy: &AssignedBlake2bWord<F>,
         decompose_config: &Decompose8Config,
         use_last_cell_as_first_operand: bool,
+        full_number_u64_column: Column<Advice>,
     ) -> Result<(AssignedBlake2bWord<F>, AssignedBit<F>), Error> {
         let (result_value, carry_value) =
             Self::calculate_result_and_carry(previous_cell.value(), cell_to_copy.value());
@@ -74,7 +75,7 @@ impl AdditionMod64Config {
             previous_cell.0.copy_advice(
                 || "Sum first operand",
                 region,
-                decompose_config.get_full_number_u64_column(),
+                full_number_u64_column,
                 *offset
             )?;
             *offset += 1;
@@ -82,7 +83,7 @@ impl AdditionMod64Config {
         cell_to_copy.0.copy_advice(
            || "Sum second operand",
            region,
-           decompose_config.get_full_number_u64_column(),
+           full_number_u64_column,
            *offset
         )?;
         let carry_cell: AssignedNative<F> = region.assign_advice(|| "carry", self.carry, *offset, || carry_value)?;
