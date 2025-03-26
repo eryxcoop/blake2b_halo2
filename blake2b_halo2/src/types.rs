@@ -4,12 +4,24 @@ use num_bigint::BigUint;
 use std::fmt::Debug;
 use halo2_proofs::utils::rational::Rational;
 
-/// The inner type of AssignedByte.
-// A wrapper around `u8` to have a type that we own and for which we can implement some necessary
-// traits like `From<u64>`.
+/// All these types are created to enforce safety across our code. The three main types are:
+///
+/// AssignedByte: It contains an AssignedCell that has a value between 0 and 255.
+///
+/// AssignedBlake2bWord: It contains an AssignedCell that has a value between 0 and 2^64 - 1
+///
+/// AssignedRow: It contains an AssignedBlake2bWord and 8 AssignedLimb
+///
+/// All these types are created at the same place where a range check is enabled in their values
+/// So everytime you see an AssignedByte, AssignedBlake2bWord or AssignedRow, you can be certain
+/// that all their values were range checked
+
+
+/// The inner type of AssignedByte. A wrapper around `u8`
 #[derive(Copy, Clone, Debug)]
 pub struct Byte(pub u8);
 
+/// The inner type of AssignedBlake2bWord. A wrapper around `u64`
 #[derive(Copy, Clone, Debug)]
 pub struct Blake2bWord(pub u64);
 
@@ -77,6 +89,11 @@ impl<F: PrimeField> AssignedElement<F> for AssignedByte<F> {
     }
 }
 
+
+
+/// This wrapper type on `AssignedNative<F>` is designed to enforce type safety
+/// on assigned bits. It is used in the addition chip to enforce that the
+/// carry value is 0 or 1
 #[derive(Clone, Debug)]
 #[must_use]
 pub struct AssignedBit<F: PrimeField>(pub AssignedNative<F>);
@@ -170,6 +187,12 @@ impl<F: PrimeField> From<AssignedByte<F>> for AssignedNative<F> {
     }
 }
 
+/// We use this type to model the Row we generally use along this circuit. This row has the
+/// following shape:
+/// full_number | limb_0 | limb_1 | limb_2 | limb_3 | limb_4 | limb_5 | limb_6 | limb_7 | limb_8
+///
+/// Where full_number is a Blake2bWord (64 bits) and the limbs constitute the little endian repr
+///of the full_number (each limb is an AssignedByte)
 #[derive(Debug)]
 pub struct AssignedRow<F: PrimeField> {
     pub full_number: AssignedBlake2bWord<F>,
