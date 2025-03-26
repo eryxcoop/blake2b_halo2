@@ -29,7 +29,6 @@ pub trait Blake2bInstructions: Clone {
     ) -> Result<(), Error>;
 
     // Getters for some internal members of the chip
-    fn decompose_8_config(&self) -> Decompose8Config;
     fn get_limb_column(&self, index: usize) -> Column<Advice>;
     fn get_full_number_column(&self) -> Column<Advice>;
 
@@ -59,14 +58,13 @@ pub trait Blake2bInstructions: Clone {
         let key_size_shifted= (key_size as u64) << 8;
         // state[0] = state[0] ^ 0x01010000 ^ (key.len() << 8) as u64 ^ outlen as u64;
         let initial_state_index_0 = iv_constant_0 ^ INIT_CONST_STATE_0 ^ key_size_shifted ^ out_len;
-        let column = self.get_limb_column(1);
 
         let initial_state_0 = AssignedBlake2bWord::<F>::new(
             region.assign_advice_from_constant(
-            || "initial state index 0",
-            column,
-            *advice_offset,
-            F::from(initial_state_index_0),
+                || "initial state index 0",
+                self.get_limb_column(1),
+                *advice_offset,
+                F::from(initial_state_index_0),
         )?);
 
         *advice_offset += 1;
@@ -396,22 +394,7 @@ pub trait Blake2bInstructions: Clone {
         is_last_block: bool,
         is_key_block: bool,
         zero_constant_cell: AssignedNative<F>,
-    ) -> Result<[Vec<AssignedBlake2bWord<F>>; 16], Error> {
-        let current_block_values = Self::build_values_for_current_block(
-            input,
-            key,
-            block_number,
-            last_input_block_index,
-            is_key_empty,
-            is_last_block,
-            is_key_block,
-            zero_constant_cell,
-        );
-
-        let current_block_rows =
-            self.block_words_from_bytes(region, offset, current_block_values.try_into().unwrap())?;
-        Ok(current_block_rows)
-    }
+    ) -> Result<[Vec<AssignedBlake2bWord<F>>; 16], Error>;
 
     /// Computes the values of the current block in the blake2b algorithm, based on the input and
     /// the block number we're on.
@@ -439,37 +422,5 @@ pub trait Blake2bInstructions: Clone {
                 ..(current_input_block_index + 1) * BLAKE2B_BLOCK_SIZE]
                 .to_vec()
         }
-    }
-
-    fn block_words_from_bytes<F: PrimeField>(
-        &self,
-        region: &mut Region<F>,
-        offset: &mut usize,
-        block: [AssignedByte<F>; 128],
-    ) -> Result<[Vec<AssignedBlake2bWord<F>>; 16], Error> {
-        let mut current_block_rows: Vec<Vec<AssignedBlake2bWord<F>>> = Vec::new();
-        for i in 0..16 {
-            let bytes: &[AssignedByte<F>; 8] = block[i * 8..(i + 1) * 8].try_into().unwrap();
-            let current_row_cells = self.new_row_from_assigned_bytes(bytes, region, offset)?;
-            current_block_rows.push(current_row_cells);
-        }
-        let current_block_words = current_block_rows.try_into().unwrap();
-        Ok(current_block_words)
-    }
-
-    /// Given an array of byte-values, it puts in the circuit a full row with those bytes in the
-    /// limbs and the resulting full number in the first column.
-    fn new_row_from_assigned_bytes<F: PrimeField>(
-        &self,
-        bytes: &[AssignedByte<F>; 8],
-        region: &mut Region<F>,
-        offset: &mut usize,
-    ) -> Result<Vec<AssignedBlake2bWord<F>>, Error> {
-        let bytes_as_cells = bytes.iter().map(|byte| byte.inner_value()).collect::<Vec<_>>();
-        let ret = self.decompose_8_config().generate_row_from_assigned_bytes(region, &bytes_as_cells.try_into().unwrap(), *offset)?;
-        *offset += 1;
-        Ok(ret.iter()
-            .map(|cell| AssignedBlake2bWord::<F>::new(cell.clone()))
-            .collect())
     }
 }

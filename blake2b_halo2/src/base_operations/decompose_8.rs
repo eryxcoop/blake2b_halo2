@@ -15,7 +15,7 @@ pub struct Decompose8Config {
     limbs: [Column<Advice>; 8],
 
     /// Selector that turns on the gate that defines if the limbs should add up to the full number
-    q_decompose: Selector,
+    pub q_decompose: Selector,
 
     /// Selector that turns on the gate that defines if the limbs should be range-checked
     q_range: Selector,
@@ -244,12 +244,5 @@ impl Decompose8Config {
         let new_cells = self.generate_row_from_value_and_keep_row(region, value, offset)?;
         region.constrain_equal(cell.cell(), new_cells[0].cell())?;
         Ok(new_cells)
-    }
-
-    /// This method is ment to be used when an operation wants to range-check the limb decomposition
-    /// is correct in certain row. This means that the limb decomposition should add-up to the full
-    /// number in that row.
-    pub fn check_row_decomposition<F: PrimeField>(&self, region: &mut Region<F>, offset: &mut usize) -> Result<(), Error> {
-        self.q_decompose.enable(region, *offset)
     }
 }

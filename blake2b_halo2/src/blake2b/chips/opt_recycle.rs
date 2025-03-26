@@ -6,7 +6,7 @@ use crate::base_operations::rotate_63::Rotate63Config;
 use crate::base_operations::xor::Xor;
 use crate::base_operations::xor_table::XorTableConfig;
 use crate::blake2b::chips::blake2b_instructions::Blake2bInstructions;
-use crate::types::{AssignedBlake2bWord, AssignedRow};
+use crate::types::{AssignedBlake2bWord, AssignedByte, AssignedElement, AssignedNative, AssignedRow};
 use ff::PrimeField;
 use halo2_proofs::circuit::{Layouter, Region};
 use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Error};
@@ -68,16 +68,42 @@ impl Blake2bInstructions for Blake2bChipOptRecycle {
     }
 
     // Getters that the trait needs for its default implementations
-    fn decompose_8_config(&self) -> Decompose8Config {
-        self.decompose_8_config.clone()
-    }
-
     fn get_limb_column(&self, index: usize) -> Column<Advice> {
         self.limbs[index]
     }
 
     fn get_full_number_column(&self) -> Column<Advice> {
         self.full_number_u64
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn build_current_block_rows<F: PrimeField>(
+        &self,
+        region: &mut Region<F>,
+        offset: &mut usize,
+        input: &[AssignedByte<F>],
+        key: &[AssignedByte<F>],
+        block_number: usize,
+        last_input_block_index: usize,
+        is_key_empty: bool,
+        is_last_block: bool,
+        is_key_block: bool,
+        zero_constant_cell: AssignedNative<F>,
+    ) -> Result<[Vec<AssignedBlake2bWord<F>>; 16], Error> {
+        let current_block_values = Self::build_values_for_current_block(
+            input,
+            key,
+            block_number,
+            last_input_block_index,
+            is_key_empty,
+            is_last_block,
+            is_key_block,
+            zero_constant_cell,
+        );
+
+        let current_block_rows =
+            self.block_words_from_bytes(region, offset, current_block_values.try_into().unwrap())?;
+        Ok(current_block_rows)
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -162,13 +188,12 @@ impl Blake2bInstructions for Blake2bChipOptRecycle {
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<AssignedRow<F>, Error> {
-        let decompose_8_config = self.decompose_8_config();
         let row = self.xor_config.generate_xor_rows_from_cells(
             region,
             offset,
             lhs,
             rhs,
-            &decompose_8_config,
+            &self.decompose_8_config,
             false,
         )?;
 
@@ -182,13 +207,12 @@ impl Blake2bInstructions for Blake2bChipOptRecycle {
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<AssignedBlake2bWord<F>, Error> {
-        let decompose_8_config = self.decompose_8_config();
         let full_number_cell = self.xor_config.generate_xor_rows_from_cells(
             region,
             offset,
             &lhs,
             &rhs,
-            &decompose_8_config,
+            &self.decompose_8_config,
             false,
         )?.full_number
             .clone();
@@ -236,11 +260,10 @@ impl Blake2bInstructions for Blake2bChipOptRecycle {
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<AssignedBlake2bWord<F>, Error> {
-        let decompose_8_config = self.decompose_8_config();
         self.generic_limb_rotation_config.generate_rotation_rows_from_input_row(
             region,
             offset,
-            &decompose_8_config,
+            &self.decompose_8_config,
             input_row,
             2,
             self.full_number_u64,
@@ -254,11 +277,10 @@ impl Blake2bInstructions for Blake2bChipOptRecycle {
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<AssignedBlake2bWord<F>, Error> {
-        let decompose_8_config = self.decompose_8_config();
         self.generic_limb_rotation_config.generate_rotation_rows_from_input_row(
             region,
             offset,
-            &decompose_8_config,
+            &self.decompose_8_config,
             input_row,
             3,
             self.full_number_u64,
@@ -272,11 +294,10 @@ impl Blake2bInstructions for Blake2bChipOptRecycle {
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<AssignedBlake2bWord<F>, Error> {
-        let decompose_8_config = self.decompose_8_config();
         self.generic_limb_rotation_config.generate_rotation_rows_from_input_row(
             region,
             offset,
-            &decompose_8_config,
+            &self.decompose_8_config,
             input_row,
             4,
             self.full_number_u64,
@@ -310,7 +331,7 @@ impl Blake2bChipOptRecycle {
         &self,
         layouter: &mut impl Layouter<F>,
     ) -> Result<(), Error> {
-        self.decompose_8_config().populate_lookup_table(layouter)
+        self.decompose_8_config.populate_lookup_table(layouter)
     }
 
     fn populate_xor_lookup_table<F: PrimeField>(
@@ -353,5 +374,42 @@ impl Blake2bChipOptRecycle {
         offset: &mut usize,
     ) -> Result<AssignedRow<F>, Error> {
         self.xor_copying_one_parameter(previous_cell, cell_to_copy, region, offset)
+    }
+
+    /// Given an array of byte-values, it puts in the circuit a full row with those bytes in the
+    /// limbs and the resulting full number in the first column.
+    fn new_row_from_assigned_bytes<F: PrimeField>(
+        &self,
+        bytes: &[AssignedByte<F>; 8],
+        region: &mut Region<F>,
+        offset: &mut usize,
+    ) -> Result<Vec<AssignedBlake2bWord<F>>, Error> {
+        let bytes_as_cells = bytes.iter().map(|byte| byte.inner_value()).collect::<Vec<_>>();
+        let ret = self.decompose_8_config().generate_row_from_assigned_bytes(region, &bytes_as_cells.try_into().unwrap(), *offset)?;
+        *offset += 1;
+        Ok(ret.iter()
+            .map(|cell| AssignedBlake2bWord::<F>::new(cell.clone()))
+            .collect())
+    }
+
+    fn block_words_from_bytes<F: PrimeField>(
+        &self,
+        region: &mut Region<F>,
+        offset: &mut usize,
+        block: [AssignedByte<F>; 128],
+    ) -> Result<[Vec<AssignedBlake2bWord<F>>; 16], Error> {
+        let mut current_block_rows: Vec<Vec<AssignedBlake2bWord<F>>> = Vec::new();
+        for i in 0..16 {
+            let bytes: &[AssignedByte<F>; 8] = block[i * 8..(i + 1) * 8].try_into().unwrap();
+            let current_row_cells = self.new_row_from_assigned_bytes(bytes, region, offset)?;
+            current_block_rows.push(current_row_cells);
+        }
+        let current_block_words = current_block_rows.try_into().unwrap();
+        Ok(current_block_words)
+    }
+
+    // Getters that the trait needs for its default implementations
+    fn decompose_8_config(&self) -> Decompose8Config {
+        self.decompose_8_config.clone()
     }
 }

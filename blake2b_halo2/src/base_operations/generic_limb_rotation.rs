@@ -40,7 +40,7 @@ impl LimbRotation {
             *offset,
             || result_value.and_then(|v| value_for(v.0)))?;
 
-        decompose_config.check_row_decomposition(region, offset)?;
+        decompose_config.q_decompose.enable(region, *offset)?;
 
         for i in 0..8 {
             // We must subtract limb_rotations_right because if a number is expressed bitwise
