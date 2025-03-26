@@ -170,6 +170,7 @@ impl<F: PrimeField> From<AssignedByte<F>> for AssignedNative<F> {
     }
 }
 
+#[derive(Debug)]
 pub struct AssignedRow<F: PrimeField> {
     pub full_number: AssignedBlake2bWord<F>,
     pub limbs: [AssignedByte<F>; 8],

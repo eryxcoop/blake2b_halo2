@@ -1,5 +1,5 @@
 use crate::blake2b::chips::blake2b_instructions::Blake2bInstructions;
-use crate::types::{AssignedByte};
+use crate::types::{AssignedByte, AssignedNative};
 use ff::PrimeField;
 use halo2_proofs::circuit::Layouter;
 use halo2_proofs::plonk::Error;
@@ -26,8 +26,8 @@ impl<C: Blake2bInstructions> Blake2b<C> {
     pub fn hash<F: PrimeField>(
         &self,
         layouter: &mut impl Layouter<F>,
-        input: &[AssignedByte<F>],
-        key: &[AssignedByte<F>],
+        input: &[AssignedNative<F>],
+        key: &[AssignedNative<F>],
         output_size: usize,
     ) -> Result<[AssignedByte<F>; 64], Error> {
         enforce_input_sizes(output_size, key.len());

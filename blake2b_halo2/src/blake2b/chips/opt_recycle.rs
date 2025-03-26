@@ -5,7 +5,7 @@ use crate::base_operations::negate::NegateConfig;
 use crate::base_operations::rotate_63::Rotate63Config;
 use crate::base_operations::xor::XorConfig;
 use crate::blake2b::chips::blake2b_instructions::Blake2bInstructions;
-use crate::types::{AssignedBlake2bWord, AssignedByte, AssignedElement, AssignedNative, AssignedRow};
+use crate::types::{AssignedBlake2bWord, AssignedElement, AssignedNative, AssignedRow};
 use ff::PrimeField;
 use halo2_proofs::circuit::{Layouter, Region};
 use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Error};
@@ -72,15 +72,15 @@ impl Blake2bInstructions for Blake2bChipOptRecycle {
         &self,
         region: &mut Region<F>,
         offset: &mut usize,
-        input: &[AssignedByte<F>],
-        key: &[AssignedByte<F>],
+        input: &[AssignedNative<F>],
+        key: &[AssignedNative<F>],
         block_number: usize,
         last_input_block_index: usize,
         is_key_empty: bool,
         is_last_block: bool,
         is_key_block: bool,
         zero_constant_cell: AssignedNative<F>,
-    ) -> Result<[Vec<AssignedBlake2bWord<F>>; 16], Error> {
+    ) -> Result<[AssignedRow<F>; 16], Error> {
         let current_block_values = Self::build_values_for_current_block(
             input,
             key,
@@ -92,9 +92,7 @@ impl Blake2bInstructions for Blake2bChipOptRecycle {
             zero_constant_cell,
         );
 
-        let current_block_rows =
-            self.block_words_from_bytes(region, offset, current_block_values.try_into().unwrap())?;
-        Ok(current_block_rows)
+        self.block_words_from_bytes(region, offset, current_block_values.try_into().unwrap())
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -406,53 +404,50 @@ impl Blake2bChipOptRecycle {
     /// limbs and the resulting full number in the first column.
     fn new_row_from_assigned_bytes<F: PrimeField>(
         &self,
-        bytes: &[AssignedByte<F>; 8],
+        bytes: &[AssignedNative<F>; 8],
         region: &mut Region<F>,
         offset: &mut usize,
-    ) -> Result<Vec<AssignedBlake2bWord<F>>, Error> {
-        let bytes_as_cells = bytes.iter().map(|byte| byte.inner_value()).collect::<Vec<_>>();
-        let ret = self.decompose_8_config.generate_row_from_assigned_bytes(region, &bytes_as_cells.try_into().unwrap(), *offset)?;
+    ) -> Result<AssignedRow<F>, Error> {
+        let ret = self.decompose_8_config.generate_row_from_assigned_bytes(region, bytes, *offset);
         *offset += 1;
-        Ok(ret.iter()
-            .map(|cell| AssignedBlake2bWord::<F>::new(cell.clone()))
-            .collect())
+        ret
     }
 
     fn block_words_from_bytes<F: PrimeField>(
         &self,
         region: &mut Region<F>,
         offset: &mut usize,
-        block: [AssignedByte<F>; 128],
-    ) -> Result<[Vec<AssignedBlake2bWord<F>>; 16], Error> {
-        let mut current_block_rows: Vec<Vec<AssignedBlake2bWord<F>>> = Vec::new();
+        block: [AssignedNative<F>; 128],
+    ) -> Result<[AssignedRow<F>; 16], Error> {
+        let mut current_block_rows_vector: Vec<AssignedRow<F>> = Vec::new();
         for i in 0..16 {
-            let bytes: &[AssignedByte<F>; 8] = block[i * 8..(i + 1) * 8].try_into().unwrap();
+            let bytes: &[AssignedNative<F>; 8] = block[i * 8..(i + 1) * 8].try_into().unwrap();
             let current_row_cells = self.new_row_from_assigned_bytes(bytes, region, offset)?;
-            current_block_rows.push(current_row_cells);
+            current_block_rows_vector.push(current_row_cells);
         }
-        let current_block_words = current_block_rows.try_into().unwrap();
-        Ok(current_block_words)
+        let current_block_rows = current_block_rows_vector.try_into().unwrap();
+        Ok(current_block_rows)
     }
 
     /// Computes the values of the current block in the blake2b algorithm, based on the input and
     /// the block number we're on.
     fn build_values_for_current_block<F: PrimeField>(
-        input: &[AssignedByte<F>],
-        key: &[AssignedByte<F>],
+        input: &[AssignedNative<F>],
+        key: &[AssignedNative<F>],
         block_number: usize,
         last_input_block_index: usize,
         is_key_empty: bool,
         is_last_block: bool,
         is_key_block: bool,
         zero_constant_cell: AssignedNative<F>,
-    ) -> Vec<AssignedByte<F>> {
+    ) -> Vec<AssignedNative<F>> {
         if is_last_block && !is_key_block {
             let mut result = input[last_input_block_index * BLAKE2B_BLOCK_SIZE..].to_vec();
-            result.resize(128, AssignedByte::<F>::new(zero_constant_cell));
+            result.resize(128, zero_constant_cell);
             result
         } else if is_key_block {
             let mut result = key.to_vec();
-            result.resize(128, AssignedByte::<F>::new(zero_constant_cell));
+            result.resize(128, zero_constant_cell);
             result
         } else {
             let current_input_block_index = if is_key_empty { block_number } else { block_number - 1 };

@@ -106,8 +106,8 @@ pub trait Blake2bInstructions: Clone {
         &self,
         region: &mut Region<F>,
         advice_offset: &mut usize,
-        input: &[AssignedByte<F>],
-        key: &[AssignedByte<F>],
+        input: &[AssignedNative<F>],
+        key: &[AssignedNative<F>],
         iv_constants: &[AssignedBlake2bWord<F>; 8],
         global_state: &mut [AssignedBlake2bWord<F>; 8],
         zero_constant_cell: AssignedNative<F>,
@@ -385,13 +385,13 @@ pub trait Blake2bInstructions: Clone {
         &self,
         region: &mut Region<F>,
         offset: &mut usize,
-        input: &[AssignedByte<F>],
-        key: &[AssignedByte<F>],
+        input: &[AssignedNative<F>],
+        key: &[AssignedNative<F>],
         block_number: usize,
         last_input_block_index: usize,
         is_key_empty: bool,
         is_last_block: bool,
         is_key_block: bool,
         zero_constant_cell: AssignedNative<F>,
-    ) -> Result<[Vec<AssignedBlake2bWord<F>>; 16], Error>;
+    ) -> Result<[AssignedRow<F>; 16], Error>;
 }

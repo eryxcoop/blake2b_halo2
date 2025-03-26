@@ -1,4 +1,4 @@
-use crate::types::{AssignedBlake2bWord, AssignedElement, AssignedNative};
+use crate::types::{AssignedBlake2bWord, AssignedElement, AssignedNative, AssignedRow};
 use ff::PrimeField;
 use halo2_proofs::circuit::{Region};
 use halo2_proofs::plonk::Error;
@@ -26,9 +26,9 @@ pub fn constrain_initial_state<F: PrimeField>(
 
 /// Extracts the full number cell of each of the state rows
 pub fn full_number_of_each_state_row<F: PrimeField>(
-    current_block_rows: [Vec<AssignedBlake2bWord<F>>; 16],
+    current_block_rows: [AssignedRow<F>; 16],
 ) -> [AssignedBlake2bWord<F>; 16] {
-    current_block_rows.iter().map(|row| row[0].clone()).collect::<Vec<_>>().try_into().unwrap()
+    current_block_rows.iter().map(|row| row.full_number.clone()).collect::<Vec<_>>().try_into().unwrap()
 }
 
 /// The 'processed_bytes_count' is a variable in the algorithm that changes with every iteration,
@@ -79,15 +79,15 @@ pub fn get_total_blocks_count(
 pub fn constrain_padding_cells_to_equal_zero<F: PrimeField>(
     region: &mut Region<F>,
     zeros_amount: usize,
-    current_block_rows: &[Vec<AssignedBlake2bWord<F>>; 16],
+    current_block_rows: &[AssignedRow<F>; 16],
     zero_constant_cell: &AssignedNative<F>,
 ) -> Result<(), Error> {
     let mut constrained_padding_cells = 0;
     for row in (0..16).rev() {
-        for limb in (1..9).rev() {
+        for limb in (0..8).rev() {
             if constrained_padding_cells < zeros_amount {
                 region.constrain_equal(
-                    current_block_rows[row][limb].cell(),
+                    current_block_rows[row].limbs[limb].cell(),
                     zero_constant_cell.cell(),
                 )?;
                 constrained_padding_cells += 1;

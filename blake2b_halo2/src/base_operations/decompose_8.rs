@@ -87,28 +87,28 @@ impl Decompose8Config {
         region: &mut Region<F>,
         bytes: &[AssignedNative<F>; 8],
         offset: usize,
-    ) -> Result<Vec<AssignedNative<F>>, Error> {
+    ) -> Result<AssignedRow<F>, Error> {
         self.q_decompose.enable(region, offset)?;
         self.q_range.enable(region, offset)?;
 
         /// Compute the full number from the limbs
-        let full_number_cell = region.assign_advice(
+        let full_number_cell = AssignedBlake2bWord::<F>::new(region.assign_advice(
             || "full number",
             self.full_number_u64,
             offset,
-            || Self::compute_full_value_u64_from_bytes(bytes))?;
+            || Self::compute_full_value_u64_from_bytes(bytes))?);
 
-        let mut full_row = vec![full_number_cell];
+        let mut limbs = vec![];
 
         /// Fill the row with copies of the limbs
         for (index, byte_cell) in bytes.iter().enumerate() {
-            full_row.push(
-                byte_cell.copy_advice(
-                    || "Copied input byte", region, self.limbs[index], offset)?
+            let assigned_cell = byte_cell.copy_advice(
+                || "Copied input byte", region, self.limbs[index], offset)?;
+            limbs.push(AssignedByte::<F>::new(assigned_cell)
             );
         }
 
-        Ok(full_row)
+        Ok(AssignedRow::new(full_number_cell, limbs.try_into().unwrap()))
     }
 
     fn compute_full_value_u64_from_bytes<F: PrimeField>(bytes: &[AssignedNative<F>; 8]) -> Value<F> {
@@ -150,9 +150,6 @@ impl Decompose8Config {
     /// to establish constraints over the result's limbs. That's why we need a way to retrieve the
     /// full row that was created from that value. An example of this could be the Generic Limb
     /// Rotation Operation, where we need to establish copy constraints over the rotated limbs.
-    /// The result row size is T + 1
-    /// row[0] is the full number
-    /// row[1..T] are the limbs representation of row[0]
     pub fn generate_row_from_value_and_keep_row<F: PrimeField>(
         &self,
         region: &mut Region<F>,
