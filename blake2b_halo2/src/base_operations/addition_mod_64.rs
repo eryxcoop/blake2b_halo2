@@ -4,12 +4,6 @@ use crate::types::{AssignedBit, AssignedBlake2bWord, AssignedElement, Blake2bWor
 use auxiliar_functions::field_for;
 
 #[derive(Clone, Debug)]
-/// This config uses two generics, T and R.
-/// T is used to define the number of limbs we will use to represent numbers in the trace
-/// (it will be 4 for 16b limbs or 8 for 8b limbs)
-///
-/// R is used to define the total number of columns in the trace.
-/// It will allways be T + 2 (full number and carry)
 pub struct AdditionMod64Config {
     carry: Column<Advice>,
     pub q_add: Selector,
