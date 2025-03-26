@@ -396,32 +396,4 @@ pub trait Blake2bInstructions: Clone {
         is_key_block: bool,
         zero_constant_cell: AssignedNative<F>,
     ) -> Result<[Vec<AssignedBlake2bWord<F>>; 16], Error>;
-
-    /// Computes the values of the current block in the blake2b algorithm, based on the input and
-    /// the block number we're on.
-    fn build_values_for_current_block<F: PrimeField>(
-        input: &[AssignedByte<F>],
-        key: &[AssignedByte<F>],
-        block_number: usize,
-        last_input_block_index: usize,
-        is_key_empty: bool,
-        is_last_block: bool,
-        is_key_block: bool,
-        zero_constant_cell: AssignedNative<F>,
-    ) -> Vec<AssignedByte<F>> {
-        if is_last_block && !is_key_block {
-            let mut result = input[last_input_block_index * BLAKE2B_BLOCK_SIZE..].to_vec();
-            result.resize(128, AssignedByte::<F>::new(zero_constant_cell));
-            result
-        } else if is_key_block {
-            let mut result = key.to_vec();
-            result.resize(128, AssignedByte::<F>::new(zero_constant_cell));
-            result
-        } else {
-            let current_input_block_index = if is_key_empty { block_number } else { block_number - 1 };
-            input[current_input_block_index * BLAKE2B_BLOCK_SIZE
-                ..(current_input_block_index + 1) * BLAKE2B_BLOCK_SIZE]
-                .to_vec()
-        }
-    }
 }
