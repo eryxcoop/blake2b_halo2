@@ -304,6 +304,22 @@ impl Blake2bInstructions for Blake2bChipOptRecycle {
             self.limbs,
         )
     }
+
+    fn assign_full_number_constant<F: PrimeField>(
+        &self,
+        region: &mut Region<F>,
+        row_offset: &usize,
+        description: &str,
+        constant: u64
+    ) -> Result<AssignedBlake2bWord<F>, Error> {
+        Ok(AssignedBlake2bWord::<F>::new(
+            region.assign_advice_from_constant(
+                || description,
+                self.full_number_u64,
+                *row_offset,
+                F::from(constant),
+            )?))
+    }
 }
 
 impl Blake2bChipOptRecycle {

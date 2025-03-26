@@ -225,13 +225,7 @@ pub trait Blake2bInstructions: Clone {
         // and processed_bytes_count is public for both parties, the xor between both values
         // is also a constant.
         let new_state_12 = processed_bytes_count ^ IV_CONSTANTS[4];
-        state[12] = AssignedBlake2bWord::<F>::new(
-            region.assign_advice_from_constant(
-                || "New state[12]",
-                self.get_full_number_column(),
-                *row_offset,
-                F::from(new_state_12),
-            )?);
+        state[12] = self.assign_full_number_constant(region, row_offset, "New state[12]", new_state_12)?;
         *row_offset += 1;
 
         if is_last_block {
@@ -350,6 +344,14 @@ pub trait Blake2bInstructions: Clone {
     ) -> Result<AssignedBlake2bWord<F>, Error>;
 
     // ----- Auxiliar methods ----- //
+
+    fn assign_full_number_constant<F: PrimeField>(
+        &self,
+        region: &mut Region<F>,
+        row_offset: &usize,
+        description: &str,
+        constant: u64
+    ) -> Result<AssignedBlake2bWord<F>, Error>;
 
     /// Blake2b uses an initialization vector (iv) that is hardcoded. This method assigns those
     /// values to fixed cells to use later on.
