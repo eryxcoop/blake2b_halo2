@@ -2,6 +2,15 @@ use super::*;
 use crate::auxiliar_functions::{field_for, get_limb_from_field};
 use crate::types::{AssignedBlake2bWord, AssignedByte, AssignedElement, AssignedNative, AssignedRow, Blake2bWord};
 
+// [Zhiyong comment] I suggest to remove this trait and the gate of decomposition_limb_range_check. Instead, we define a gate API like:
+// fn decomposition_gate(number: Expression<F>, limbs: &[Expressions]) who takes inputs of expressions and integrate this
+// into the operation gates, such as addition_mod_64 and xor_spread. On the other hand, we only
+// use decomposition (without range check) for generic_limb_rotation and negate. Then the assignment methods can be used
+// as utilities without enabling the gates. And we let each gate to enable the selectors. This manner would be beneficial
+// for flexibity of the assignment (without enabling the gates) and making each gates complete (you should include all needed
+// columns and constraints, not only the extra ones)
+
+
 /// This config handles the decomposition of 64-bit numbers into 8-bit limbs in the trace,
 /// where each limbs is range checked regarding the designated limb size.
 /// T is the amount of limbs that the number will be decomposed into.

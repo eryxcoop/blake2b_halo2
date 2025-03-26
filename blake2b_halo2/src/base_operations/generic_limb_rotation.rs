@@ -33,7 +33,7 @@ impl LimbRotation {
     ) -> Result<AssignedBlake2bWord<F>, Error> {
         let result_value =
             Self::right_rotation_value(input_row.full_number.value(), limbs_to_rotate_to_the_right);
-        // given the shifted value, I think it suffices to make equality constraints over the related limbs. However,
+        // [Zhiyong comment - solved] given the shifted value, I think it suffices to make equality constraints over the related limbs. However,
         // the decomposition gate also range check each limbs, which is over-constrained here.
 
         let result_cell = region.assign_advice(

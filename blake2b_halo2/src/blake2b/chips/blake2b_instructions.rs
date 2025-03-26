@@ -200,7 +200,7 @@ pub trait Blake2bInstructions: Clone {
         row_offset: &mut usize,
         iv_constants: &[AssignedBlake2bWord<F>; 8],
         global_state: &mut [AssignedBlake2bWord<F>; 8],
-        current_block_cells: [AssignedBlake2bWord<F>; 16],
+        current_block: [AssignedBlake2bWord<F>; 16],
         processed_bytes_count: u64,
         is_last_block: bool,
     ) -> Result<[AssignedByte<F>; 64], Error> {
@@ -218,6 +218,7 @@ pub trait Blake2bInstructions: Clone {
         state[12] = self.assign_full_number_constant(region, row_offset, "New state[12]", new_state_12)?;
         *row_offset += 1;
 
+        // [Zhiyong comment] not sure, the conditional constraint should be in circuit (select gate)?
         if is_last_block {
             state[14] = self.not(&state[14], region, row_offset)?;
         }
@@ -233,7 +234,9 @@ pub trait Blake2bInstructions: Clone {
                     SIGMA[i][2 * j],
                     SIGMA[i][2 * j + 1],
                     &mut state,
-                    &current_block_cells,
+                    // [Zhiyong comment] can we remove the input of current_block_cells, and
+                    // pass m[SIGMA[i][2 * j]], m[SIGMA[i][2 * j + 1]], as showed in the spec?
+                    &current_block,
                     region,
                     row_offset,
                 )?;
@@ -242,6 +245,10 @@ pub trait Blake2bInstructions: Clone {
 
         let mut global_state_bytes: Vec<AssignedByte<F>> = Vec::new();
         for i in 0..8 {
+            // [Zhiyong comment] why these two xor's are different methods
+            // we have a trick for the operation of two xor's:
+            // to compute res = x \oplus y \oplus z, it suffices to compute M_even for
+            // M = spread(x) + spread(y) + spread(z) over F
             global_state[i] = self.xor(&global_state[i], &state[i], region, row_offset)?;
             let row =
                 self.xor_and_return_full_row(&global_state[i], &state[i + 8], region, row_offset)?;

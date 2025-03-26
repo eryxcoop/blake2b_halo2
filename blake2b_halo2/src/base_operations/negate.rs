@@ -3,7 +3,7 @@ use crate::auxiliar_functions::{field_for, value_for};
 use crate::types::{AssignedBlake2bWord, AssignedElement, AssignedNative, Blake2bWord};
 
 /// This config handles the bitwise negation of a 64-bit number.
-// the same doubt as in addition_mod_64, to make out a full config struct
+// [Zhiyong comment] the same doubt as in addition_mod_64, to make out a full config struct
 #[derive(Clone, Debug)]
 pub struct NegateConfig {
     q_negate: Selector,
