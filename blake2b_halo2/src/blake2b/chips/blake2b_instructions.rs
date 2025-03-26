@@ -9,9 +9,7 @@ use ff::PrimeField;
 use halo2_proofs::circuit::{Layouter, Region};
 use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Error};
 
-/// This is the trait that groups the 3 optimization chips. Most of their code is the same, so the
-/// behaviour was encapsulated here. Each optimization has to override only 3 or 4 methods, besides
-/// its signature for some of the gates.
+/// This is the trait that groups the Blake2b implementation chips.
 pub trait Blake2bInstructions: Clone {
     /// Configuration of the circuit, this includes initialization of all the necessary configs.
     /// Some of them are general for every implementation, some are optimization-specific.
