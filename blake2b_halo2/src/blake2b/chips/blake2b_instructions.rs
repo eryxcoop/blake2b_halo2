@@ -3,7 +3,7 @@ use crate::base_operations::generic_limb_rotation::LimbRotation;
 use crate::base_operations::negate::NegateConfig;
 use crate::base_operations::rotate_63::Rotate63Config;
 use crate::blake2b::chips::utils::{compute_processed_bytes_count_value_for_iteration, constrain_padding_cells_to_equal_zero, full_number_of_each_state_row, get_total_blocks_count, ABCD, BLAKE2B_BLOCK_SIZE, IV_CONSTANTS, SIGMA};
-use crate::types::{AssignedElement, AssignedRow};
+use crate::types::AssignedRow;
 use crate::types::{AssignedBlake2bWord, AssignedByte, AssignedNative};
 use ff::PrimeField;
 use halo2_proofs::circuit::{Layouter, Region};

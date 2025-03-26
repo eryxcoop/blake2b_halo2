@@ -1,7 +1,7 @@
 use super::*;
 use crate::base_operations::decompose_8::Decompose8Config;
 use crate::base_operations::generic_limb_rotation::LimbRotation;
-use crate::types::{AssignedElement, AssignedRow};
+use crate::types::AssignedElement;
 use ff::PrimeField;
 use halo2_proofs::circuit::SimpleFloorPlanner;
 use halo2_proofs::plonk::{Circuit, Fixed};
@@ -97,7 +97,7 @@ impl<F: PrimeField, const T: usize> Circuit<F> for LimbRotationCircuitAutogenera
                     &mut region,
                     &mut offset,
                     decompose_config,
-                    AssignedRow::<F>::new_from_native(input_row.try_into().unwrap()),
+                    input_row,
                     limbs_to_rotate_to_the_right,
                     config.full_number_u64,
                     config.limbs,

@@ -23,6 +23,10 @@ pub fn zero() -> Value<Fr> {
     Value::known(Fr::ZERO)
 }
 
+pub fn blake2b_value_for(number: u64) -> Value<Blake2bWord> {
+    Value::known(Blake2bWord(number))
+}
+
 pub fn value_for<T, F>(number: T) -> Value<F>
 where
     T: Into<u128>,

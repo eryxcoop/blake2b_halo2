@@ -2,7 +2,7 @@ use ff::PrimeField;
 use halo2_proofs::circuit::{AssignedCell, Cell, Value};
 use num_bigint::BigUint;
 use std::fmt::Debug;
-
+use halo2_proofs::utils::rational::Rational;
 
 /// The inner type of AssignedByte.
 // A wrapper around `u8` to have a type that we own and for which we can implement some necessary
@@ -19,12 +19,11 @@ impl From<u128> for Blake2bWord {
     }
 }
 
-/*
 impl<F: PrimeField> From<&Blake2bWord> for Rational<F> {
     fn from(value: &Blake2bWord) -> Self {
         Self::Trivial(F::from(value.0))
     }
-}*/
+}
 
 pub type AssignedNative<F> = AssignedCell<F, F>;
 
@@ -149,6 +148,24 @@ pub fn fe_to_big<F: PrimeField>(fe: F) -> BigUint {
 
 impl<F: PrimeField> From<AssignedBlake2bWord<F>> for AssignedNative<F> {
     fn from(value: AssignedBlake2bWord<F>) -> Self {
+        value.0
+    }
+}
+
+impl<F: PrimeField> From<AssignedNative<F>> for AssignedBlake2bWord<F> {
+    fn from(value: AssignedNative<F>) -> Self {
+        AssignedBlake2bWord::new(value)
+    }
+}
+
+impl<F: PrimeField> From<AssignedNative<F>> for AssignedByte<F> {
+    fn from(value: AssignedNative<F>) -> Self {
+        AssignedByte::new(value)
+    }
+}
+
+impl<F: PrimeField> From<AssignedByte<F>> for AssignedNative<F> {
+    fn from(value: AssignedByte<F>) -> Self {
         value.0
     }
 }

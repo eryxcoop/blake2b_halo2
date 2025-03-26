@@ -103,9 +103,7 @@ impl XorConfig {
         )?;
         *offset += 1;
 
-        let result_assigned_row = AssignedRow::<F>::new_from_native(
-            result_row.try_into().unwrap());
-        Ok(result_assigned_row)
+        Ok(result_row)
     }
 
     pub fn configure<F: PrimeField>(

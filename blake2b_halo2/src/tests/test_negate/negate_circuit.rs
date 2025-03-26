@@ -1,15 +1,16 @@
 use crate::base_operations::decompose_8::Decompose8Config;
 use crate::base_operations::negate::NegateConfig;
+use crate::types::{AssignedElement, Blake2bWord};
 use ff::PrimeField;
 use halo2_proofs::circuit::{Layouter, SimpleFloorPlanner, Value};
 use halo2_proofs::plonk::{Advice, Circuit, Column, ConstraintSystem, Error, Fixed};
 use std::array;
 use std::marker::PhantomData;
-use crate::types::{AssignedBlake2bWord, AssignedElement};
 
 pub struct NegateCircuit<F: PrimeField> {
-    value: Value<F>,
-    expected_result: Value<F>,
+    _ph: PhantomData<F>,
+    value: Value<Blake2bWord>,
+    expected_result: Value<Blake2bWord>,
 }
 
 #[derive(Clone)]
@@ -27,6 +28,7 @@ impl<F: PrimeField> Circuit<F> for NegateCircuit<F> {
 
     fn without_witnesses(&self) -> Self {
         Self {
+            _ph: PhantomData,
             value: Value::unknown(),
             expected_result: Value::unknown(),
         }
@@ -75,7 +77,7 @@ impl<F: PrimeField> Circuit<F> for NegateCircuit<F> {
                 let result = config.negate_config.generate_rows_from_cell(
                     &mut region,
                     &mut offset,
-                    &AssignedBlake2bWord(cell),
+                    &cell,
                     config.full_number_u64,
                 )?;
                 let fixed_cell = region.assign_fixed(
@@ -94,8 +96,9 @@ impl<F: PrimeField> Circuit<F> for NegateCircuit<F> {
 }
 
 impl<F: PrimeField> NegateCircuit<F> {
-    pub fn new_for(value: Value<F>, expected_result: Value<F>) -> Self {
+    pub fn new_for(value: Value<Blake2bWord>, expected_result: Value<Blake2bWord>) -> Self {
         Self {
+            _ph: PhantomData,
             value,
             expected_result,
         }

@@ -1,7 +1,7 @@
 use super::*;
-use crate::types::{AssignedBit, AssignedBlake2bWord, AssignedElement, AssignedNative, Blake2bWord};
-use auxiliar_functions::field_for;
 use crate::base_operations::decompose_8::Decompose8Config;
+use crate::types::{AssignedBit, AssignedBlake2bWord, AssignedElement, Blake2bWord};
+use auxiliar_functions::field_for;
 
 #[derive(Clone, Debug)]
 /// This config uses two generics, T and R.
@@ -86,17 +86,12 @@ impl AdditionMod64Config {
            full_number_u64_column,
            *offset
         )?;
-        let carry_cell: AssignedNative<F> = region.assign_advice(|| "carry", self.carry, *offset, || carry_value)?;
+        let carry_cell = AssignedBit(region.assign_advice(|| "carry", self.carry, *offset, || carry_value)?);
         *offset += 1;
 
-        // TODO: remove this cast when the refactor reaches the decomposition
-        let result_value = result_value.and_then(|v| Value::known(F::from(v.0)));
         let result_cell = decompose_config.generate_row_from_value(region, result_value, *offset)?;
         *offset += 1;
 
-        // TODO: remove these casts when the refactor reaches the decomposition
-        let result_cell = AssignedBlake2bWord(result_cell);
-        let carry_cell = AssignedBit(carry_cell);
         Ok((result_cell, carry_cell))
     }
 

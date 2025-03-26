@@ -1,5 +1,4 @@
 use super::*;
-use crate::auxiliar_functions::value_for;
 use crate::types::{AssignedBlake2bWord, AssignedElement};
 use num_bigint::BigUint;
 
@@ -58,7 +57,7 @@ impl Rotate63Config {
             || "Rotate63 output",
             full_number_u64,
             *offset,
-            || result_value.and_then(|v|value_for(v.0)),
+            || result_value.map(|v|F::from(v.0)),
         )?;
         *offset += 1;
         Ok(AssignedBlake2bWord(result_cell))

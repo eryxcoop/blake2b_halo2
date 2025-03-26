@@ -1,6 +1,6 @@
 use super::*;
 use crate::auxiliar_functions::{field_for, get_limb_from_field};
-use crate::types::AssignedNative;
+use crate::types::{AssignedBlake2bWord, AssignedByte, AssignedElement, AssignedNative, AssignedRow, Blake2bWord};
 
 /// This config handles the decomposition of 64-bit numbers into 8-bit limbs in the trace,
 /// where each limbs is range checked regarding the designated limb size.
@@ -158,24 +158,23 @@ impl Decompose8Config {
         region: &mut Region<F>,
         value: Value<F>,
         offset: usize,
-    ) -> Result<Vec<AssignedNative<F>>, Error> {
+    ) -> Result<AssignedRow<F>, Error> {
         self.q_decompose.enable(region, offset)?;
         self.q_range.enable(region, offset)?;
         let full_number_cell =
-            region.assign_advice(|| "full number", self.full_number_u64, offset, || value)?;
-
-        let mut result = vec![full_number_cell];
+            region.assign_advice(|| "full number", self.full_number_u64, offset, || value)?.into();
 
         let limbs: [Value<F>; 8] =
             (0..8).map(|i| Self::get_limb_from(value, i)).collect::<Vec<_>>().try_into().unwrap();
 
-        for (i, limb) in limbs.iter().enumerate() {
-            let limb_cell =
-                region.assign_advice(|| format!("limb{}", i), self.limbs[i], offset, || *limb)?;
-            result.push(limb_cell);
-        }
+        let assigned_limbs: Vec<AssignedByte<F>> = limbs.iter().enumerate().map(|(i, limb)|{
+            region.assign_advice(|| format!("limb{}", i), self.limbs[i], offset, || *limb).unwrap().into()
+        }).collect::<Vec<_>>();
 
-        Ok(result)
+        Ok(AssignedRow::new(
+            full_number_cell,
+            assigned_limbs.try_into().unwrap()
+        ))
     }
 
     /// Given a value and a limb index, it returns the value of the limb
@@ -188,25 +187,27 @@ impl Decompose8Config {
     pub fn generate_row_from_value<F: PrimeField>(
         &self,
         region: &mut Region<F>,
-        value: Value<F>,
+        value: Value<Blake2bWord>,
         offset: usize,
-    ) -> Result<AssignedNative<F>, Error> {
-        let full_number_cell =
-            self.generate_row_from_value_and_keep_row(region, value, offset)?[0].clone();
+    ) -> Result<AssignedBlake2bWord<F>, Error> {
+        //TODO: remove cast later on
+        let value = value.map(|v| F::from(v.0));
+
+        let new_row = self.generate_row_from_value_and_keep_row(region, value, offset)?;
+        let full_number_cell = new_row.full_number;
         Ok(full_number_cell)
     }
 
-    /// Given a cell with a 64-bit value, it returns a new row with the copied full number and the
-    /// decomposition in 8-bit limbs
+    /// Given a cell with a 64-bit value, it creates a new row with the copied full number and the
+    /// decomposition in 8-bit limbs.
     pub fn generate_row_from_cell<F: PrimeField>(
         &self,
         region: &mut Region<F>,
         cell: &AssignedNative<F>,
         offset: usize,
-    ) -> Result<Vec<AssignedNative<F>>, Error> {
+    ) -> Result<(), Error> {
         let value = cell.value().copied();
         let new_cells = self.generate_row_from_value_and_keep_row(region, value, offset)?;
-        region.constrain_equal(cell.cell(), new_cells[0].cell())?;
-        Ok(new_cells)
+        region.constrain_equal(cell.cell(), new_cells.full_number.cell())
     }
 }
