@@ -1,16 +1,15 @@
 use super::*;
 use crate::base_operations::decompose_8::Decompose8Config;
-use crate::base_operations::xor_table::XorTableConfig;
+use crate::base_operations::xor::XorConfig;
 use halo2_proofs::circuit::SimpleFloorPlanner;
 use halo2_proofs::plonk::Circuit;
 use std::array;
 use std::marker::PhantomData;
-use crate::base_operations::xor::Xor;
 
 #[derive(Clone)]
 pub struct XorCircuitConfig<F: PrimeField> {
     _ph: PhantomData<F>,
-    xor_config: XorTableConfig,
+    xor_config: XorConfig,
     decompose_8_config: Decompose8Config,
 }
 
@@ -35,7 +34,7 @@ impl<F: PrimeField> Circuit<F> for XorCircuit<F> {
     fn without_witnesses(&self) -> Self {
         Self {
             _ph: PhantomData,
-            trace: XorTableConfig::unknown_trace(),
+            trace: XorConfig::unknown_trace(),
         }
     }
 
@@ -44,7 +43,7 @@ impl<F: PrimeField> Circuit<F> for XorCircuit<F> {
         let limbs_8_bits: [Column<Advice>; 8] = array::from_fn(|_| meta.advice_column());
 
         let decompose_8_config = Decompose8Config::configure(meta, full_number_u64, limbs_8_bits);
-        let xor_config = XorTableConfig::configure(meta, limbs_8_bits);
+        let xor_config = XorConfig::configure(meta, limbs_8_bits);
 
         Self::Config {
             _ph: PhantomData,
@@ -70,7 +69,7 @@ impl<F: PrimeField> Circuit<F> for XorCircuit<F> {
     }
 }
 
-impl XorTableConfig {
+impl XorConfig {
     /// Given 3 explicit rows of values, it assigns the full number and the limbs of the operands
     /// and the result in the trace
     fn populate_xor_region<F: PrimeField>(

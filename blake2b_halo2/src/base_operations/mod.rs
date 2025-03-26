@@ -5,5 +5,4 @@ pub mod decompose_8;
 pub mod generic_limb_rotation;
 pub mod negate;
 pub mod rotate_63;
-pub mod xor_table;
 pub mod xor;

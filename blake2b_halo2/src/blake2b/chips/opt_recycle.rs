@@ -3,8 +3,7 @@ use crate::base_operations::decompose_8::Decompose8Config;
 use crate::base_operations::generic_limb_rotation::LimbRotation;
 use crate::base_operations::negate::NegateConfig;
 use crate::base_operations::rotate_63::Rotate63Config;
-use crate::base_operations::xor::Xor;
-use crate::base_operations::xor_table::XorTableConfig;
+use crate::base_operations::xor::XorConfig;
 use crate::blake2b::chips::blake2b_instructions::Blake2bInstructions;
 use crate::types::{AssignedBlake2bWord, AssignedByte, AssignedElement, AssignedNative, AssignedRow};
 use ff::PrimeField;
@@ -25,7 +24,7 @@ pub struct Blake2bChipOptRecycle {
     addition_config: AdditionMod64Config,
     generic_limb_rotation_config: LimbRotation,
     rotate_63_config: Rotate63Config,
-    xor_config: XorTableConfig,
+    xor_config: XorConfig,
     negate_config: NegateConfig,
     /// Advice columns
     full_number_u64: Column<Advice>,
@@ -45,7 +44,7 @@ impl Blake2bInstructions for Blake2bChipOptRecycle {
         /// Config that is optimization-specific
         /// An extra carry column is needed for the sum operation with 8 limbs.
         let addition_config = AdditionMod64Config::configure(meta, full_number_u64, limbs[0]);
-        let xor_config = XorTableConfig::configure(meta, limbs);
+        let xor_config = XorConfig::configure(meta, limbs);
 
         Self {
             addition_config,
