@@ -13,9 +13,9 @@ use halo2_proofs::{
 };
 use crate::blake2b::chips::blake2b_instructions::Blake2bInstructions;
 
-use crate::blake2b::chips::opt_recycle::Blake2bChipOptRecycle;
+use crate::blake2b::chips::blake2b_chip::Blake2bChip;
 
-type Blake2bCircuit<F> = Blake2bCircuitGeneric<F, Blake2bChipOptRecycle>;
+type Blake2bCircuit<F> = Blake2bCircuitGeneric<F, Blake2bChip>;
 pub type Blake2bCircuitInputs = (Vec<Value<Fr>>, usize, Vec<Value<Fr>>, usize, [Fr; 64], usize);
 
 pub struct CircuitRunner;

@@ -1,7 +1,7 @@
 use criterion::{
     criterion_group, criterion_main, BatchSize, BenchmarkGroup, BenchmarkId, Criterion, Throughput,
 };
-use blake2b_halo2::blake2b::chips::opt_recycle::Blake2bChipOptRecycle;
+use blake2b_halo2::blake2b::chips::blake2b_chip::Blake2bChip;
 use criterion::measurement::WallTime;
 use blake2b_halo2::blake2b::chips::blake2b_instructions::Blake2bInstructions;
 use blake2b_halo2::blake2b::circuit_runner::CircuitRunner;
@@ -19,7 +19,7 @@ pub fn benchmark_mocked_proving(c: &mut Criterion) {
     for amount_of_blocks in benchmarking_block_sizes() {
         group.throughput(Throughput::Bytes(amount_of_blocks as u64));
 
-        benchmark_optimization_with_amount_of_blocks::<Blake2bChipOptRecycle>(
+        benchmark_optimization_with_amount_of_blocks::<Blake2bChip>(
             &mut group,
             amount_of_blocks,
             "opt_recycle",

@@ -18,7 +18,7 @@ use crate::blake2b::chips::utils::BLAKE2B_BLOCK_SIZE;
 /// all the possible 8-bit operands. Since all operations have operands with 8-bit decompositions,
 /// we can recycle (hence the name) some rows per iteration of the algorithm for every operation.
 #[derive(Clone, Debug)]
-pub struct Blake2bChipOptRecycle {
+pub struct Blake2bChip {
     /// Decomposition configs
     decompose_8_config: Decompose8Config,
     /// Base oprerations configs
@@ -32,7 +32,7 @@ pub struct Blake2bChipOptRecycle {
     limbs: [Column<Advice>; 8],
 }
 
-impl Blake2bInstructions for Blake2bChipOptRecycle {
+impl Blake2bInstructions for Blake2bChip {
     fn configure<F: PrimeField>(
         meta: &mut ConstraintSystem<F>,
         full_number_u64: Column<Advice>,
@@ -329,7 +329,7 @@ impl Blake2bInstructions for Blake2bChipOptRecycle {
     }
 }
 
-impl Blake2bChipOptRecycle {
+impl Blake2bChip {
     /// This method only exists in the opt_recycle optimization, so it's defined in a different block.
     /// opt_recycle decomposes the sum operands in 8-bit limbs, so the xor operation that comes after
     /// can recycle the result row of the addition and use it as its first operand.

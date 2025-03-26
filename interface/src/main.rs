@@ -8,7 +8,7 @@ use hex;
 use serde::Deserialize;
 use std::cmp::max;
 
-use blake2b_halo2::blake2b::chips::opt_recycle::Blake2bChipOptRecycle;
+use blake2b_halo2::blake2b::chips::blake2b_chip::Blake2bChip;
 
 #[derive(Deserialize, Debug)]
 struct Blake2bInput {
@@ -107,7 +107,7 @@ fn run_blake2b_halo2(
         .collect::<Vec<_>>();
 
     // TEST
-    let circuit = Blake2bCircuit::<Fr, Blake2bChipOptRecycle>::new_for(
+    let circuit = Blake2bCircuit::<Fr, Blake2bChip>::new_for(
         input_values,
         input_size,
         key_values,
