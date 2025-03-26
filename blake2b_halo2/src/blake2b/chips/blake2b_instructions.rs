@@ -28,10 +28,6 @@ pub trait Blake2bInstructions: Clone {
         layouter: &mut impl Layouter<F>,
     ) -> Result<(), Error>;
 
-    // Getters for some internal members of the chip
-    fn get_limb_column(&self, index: usize) -> Column<Advice>;
-    fn get_full_number_column(&self) -> Column<Advice>;
-
     // ---------- MAIN METHODS ---------- //
 
     /// Assign all the constants at the beginning
@@ -45,12 +41,8 @@ pub trait Blake2bInstructions: Clone {
         let iv_constant_cells: [AssignedBlake2bWord<F>; 8] =
             self.assign_iv_constants_to_fixed_cells(&mut region, advice_offset)?;
 
-        let zero_constant = region.assign_advice_from_constant(
-            || "zero",
-            self.get_limb_column(0),
-            *advice_offset,
-            F::from(0),
-        )?;
+        let zero_constant = self.assign_limb_constant_u64(
+            region, advice_offset, "zero", 0, 0)?.into();
 
         let iv_constant_0 = IV_CONSTANTS[0];
         let out_len = output_size as u64;
@@ -59,13 +51,13 @@ pub trait Blake2bInstructions: Clone {
         // state[0] = state[0] ^ 0x01010000 ^ (key.len() << 8) as u64 ^ outlen as u64;
         let initial_state_index_0 = iv_constant_0 ^ INIT_CONST_STATE_0 ^ key_size_shifted ^ out_len;
 
-        let initial_state_0 = AssignedBlake2bWord::<F>::new(
-            region.assign_advice_from_constant(
-                || "initial state index 0",
-                self.get_limb_column(1),
-                *advice_offset,
-                F::from(initial_state_index_0),
-        )?);
+        let initial_state_0 = self.assign_limb_constant_u64(
+                region,
+                advice_offset,
+                "initial state index 0",
+                initial_state_index_0,
+                1,
+        )?;
 
         *advice_offset += 1;
 
@@ -353,6 +345,15 @@ pub trait Blake2bInstructions: Clone {
         constant: u64
     ) -> Result<AssignedBlake2bWord<F>, Error>;
 
+    fn assign_limb_constant_u64<F: PrimeField>(
+        &self,
+        region: &mut Region<F>,
+        row_offset: &usize,
+        description: &str,
+        constant: u64,
+        limb_index: usize
+    ) -> Result<AssignedBlake2bWord<F>, Error>;
+
     /// Blake2b uses an initialization vector (iv) that is hardcoded. This method assigns those
     /// values to fixed cells to use later on.
     fn assign_iv_constants_to_fixed_cells<F: PrimeField>(
@@ -364,15 +365,13 @@ pub trait Blake2bInstructions: Clone {
             .iter()
             .enumerate()
             .map(|(index, constant)| {
-                let constant_assigned_cell = region
-                    .assign_advice_from_constant(
-                        || "iv constants",
-                        self.get_limb_column(index),
-                        *offset,
-                        F::from(*constant),
-                    )
-                    .unwrap();
-                AssignedBlake2bWord::<F>::new(constant_assigned_cell)
+                self.assign_limb_constant_u64(
+                    region,
+                    offset,
+                    "iv constants",
+                    *constant,
+                    index
+                ).unwrap()
             })
             .collect::<Vec<AssignedBlake2bWord<F>>>()
             .try_into()

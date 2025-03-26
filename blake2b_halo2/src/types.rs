@@ -147,6 +147,12 @@ pub fn fe_to_big<F: PrimeField>(fe: F) -> BigUint {
     BigUint::from_bytes_le(fe.to_repr().as_ref())
 }
 
+impl<F: PrimeField> From<AssignedBlake2bWord<F>> for AssignedNative<F> {
+    fn from(value: AssignedBlake2bWord<F>) -> Self {
+        value.0
+    }
+}
+
 pub struct AssignedRow<F: PrimeField> {
     pub full_number: AssignedBlake2bWord<F>,
     pub limbs: [AssignedByte<F>; 8],

@@ -67,15 +67,6 @@ impl Blake2bInstructions for Blake2bChipOptRecycle {
         self.populate_xor_lookup_table(layouter)
     }
 
-    // Getters that the trait needs for its default implementations
-    fn get_limb_column(&self, index: usize) -> Column<Advice> {
-        self.limbs[index]
-    }
-
-    fn get_full_number_column(&self) -> Column<Advice> {
-        self.full_number_u64
-    }
-
     #[allow(clippy::too_many_arguments)]
     fn build_current_block_rows<F: PrimeField>(
         &self,
@@ -320,6 +311,23 @@ impl Blake2bInstructions for Blake2bChipOptRecycle {
                 F::from(constant),
             )?))
     }
+
+    fn assign_limb_constant_u64<F: PrimeField>(
+        &self,
+        region: &mut Region<F>,
+        row_offset: &usize,
+        description: &str,
+        constant: u64,
+        limb_index: usize
+    ) -> Result<AssignedBlake2bWord<F>, Error> {
+        Ok(AssignedBlake2bWord::<F>::new(
+        region.assign_advice_from_constant(
+            || description,
+            self.limbs[limb_index],
+            *row_offset,
+            F::from(constant),
+        )?))
+    }
 }
 
 impl Blake2bChipOptRecycle {
@@ -427,5 +435,9 @@ impl Blake2bChipOptRecycle {
     // Getters that the trait needs for its default implementations
     fn decompose_8_config(&self) -> Decompose8Config {
         self.decompose_8_config.clone()
+    }
+
+    fn get_full_number_column(&self) -> Column<Advice> {
+        self.full_number_u64
     }
 }
