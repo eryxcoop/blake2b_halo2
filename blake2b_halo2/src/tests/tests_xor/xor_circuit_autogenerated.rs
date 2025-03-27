@@ -4,7 +4,7 @@ use halo2_proofs::circuit::SimpleFloorPlanner;
 use halo2_proofs::plonk::{Circuit, Fixed};
 use std::array;
 use std::marker::PhantomData;
-use crate::types::{AssignedElement, Blake2bWord};
+use crate::types::Blake2bWord;
 
 use crate::base_operations::xor::XorConfig;
 

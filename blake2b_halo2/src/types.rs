@@ -31,6 +31,8 @@ impl From<u128> for Blake2bWord {
     }
 }
 
+/// This allows us to call the .assign_advice() method of the region with an AssignedBlake2bWord
+/// as its value
 impl<F: PrimeField> From<&Blake2bWord> for Rational<F> {
     fn from(value: &Blake2bWord) -> Self {
         Self::Trivial(F::from(value.0))
@@ -39,7 +41,7 @@ impl<F: PrimeField> From<&Blake2bWord> for Rational<F> {
 
 pub type AssignedNative<F> = AssignedCell<F, F>;
 
-/// Trait for accessing the value inside assigned circuit elements.
+/*/// Trait for accessing the value inside assigned circuit elements.
 pub trait AssignedElement<F: PrimeField>: Clone + Debug {
     /// Represents the unassigned type corresponding to the [midnight_circuits::types::InnerValue]
     type Element: Clone + Debug;
@@ -54,7 +56,7 @@ pub trait AssignedElement<F: PrimeField>: Clone + Debug {
 
     // TODO solo para pasos intermedios del refactor, despues se deberia sacar
     fn inner_value(&self) -> AssignedNative<F>;
-}
+}*/
 
 /// This wrapper type on `AssignedNative<F>` is designed to enforce type safety
 /// on assigned bytes. It prevents the user from creating an `AssignedByte`
@@ -64,14 +66,12 @@ pub trait AssignedElement<F: PrimeField>: Clone + Debug {
 #[must_use]
 pub struct AssignedByte<F: PrimeField>(AssignedNative<F>);
 
-impl<F: PrimeField> AssignedElement<F> for AssignedByte<F> {
-    type Element = Byte;
-
-    fn new(value: AssignedNative<F>) -> Self {
+impl<F: PrimeField> AssignedByte<F> {
+    pub fn new(value: AssignedNative<F>) -> Self {
         Self { 0: value }
     }
 
-    fn value(&self) -> Value<Byte> {
+    pub fn value(&self) -> Value<Byte> {
         self.0.value().map(|v| {
             let bi_v = fe_to_big(*v);
             #[cfg(not(test))]
@@ -80,11 +80,11 @@ impl<F: PrimeField> AssignedElement<F> for AssignedByte<F> {
         })
     }
 
-    fn cell(&self) -> Cell {
+    pub fn cell(&self) -> Cell {
         self.0.cell()
     }
 
-    fn inner_value(&self) -> AssignedNative<F> {
+    pub fn inner_value(&self) -> AssignedNative<F> {
         self.0.clone()
     }
 }
@@ -98,14 +98,12 @@ impl<F: PrimeField> AssignedElement<F> for AssignedByte<F> {
 #[must_use]
 pub struct AssignedBit<F: PrimeField>(pub AssignedNative<F>);
 
-impl<F: PrimeField> AssignedElement<F> for AssignedBit<F> {
-    type Element = F;
-
-    fn new(value: AssignedNative<F>) -> Self {
+impl<F: PrimeField> AssignedBit<F> {
+    pub fn new(value: AssignedNative<F>) -> Self {
         Self { 0: value }
     }
 
-    fn value(&self) -> Value<F> {
+    pub fn value(&self) -> Value<F> {
         self.0.value().map(|v| {
             let bi_v = fe_to_big(*v);
             #[cfg(not(test))]
@@ -118,11 +116,11 @@ impl<F: PrimeField> AssignedElement<F> for AssignedBit<F> {
         })
     }
 
-    fn cell(&self) -> Cell {
+    pub fn cell(&self) -> Cell {
         self.0.cell()
     }
 
-    fn inner_value(&self) -> AssignedNative<F> {
+    pub fn inner_value(&self) -> AssignedNative<F> {
         self.0.clone()
     }
 }
@@ -131,14 +129,12 @@ impl<F: PrimeField> AssignedElement<F> for AssignedBit<F> {
 #[must_use]
 pub struct AssignedBlake2bWord<F: PrimeField>(pub AssignedNative<F>);
 
-impl<F: PrimeField> AssignedElement<F> for AssignedBlake2bWord<F> {
-    type Element = Blake2bWord;
-
-    fn new(value: AssignedNative<F>) -> Self {
+impl<F: PrimeField> AssignedBlake2bWord<F> {
+    pub fn new(value: AssignedNative<F>) -> Self {
         Self { 0: value }
     }
 
-    fn value(&self) -> Value<Blake2bWord> {
+    pub fn value(&self) -> Value<Blake2bWord> {
         self.0.value().map(|v| {
             let bi_v = fe_to_big(*v);
             #[cfg(not(test))]
@@ -150,11 +146,11 @@ impl<F: PrimeField> AssignedElement<F> for AssignedBlake2bWord<F> {
         })
     }
 
-    fn cell(&self) -> Cell {
+    pub fn cell(&self) -> Cell {
         self.0.cell()
     }
 
-    fn inner_value(&self) -> AssignedNative<F> {
+    pub fn inner_value(&self) -> AssignedNative<F> {
         self.0.clone()
     }
 }

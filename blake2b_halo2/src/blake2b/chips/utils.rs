@@ -1,4 +1,4 @@
-use crate::types::{AssignedBlake2bWord, AssignedElement, AssignedNative, AssignedRow};
+use crate::types::{AssignedBlake2bWord, AssignedNative, AssignedRow};
 use ff::PrimeField;
 use halo2_proofs::circuit::{Region};
 use halo2_proofs::plonk::Error;

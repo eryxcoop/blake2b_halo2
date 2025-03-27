@@ -1,6 +1,6 @@
 use super::*;
 use crate::base_operations::decompose_8::Decompose8Config;
-use crate::types::{AssignedBit, AssignedBlake2bWord, AssignedElement, Blake2bWord};
+use crate::types::{AssignedBit, AssignedBlake2bWord, Blake2bWord};
 use auxiliar_functions::field_for;
 
 #[derive(Clone, Debug)]

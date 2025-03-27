@@ -5,7 +5,6 @@ use halo2_proofs::circuit::SimpleFloorPlanner;
 use halo2_proofs::plonk::{Circuit, Fixed};
 use std::array;
 use std::marker::PhantomData;
-use crate::types::AssignedElement;
 
 #[derive(Clone)]
 pub struct Rotation63Config8bitWithResultValidation<F: PrimeField> {

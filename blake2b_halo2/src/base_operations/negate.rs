@@ -1,6 +1,6 @@
 use super::*;
 use crate::auxiliar_functions::{field_for, value_for};
-use crate::types::{AssignedBlake2bWord, AssignedElement, AssignedNative, Blake2bWord};
+use crate::types::{AssignedBlake2bWord, AssignedNative, Blake2bWord};
 
 /// This config handles the bitwise negation of a 64-bit number.
 #[derive(Clone, Debug)]

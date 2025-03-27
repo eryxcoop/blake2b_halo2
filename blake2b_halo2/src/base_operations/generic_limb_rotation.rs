@@ -1,5 +1,5 @@
 use super::*;
-use crate::types::{AssignedBlake2bWord, AssignedElement, AssignedRow, Blake2bWord};
+use crate::types::{AssignedBlake2bWord, AssignedRow, Blake2bWord};
 use ff::PrimeField;
 use halo2_proofs::circuit::Value;
 use crate::auxiliar_functions::value_for;

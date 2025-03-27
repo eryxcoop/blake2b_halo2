@@ -1,7 +1,6 @@
 use super::*;
 use crate::base_operations::decompose_8::Decompose8Config;
 use crate::base_operations::generic_limb_rotation::LimbRotation;
-use crate::types::AssignedElement;
 use ff::PrimeField;
 use halo2_proofs::circuit::SimpleFloorPlanner;
 use halo2_proofs::plonk::{Circuit, Fixed};

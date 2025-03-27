@@ -5,7 +5,7 @@ use crate::base_operations::negate::NegateConfig;
 use crate::base_operations::rotate_63::Rotate63Config;
 use crate::base_operations::xor::XorConfig;
 use crate::blake2b::chips::blake2b_instructions::Blake2bInstructions;
-use crate::types::{AssignedBlake2bWord, AssignedByte, AssignedElement, AssignedNative, AssignedRow};
+use crate::types::{AssignedBlake2bWord, AssignedByte, AssignedNative, AssignedRow};
 use ff::PrimeField;
 use halo2_proofs::circuit::{Layouter, Region};
 use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Error};
