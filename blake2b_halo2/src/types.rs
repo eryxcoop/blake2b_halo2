@@ -64,10 +64,15 @@ impl<F: PrimeField> AssignedByte<F> {
         cell_to_copy: AssignedNative<F>
     ) -> Result<Self, Error> {
         // Check value is in range
-        let byte_value = Self::extract_byte_from_native(cell_to_copy.value());
+        let byte_value = cell_to_copy.value().map(|v| {
+            let bi_v = fe_to_big(*v);
+            #[cfg(not(test))]
+            assert!(bi_v <= BigUint::from(255u8));
+            Byte(bi_v.to_bytes_le().first().copied().unwrap())
+        });
         // Create AssignedCell with the same value but different type
         let assigned_byte = Self(region.assign_advice(|| annotation, column, offset, || byte_value)?);
-        // Constrain cells to have equal values
+        // Constrain cells have equal values
         region.constrain_equal(cell_to_copy.cell(), assigned_byte.cell())?;
 
         Ok(assigned_byte)
@@ -81,19 +86,15 @@ impl<F: PrimeField> AssignedByte<F> {
         value: Value<F>
     ) -> Result<Self, Error> {
         // Check value is in range
-        let byte_value = Self::extract_byte_from_native(value);
-        // Create AssignedCell with the same value but different type
-        let assigned_byte = Self(region.assign_advice(|| annotation, column, offset, || byte_value)?);
-        Ok(assigned_byte)
-    }
-
-    fn extract_byte_from_native(value: Value<F>) -> Value<Byte> {
-        value.map(|v| {
+        let byte_value = value.map(|v| {
             let bi_v = fe_to_big(v);
             #[cfg(not(test))]
             assert!(bi_v <= BigUint::from(255u8));
             Byte(bi_v.to_bytes_le().first().copied().unwrap())
-        })
+        });
+        // Create AssignedCell with the same value but different type
+        let assigned_byte = Self(region.assign_advice(|| annotation, column, offset, || byte_value)?);
+        Ok(assigned_byte)
     }
 
     pub fn cell(&self) -> Cell {
