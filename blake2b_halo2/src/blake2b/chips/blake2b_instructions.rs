@@ -50,11 +50,7 @@ pub trait Blake2bInstructions: Clone {
         &self,
         iv_constant_cells: &[AssignedBlake2bWord<F>; 8],
         initial_state_0: AssignedBlake2bWord<F>,
-    ) -> Result<[AssignedBlake2bWord<F>; 8], Error> {
-        let mut global_state = iv_constant_cells.clone();
-        global_state[0] = initial_state_0;
-        Ok(global_state)
-    }
+    ) -> Result<[AssignedBlake2bWord<F>; 8], Error>;
 
     /// Here occurs the top loop of the hash function. It iterates for each block of the input and
     /// key, compressing the block and updating the global state.
