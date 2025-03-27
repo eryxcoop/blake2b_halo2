@@ -33,39 +33,6 @@ pub struct Blake2bChip {
 }
 
 impl Blake2bInstructions for Blake2bChip {
-    fn configure<F: PrimeField>(
-        meta: &mut ConstraintSystem<F>,
-        full_number_u64: Column<Advice>,
-        limbs: [Column<Advice>; 8],
-    ) -> Self {
-        /// Config that is the same for every optimization
-        let decompose_8_config1 = Decompose8Config::configure(meta, full_number_u64, limbs);
-        let rotate_63_config1 = Rotate63Config::configure(meta, full_number_u64);
-        let negate_config1 = NegateConfig::configure(meta, full_number_u64);
-
-        let constants = meta.fixed_column();
-        meta.enable_equality(constants);
-        meta.enable_constant(constants);
-        let (decompose_8_config, generic_limb_rotation_config, rotate_63_config, negate_config) =
-            (decompose_8_config1, LimbRotation, rotate_63_config1, negate_config1);
-
-        /// Config that is optimization-specific
-        /// An extra carry column is needed for the sum operation with 8 limbs.
-        let addition_config = AdditionMod64Config::configure(meta, full_number_u64, limbs[0], decompose_8_config.clone());
-        let xor_config = XorConfig::configure(meta, limbs);
-
-        Self {
-            addition_config,
-            decompose_8_config,
-            generic_limb_rotation_config,
-            rotate_63_config,
-            xor_config,
-            negate_config,
-            full_number_u64,
-            limbs
-        }
-    }
-
     fn populate_lookup_tables<F: PrimeField>(
         &self,
         layouter: &mut impl Layouter<F>,
@@ -332,30 +299,6 @@ impl Blake2bInstructions for Blake2bChip {
         Ok(())
     }
 
-    fn assign_iv_constants_to_fixed_cells<F: PrimeField>(
-        &self,
-        region: &mut Region<F>,
-        offset: &mut usize,
-    ) -> Result<[AssignedBlake2bWord<F>; 8], Error> {
-        let ret: [AssignedBlake2bWord<F>; 8] = IV_CONSTANTS
-            .iter()
-            .enumerate()
-            .map(|(index, constant)| {
-                self.assign_limb_constant_u64(
-                    region,
-                    offset,
-                    "iv constants",
-                    *constant,
-                    index
-                ).unwrap()
-            })
-            .collect::<Vec<AssignedBlake2bWord<F>>>()
-            .try_into()
-            .unwrap();
-        *offset += 1;
-        Ok(ret)
-    }
-
     #[allow(clippy::too_many_arguments)]
     fn build_current_block_rows<F: PrimeField>(
         &self,
@@ -386,6 +329,67 @@ impl Blake2bInstructions for Blake2bChip {
 }
 
 impl Blake2bChip {
+    /// Configuration of the circuit, this includes initialization of all the necessary configs.
+    /// It should be called in the configuration of the user circuit.
+    pub fn configure<F: PrimeField>(
+        meta: &mut ConstraintSystem<F>,
+        full_number_u64: Column<Advice>,
+        limbs: [Column<Advice>; 8],
+    ) -> Self {
+        /// Config that is the same for every optimization
+        let decompose_8_config1 = Decompose8Config::configure(meta, full_number_u64, limbs);
+        let rotate_63_config1 = Rotate63Config::configure(meta, full_number_u64);
+        let negate_config1 = NegateConfig::configure(meta, full_number_u64);
+
+        let constants = meta.fixed_column();
+        meta.enable_equality(constants);
+        meta.enable_constant(constants);
+        let (decompose_8_config, generic_limb_rotation_config, rotate_63_config, negate_config) =
+            (decompose_8_config1, LimbRotation, rotate_63_config1, negate_config1);
+
+        /// Config that is optimization-specific
+        /// An extra carry column is needed for the sum operation with 8 limbs.
+        let addition_config = AdditionMod64Config::configure(meta, full_number_u64, limbs[0], decompose_8_config.clone());
+        let xor_config = XorConfig::configure(meta, limbs);
+
+        Self {
+            addition_config,
+            decompose_8_config,
+            generic_limb_rotation_config,
+            rotate_63_config,
+            xor_config,
+            negate_config,
+            full_number_u64,
+            limbs
+        }
+    }
+
+    /// Blake2b uses an initialization vector (iv) that is hardcoded. This method assigns those
+    /// values to fixed cells to use later on.
+    fn assign_iv_constants_to_fixed_cells<F: PrimeField>(
+        &self,
+        region: &mut Region<F>,
+        offset: &mut usize,
+    ) -> Result<[AssignedBlake2bWord<F>; 8], Error> {
+        let ret: [AssignedBlake2bWord<F>; 8] = IV_CONSTANTS
+            .iter()
+            .enumerate()
+            .map(|(index, constant)| {
+                self.assign_limb_constant_u64(
+                    region,
+                    offset,
+                    "iv constants",
+                    *constant,
+                    index
+                ).unwrap()
+            })
+            .collect::<Vec<AssignedBlake2bWord<F>>>()
+            .try_into()
+            .unwrap();
+        *offset += 1;
+        Ok(ret)
+    }
+
     fn not<F: PrimeField>(
         &self,
         input_cell: &AssignedBlake2bWord<F>,

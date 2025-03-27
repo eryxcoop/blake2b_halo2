@@ -1,12 +1,11 @@
 use crate::blake2b::blake2b::Blake2b;
-use crate::blake2b::chips::blake2b_instructions::Blake2bInstructions;
+use crate::blake2b::chips::blake2b_chip::Blake2bChip;
 use crate::types::{AssignedElement, AssignedNative};
 use ff::PrimeField;
 use halo2_proofs::circuit::{Layouter, SimpleFloorPlanner, Value};
 use halo2_proofs::plonk::{Advice, Circuit, Column, ConstraintSystem, Error, Instance};
 use std::array;
 use std::marker::PhantomData;
-use crate::blake2b::chips::blake2b_chip::Blake2bChip;
 
 /// This is an example circuit of how you should use the Blake2b chip.
 #[derive(Clone)]

@@ -2,26 +2,15 @@ use crate::types::AssignedRow;
 use crate::types::{AssignedBlake2bWord, AssignedByte, AssignedNative};
 use ff::PrimeField;
 use halo2_proofs::circuit::{Layouter, Region};
-use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Error};
+use halo2_proofs::plonk::Error;
 
 /// This is the trait that groups the Blake2b implementation chips.
 pub trait Blake2bInstructions: Clone {
-    /// Configuration of the circuit, this includes initialization of all the necessary configs.
-    /// Some of them are general for every implementation, some are optimization-specific.
-    /// It should be called in the configuration of the user circuit.
-    fn configure<F: PrimeField>(
-        meta: &mut ConstraintSystem<F>,
-        full_number_u64: Column<Advice>,
-        limbs: [Column<Advice>; 8],
-    ) -> Self;
-
     /// Populate all lookup tables needed for the chip
     fn populate_lookup_tables<F: PrimeField>(
         &self,
         layouter: &mut impl Layouter<F>,
     ) -> Result<(), Error>;
-
-    // ---------- MAIN METHODS ---------- //
 
     /// Assign all the constants at the beginning
     fn assign_constant_advice_cells<F: PrimeField>(
@@ -83,15 +72,6 @@ pub trait Blake2bInstructions: Clone {
         offset: &mut usize,
     ) -> Result<(), Error>;
 
-    // ----- Auxiliar methods ----- //
-
-    /// Blake2b uses an initialization vector (iv) that is hardcoded. This method assigns those
-    /// values to fixed cells to use later on.
-    fn assign_iv_constants_to_fixed_cells<F: PrimeField>(
-        &self,
-        region: &mut Region<F>,
-        offset: &mut usize,
-    ) -> Result<[AssignedBlake2bWord<F>; 8], Error>;
 
     /// This is the part where the inputs/key are organized inside the trace. Each iteration
     /// processes 128 bytes, or as we represent them: 16 words of 64 bits.
