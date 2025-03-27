@@ -27,7 +27,6 @@ impl AdditionMod64Config {
         &self,
         layouter: &mut impl Layouter<F>,
         addition_trace: [[Value<F>; 9]; 3],
-        decompose_config: &Decompose8Config,
     ) -> Result<(), Error> {
         layouter.assign_region(
             || "sum",
@@ -35,13 +34,13 @@ impl AdditionMod64Config {
                 self.q_add.enable(&mut region, 0)?;
 
                 let row = addition_trace[0].to_vec();
-                decompose_config.populate_row_from_values(&mut region, &row, 0, false)?;
+                self.decomposition.populate_row_from_values(&mut region, &row, 0, false)?;
 
                 let row = addition_trace[1].to_vec();
-                decompose_config.populate_row_from_values(&mut region, &row, 1, false)?;
+                self.decomposition.populate_row_from_values(&mut region, &row, 1, false)?;
 
                 let row = addition_trace[2].to_vec();
-                decompose_config.populate_row_from_values(&mut region, &row, 2, true)?;
+                self.decomposition.populate_row_from_values(&mut region, &row, 2, true)?;
                 Ok(())
             },
         )?;

@@ -44,7 +44,7 @@ impl Blake2bInstructions for Blake2bChip {
 
         /// Config that is optimization-specific
         /// An extra carry column is needed for the sum operation with 8 limbs.
-        let addition_config = AdditionMod64Config::configure(meta, full_number_u64, limbs[0]);
+        let addition_config = AdditionMod64Config::configure(meta, full_number_u64, limbs[0], decompose_8_config.clone());
         let xor_config = XorConfig::configure(meta, limbs);
 
         Self {
@@ -222,7 +222,6 @@ impl Blake2bInstructions for Blake2bChip {
             offset,
             lhs,
             rhs,
-            &self.decompose_8_config,
             false,
             self.full_number_u64,
         )?.0
@@ -379,7 +378,6 @@ impl Blake2bChip {
             offset,
             previous_cell,
             cell_to_copy,
-            &self.decompose_8_config,
             true,
             self.full_number_u64,
         )?.0

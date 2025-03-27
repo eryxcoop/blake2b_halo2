@@ -198,7 +198,6 @@ impl Decompose8Config {
     ) -> Result<AssignedBlake2bWord<F>, Error> {
         //TODO: remove cast later on
         let value = value.map(|v| F::from(v.0));
-
         let new_row = self.generate_row_from_value_and_keep_row(region, value, offset)?;
         let full_number_cell = new_row.full_number;
         Ok(full_number_cell)

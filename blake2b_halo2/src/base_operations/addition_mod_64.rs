@@ -4,11 +4,15 @@ use crate::types::{AssignedBit, AssignedBlake2bWord, AssignedElement, Blake2bWor
 use auxiliar_functions::field_for;
 
 #[derive(Clone, Debug)]
-// how about include decompoisition_config here and use decoposition_config.configure(), other than
+// [zhiyong comment - answered] How about include decompoisition_config here and use decoposition_config.configure(), other than
 // remembering always this is implicit
+//
+// We can make the AdditionMod64Config hold the decomposition chip, but the decomposition chip instance must be the same for all
+// the blake2b_chip because the selectors we're turning on must be in the same columns, to avoid duplicating columns in the circuit
 pub struct AdditionMod64Config {
     carry: Column<Advice>,
     pub q_add: Selector,
+    pub decomposition: Decompose8Config,
 }
 
 impl AdditionMod64Config {
@@ -16,6 +20,7 @@ impl AdditionMod64Config {
         meta: &mut ConstraintSystem<F>,
         full_number_u64: Column<Advice>,
         carry: Column<Advice>,
+        decomposition: Decompose8Config
     ) -> Self {
         let q_add = meta.complex_selector();
 
@@ -42,7 +47,7 @@ impl AdditionMod64Config {
             ]
         });
 
-        Self { carry, q_add }
+        Self { carry, q_add, decomposition }
     }
 
     /// This method receives two cells, and generates the rows for the addition of their values.
@@ -58,7 +63,6 @@ impl AdditionMod64Config {
         offset: &mut usize,
         previous_cell: &AssignedBlake2bWord<F>,
         cell_to_copy: &AssignedBlake2bWord<F>,
-        decompose_config: &Decompose8Config,
         use_last_cell_as_first_operand: bool,
         full_number_u64_column: Column<Advice>,
     ) -> Result<(AssignedBlake2bWord<F>, AssignedBit<F>), Error> {
@@ -85,7 +89,7 @@ impl AdditionMod64Config {
         let carry_cell = AssignedBit(region.assign_advice(|| "carry", self.carry, *offset, || carry_value)?);
         *offset += 1;
 
-        let result_cell = decompose_config.generate_row_from_value(region, result_value, *offset)?;
+        let result_cell = self.decomposition.generate_row_from_value(region, result_value, *offset)?;
         *offset += 1;
 
         Ok((result_cell, carry_cell))
