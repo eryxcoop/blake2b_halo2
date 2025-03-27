@@ -1,7 +1,3 @@
-use crate::base_operations::decompose_8::Decompose8Config;
-use crate::base_operations::generic_limb_rotation::LimbRotation;
-use crate::base_operations::negate::NegateConfig;
-use crate::base_operations::rotate_63::Rotate63Config;
 use crate::types::AssignedRow;
 use crate::types::{AssignedBlake2bWord, AssignedByte, AssignedNative};
 use ff::PrimeField;
@@ -35,14 +31,6 @@ pub trait Blake2bInstructions: Clone {
         region: &mut Region<F>,
         advice_offset: &mut usize,
     ) -> Result<([AssignedBlake2bWord<F>; 8], AssignedBlake2bWord<F>, AssignedNative<F>), Error>;
-
-    /// This method handles the part of the configuration that is generic to all optimizations.
-    /// Most of the operations are performed the same way in all optimizations.
-    fn generic_configure<F: PrimeField>(
-        meta: &mut ConstraintSystem<F>,
-        full_number_u64: Column<Advice>,
-        limbs: [Column<Advice>; 8],
-    ) -> (Decompose8Config, LimbRotation, Rotate63Config, NegateConfig);
 
     /// Computes the initial global state of Blake2b. It only depends on the key size and the
     /// output size, which are values known at circuit building time.

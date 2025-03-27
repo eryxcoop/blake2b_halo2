@@ -14,7 +14,7 @@ use crate::blake2b::chips::utils::{compute_processed_bytes_count_value_for_itera
 /// This is the main chip for the Blake2b hash function. It is responsible for the entire hash computation.
 /// It contains all the necessary chips and some extra columns.
 ///
-/// This optimization uses addition with 8 limbs and computes xor with a table that precomputes
+/// This implementation uses addition with 8 limbs and computes xor with a table that precomputes
 /// all the possible 8-bit operands. Since all operations have operands with 8-bit decompositions,
 /// we can recycle (hence the name) some rows per iteration of the algorithm for every operation.
 #[derive(Clone, Debug)]
@@ -39,8 +39,15 @@ impl Blake2bInstructions for Blake2bChip {
         limbs: [Column<Advice>; 8],
     ) -> Self {
         /// Config that is the same for every optimization
+        let decompose_8_config1 = Decompose8Config::configure(meta, full_number_u64, limbs);
+        let rotate_63_config1 = Rotate63Config::configure(meta, full_number_u64);
+        let negate_config1 = NegateConfig::configure(meta, full_number_u64);
+
+        let constants = meta.fixed_column();
+        meta.enable_equality(constants);
+        meta.enable_constant(constants);
         let (decompose_8_config, generic_limb_rotation_config, rotate_63_config, negate_config) =
-            Self::generic_configure(meta, full_number_u64, limbs);
+            (decompose_8_config1, LimbRotation, rotate_63_config1, negate_config1);
 
         /// Config that is optimization-specific
         /// An extra carry column is needed for the sum operation with 8 limbs.
@@ -102,22 +109,6 @@ impl Blake2bInstructions for Blake2bChip {
             initial_state_0,
             zero_constant,
         ))
-    }
-
-    fn generic_configure<F: PrimeField>(
-        meta: &mut ConstraintSystem<F>,
-        full_number_u64: Column<Advice>,
-        limbs: [Column<Advice>; 8],
-    ) -> (Decompose8Config, LimbRotation, Rotate63Config, NegateConfig) {
-        let decompose_8_config = Decompose8Config::configure(meta, full_number_u64, limbs);
-        let rotate_63_config = Rotate63Config::configure(meta, full_number_u64);
-        let negate_config = NegateConfig::configure(meta, full_number_u64);
-
-        let constants = meta.fixed_column();
-        meta.enable_equality(constants);
-        meta.enable_constant(constants);
-
-        (decompose_8_config, LimbRotation, rotate_63_config, negate_config)
     }
 
     fn compute_initial_state<F: PrimeField>(
