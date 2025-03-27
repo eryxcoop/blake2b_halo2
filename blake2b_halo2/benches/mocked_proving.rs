@@ -1,9 +1,7 @@
 use criterion::{
     criterion_group, criterion_main, BatchSize, BenchmarkGroup, BenchmarkId, Criterion, Throughput,
 };
-use blake2b_halo2::blake2b::chips::blake2b_chip::Blake2bChip;
 use criterion::measurement::WallTime;
-use blake2b_halo2::blake2b::chips::blake2b_instructions::Blake2bInstructions;
 use blake2b_halo2::blake2b::circuit_runner::CircuitRunner;
 
 pub mod utils;
@@ -19,7 +17,7 @@ pub fn benchmark_mocked_proving(c: &mut Criterion) {
     for amount_of_blocks in benchmarking_block_sizes() {
         group.throughput(Throughput::Bytes(amount_of_blocks as u64));
 
-        benchmark_optimization_with_amount_of_blocks::<Blake2bChip>(
+        benchmark_optimization_with_amount_of_blocks(
             &mut group,
             amount_of_blocks,
             "opt_recycle",
@@ -28,7 +26,7 @@ pub fn benchmark_mocked_proving(c: &mut Criterion) {
     group.finish()
 }
 
-fn benchmark_optimization_with_amount_of_blocks<OptimizationChip: Blake2bInstructions>(
+fn benchmark_optimization_with_amount_of_blocks(
     group: &mut BenchmarkGroup<WallTime>,
     amount_of_blocks: usize,
     optimization_name: &str,
@@ -37,9 +35,7 @@ fn benchmark_optimization_with_amount_of_blocks<OptimizationChip: Blake2bInstruc
         b.iter_batched(
             || {
                 let ci = random_input_for_desired_blocks(amount_of_blocks);
-                let circuit = CircuitRunner::create_circuit_for_inputs_optimization::<
-                    OptimizationChip,
-                >(ci.clone());
+                let circuit = CircuitRunner::create_circuit_for_inputs_optimization(ci.clone());
                 (circuit, ci.4)
             },
             |(circuit, expected)| {

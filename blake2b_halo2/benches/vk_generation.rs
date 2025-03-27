@@ -1,12 +1,10 @@
+use blake2b_halo2::blake2b::circuit_runner::CircuitRunner;
+use criterion::measurement::WallTime;
 use criterion::{
     criterion_group, criterion_main, BatchSize, BenchmarkGroup, BenchmarkId, Criterion, Throughput,
 };
+use halo2_proofs::halo2curves::bn256::Bn256;
 use halo2_proofs::poly::kzg::params::ParamsKZG;
-use halo2_proofs::halo2curves::bn256::{Bn256};
-use blake2b_halo2::blake2b::chips::blake2b_chip::Blake2bChip;
-use criterion::measurement::WallTime;
-use blake2b_halo2::blake2b::chips::blake2b_instructions::Blake2bInstructions;
-use blake2b_halo2::blake2b::circuit_runner::CircuitRunner;
 
 pub mod utils;
 use utils::*;
@@ -23,7 +21,7 @@ pub fn benchmark_verification_key_generation(c: &mut Criterion) {
     for amount_of_blocks in benchmarking_block_sizes() {
         group.throughput(Throughput::Bytes(amount_of_blocks as u64));
 
-        benchmark_verification_key::<Blake2bChip>(
+        benchmark_verification_key(
             &params,
             &mut group,
             amount_of_blocks,
@@ -33,7 +31,7 @@ pub fn benchmark_verification_key_generation(c: &mut Criterion) {
     group.finish()
 }
 
-fn benchmark_verification_key<OptimizationChip: Blake2bInstructions>(
+fn benchmark_verification_key(
     params: &ParamsKZG<Bn256>,
     group: &mut BenchmarkGroup<WallTime>,
     amount_of_blocks: usize,
@@ -43,9 +41,7 @@ fn benchmark_verification_key<OptimizationChip: Blake2bInstructions>(
         b.iter_batched(
             || {
                 let ci = random_input_for_desired_blocks(amount_of_blocks);
-                let circuit = CircuitRunner::create_circuit_for_inputs_optimization::<
-                    OptimizationChip,
-                >(ci.clone());
+                let circuit = CircuitRunner::create_circuit_for_inputs_optimization(ci.clone());
                 circuit
             },
             |circuit| CircuitRunner::create_vk(&circuit, params),

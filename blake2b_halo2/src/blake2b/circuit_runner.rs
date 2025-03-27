@@ -11,7 +11,6 @@ use halo2_proofs::{
     },
     transcript::{CircuitTranscript, Transcript},
 };
-use crate::blake2b::chips::blake2b_instructions::Blake2bInstructions;
 
 type Blake2bCircuit<F> = Blake2bCircuitGeneric<F>;
 pub type Blake2bCircuitInputs = (Vec<Value<Fr>>, usize, Vec<Value<Fr>>, usize, [Fr; 64], usize);
@@ -50,7 +49,7 @@ impl CircuitRunner {
         MockProver::run(17, &circuit, vec![expected_output_fields]).unwrap()
     }
 
-    pub fn mock_prove_with_public_inputs_ref<OptimizationChip: Blake2bInstructions>(
+    pub fn mock_prove_with_public_inputs_ref(
         expected_output_fields: &[Fr],
         circuit: &Blake2bCircuitGeneric<Fr>,
     ) -> MockProver<Fr> {
