@@ -341,8 +341,60 @@ impl Blake2bInstructions for Blake2bChip {
         Ok(())
     }
 
-    // Functions that are optimization-specific
+    fn assign_iv_constants_to_fixed_cells<F: PrimeField>(
+        &self,
+        region: &mut Region<F>,
+        offset: &mut usize,
+    ) -> Result<[AssignedBlake2bWord<F>; 8], Error> {
+        let ret: [AssignedBlake2bWord<F>; 8] = IV_CONSTANTS
+            .iter()
+            .enumerate()
+            .map(|(index, constant)| {
+                self.assign_limb_constant_u64(
+                    region,
+                    offset,
+                    "iv constants",
+                    *constant,
+                    index
+                ).unwrap()
+            })
+            .collect::<Vec<AssignedBlake2bWord<F>>>()
+            .try_into()
+            .unwrap();
+        *offset += 1;
+        Ok(ret)
+    }
 
+    #[allow(clippy::too_many_arguments)]
+    fn build_current_block_rows<F: PrimeField>(
+        &self,
+        region: &mut Region<F>,
+        offset: &mut usize,
+        input: &[AssignedNative<F>],
+        key: &[AssignedNative<F>],
+        block_number: usize,
+        last_input_block_index: usize,
+        is_key_empty: bool,
+        is_last_block: bool,
+        is_key_block: bool,
+        zero_constant_cell: AssignedNative<F>,
+    ) -> Result<[AssignedRow<F>; 16], Error> {
+        let current_block_values = Self::build_values_for_current_block(
+            input,
+            key,
+            block_number,
+            last_input_block_index,
+            is_key_empty,
+            is_last_block,
+            is_key_block,
+            zero_constant_cell,
+        );
+
+        self.block_words_from_bytes(region, offset, current_block_values.try_into().unwrap())
+    }
+}
+
+impl Blake2bChip {
     fn not<F: PrimeField>(
         &self,
         input_cell: &AssignedBlake2bWord<F>,
@@ -458,60 +510,6 @@ impl Blake2bInstructions for Blake2bChip {
         )
     }
 
-    fn assign_iv_constants_to_fixed_cells<F: PrimeField>(
-        &self,
-        region: &mut Region<F>,
-        offset: &mut usize,
-    ) -> Result<[AssignedBlake2bWord<F>; 8], Error> {
-        let ret: [AssignedBlake2bWord<F>; 8] = IV_CONSTANTS
-            .iter()
-            .enumerate()
-            .map(|(index, constant)| {
-                self.assign_limb_constant_u64(
-                    region,
-                    offset,
-                    "iv constants",
-                    *constant,
-                    index
-                ).unwrap()
-            })
-            .collect::<Vec<AssignedBlake2bWord<F>>>()
-            .try_into()
-            .unwrap();
-        *offset += 1;
-        Ok(ret)
-    }
-
-    #[allow(clippy::too_many_arguments)]
-    fn build_current_block_rows<F: PrimeField>(
-        &self,
-        region: &mut Region<F>,
-        offset: &mut usize,
-        input: &[AssignedNative<F>],
-        key: &[AssignedNative<F>],
-        block_number: usize,
-        last_input_block_index: usize,
-        is_key_empty: bool,
-        is_last_block: bool,
-        is_key_block: bool,
-        zero_constant_cell: AssignedNative<F>,
-    ) -> Result<[AssignedRow<F>; 16], Error> {
-        let current_block_values = Self::build_values_for_current_block(
-            input,
-            key,
-            block_number,
-            last_input_block_index,
-            is_key_empty,
-            is_last_block,
-            is_key_block,
-            zero_constant_cell,
-        );
-
-        self.block_words_from_bytes(region, offset, current_block_values.try_into().unwrap())
-    }
-}
-
-impl Blake2bChip {
     /// This method performs a regular xor operation with the difference that it returns the full
     /// row in the trace, instead of just the cell holding the value. This allows an optimization
     /// where the next operation (which is a rotation) can just read the limbs directly and apply

@@ -95,59 +95,6 @@ pub trait Blake2bInstructions: Clone {
         offset: &mut usize,
     ) -> Result<(), Error>;
 
-    // ----- Basic operations ----- //
-
-    fn not<F: PrimeField>(
-        &self,
-        input_cell: &AssignedBlake2bWord<F>,
-        region: &mut Region<F>,
-        offset: &mut usize,
-    ) -> Result<AssignedBlake2bWord<F>, Error>;
-
-    fn xor<F: PrimeField>(
-        &self,
-        lhs: &AssignedBlake2bWord<F>,
-        rhs: &AssignedBlake2bWord<F>,
-        region: &mut Region<F>,
-        offset: &mut usize,
-    ) -> Result<AssignedRow<F>, Error>;
-
-    fn add<F: PrimeField>(
-        &self,
-        lhs: &AssignedBlake2bWord<F>,
-        rhs: &AssignedBlake2bWord<F>,
-        region: &mut Region<F>,
-        offset: &mut usize,
-    ) -> Result<AssignedBlake2bWord<F>, Error>;
-
-    fn rotate_right_63<F: PrimeField>(
-        &self,
-        input_row: AssignedRow<F>,
-        region: &mut Region<F>,
-        offset: &mut usize,
-    ) -> Result<AssignedBlake2bWord<F>, Error>;
-
-    fn rotate_right_16<F: PrimeField>(
-        &self,
-        input_row: AssignedRow<F>,
-        region: &mut Region<F>,
-        offset: &mut usize,
-    ) -> Result<AssignedBlake2bWord<F>, Error>;
-
-    fn rotate_right_24<F: PrimeField>(
-        &self,
-        input_row: AssignedRow<F>,
-        region: &mut Region<F>,
-        offset: &mut usize,
-    ) -> Result<AssignedBlake2bWord<F>, Error>;
-
-    fn rotate_right_32<F: PrimeField>(
-        &self,
-        input_row: AssignedRow<F>,
-        region: &mut Region<F>,
-        offset: &mut usize,
-    ) -> Result<AssignedBlake2bWord<F>, Error>;
-
     // ----- Auxiliar methods ----- //
 
     /// Blake2b uses an initialization vector (iv) that is hardcoded. This method assigns those
