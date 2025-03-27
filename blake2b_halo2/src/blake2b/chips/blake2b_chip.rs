@@ -104,16 +104,6 @@ impl Blake2bInstructions for Blake2bChip {
         ))
     }
 
-    fn compute_initial_state<F: PrimeField>(
-        &self,
-        iv_constant_cells: &[AssignedBlake2bWord<F>; 8],
-        initial_state_0: AssignedBlake2bWord<F>,
-    ) -> Result<[AssignedBlake2bWord<F>; 8], Error> {
-        let mut global_state = iv_constant_cells.clone();
-        global_state[0] = initial_state_0;
-        Ok(global_state)
-    }
-
     fn generic_configure<F: PrimeField>(
         meta: &mut ConstraintSystem<F>,
         full_number_u64: Column<Advice>,
@@ -128,6 +118,16 @@ impl Blake2bInstructions for Blake2bChip {
         meta.enable_constant(constants);
 
         (decompose_8_config, LimbRotation, rotate_63_config, negate_config)
+    }
+
+    fn compute_initial_state<F: PrimeField>(
+        &self,
+        iv_constant_cells: &[AssignedBlake2bWord<F>; 8],
+        initial_state_0: AssignedBlake2bWord<F>,
+    ) -> Result<[AssignedBlake2bWord<F>; 8], Error> {
+        let mut global_state = iv_constant_cells.clone();
+        global_state[0] = initial_state_0;
+        Ok(global_state)
     }
 
     #[allow(clippy::too_many_arguments)]
