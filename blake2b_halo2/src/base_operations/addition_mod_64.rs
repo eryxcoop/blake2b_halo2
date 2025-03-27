@@ -8,7 +8,7 @@ use auxiliar_functions::field_for;
 // remembering always this is implicit
 //
 // We can make the AdditionMod64Config hold the decomposition chip, but the decomposition chip instance must be the same for all
-// the blake2b_chip because the selectors we're turning on must be in the same columns, to avoid duplicating columns in the circuit
+// the blake2b_chip operations because the selectors we're turning on must be in the same columns, to avoid duplicating columns in the circuit
 pub struct AdditionMod64Config {
     carry: Column<Advice>,
     pub q_add: Selector,

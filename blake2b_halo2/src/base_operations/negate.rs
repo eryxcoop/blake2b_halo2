@@ -3,7 +3,6 @@ use crate::auxiliar_functions::{field_for, value_for};
 use crate::types::{AssignedBlake2bWord, AssignedElement, AssignedNative, Blake2bWord};
 
 /// This config handles the bitwise negation of a 64-bit number.
-// [Zhiyong comment] the same doubt as in addition_mod_64, to make out a full config struct
 #[derive(Clone, Debug)]
 pub struct NegateConfig {
     q_negate: Selector,
@@ -41,8 +40,11 @@ impl NegateConfig {
         input: &AssignedBlake2bWord<F>,
         full_number_column: Column<Advice>,
     ) -> Result<AssignedBlake2bWord<F>, Error> {
-        // [Zhiyong comment - solved]if immediately after negate, we're gonna use the decomposition of the result, I think
+        // [Zhiyong comment - answered] if immediately after negate, we're gonna use the decomposition of the result, I think
         // it is good to use the optimization trick of previous_row to save one row and one copy_advice.
+        //
+        // We don't need to do this because the negated element won't be used next,
+        // this gate is used only once in the whole circuit, and doesn't require decomposition
 
         self.q_negate.enable(region, *offset)?;
         input.0.copy_advice(|| "Negation input", region, full_number_column, *offset)?;
