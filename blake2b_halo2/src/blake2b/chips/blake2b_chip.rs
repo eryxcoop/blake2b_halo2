@@ -102,10 +102,9 @@ impl Blake2bInstructions for Blake2bChip {
         b_index: usize,
         c_index: usize,
         d_index: usize,
-        sigma_even: usize,
-        sigma_odd: usize,
+        x: AssignedBlake2bWord<F>,
+        y: AssignedBlake2bWord<F>,
         state: &mut [AssignedBlake2bWord<F>; 16],
-        current_block_words: &[AssignedBlake2bWord<F>; 16],
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<(), Error> {
@@ -113,8 +112,6 @@ impl Blake2bInstructions for Blake2bChip {
         let v_b = state[b_index].clone();
         let v_c = state[c_index].clone();
         let v_d = state[d_index].clone();
-        let x = current_block_words[sigma_even].clone();
-        let y = current_block_words[sigma_odd].clone();
 
         // v[a] = ((v[a] as u128 + v[b] as u128 + x as u128) % (1 << 64)) as u64;
         let a_plus_b = self.add(&v_a, &v_b, region, offset)?;

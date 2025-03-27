@@ -218,7 +218,11 @@ pub trait Blake2bInstructions: Clone {
         state[12] = self.assign_full_number_constant(region, row_offset, "New state[12]", new_state_12)?;
         *row_offset += 1;
 
-        // [Zhiyong comment] not sure, the conditional constraint should be in circuit (select gate)?
+        // [Zhiyong comment - answered] not sure, the conditional constraint should be in circuit (select gate)?
+        //
+        // It's not necessary, the if is here only to check if the block being processed is the last one
+        // in the input, so its presence depends only on the input size, which is known at circuit building time.
+        // If we were to make a fixed size circuit, for example, this conditional wouldn't be needed
         if is_last_block {
             state[14] = self.not(&state[14], region, row_offset)?;
         }
@@ -231,12 +235,9 @@ pub trait Blake2bInstructions: Clone {
                     ABCD[j][1],
                     ABCD[j][2],
                     ABCD[j][3],
-                    SIGMA[i][2 * j],
-                    SIGMA[i][2 * j + 1],
+                    current_block[SIGMA[i][2 * j]].clone(),
+                    current_block[SIGMA[i][2 * j + 1]].clone(),
                     &mut state,
-                    // [Zhiyong comment] can we remove the input of current_block_cells, and
-                    // pass m[SIGMA[i][2 * j]], m[SIGMA[i][2 * j + 1]], as showed in the spec?
-                    &current_block,
                     region,
                     row_offset,
                 )?;
@@ -269,10 +270,9 @@ pub trait Blake2bInstructions: Clone {
         b_index: usize,
         c_index: usize,
         d_index: usize,
-        sigma_even: usize,
-        sigma_odd: usize,
+        x: AssignedBlake2bWord<F>,
+        y: AssignedBlake2bWord<F>,
         state: &mut [AssignedBlake2bWord<F>; 16],
-        current_block_words: &[AssignedBlake2bWord<F>; 16],
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<(), Error>;
