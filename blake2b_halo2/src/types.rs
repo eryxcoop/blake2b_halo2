@@ -148,31 +148,6 @@ pub struct AssignedBlake2bWord<F: PrimeField>(pub AssignedCell<Blake2bWord, F>);
 
 impl<F: PrimeField> AssignedBlake2bWord<F> {
 
-    /*pub fn copy_advice_word(
-        region: &mut Region<F>,
-        annotation: &str,
-        column: Column<Advice>,
-        offset: usize,
-        cell_to_copy: AssignedNative<F>
-    ) -> Result<Self, Error> {
-        // Check value is in range
-        let word_value = cell_to_copy.value().map(|v| {
-            let bi_v = fe_to_big(*v);
-            #[cfg(not(test))]
-            assert!(bi_v <= BigUint::from((1u128 << 64) - 1));
-            let mut bytes = bi_v.to_bytes_le();
-            bytes.resize(8, 0);
-            // let first_8_bytes: [u8; 8] = bytes[..8].try_into().unwrap();
-            Blake2bWord(u64::from_le_bytes(bytes.try_into().unwrap()))
-        });
-        // Create AssignedCell with the same value but different type
-        let assigned_word = Self(region.assign_advice(|| annotation, column, offset, || word_value)?);
-        // Constrain cells have equal values
-        region.constrain_equal(cell_to_copy.cell(), assigned_word.cell())?;
-
-        Ok(assigned_word)
-    }*/
-
     pub fn assign_advice_word(
         region: &mut Region<F>,
         annotation: &str,
@@ -222,18 +197,6 @@ impl<F: PrimeField> AssignedBlake2bWord<F> {
 pub fn fe_to_big<F: PrimeField>(fe: F) -> BigUint {
     BigUint::from_bytes_le(fe.to_repr().as_ref())
 }
-
-/*impl<F: PrimeField> From<AssignedBlake2bWord<F>> for AssignedNative<F> {
-    fn from(value: AssignedBlake2bWord<F>) -> Self {
-        value.0
-    }
-}*/
-
-/*impl<F: PrimeField> From<AssignedNative<F>> for AssignedBlake2bWord<F> {
-    fn from(value: AssignedNative<F>) -> Self {
-        AssignedBlake2bWord::new(value)
-    }
-}*/
 
 /// We use this type to model the Row we generally use along this circuit. This row has the
 /// following shape:
