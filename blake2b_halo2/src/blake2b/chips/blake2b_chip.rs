@@ -269,9 +269,6 @@ impl Blake2bInstructions for Blake2bChip {
 
         let mut global_state_bytes: Vec<AssignedByte<F>> = Vec::new();
         for i in 0..8 {
-            // [Zhiyong comment] why these two xor's are different methods
-
-
             // [Zhiyong comment -- answered] we have a trick for the operation of two xor's:
             // to compute res = x \oplus y \oplus z, it suffices to compute M_even for
             // M = spread(x) + spread(y) + spread(z) over F
@@ -311,14 +308,14 @@ impl Blake2bInstructions for Blake2bChip {
         let a = self.add_copying_one_parameter(&a_plus_b, &x, region, offset)?;
 
         // v[d] = rotr_64(v[d] ^ v[a], 32);
-        let d_xor_a = self.xor_for_mix(&a, &v_d, region, offset)?;
+        let d_xor_a = self.xor_copying_one_parameter(&a, &v_d, region, offset)?;
         let d = self.rotate_right_32(d_xor_a, region, offset)?;
 
         // v[c] = ((v[c] as u128 + v[d] as u128) % (1 << 64)) as u64;
         let c = self.add_copying_one_parameter(&d, &v_c, region, offset)?;
 
         // v[b] = rotr_64(v[b] ^ v[c], 24);
-        let b_xor_c = self.xor_for_mix(&c, &v_b, region, offset)?;
+        let b_xor_c = self.xor_copying_one_parameter(&c, &v_b, region, offset)?;
         let b = self.rotate_right_24(b_xor_c, region, offset)?;
 
         // v[a] = ((v[a] as u128 + v[b] as u128 + y as u128) % (1 << 64)) as u64;
@@ -326,14 +323,14 @@ impl Blake2bInstructions for Blake2bChip {
         let a = self.add_copying_one_parameter(&a_plus_b, &y, region, offset)?;
 
         // v[d] = rotr_64(v[d] ^ v[a], 16);
-        let d_xor_a = self.xor_for_mix(&a, &d, region, offset)?;
+        let d_xor_a = self.xor_copying_one_parameter(&a, &d, region, offset)?;
         let d = self.rotate_right_16(d_xor_a, region, offset)?;
 
         // v[c] = ((v[c] as u128 + v[d] as u128) % (1 << 64)) as u64;
         let c = self.add_copying_one_parameter(&d, &c, region, offset)?;
 
         // v[b] = rotr_64(v[b] ^ v[c], 63);
-        let b_xor_c = self.xor_for_mix(&c, &b, region, offset)?;
+        let b_xor_c = self.xor_copying_one_parameter(&c, &b, region, offset)?;
         let b = self.rotate_right_63(b_xor_c, region, offset)?;
 
         state[state_indexes[0]] = a;
@@ -360,8 +357,6 @@ impl Blake2bInstructions for Blake2bChip {
         )
     }
 
-    /// In this case we need to perform the xor operation and return the entire row, because we
-    /// need it to constrain the result.
     fn xor<F: PrimeField>(
         &self,
         lhs: &AssignedBlake2bWord<F>,
@@ -379,8 +374,6 @@ impl Blake2bInstructions for Blake2bChip {
         )
     }
 
-    /// opt_recycle optimization decomposes the sum operands in 8-bit limbs, so we need to use the
-    /// decompose_8_config for the sum operation instead of the decompose_16_config.
     fn add<F: PrimeField>(
         &self,
         lhs: &AssignedBlake2bWord<F>,
@@ -519,8 +512,10 @@ impl Blake2bInstructions for Blake2bChip {
 }
 
 impl Blake2bChip {
-    /// Our addition operation decomposes the sum operands in 8-bit limbs, so when a xor operation
-    /// comes after an add operation, we can recycle its result row and use it as its first operand.
+    /// This method performs a regular xor operation with the difference that it returns the full
+    /// row in the trace, instead of just the cell holding the value. This allows an optimization
+    /// where the next operation (which is a rotation) can just read the limbs directly and apply
+    /// the limb rotation without copying the operand.
     fn xor_copying_one_parameter<F: PrimeField>(
         &self,
         previous_cell: &AssignedBlake2bWord<F>,
@@ -571,20 +566,6 @@ impl Blake2bChip {
             self.full_number_u64,
         )?.0
             .clone())
-    }
-
-    /// This method performs a regular xor operation with the difference that it returns the full
-    /// row in the trace, instead of just the cell holding the value. This allows an optimization
-    /// where the next operation (which is a rotation) can just read the limbs directly and apply
-    /// the limb rotation without copying the operand.
-    fn xor_for_mix<F: PrimeField>(
-        &self,
-        previous_cell: &AssignedBlake2bWord<F>,
-        cell_to_copy: &AssignedBlake2bWord<F>,
-        region: &mut Region<F>,
-        offset: &mut usize,
-    ) -> Result<AssignedRow<F>, Error> {
-        self.xor_copying_one_parameter(previous_cell, cell_to_copy, region, offset)
     }
 
     /// Given an array of byte-values, it puts in the circuit a full row with those bytes in the
