@@ -95,23 +95,19 @@ impl Blake2bInstructions for Blake2bChip {
         self.block_words_from_bytes(region, offset, current_block_values.try_into().unwrap())
     }
 
-    #[allow(clippy::too_many_arguments)]
     fn mix<F: PrimeField>(
         &self,
-        a_index: usize,
-        b_index: usize,
-        c_index: usize,
-        d_index: usize,
+        state_indexes: [usize; 4],
         x: AssignedBlake2bWord<F>,
         y: AssignedBlake2bWord<F>,
         state: &mut [AssignedBlake2bWord<F>; 16],
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<(), Error> {
-        let v_a = state[a_index].clone();
-        let v_b = state[b_index].clone();
-        let v_c = state[c_index].clone();
-        let v_d = state[d_index].clone();
+        let v_a = &state[state_indexes[0]];
+        let v_b = &state[state_indexes[1]];
+        let v_c = &state[state_indexes[2]];
+        let v_d = &state[state_indexes[3]];
 
         // v[a] = ((v[a] as u128 + v[b] as u128 + x as u128) % (1 << 64)) as u64;
         let a_plus_b = self.add(&v_a, &v_b, region, offset)?;
@@ -143,10 +139,10 @@ impl Blake2bInstructions for Blake2bChip {
         let b_xor_c = self.xor_for_mix(&c, &b, region, offset)?;
         let b = self.rotate_right_63(b_xor_c, region, offset)?;
 
-        state[a_index] = a;
-        state[b_index] = b;
-        state[c_index] = c;
-        state[d_index] = d;
+        state[state_indexes[0]] = a;
+        state[state_indexes[1]] = b;
+        state[state_indexes[2]] = c;
+        state[state_indexes[3]] = d;
 
         Ok(())
     }

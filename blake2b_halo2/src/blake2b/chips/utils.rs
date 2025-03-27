@@ -116,7 +116,11 @@ pub const SIGMA: [[usize; 16]; 12] = [
     [14, 10, 4, 8, 9, 15, 13, 6, 1, 12, 0, 2, 11, 7, 5, 3],
 ];
 
-// [Zhiyong comment] doc
+/// These are constants used for the mixing rounds:
+/// In each round, Blake2b algorithm modifies 4 fixed components of the state.
+/// The first round, these components are
+/// state[0], state[4], state[8], state[12], the second round, they're
+/// state[1], state[5], state[9], state[13], and so on.
 pub const ABCD: [[usize; 4]; 8] = [
     [0, 4, 8, 12],
     [1, 5, 9, 13],
