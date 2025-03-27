@@ -5,11 +5,11 @@ use crate::base_operations::negate::NegateConfig;
 use crate::base_operations::rotate_63::Rotate63Config;
 use crate::base_operations::xor::XorConfig;
 use crate::blake2b::chips::blake2b_instructions::Blake2bInstructions;
-use crate::types::{AssignedBlake2bWord, AssignedElement, AssignedNative, AssignedRow};
+use crate::types::{AssignedBlake2bWord, AssignedByte, AssignedElement, AssignedNative, AssignedRow};
 use ff::PrimeField;
 use halo2_proofs::circuit::{Layouter, Region};
 use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Error};
-use crate::blake2b::chips::utils::BLAKE2B_BLOCK_SIZE;
+use crate::blake2b::chips::utils::{compute_processed_bytes_count_value_for_iteration, constrain_padding_cells_to_equal_zero, full_number_of_each_state_row, get_total_blocks_count, ABCD, BLAKE2B_BLOCK_SIZE, IV_CONSTANTS, SIGMA};
 
 /// This is the main chip for the Blake2b hash function. It is responsible for the entire hash computation.
 /// It contains all the necessary chips and some extra columns.
@@ -67,32 +67,216 @@ impl Blake2bInstructions for Blake2bChip {
         self.populate_xor_lookup_table(layouter)
     }
 
+    fn assign_constant_advice_cells<F: PrimeField>(
+        &self,
+        output_size: usize,
+        key_size: usize,
+        region: &mut Region<F>,
+        advice_offset: &mut usize,
+    ) -> Result<([AssignedBlake2bWord<F>; 8], AssignedBlake2bWord<F>, AssignedNative<F>), Error> {
+        let iv_constant_cells: [AssignedBlake2bWord<F>; 8] =
+            self.assign_iv_constants_to_fixed_cells(region, advice_offset)?;
+
+        let zero_constant = self.assign_limb_constant_u64(
+            region, advice_offset, "zero", 0, 0)?.into();
+
+        let iv_constant_0 = IV_CONSTANTS[0];
+        let out_len = output_size as u64;
+        const INIT_CONST_STATE_0: u64 = 0x01010000u64;
+        let key_size_shifted= (key_size as u64) << 8;
+        // state[0] = state[0] ^ 0x01010000 ^ (key.len() << 8) as u64 ^ outlen as u64;
+        let initial_state_index_0 = iv_constant_0 ^ INIT_CONST_STATE_0 ^ key_size_shifted ^ out_len;
+
+        let initial_state_0 = self.assign_limb_constant_u64(
+            region,
+            advice_offset,
+            "initial state index 0",
+            initial_state_index_0,
+            1,
+        )?;
+
+        *advice_offset += 1;
+
+        Ok((
+            iv_constant_cells,
+            initial_state_0,
+            zero_constant,
+        ))
+    }
+
+    fn generic_configure<F: PrimeField>(
+        meta: &mut ConstraintSystem<F>,
+        full_number_u64: Column<Advice>,
+        limbs: [Column<Advice>; 8],
+    ) -> (Decompose8Config, LimbRotation, Rotate63Config, NegateConfig) {
+        let decompose_8_config = Decompose8Config::configure(meta, full_number_u64, limbs);
+        let rotate_63_config = Rotate63Config::configure(meta, full_number_u64);
+        let negate_config = NegateConfig::configure(meta, full_number_u64);
+
+        let constants = meta.fixed_column();
+        meta.enable_equality(constants);
+        meta.enable_constant(constants);
+
+        (decompose_8_config, LimbRotation, rotate_63_config, negate_config)
+    }
+
     #[allow(clippy::too_many_arguments)]
-    fn build_current_block_rows<F: PrimeField>(
+    fn perform_blake2b_iterations<F: PrimeField>(
         &self,
         region: &mut Region<F>,
-        offset: &mut usize,
+        advice_offset: &mut usize,
         input: &[AssignedNative<F>],
         key: &[AssignedNative<F>],
-        block_number: usize,
-        last_input_block_index: usize,
-        is_key_empty: bool,
-        is_last_block: bool,
-        is_key_block: bool,
+        iv_constants: &[AssignedBlake2bWord<F>; 8],
+        global_state: &mut [AssignedBlake2bWord<F>; 8],
         zero_constant_cell: AssignedNative<F>,
-    ) -> Result<[AssignedRow<F>; 16], Error> {
-        let current_block_values = Self::build_values_for_current_block(
-            input,
-            key,
-            block_number,
-            last_input_block_index,
-            is_key_empty,
-            is_last_block,
-            is_key_block,
-            zero_constant_cell,
-        );
+    ) -> Result<[AssignedByte<F>; 64], Error> {
+        let input_size = input.len();
+        let is_key_empty = key.is_empty();
+        let is_input_empty = input_size == 0;
 
-        self.block_words_from_bytes(region, offset, current_block_values.try_into().unwrap())
+        let input_blocks = input_size.div_ceil(BLAKE2B_BLOCK_SIZE);
+        let total_blocks = get_total_blocks_count(input_blocks, is_input_empty, is_key_empty);
+        let last_input_block_index = if is_input_empty { 0 } else { input_blocks - 1 };
+
+        /// Main loop
+        (0..total_blocks)
+            .map(|i| {
+                let is_last_block = i == total_blocks - 1;
+                let is_key_block = !is_key_empty && i == 0;
+
+                /// This is an intermediate value in the Blake2b algorithm. It represents the amount of
+                /// bytes processed so far.
+                let processed_bytes_count = compute_processed_bytes_count_value_for_iteration(
+                    i,
+                    is_last_block,
+                    input_size,
+                    is_key_empty,
+                );
+
+                let current_block_rows = self.build_current_block_rows(
+                    region,
+                    advice_offset,
+                    &input,
+                    &key,
+                    i,
+                    last_input_block_index,
+                    is_key_empty,
+                    is_last_block,
+                    is_key_block,
+                    zero_constant_cell.clone(),
+                )?;
+
+                /// Padding for the last block, in case the key block is not the only one.
+                if is_last_block && !is_key_block {
+                    let zeros_amount_for_input_padding = if input_size == 0 {
+                        128
+                    } else {
+                        // Complete the block with zeroes
+                        (BLAKE2B_BLOCK_SIZE - input_size % BLAKE2B_BLOCK_SIZE) % BLAKE2B_BLOCK_SIZE
+                    };
+                    constrain_padding_cells_to_equal_zero(
+                        region,
+                        zeros_amount_for_input_padding,
+                        &current_block_rows,
+                        &zero_constant_cell,
+                    )?;
+                }
+                /// Padding for the key block, in all cases that it exists. It is always the first block.
+                if is_key_block {
+                    /// Complete the block with zeroes
+                    let zeros_amount_for_key_padding = BLAKE2B_BLOCK_SIZE - key.len();
+                    constrain_padding_cells_to_equal_zero(
+                        region,
+                        zeros_amount_for_key_padding,
+                        &current_block_rows,
+                        &zero_constant_cell,
+                    )?;
+                }
+
+                let current_block_cells = full_number_of_each_state_row(current_block_rows);
+
+                self.compress(
+                    region,
+                    advice_offset,
+                    iv_constants,
+                    global_state,
+                    current_block_cells,
+                    processed_bytes_count,
+                    is_last_block,
+                )
+            })
+            .last()
+            .unwrap_or_else(|| Err(Error::Synthesis))
+    }
+
+    fn compress<F: PrimeField>(
+        &self,
+        region: &mut Region<F>,
+        row_offset: &mut usize,
+        iv_constants: &[AssignedBlake2bWord<F>; 8],
+        global_state: &mut [AssignedBlake2bWord<F>; 8],
+        current_block: [AssignedBlake2bWord<F>; 16],
+        processed_bytes_count: u64,
+        is_last_block: bool,
+    ) -> Result<[AssignedByte<F>; 64], Error> {
+        let mut state_vector: Vec<AssignedBlake2bWord<F>> = Vec::new();
+        state_vector.extend_from_slice(global_state);
+        state_vector.extend_from_slice(iv_constants);
+
+        let mut state: [AssignedBlake2bWord<F>; 16] = state_vector.try_into().unwrap();
+
+        // accumulative_state[12] ^= processed_bytes_count
+        // Since accumulative_state[12] is allways IV_CONSTANTS[4] at this point in execution
+        // and processed_bytes_count is public for both parties, the xor between both values
+        // is also a constant.
+        let new_state_12 = processed_bytes_count ^ IV_CONSTANTS[4];
+        state[12] = self.assign_full_number_constant(region, row_offset, "New state[12]", new_state_12)?;
+        *row_offset += 1;
+
+        // [Zhiyong comment] not sure, the conditional constraint should be in circuit (select gate)?
+        if is_last_block {
+            state[14] = self.not(&state[14], region, row_offset)?;
+        }
+
+        /// Main loop
+        for i in 0..12 {
+            for j in 0..8 {
+                self.mix(
+                    ABCD[j][0],
+                    ABCD[j][1],
+                    ABCD[j][2],
+                    ABCD[j][3],
+                    SIGMA[i][2 * j],
+                    SIGMA[i][2 * j + 1],
+                    &mut state,
+                    // [Zhiyong comment] can we remove the input of current_block_cells, and
+                    // pass m[SIGMA[i][2 * j]], m[SIGMA[i][2 * j + 1]], as showed in the spec?
+                    &current_block,
+                    region,
+                    row_offset,
+                )?;
+            }
+        }
+
+        let mut global_state_bytes: Vec<AssignedByte<F>> = Vec::new();
+        for i in 0..8 {
+            // [Zhiyong comment] why these two xor's are different methods
+            // we have a trick for the operation of two xor's:
+            // to compute res = x \oplus y \oplus z, it suffices to compute M_even for
+            // M = spread(x) + spread(y) + spread(z) over F
+            let lhs = &global_state[i];
+            let rhs = &state[i];
+            global_state[i] = self.xor(lhs, rhs, region, row_offset)?.full_number
+                .clone();
+            let row =
+                self.xor(&global_state[i], &state[i + 8], region, row_offset)?;
+            let mut row_limbs: Vec<_> = row.limbs.try_into().unwrap();
+            global_state_bytes.append(&mut row_limbs);
+            global_state[i] = row.full_number;
+        }
+        let global_state_bytes_array = global_state_bytes.try_into().unwrap();
+        Ok(global_state_bytes_array)
     }
 
     fn mix<F: PrimeField>(
@@ -163,42 +347,23 @@ impl Blake2bInstructions for Blake2bChip {
         )
     }
 
-    fn xor_and_return_full_row<F: PrimeField>(
-        &self,
-        lhs: &AssignedBlake2bWord<F>,
-        rhs: &AssignedBlake2bWord<F>,
-        region: &mut Region<F>,
-        offset: &mut usize,
-    ) -> Result<AssignedRow<F>, Error> {
-        let row = self.xor_config.generate_xor_rows_from_cells(
-            region,
-            offset,
-            lhs,
-            rhs,
-            &self.decompose_8_config,
-            false,
-        )?;
-
-        Ok(row)
-    }
-
+    /// In this case we need to perform the xor operation and return the entire row, because we
+    /// need it to constrain the result.
     fn xor<F: PrimeField>(
         &self,
         lhs: &AssignedBlake2bWord<F>,
         rhs: &AssignedBlake2bWord<F>,
         region: &mut Region<F>,
         offset: &mut usize,
-    ) -> Result<AssignedBlake2bWord<F>, Error> {
-        let full_number_cell = self.xor_config.generate_xor_rows_from_cells(
+    ) -> Result<AssignedRow<F>, Error> {
+        self.xor_config.generate_xor_rows_from_cells(
             region,
             offset,
-            &lhs,
-            &rhs,
+            lhs,
+            rhs,
             &self.decompose_8_config,
             false,
-        )?.full_number
-            .clone();
-        Ok(full_number_cell)
+        )
     }
 
     /// opt_recycle optimization decomposes the sum operands in 8-bit limbs, so we need to use the
@@ -287,44 +452,62 @@ impl Blake2bInstructions for Blake2bChip {
         )
     }
 
-    fn assign_full_number_constant<F: PrimeField>(
+    fn assign_iv_constants_to_fixed_cells<F: PrimeField>(
         &self,
         region: &mut Region<F>,
-        row_offset: &usize,
-        description: &str,
-        constant: u64
-    ) -> Result<AssignedBlake2bWord<F>, Error> {
-        Ok(AssignedBlake2bWord::<F>::new(
-            region.assign_advice_from_constant(
-                || description,
-                self.full_number_u64,
-                *row_offset,
-                F::from(constant),
-            )?))
+        offset: &mut usize,
+    ) -> Result<[AssignedBlake2bWord<F>; 8], Error> {
+        let ret: [AssignedBlake2bWord<F>; 8] = IV_CONSTANTS
+            .iter()
+            .enumerate()
+            .map(|(index, constant)| {
+                self.assign_limb_constant_u64(
+                    region,
+                    offset,
+                    "iv constants",
+                    *constant,
+                    index
+                ).unwrap()
+            })
+            .collect::<Vec<AssignedBlake2bWord<F>>>()
+            .try_into()
+            .unwrap();
+        *offset += 1;
+        Ok(ret)
     }
 
-    fn assign_limb_constant_u64<F: PrimeField>(
+    #[allow(clippy::too_many_arguments)]
+    fn build_current_block_rows<F: PrimeField>(
         &self,
         region: &mut Region<F>,
-        row_offset: &usize,
-        description: &str,
-        constant: u64,
-        limb_index: usize
-    ) -> Result<AssignedBlake2bWord<F>, Error> {
-        Ok(AssignedBlake2bWord::<F>::new(
-        region.assign_advice_from_constant(
-            || description,
-            self.limbs[limb_index],
-            *row_offset,
-            F::from(constant),
-        )?))
+        offset: &mut usize,
+        input: &[AssignedNative<F>],
+        key: &[AssignedNative<F>],
+        block_number: usize,
+        last_input_block_index: usize,
+        is_key_empty: bool,
+        is_last_block: bool,
+        is_key_block: bool,
+        zero_constant_cell: AssignedNative<F>,
+    ) -> Result<[AssignedRow<F>; 16], Error> {
+        let current_block_values = Self::build_values_for_current_block(
+            input,
+            key,
+            block_number,
+            last_input_block_index,
+            is_key_empty,
+            is_last_block,
+            is_key_block,
+            zero_constant_cell,
+        );
+
+        self.block_words_from_bytes(region, offset, current_block_values.try_into().unwrap())
     }
 }
 
 impl Blake2bChip {
-    /// This method only exists in the opt_recycle optimization, so it's defined in a different block.
-    /// opt_recycle decomposes the sum operands in 8-bit limbs, so the xor operation that comes after
-    /// can recycle the result row of the addition and use it as its first operand.
+    /// Our addition operation decomposes the sum operands in 8-bit limbs, so when a xor operation
+    /// comes after an add operation, we can recycle its result row and use it as its first operand.
     fn xor_copying_one_parameter<F: PrimeField>(
         &self,
         previous_cell: &AssignedBlake2bWord<F>,
@@ -446,5 +629,38 @@ impl Blake2bChip {
                 ..(current_input_block_index + 1) * BLAKE2B_BLOCK_SIZE]
                 .to_vec()
         }
+    }
+
+    fn assign_full_number_constant<F: PrimeField>(
+        &self,
+        region: &mut Region<F>,
+        row_offset: &usize,
+        description: &str,
+        constant: u64
+    ) -> Result<AssignedBlake2bWord<F>, Error> {
+        Ok(AssignedBlake2bWord::<F>::new(
+            region.assign_advice_from_constant(
+                || description,
+                self.full_number_u64,
+                *row_offset,
+                F::from(constant),
+            )?))
+    }
+
+    fn assign_limb_constant_u64<F: PrimeField>(
+        &self,
+        region: &mut Region<F>,
+        row_offset: &usize,
+        description: &str,
+        constant: u64,
+        limb_index: usize
+    ) -> Result<AssignedBlake2bWord<F>, Error> {
+        Ok(AssignedBlake2bWord::<F>::new(
+            region.assign_advice_from_constant(
+                || description,
+                self.limbs[limb_index],
+                *row_offset,
+                F::from(constant),
+            )?))
     }
 }
