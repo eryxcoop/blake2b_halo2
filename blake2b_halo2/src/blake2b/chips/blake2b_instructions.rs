@@ -2,7 +2,6 @@ use crate::base_operations::decompose_8::Decompose8Config;
 use crate::base_operations::generic_limb_rotation::LimbRotation;
 use crate::base_operations::negate::NegateConfig;
 use crate::base_operations::rotate_63::Rotate63Config;
-use crate::blake2b::chips::utils::{compute_processed_bytes_count_value_for_iteration, constrain_padding_cells_to_equal_zero, full_number_of_each_state_row, get_total_blocks_count, BLAKE2B_BLOCK_SIZE };
 use crate::types::AssignedRow;
 use crate::types::{AssignedBlake2bWord, AssignedByte, AssignedNative};
 use ff::PrimeField;

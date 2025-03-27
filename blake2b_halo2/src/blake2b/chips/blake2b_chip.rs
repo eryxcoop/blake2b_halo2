@@ -234,7 +234,11 @@ impl Blake2bInstructions for Blake2bChip {
         state[12] = self.assign_full_number_constant(region, row_offset, "New state[12]", new_state_12)?;
         *row_offset += 1;
 
-        // [Zhiyong comment] not sure, the conditional constraint should be in circuit (select gate)?
+        // [Zhiyong comment - answered] not sure, the conditional constraint should be in circuit (select gate)?
+        //
+        // It's not necessary, the if is here only to check if the block being processed is the last one
+        // in the input, so its presence depends only on the input size, which is known at circuit building time.
+        // If we were to make a fixed size circuit, for example, this conditional wouldn't be needed
         if is_last_block {
             state[14] = self.not(&state[14], region, row_offset)?;
         }
@@ -243,16 +247,10 @@ impl Blake2bInstructions for Blake2bChip {
         for i in 0..12 {
             for j in 0..8 {
                 self.mix(
-                    ABCD[j][0],
-                    ABCD[j][1],
-                    ABCD[j][2],
-                    ABCD[j][3],
-                    SIGMA[i][2 * j],
-                    SIGMA[i][2 * j + 1],
+                    [ABCD[j][0], ABCD[j][1], ABCD[j][2], ABCD[j][3]],
+                    current_block[SIGMA[i][2 * j]].clone(),
+                    current_block[SIGMA[i][2 * j + 1]].clone(),
                     &mut state,
-                    // [Zhiyong comment] can we remove the input of current_block_cells, and
-                    // pass m[SIGMA[i][2 * j]], m[SIGMA[i][2 * j + 1]], as showed in the spec?
-                    &current_block,
                     region,
                     row_offset,
                 )?;
@@ -262,13 +260,18 @@ impl Blake2bInstructions for Blake2bChip {
         let mut global_state_bytes: Vec<AssignedByte<F>> = Vec::new();
         for i in 0..8 {
             // [Zhiyong comment] why these two xor's are different methods
-            // we have a trick for the operation of two xor's:
+
+
+            // [Zhiyong comment -- answered] we have a trick for the operation of two xor's:
             // to compute res = x \oplus y \oplus z, it suffices to compute M_even for
             // M = spread(x) + spread(y) + spread(z) over F
-            let lhs = &global_state[i];
-            let rhs = &state[i];
-            global_state[i] = self.xor(lhs, rhs, region, row_offset)?.full_number
-                .clone();
+            //
+            // We're not using spread anymore, so I think the overhead of adding the spread tables
+            // for an operation that happens only once per block could worsen the overall performance.
+            // Besides, the whole point of using spread was that we didn't need the 2^16 xor table,
+            // but we're using that anyway, and the optimization would take more rows (7) compared
+            // to 2 regular xor operations (3+3)
+            global_state[i] = self.xor(&global_state[i], &state[i], region, row_offset)?.full_number;
             let row =
                 self.xor(&global_state[i], &state[i + 8], region, row_offset)?;
             let mut row_limbs: Vec<_> = row.limbs.try_into().unwrap();
