@@ -1,7 +1,8 @@
 use ff::PrimeField;
-use halo2_proofs::circuit::{AssignedCell, Cell, Value};
+use halo2_proofs::circuit::{AssignedCell, Cell, Region, Value};
 use num_bigint::BigUint;
 use std::fmt::Debug;
+use halo2_proofs::plonk::{Advice, Column, Error};
 use halo2_proofs::utils::rational::Rational;
 
 /// All these types are created to enforce safety across our code. The three main types are:
@@ -16,6 +17,7 @@ use halo2_proofs::utils::rational::Rational;
 /// So everytime you see an AssignedByte, AssignedBlake2bWord or AssignedRow, you can be certain
 /// that all their values were range checked
 
+pub type AssignedNative<F> = AssignedCell<F, F>;
 
 /// The inner type of AssignedByte. A wrapper around `u8`
 #[derive(Copy, Clone, Debug)]
@@ -39,52 +41,67 @@ impl<F: PrimeField> From<&Blake2bWord> for Rational<F> {
     }
 }
 
-pub type AssignedNative<F> = AssignedCell<F, F>;
+impl<F: PrimeField> From<&Byte> for Rational<F> {
+    fn from(value: &Byte) -> Self {
+        Self::Trivial(F::from(value.0 as u64))
+    }
+}
 
-/*/// Trait for accessing the value inside assigned circuit elements.
-pub trait AssignedElement<F: PrimeField>: Clone + Debug {
-    /// Represents the unassigned type corresponding to the [midnight_circuits::types::InnerValue]
-    type Element: Clone + Debug;
-
-    //constructor
-    fn new(value: AssignedNative<F>) -> Self;
-
-    /// Returns the value of the assigned element.
-    fn value(&self) -> Value<Self::Element>;
-
-    fn cell(&self) -> Cell;
-
-    // TODO solo para pasos intermedios del refactor, despues se deberia sacar
-    fn inner_value(&self) -> AssignedNative<F>;
-}*/
-
-/// This wrapper type on `AssignedNative<F>` is designed to enforce type safety
+/// This wrapper type on `AssignedCell<Byte, F>` is designed to enforce type safety
 /// on assigned bytes. It prevents the user from creating an `AssignedByte`
 /// without using the designated entry points, which guarantee (with
 /// constraints) that the assigned value is indeed in the range [0, 256).
 #[derive(Clone, Debug)]
 #[must_use]
-pub struct AssignedByte<F: PrimeField>(AssignedNative<F>);
+pub struct AssignedByte<F: PrimeField>(AssignedCell<Byte, F>);
 
 impl<F: PrimeField> AssignedByte<F> {
-    pub fn new(value: AssignedNative<F>) -> Self {
-        Self { 0: value }
-    }
-
-    pub fn value(&self) -> Value<Byte> {
-        self.0.value().map(|v| {
+    pub fn copy_advice_byte(
+        region: &mut Region<F>,
+        annotation: &str,
+        column: Column<Advice>,
+        offset: usize,
+        cell_to_copy: AssignedNative<F>
+    ) -> Result<Self, Error> {
+        // Check value is in range
+        let byte_value = cell_to_copy.value().map(|v| {
             let bi_v = fe_to_big(*v);
             #[cfg(not(test))]
             assert!(bi_v <= BigUint::from(255u8));
-            Byte(bi_v.to_bytes_le().first().copied().unwrap_or(0u8))
-        })
+            Byte(bi_v.to_bytes_le().first().copied().unwrap())
+        });
+        // Create AssignedCell with the same value but different type
+        let assigned_byte = Self(region.assign_advice(|| annotation, column, offset, || byte_value)?);
+        // Constrain cells have equal values
+        region.constrain_equal(cell_to_copy.cell(), assigned_byte.cell())?;
+
+        Ok(assigned_byte)
+    }
+
+    pub fn assign_advice_byte(
+        region: &mut Region<F>,
+        annotation: &str,
+        column: Column<Advice>,
+        offset: usize,
+        value: Value<F>
+    ) -> Result<Self, Error> {
+        // Check value is in range
+        let byte_value = value.map(|v| {
+            let bi_v = fe_to_big(v);
+            #[cfg(not(test))]
+            assert!(bi_v <= BigUint::from(255u8));
+            Byte(bi_v.to_bytes_le().first().copied().unwrap())
+        });
+        // Create AssignedCell with the same value but different type
+        let assigned_byte = Self(region.assign_advice(|| annotation, column, offset, || byte_value)?);
+        Ok(assigned_byte)
     }
 
     pub fn cell(&self) -> Cell {
         self.0.cell()
     }
 
-    pub fn inner_value(&self) -> AssignedNative<F> {
+    pub fn inner_value(&self) -> AssignedCell<Byte,F> {
         self.0.clone()
     }
 }
@@ -171,18 +188,6 @@ impl<F: PrimeField> From<AssignedNative<F>> for AssignedBlake2bWord<F> {
     }
 }
 
-impl<F: PrimeField> From<AssignedNative<F>> for AssignedByte<F> {
-    fn from(value: AssignedNative<F>) -> Self {
-        AssignedByte::new(value)
-    }
-}
-
-impl<F: PrimeField> From<AssignedByte<F>> for AssignedNative<F> {
-    fn from(value: AssignedByte<F>) -> Self {
-        value.0
-    }
-}
-
 /// We use this type to model the Row we generally use along this circuit. This row has the
 /// following shape:
 /// full_number | limb_0 | limb_1 | limb_2 | limb_3 | limb_4 | limb_5 | limb_6 | limb_7 | limb_8
@@ -198,14 +203,6 @@ pub struct AssignedRow<F: PrimeField> {
 impl<F: PrimeField> AssignedRow<F> {
     pub fn new(full_number: AssignedBlake2bWord<F>, limbs: [AssignedByte<F>; 8]) -> Self {
         Self { full_number, limbs }
-    }
-
-    pub fn new_from_native(row: [AssignedNative<F>; 9]) -> Self {
-        let full_number = AssignedBlake2bWord::<F>::new(row[0].clone());
-        let limbs = row[1..].iter().map(|byte|
-            AssignedByte::<F>::new(byte.clone())
-        ).collect::<Vec<_>>();
-        Self::new(full_number, limbs.try_into().unwrap())
     }
 }
 

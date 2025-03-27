@@ -111,10 +111,13 @@ impl Decompose8Config {
 
         /// Fill the row with copies of the limbs
         for (index, byte_cell) in bytes.iter().enumerate() {
-            let assigned_cell = byte_cell.copy_advice(
-                || "Copied input byte", region, self.limbs[index], offset)?;
-            limbs.push(AssignedByte::<F>::new(assigned_cell)
-            );
+            let assigned_byte = AssignedByte::copy_advice_byte(
+                region,
+                "Copied input byte",
+                self.limbs[index],
+                offset,
+                byte_cell.clone())?;
+            limbs.push(assigned_byte)
         }
 
         Ok(AssignedRow::new(full_number_cell, limbs.try_into().unwrap()))
@@ -174,7 +177,7 @@ impl Decompose8Config {
             (0..8).map(|i| Self::get_limb_from(value, i)).collect::<Vec<_>>().try_into().unwrap();
 
         let assigned_limbs: Vec<AssignedByte<F>> = limbs.iter().enumerate().map(|(i, limb)|{
-            region.assign_advice(|| format!("limb{}", i), self.limbs[i], offset, || *limb).unwrap().into()
+            AssignedByte::assign_advice_byte(region,"limb", self.limbs[i], offset, limb.clone()).unwrap()
         }).collect::<Vec<_>>();
 
         Ok(AssignedRow::new(

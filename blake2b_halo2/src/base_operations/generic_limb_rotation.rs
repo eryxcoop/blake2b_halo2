@@ -1,9 +1,9 @@
 use super::*;
+use crate::auxiliar_functions::value_for;
+use crate::base_operations::decompose_8::Decompose8Config;
 use crate::types::{AssignedBlake2bWord, AssignedRow, Blake2bWord};
 use ff::PrimeField;
 use halo2_proofs::circuit::Value;
-use crate::auxiliar_functions::value_for;
-use crate::base_operations::decompose_8::Decompose8Config;
 
 #[derive(Default, Clone, Debug)]
 pub struct LimbRotation;
