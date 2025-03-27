@@ -1,5 +1,4 @@
 use super::*;
-use crate::auxiliar_functions::value_for;
 use crate::base_operations::decompose_8::Decompose8Config;
 use crate::types::{AssignedBlake2bWord, AssignedRow, Blake2bWord};
 use ff::PrimeField;
@@ -34,11 +33,11 @@ impl LimbRotation {
         let result_value =
             Self::right_rotation_value(input_row.full_number.value(), limbs_to_rotate_to_the_right);
 
-        let result_cell = region.assign_advice(
+        let result_cell = AssignedBlake2bWord(region.assign_advice(
             ||"Full number rotation output",
             full_number_u64_column,
             *offset,
-            || result_value.and_then(|v| value_for(v.0)))?;
+            || result_value)?);
 
         decompose_config.q_decompose.enable(region, *offset)?;
 
@@ -56,7 +55,7 @@ impl LimbRotation {
         }
 
         *offset += 1;
-        Ok(AssignedBlake2bWord(result_cell))
+        Ok(result_cell)
     }
 
     /// Computes the actual value of the rotation of the number

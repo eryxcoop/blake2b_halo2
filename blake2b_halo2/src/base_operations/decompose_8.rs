@@ -101,11 +101,12 @@ impl Decompose8Config {
         self.q_range.enable(region, offset)?;
 
         /// Compute the full number from the limbs
-        let full_number_cell = AssignedBlake2bWord::<F>::new(region.assign_advice(
-            || "full number",
+        let full_number_cell = AssignedBlake2bWord::assign_advice_word(
+            region,
+            "full number",
             self.full_number_u64,
             offset,
-            || Self::compute_full_value_u64_from_bytes(bytes))?);
+            Self::compute_full_value_u64_from_bytes(bytes))?;
 
         let mut limbs = vec![];
 
@@ -170,8 +171,8 @@ impl Decompose8Config {
     ) -> Result<AssignedRow<F>, Error> {
         self.q_decompose.enable(region, offset)?;
         self.q_range.enable(region, offset)?;
-        let full_number_cell =
-            region.assign_advice(|| "full number", self.full_number_u64, offset, || value)?.into();
+        let full_number_cell = AssignedBlake2bWord::assign_advice_word(
+            region,"full number", self.full_number_u64, offset, value)?;
 
         let limbs: [Value<F>; 8] =
             (0..8).map(|i| Self::get_limb_from(value, i)).collect::<Vec<_>>().try_into().unwrap();
@@ -211,11 +212,13 @@ impl Decompose8Config {
     pub fn generate_row_from_cell<F: PrimeField>(
         &self,
         region: &mut Region<F>,
-        cell: &AssignedNative<F>,
+        cell: &AssignedBlake2bWord<F>,
         offset: usize,
     ) -> Result<(), Error> {
-        let value = cell.value().copied();
-        let new_cells = self.generate_row_from_value_and_keep_row(region, value, offset)?;
+        let value = cell.value();
+        // TODO: fix this
+        let new_cells = self.generate_row_from_value_and_keep_row(
+            region, value.map(|v| F::from(v.0)), offset)?;
         region.constrain_equal(cell.cell(), new_cells.full_number.cell())
     }
 }

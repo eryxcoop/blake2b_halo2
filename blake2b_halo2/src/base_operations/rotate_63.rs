@@ -53,14 +53,13 @@ impl Rotate63Config {
         let result_value =
             input.value().map(|input| auxiliar_functions::rotate_right_field_element(input, 63));
 
-        let result_cell = region.assign_advice(
+        let result_cell = AssignedBlake2bWord(region.assign_advice(
             || "Rotate63 output",
             full_number_u64,
             *offset,
-            || result_value.map(|v|F::from(v.0)),
-        )?;
+            || result_value)?);
         *offset += 1;
-        Ok(AssignedBlake2bWord(result_cell))
+        Ok(result_cell)
     }
 
     /// Enforces the field's modulus to be greater than 2^65

@@ -88,11 +88,11 @@ impl XorConfig {
             .zip(cell_to_copy.value())
             .map(|(v0, v1)| auxiliar_functions::xor_words(v0, v1));
 
-        decompose_8_config.generate_row_from_cell(region, &cell_to_copy.inner_value(), *offset)?;
+        decompose_8_config.generate_row_from_cell(region, cell_to_copy, *offset)?;
         *offset += 1;
 
         if !use_previous_cell {
-            decompose_8_config.generate_row_from_cell(region, &previous_cell.inner_value(), *offset)?;
+            decompose_8_config.generate_row_from_cell(region, previous_cell, *offset)?;
             *offset += 1;
         }
 

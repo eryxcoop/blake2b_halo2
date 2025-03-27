@@ -5,7 +5,7 @@ use crate::base_operations::negate::NegateConfig;
 use crate::base_operations::rotate_63::Rotate63Config;
 use crate::base_operations::xor::XorConfig;
 use crate::blake2b::chips::blake2b_instructions::Blake2bInstructions;
-use crate::types::{AssignedBlake2bWord, AssignedByte, AssignedNative, AssignedRow};
+use crate::types::{AssignedBlake2bWord, AssignedByte, AssignedNative, AssignedRow, Blake2bWord};
 use ff::PrimeField;
 use halo2_proofs::circuit::{Layouter, Region};
 use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Error};
@@ -51,8 +51,8 @@ impl Blake2bInstructions for Blake2bChip {
         let iv_constant_cells: [AssignedBlake2bWord<F>; 8] =
             self.assign_iv_constants_to_fixed_cells(region, advice_offset)?;
 
-        let zero_constant = self.assign_limb_constant_u64(
-            region, advice_offset, "zero", 0, 0)?.into();
+        let zero_constant = region.assign_advice_from_constant(
+            || "zero", self.limbs[0], *advice_offset, F::from(0))?;
 
         let iv_constant_0 = IV_CONSTANTS[0];
         let out_len = output_size as u64;
@@ -199,7 +199,13 @@ impl Blake2bInstructions for Blake2bChip {
         // and processed_bytes_count is public for both parties, the xor between both values
         // is also a constant.
         let new_state_12 = processed_bytes_count ^ IV_CONSTANTS[4];
-        state[12] = self.assign_full_number_constant(region, row_offset, "New state[12]", new_state_12)?;
+        state[12] = AssignedBlake2bWord::assign_fixed_word(
+            region,
+            "New state[12]",
+            self.full_number_u64,
+            *row_offset,
+            Blake2bWord(new_state_12),
+        )?;
         *row_offset += 1;
 
         // [Zhiyong comment - answered] not sure, the conditional constraint should be in circuit (select gate)?
@@ -618,22 +624,6 @@ impl Blake2bChip {
         }
     }
 
-    fn assign_full_number_constant<F: PrimeField>(
-        &self,
-        region: &mut Region<F>,
-        row_offset: &usize,
-        description: &str,
-        constant: u64
-    ) -> Result<AssignedBlake2bWord<F>, Error> {
-        Ok(AssignedBlake2bWord::<F>::new(
-            region.assign_advice_from_constant(
-                || description,
-                self.full_number_u64,
-                *row_offset,
-                F::from(constant),
-            )?))
-    }
-
     fn assign_limb_constant_u64<F: PrimeField>(
         &self,
         region: &mut Region<F>,
@@ -642,12 +632,12 @@ impl Blake2bChip {
         constant: u64,
         limb_index: usize
     ) -> Result<AssignedBlake2bWord<F>, Error> {
-        Ok(AssignedBlake2bWord::<F>::new(
-            region.assign_advice_from_constant(
-                || description,
-                self.limbs[limb_index],
-                *row_offset,
-                F::from(constant),
-            )?))
+        AssignedBlake2bWord::assign_fixed_word(
+            region,
+            description,
+            self.limbs[limb_index],
+            *row_offset,
+            Blake2bWord(constant),
+        )
     }
 }
