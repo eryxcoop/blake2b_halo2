@@ -6,11 +6,11 @@ use halo2_proofs::circuit::{Layouter, SimpleFloorPlanner, Value};
 use halo2_proofs::plonk::{Advice, Circuit, Column, ConstraintSystem, Error, Instance};
 use std::array;
 use std::marker::PhantomData;
+use crate::blake2b::chips::blake2b_chip::Blake2bChip;
 
 /// This is an example circuit of how you should use the Blake2b chip.
 #[derive(Clone)]
-pub struct Blake2bCircuit<F: PrimeField, OptimizationChip: Blake2bInstructions> {
-    _ph2: PhantomData<OptimizationChip>,
+pub struct Blake2bCircuit<F: PrimeField> {
     /// The input and the key should be unknown for the verifier.
     input: Vec<Value<F>>,
     key: Vec<Value<F>>,
@@ -21,19 +21,19 @@ pub struct Blake2bCircuit<F: PrimeField, OptimizationChip: Blake2bInstructions> 
 }
 
 #[derive(Clone)]
-pub struct Blake2bConfig<F: PrimeField, OptimizationChip: Blake2bInstructions> {
+pub struct Blake2bConfig<F: PrimeField> {
     _ph: PhantomData<F>,
     /// The chip that will be used to compute the hash. We only need this.
-    blake2b_chip: OptimizationChip,
+    blake2b_chip: Blake2bChip,
     /// Column that will hold the expected output of the hash in the form of public inputs
     expected_final_state: Column<Instance>,
     limbs: [Column<Advice>; 8],
 }
 
-impl<F: PrimeField, OptimizationChip: Blake2bInstructions> Circuit<F>
-    for Blake2bCircuit<F, OptimizationChip>
+impl<F: PrimeField> Circuit<F>
+    for Blake2bCircuit<F>
 {
-    type Config = Blake2bConfig<F, OptimizationChip>;
+    type Config = Blake2bConfig<F>;
     type FloorPlanner = SimpleFloorPlanner;
 
     fn without_witnesses(&self) -> Self {
@@ -41,7 +41,6 @@ impl<F: PrimeField, OptimizationChip: Blake2bInstructions> Circuit<F>
         let key_size = self.key_size;
         let output_size = self.output_size;
         Self {
-            _ph2: PhantomData,
             input: vec![Value::unknown(); input_size],
             input_size,
             key: vec![Value::unknown(); key_size],
@@ -64,7 +63,7 @@ impl<F: PrimeField, OptimizationChip: Blake2bInstructions> Circuit<F>
         meta.enable_equality(expected_final_state);
 
         /// We need to provide the chip with the advice columns that it will use.
-        let blake2b_chip = OptimizationChip::configure(meta, full_number_u64, limbs);
+        let blake2b_chip = Blake2bChip::configure(meta, full_number_u64, limbs);
 
         Self::Config {
             _ph: PhantomData,
@@ -107,7 +106,7 @@ impl<F: PrimeField, OptimizationChip: Blake2bInstructions> Circuit<F>
     }
 }
 
-impl<F: PrimeField, OptimizationChip: Blake2bInstructions> Blake2bCircuit<F, OptimizationChip> {
+impl<F: PrimeField> Blake2bCircuit<F> {
     pub fn new_for(
         input: Vec<Value<F>>,
         input_size: usize,
@@ -116,7 +115,6 @@ impl<F: PrimeField, OptimizationChip: Blake2bInstructions> Blake2bCircuit<F, Opt
         output_size: usize,
     ) -> Self {
         Self {
-            _ph2: PhantomData,
             input,
             input_size,
             key,
@@ -128,7 +126,7 @@ impl<F: PrimeField, OptimizationChip: Blake2bInstructions> Blake2bCircuit<F, Opt
     /// Here the inputs are stored in the trace. It doesn't really matter how they're stored, this
     /// specific circuit uses the limb columns to do it but that's arbitrary.
     fn assign_inputs_to_the_trace(
-        config: Blake2bConfig<F, OptimizationChip>,
+        config: Blake2bConfig<F>,
         layouter: &mut impl Layouter<F>,
         input: &[Value<F>],
     ) -> Result<Vec<AssignedNative<F>>, Error> {
