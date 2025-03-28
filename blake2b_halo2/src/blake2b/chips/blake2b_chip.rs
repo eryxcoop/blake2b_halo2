@@ -359,7 +359,7 @@ impl Blake2bChip {
         Self {
             addition_config,
             decompose_8_config,
-            generic_limb_rotation_config,
+            generic_limb_rotation_config: LimbRotation,
             rotate_63_config,
             xor_config,
             negate_config,
