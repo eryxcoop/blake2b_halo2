@@ -343,15 +343,13 @@ impl Blake2bChip {
         limbs: [Column<Advice>; 8],
     ) -> Self {
         /// Config that is the same for every optimization
-        let decompose_8_config1 = Decompose8Config::configure(meta, full_number_u64, limbs);
-        let rotate_63_config1 = Rotate63Config::configure(meta, full_number_u64);
-        let negate_config1 = NegateConfig::configure(meta, full_number_u64);
+        let decompose_8_config = Decompose8Config::configure(meta, full_number_u64, limbs);
+        let rotate_63_config = Rotate63Config::configure(meta, full_number_u64);
+        let negate_config = NegateConfig::configure(meta, full_number_u64);
 
         let constants = meta.fixed_column();
         meta.enable_equality(constants);
         meta.enable_constant(constants);
-        let (decompose_8_config, generic_limb_rotation_config, rotate_63_config, negate_config) =
-            (decompose_8_config1, LimbRotation, rotate_63_config1, negate_config1);
 
         /// Config that is optimization-specific
         /// An extra carry column is needed for the sum operation with 8 limbs.
