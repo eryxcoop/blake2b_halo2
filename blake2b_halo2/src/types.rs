@@ -55,6 +55,12 @@ impl<F: PrimeField> From<&Byte> for Rational<F> {
     }
 }
 
+impl<F: PrimeField> From<&Bit> for Rational<F> {
+    fn from(value: &Bit) -> Self {
+        Self::Trivial(F::from(value.0 as u64))
+    }
+}
+
 /// This wrapper type on `AssignedCell<Byte, F>` is designed to enforce type safety
 /// on assigned bytes. It prevents the user from creating an `AssignedByte`
 /// without using the designated entry points, which guarantee (with
@@ -126,31 +132,42 @@ impl<F: PrimeField> AssignedByte<F> {
     }
 }
 
+/// The inner type of AssignedBit. A wrapper around `bool`
+#[derive(Copy, Clone, Debug)]
+pub struct Bit(pub bool);
 
+impl Bit {
+    fn new_from_field<F: PrimeField>(field: F) -> Self {
+        let bi_v = fe_to_big(field);
+        #[cfg(not(test))]
+        assert!(bi_v == BigUint::from(0u8) || bi_v == BigUint::from(1u8));
+        let bit = bi_v.to_bytes_le().first().copied().unwrap();
+        Bit(bit == 1)
+    }
+}
 
 /// This wrapper type on `AssignedNative<F>` is designed to enforce type safety
 /// on assigned bits. It is used in the addition chip to enforce that the
 /// carry value is 0 or 1
 #[derive(Clone, Debug)]
 #[must_use]
-pub struct AssignedBit<F: PrimeField>(pub AssignedNative<F>);
+pub struct AssignedBit<F: PrimeField>(AssignedCell<Bit, F>);
 
 impl<F: PrimeField> AssignedBit<F> {
-    pub fn new(value: AssignedNative<F>) -> Self {
-        Self { 0: value }
-    }
-
-    pub fn value(&self) -> Value<F> {
-        self.0.value().map(|v| {
-            let bi_v = fe_to_big(*v);
-            #[cfg(not(test))]
-            assert!(bi_v == BigUint::from(1u8) || bi_v == BigUint::from(0u8));
-            if bi_v == BigUint::from(1u8) {
-                F::from(1)
-            } else {
-                F::from(0)
-            }
-        })
+    pub fn assign_advice_bit(
+        region: &mut Region<F>,
+        annotation: &str,
+        column: Column<Advice>,
+        offset: usize,
+        value: Value<F>
+    ) -> Result<Self, Error> {
+        // Check value is in range
+        let bit_value = value.map(|v| {
+            Bit::new_from_field(v)
+        });
+        // Create AssignedCell with the same value but different type
+        let assigned_bit = Self(region.assign_advice(|| annotation, column, offset, || bit_value)?);
+        Ok(assigned_bit)
     }
 
     pub fn cell(&self) -> Cell {

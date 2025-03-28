@@ -86,7 +86,7 @@ impl AdditionMod64Config {
            full_number_u64_column,
            *offset
         )?;
-        let carry_cell = AssignedBit(region.assign_advice(|| "carry", self.carry, *offset, || carry_value)?);
+        let carry_cell = AssignedBit::assign_advice_bit(region,"carry", self.carry, *offset, carry_value)?;
         *offset += 1;
 
         let result_cell = self.decomposition.generate_row_from_value(region, result_value, *offset)?;
