@@ -96,7 +96,7 @@ impl<F: PrimeField> AssignedByte<F> {
         cell_to_copy: AssignedByte<F>
     ) -> Result<Self, Error> {
         // Check value is in range
-        let byte_value = cell_to_copy.value().map(|v| {
+        let byte_value = cell_to_copy.0.value().map(|v| {
             Byte(v.0)
         });
         // Create AssignedCell with the same value but different type
@@ -125,10 +125,6 @@ impl<F: PrimeField> AssignedByte<F> {
 
     pub fn cell(&self) -> Cell {
         self.0.cell()
-    }
-
-    pub fn value(&self) -> Value<Byte> {
-        self.0.value().cloned()
     }
 }
 
