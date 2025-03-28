@@ -23,6 +23,14 @@ pub type AssignedNative<F> = AssignedCell<F, F>;
 #[derive(Copy, Clone, Debug)]
 pub struct Byte(pub u8);
 
+impl Byte {
+    fn new_from_field<F: PrimeField>(field: F) -> Self {
+        let bi_v = fe_to_big(field);
+        #[cfg(not(test))]
+        assert!(bi_v <= BigUint::from(255u8));
+        Byte(bi_v.to_bytes_le().first().copied().unwrap())
+    }
+}
 /// The inner type of AssignedBlake2bWord. A wrapper around `u64`
 #[derive(Copy, Clone, Debug)]
 pub struct Blake2bWord(pub u64);
@@ -52,11 +60,10 @@ impl<F: PrimeField> From<&Byte> for Rational<F> {
 /// without using the designated entry points, which guarantee (with
 /// constraints) that the assigned value is indeed in the range [0, 256).
 #[derive(Clone, Debug)]
-#[must_use]
 pub struct AssignedByte<F: PrimeField>(AssignedCell<Byte, F>);
 
 impl<F: PrimeField> AssignedByte<F> {
-    pub fn copy_advice_byte(
+    pub fn copy_advice_byte_from_native(
         region: &mut Region<F>,
         annotation: &str,
         column: Column<Advice>,
@@ -65,10 +72,26 @@ impl<F: PrimeField> AssignedByte<F> {
     ) -> Result<Self, Error> {
         // Check value is in range
         let byte_value = cell_to_copy.value().map(|v| {
-            let bi_v = fe_to_big(*v);
-            #[cfg(not(test))]
-            assert!(bi_v <= BigUint::from(255u8));
-            Byte(bi_v.to_bytes_le().first().copied().unwrap())
+            Byte::new_from_field(*v)
+        });
+        // Create AssignedCell with the same value but different type
+        let assigned_byte = Self(region.assign_advice(|| annotation, column, offset, || byte_value)?);
+        // Constrain cells have equal values
+        region.constrain_equal(cell_to_copy.cell(), assigned_byte.cell())?;
+
+        Ok(assigned_byte)
+    }
+
+    pub fn copy_advice_byte(
+        region: &mut Region<F>,
+        annotation: &str,
+        column: Column<Advice>,
+        offset: usize,
+        cell_to_copy: AssignedByte<F>
+    ) -> Result<Self, Error> {
+        // Check value is in range
+        let byte_value = cell_to_copy.value().map(|v| {
+            Byte(v.0)
         });
         // Create AssignedCell with the same value but different type
         let assigned_byte = Self(region.assign_advice(|| annotation, column, offset, || byte_value)?);
@@ -87,10 +110,7 @@ impl<F: PrimeField> AssignedByte<F> {
     ) -> Result<Self, Error> {
         // Check value is in range
         let byte_value = value.map(|v| {
-            let bi_v = fe_to_big(v);
-            #[cfg(not(test))]
-            assert!(bi_v <= BigUint::from(255u8));
-            Byte(bi_v.to_bytes_le().first().copied().unwrap())
+            Byte::new_from_field(v)
         });
         // Create AssignedCell with the same value but different type
         let assigned_byte = Self(region.assign_advice(|| annotation, column, offset, || byte_value)?);
@@ -101,8 +121,8 @@ impl<F: PrimeField> AssignedByte<F> {
         self.0.cell()
     }
 
-    pub fn inner_value(&self) -> AssignedCell<Byte,F> {
-        self.0.clone()
+    pub fn value(&self) -> Value<Byte> {
+        self.0.value().cloned()
     }
 }
 
@@ -135,10 +155,6 @@ impl<F: PrimeField> AssignedBit<F> {
 
     pub fn cell(&self) -> Cell {
         self.0.cell()
-    }
-
-    pub fn inner_value(&self) -> AssignedNative<F> {
-        self.0.clone()
     }
 }
 
@@ -182,15 +198,11 @@ impl<F: PrimeField> AssignedBlake2bWord<F> {
     }
 
     pub fn value(&self) -> Value<Blake2bWord> {
-        self.inner_value().value().cloned()
+        self.0.value().cloned()
     }
 
     pub fn cell(&self) -> Cell {
         self.0.cell()
-    }
-
-    pub fn inner_value(&self) -> AssignedCell<Blake2bWord,F> {
-        self.0.clone()
     }
 }
 

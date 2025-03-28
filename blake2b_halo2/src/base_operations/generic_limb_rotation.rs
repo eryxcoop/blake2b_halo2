@@ -1,6 +1,6 @@
 use super::*;
 use crate::base_operations::decompose_8::Decompose8Config;
-use crate::types::{AssignedBlake2bWord, AssignedRow, Blake2bWord};
+use crate::types::{AssignedBlake2bWord, AssignedByte, AssignedRow, Blake2bWord};
 use ff::PrimeField;
 use halo2_proofs::circuit::Value;
 
@@ -46,11 +46,12 @@ impl LimbRotation {
             // as x = l1|l2|...|l7|l8, the limbs are stored as [l8, l7, ..., l2, l1]
             let top_assigned_cell = input_row.limbs[i].clone();
             let out_limb_index = (8 + i - limbs_to_rotate_to_the_right) % 8;
-            top_assigned_cell.inner_value().copy_advice(
-                || "Limb rotation output",
+            AssignedByte::copy_advice_byte(
                 region,
+                "Limb rotation output",
                 limbs[out_limb_index],
-                *offset
+                *offset,
+                top_assigned_cell
             )?;
         }
 
