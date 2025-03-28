@@ -151,7 +151,7 @@ impl Bit {
 /// carry value is 0 or 1
 #[derive(Clone, Debug)]
 #[must_use]
-pub struct AssignedBit<F: PrimeField>(AssignedCell<Bit, F>);
+pub struct AssignedBit<F: PrimeField>(pub AssignedCell<Bit, F>);
 
 impl<F: PrimeField> AssignedBit<F> {
     pub fn assign_advice_bit(
@@ -168,10 +168,6 @@ impl<F: PrimeField> AssignedBit<F> {
         // Create AssignedCell with the same value but different type
         let assigned_bit = Self(region.assign_advice(|| annotation, column, offset, || bit_value)?);
         Ok(assigned_bit)
-    }
-
-    pub fn cell(&self) -> Cell {
-        self.0.cell()
     }
 }
 
