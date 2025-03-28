@@ -112,7 +112,7 @@ impl Decompose8Config {
 
         /// Fill the row with copies of the limbs
         for (index, byte_cell) in bytes.iter().enumerate() {
-            let assigned_byte = AssignedByte::copy_advice_byte(
+            let assigned_byte = AssignedByte::copy_advice_byte_from_native(
                 region,
                 "Copied input byte",
                 self.limbs[index],
