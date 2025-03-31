@@ -4,7 +4,7 @@ use halo2_proofs::halo2curves::bn256::Fr;
 use crate::types::{Blake2bWord, Byte};
 
 pub fn max_u64() -> Value<Fr> {
-    value_for((1u128 << 64) - 1)
+    value_for(u64::MAX)
 }
 
 pub fn trash() -> Value<Fr> {
@@ -12,7 +12,7 @@ pub fn trash() -> Value<Fr> {
 }
 
 pub fn max_u16() -> Value<Fr> {
-    let number = (1u64 << 16) - 1;
+    let number = u16::MAX;
     value_for(number)
 }
 
