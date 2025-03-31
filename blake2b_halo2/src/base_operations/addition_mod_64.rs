@@ -3,19 +3,17 @@ use crate::base_operations::decompose_8::Decompose8Config;
 use crate::types::{AssignedBit, AssignedBlake2bWord, Blake2bWord};
 use auxiliar_functions::field_for;
 
+/// Config used to constrain addition mod 64-bits. It uses the [Decompose8Config] to generate
+/// a decomposed result, which will be used in one of the optimizations.
 #[derive(Clone, Debug)]
-// [zhiyong comment - answered] How about include decompoisition_config here and use decoposition_config.configure(), other than
-// remembering always this is implicit
-//
-// We can make the AdditionMod64Config hold the decomposition chip, but the decomposition chip instance must be the same for all
-// the blake2b_chip operations because the selectors we're turning on must be in the same columns, to avoid duplicating columns in the circuit
 pub struct AdditionMod64Config {
     carry: Column<Advice>,
-    pub q_add: Selector,
-    pub decomposition: Decompose8Config,
+    pub(crate) q_add: Selector,
+    pub(crate) decomposition: Decompose8Config,
 }
 
 impl AdditionMod64Config {
+    /// Creates the necessary gate for the operation to be constrained
     pub fn configure<F: PrimeField>(
         meta: &mut ConstraintSystem<F>,
         full_number_u64: Column<Advice>,
@@ -50,13 +48,13 @@ impl AdditionMod64Config {
         Self { carry, q_add, decomposition }
     }
 
-    /// This method receives two cells, and generates the rows for the addition of their values.
-    /// We copy the values of the cells to the trace, and then calculate the result and carry
-    /// of the addition and write it in a third row.
+    /// This method receives two cells, copies the values of the cells to the trace and then
+    /// calculates the result and carry of the addition and write it in a third row.
     ///
     /// When one of the addition parameters (previous_cell)
-    /// is the last cell that was generated in the circuit, by setting the use_last_cell_as_first_operand
-    /// to true we can avoid generating the row for the previous_cell again, and just copy the cell_to_copy.
+    /// is the last cell that was generated in the circuit, by setting the [use_last_cell_as_first_operand]
+    /// to [true] we can avoid copying the value of previous_cell again, and just copy the cell_to_copy.
+    /// This saves one row per addition.
     pub fn generate_addition_rows_from_cells<F: PrimeField>(
         &self,
         region: &mut Region<F>,
@@ -95,6 +93,9 @@ impl AdditionMod64Config {
         Ok((result_cell, carry_cell))
     }
 
+    /// Given 2 operand values, known at proof generation time, returns the values holding the
+    /// result of that sum mod 2^64 and the carry value, which must be 0 or 1. Both ranges will be
+    /// constrained by this gate.
     fn calculate_result_and_carry<F: PrimeField>(
         lhs: Value<Blake2bWord>,
         rhs: Value<Blake2bWord>,
