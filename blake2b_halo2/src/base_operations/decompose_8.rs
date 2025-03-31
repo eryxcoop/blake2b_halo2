@@ -34,9 +34,11 @@ pub struct Decompose8Config {
 }
 
 impl Decompose8Config {
-    /// The full number and the limbs are not owned by the config.
+    /// Creates the corresponding gates and lookups to constrain range-checks and 8-limb
+    /// decomposition of 64-bit numbers.
     pub fn configure<F: PrimeField>(
         meta: &mut ConstraintSystem<F>,
+        // The full number and the limbs are not owned by the config.
         full_number_u64: Column<Advice>,
         limbs: [Column<Advice>; 8],
     ) -> Self {
@@ -64,7 +66,7 @@ impl Decompose8Config {
             ]
         });
 
-        /// Range checks for all the limbs
+        /// Range checks for all the limbs (range [0,255])
         for limb in limbs {
             Self::range_check_for_limb(meta, &limb, &q_range, &t_range);
         }
@@ -78,6 +80,8 @@ impl Decompose8Config {
         }
     }
 
+    /// Creates the lookup of an 8-bit limb. It uses the [t-range] table, which is filled in the
+    /// [self.populate_lookup_table()] method, and the [q_range], which is turned on whenever needed
     fn range_check_for_limb<F: PrimeField>(
         meta: &mut ConstraintSystem<F>,
         limb: &Column<Advice>,
@@ -91,6 +95,10 @@ impl Decompose8Config {
         });
     }
 
+    /// Given an array of [AssignedNative] byte-values, it puts in the circuit a full row with those
+    /// bytes in the limbs and the resulting full number in the first column. By turning on the
+    /// q_decompose and q_range selectors, we ensure that each limb is in the range [0,255] and
+    /// that the decomposition of the limbs is correct in relation with the full number.
     pub fn generate_row_from_assigned_bytes<F: PrimeField>(
         &self,
         region: &mut Region<F>,
@@ -124,6 +132,7 @@ impl Decompose8Config {
         Ok(AssignedRow::new(full_number_cell, limbs.try_into().unwrap()))
     }
 
+    /// Given a list of limb values, it returns the full number value that the limbs build up to.
     fn compute_full_value_u64_from_bytes<F: PrimeField>(bytes: &[AssignedNative<F>; 8]) -> Value<F> {
         let mut full_number = F::ZERO;
         // We process the limbs from the most significant to the least significant
@@ -137,6 +146,7 @@ impl Decompose8Config {
         Value::known(full_number)
     }
 
+    /// Fills the [t_range] table with values in the range [0,255]
     pub fn populate_lookup_table<F: PrimeField>(
         &self,
         layouter: &mut impl Layouter<F>,
@@ -222,6 +232,9 @@ impl Decompose8Config {
         region.constrain_equal(cell.cell(), new_cells.full_number.cell())
     }
 
+    /// Given a field element and a limb number, we assume the field is in range [0, 2^64-1]
+    /// and obtain the corresponding limb value in little endian. This method expects the limb
+    /// to be a value in range [0,7].
     fn get_limb_from_field<F: PrimeField>(field: F, limb_number: usize) -> u8 {
         let binding = field.to_repr();
         let a_bytes = binding.as_ref();
