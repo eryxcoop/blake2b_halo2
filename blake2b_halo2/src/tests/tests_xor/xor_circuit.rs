@@ -7,13 +7,13 @@ use std::array;
 use std::marker::PhantomData;
 
 #[derive(Clone)]
-pub struct XorCircuitConfig<F: PrimeField> {
+pub(crate) struct XorCircuitConfig<F: PrimeField> {
     _ph: PhantomData<F>,
     xor_config: XorConfig,
     decompose_8_config: Decompose8Config,
 }
 
-pub struct XorCircuit<F: PrimeField> {
+pub(crate) struct XorCircuit<F: PrimeField> {
     _ph: PhantomData<F>,
     trace: [[Value<F>; 9]; 3],
 }

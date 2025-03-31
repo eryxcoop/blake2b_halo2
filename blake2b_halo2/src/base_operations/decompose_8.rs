@@ -16,7 +16,7 @@ use crate::types::{AssignedBlake2bWord, AssignedByte, AssignedNative, AssignedRo
 /// Little endian representation is used for the limbs.
 /// We also expect F::Repr to be little endian in all usages of this trait.
 #[derive(Clone, Debug)]
-pub struct Decompose8Config {
+pub(crate) struct Decompose8Config {
     /// The full number and the limbs are not owned by the config.
     pub full_number_u64: Column<Advice>,
     /// There are 8 limbs of 8 bits each

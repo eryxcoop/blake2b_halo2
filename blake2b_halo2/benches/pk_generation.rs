@@ -10,7 +10,7 @@ use utils::*;
 criterion_group!(pk, benchmark_proving_key_generation);
 criterion_main!(pk);
 
-pub(crate) fn benchmark_proving_key_generation(c: &mut Criterion) {
+pub fn benchmark_proving_key_generation(c: &mut Criterion) {
     let mut group = c.benchmark_group("proving_key");
     configure_group(&mut group);
 

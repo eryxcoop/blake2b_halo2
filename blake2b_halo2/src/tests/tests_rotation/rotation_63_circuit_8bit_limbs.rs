@@ -6,7 +6,7 @@ use halo2_proofs::plonk::Circuit;
 use std::array;
 use std::marker::PhantomData;
 
-pub struct Rotation63Circuit8bitLimbs<F: PrimeField> {
+pub(crate) struct Rotation63Circuit8bitLimbs<F: PrimeField> {
     _ph: PhantomData<F>,
     trace: [[Value<F>; 9]; 2],
 }

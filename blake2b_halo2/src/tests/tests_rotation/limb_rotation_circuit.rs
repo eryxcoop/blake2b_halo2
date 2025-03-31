@@ -7,7 +7,7 @@ use halo2_proofs::plonk::Circuit;
 use std::array;
 
 #[derive(Clone)]
-pub struct LimbRotationCircuit<F: PrimeField, const T: usize> {
+pub(crate) struct LimbRotationCircuit<F: PrimeField, const T: usize> {
     _ph: PhantomData<F>,
     trace: [[Value<F>; 9]; 2],
 }

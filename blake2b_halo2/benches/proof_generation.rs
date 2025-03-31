@@ -10,7 +10,7 @@ use utils::*;
 criterion_group!(proof, benchmark_proof_generation);
 criterion_main!(proof);
 
-pub(crate) fn benchmark_proof_generation(c: &mut Criterion) {
+pub fn benchmark_proof_generation(c: &mut Criterion) {
     let mut group = c.benchmark_group("proof");
     configure_group(&mut group);
 

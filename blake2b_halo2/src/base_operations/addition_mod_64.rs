@@ -5,7 +5,7 @@ use crate::types::{AssignedBit, AssignedBlake2bWord, Blake2bWord};
 /// Config used to constrain addition mod 64-bits. It uses the [Decompose8Config] to generate
 /// a decomposed result, which will be used in one of the optimizations.
 #[derive(Clone, Debug)]
-pub struct AdditionMod64Config {
+pub(crate) struct AdditionMod64Config {
     carry: Column<Advice>,
     pub(crate) q_add: Selector,
     pub(crate) decomposition: Decompose8Config,

@@ -10,7 +10,7 @@ use utils::*;
 criterion_group!(verify, benchmark_verification);
 criterion_main!(verify);
 
-pub(crate) fn benchmark_verification(c: &mut Criterion) {
+pub fn benchmark_verification(c: &mut Criterion) {
     let mut group = c.benchmark_group("verify");
     configure_group(&mut group);
 

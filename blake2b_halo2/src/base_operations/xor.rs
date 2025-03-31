@@ -19,7 +19,7 @@ use crate::types::{AssignedBlake2bWord, AssignedRow, Blake2bWord};
 /// | full_number_rhs    | limb_0_rhs    | limb_1_rhs    | ... | limb_7_rhs    |
 /// | full_number_result | limb_0_result | limb_1_result | ... | limb_7_result |
 #[derive(Clone, Debug)]
-pub struct XorConfig {
+pub(crate) struct XorConfig {
     /// Lookup table columns
     t_xor_left: TableColumn,
     t_xor_right: TableColumn,

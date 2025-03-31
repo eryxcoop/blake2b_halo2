@@ -8,7 +8,7 @@ use halo2_proofs::circuit::Value;
 /// This gate rotates the limbs of a number to the right and uses copy constrains to ensure that
 /// the rotation is correct. It's used in our circuit to implement 16-bit, 24-bit and 32-bit rotations.
 #[derive(Default, Clone, Debug)]
-pub struct LimbRotation;
+pub(crate) struct LimbRotation;
 
 impl LimbRotation {
     /// This method receives a row of cells, and rotates the limbs to the right by the number

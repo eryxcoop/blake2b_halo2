@@ -7,7 +7,7 @@ use num_bigint::BigUint;
 /// For the gate of this config to be sound, it is necessary that the modulus of the field is
 /// greater than 2^65.
 #[derive(Clone, Debug)]
-pub struct Rotate63Config {
+pub(crate) struct Rotate63Config {
     pub q_rot63: Selector,
 }
 

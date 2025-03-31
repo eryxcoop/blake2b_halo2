@@ -19,7 +19,7 @@ pub struct CircuitRunner;
 
 /// Circuit runner methods for Mock Prover
 impl CircuitRunner {
-    pub(crate) fn mocked_preprocess_inputs_synthesize_prove_and_verify(
+    pub fn mocked_preprocess_inputs_synthesize_prove_and_verify(
         input: &String,
         key: &String,
         expected: &String,
@@ -38,25 +38,25 @@ impl CircuitRunner {
         Self::verify_mock_prover(prover);
     }
 
-    pub(crate) fn verify_mock_prover(prover: MockProver<Fr>) {
+    pub fn verify_mock_prover(prover: MockProver<Fr>) {
         prover.verify().unwrap()
     }
 
-    pub(crate) fn mock_prove_with_public_inputs(
+    pub fn mock_prove_with_public_inputs(
         expected_output_fields: Vec<Fr>,
         circuit: Blake2bCircuit<Fr>,
     ) -> MockProver<Fr> {
         MockProver::run(17, &circuit, vec![expected_output_fields]).unwrap()
     }
 
-    pub(crate) fn mock_prove_with_public_inputs_ref(
+    pub fn mock_prove_with_public_inputs_ref(
         expected_output_fields: &[Fr],
         circuit: &Blake2bCircuit<Fr>,
     ) -> MockProver<Fr> {
         MockProver::run(17, circuit, vec![expected_output_fields.to_vec()]).unwrap()
     }
 
-    pub(crate) fn create_circuit_for_inputs(
+    pub fn create_circuit_for_inputs(
         input_values: Vec<Value<Fr>>,
         input_size: usize,
         key_values: Vec<Value<Fr>>,
@@ -66,13 +66,13 @@ impl CircuitRunner {
         Blake2bCircuit::<Fr>::new_for(input_values, input_size, key_values, key_size, output_size)
     }
 
-    pub(crate) fn create_circuit_for_inputs_optimization(
+    pub fn create_circuit_for_inputs_optimization(
         ci: Blake2bCircuitInputs,
     ) -> Blake2bCircuit<Fr> {
         Blake2bCircuit::<Fr>::new_for(ci.0, ci.1, ci.2, ci.3, ci.5)
     }
 
-    pub(crate) fn prepare_parameters_for_test(
+    pub fn prepare_parameters_for_test(
         input: &String,
         key: &String,
         expected: &String,
@@ -101,7 +101,7 @@ impl CircuitRunner {
         (input_values, input_size, key_values, key_size, expected_output_fields, output_size)
     }
 
-    pub(crate) fn formed_output_block_for(output: &String) -> ([u8; 64], usize) {
+    pub fn formed_output_block_for(output: &String) -> ([u8; 64], usize) {
         let output_block_size = output.len() / 2; // Amount of bytes
         let output_bytes = hex::decode(output).expect("Invalid hex string");
         (output_bytes.try_into().unwrap(), output_block_size)
@@ -110,7 +110,7 @@ impl CircuitRunner {
 
 /// Circuit runner methods for Real Prover
 impl CircuitRunner {
-    pub(crate) fn real_preprocess_inputs_sintesize_prove_and_verify(
+    pub fn real_preprocess_inputs_sintesize_prove_and_verify(
         input: String,
         out: String,
         key: String,
@@ -133,21 +133,21 @@ impl CircuitRunner {
         Self::verify(&expected_output_fields, &params, pk, &proof)
     }
 
-    pub(crate) fn create_vk(
+    pub fn create_vk(
         circuit: &Blake2bCircuit<Fr>,
         params: &ParamsKZG<Bn256>,
     ) -> VerifyingKey<Fr, KZGCommitmentScheme<Bn256>> {
         keygen_vk_with_k(params, circuit, 17).expect("Verifying key should be created")
     }
 
-    pub(crate) fn create_pk(
+    pub fn create_pk(
         circuit: &Blake2bCircuit<Fr>,
         vk: VerifyingKey<Fr, KZGCommitmentScheme<Bn256>>,
     ) -> ProvingKey<Fr, KZGCommitmentScheme<Bn256>> {
         keygen_pk(vk.clone(), circuit).expect("Proving key should be created")
     }
 
-    pub(crate) fn create_proof(
+    pub fn create_proof(
         expected_output_fields: &[Fr],
         circuit: Blake2bCircuit<Fr>,
         params: &ParamsKZG<Bn256>,
@@ -167,7 +167,7 @@ impl CircuitRunner {
         proof
     }
 
-    pub(crate) fn verify(
+    pub fn verify(
         expected_output_fields: &[Fr],
         params: &ParamsKZG<Bn256>,
         pk: ProvingKey<Fr, KZGCommitmentScheme<Bn256>>,

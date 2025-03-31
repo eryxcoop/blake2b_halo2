@@ -7,14 +7,14 @@ use halo2_proofs::plonk::{Advice, Circuit, Column, ConstraintSystem, Error, Fixe
 use std::array;
 use std::marker::PhantomData;
 
-pub struct NegateCircuit<F: PrimeField> {
+pub(crate) struct NegateCircuit<F: PrimeField> {
     _ph: PhantomData<F>,
     value: Value<Blake2bWord>,
     expected_result: Value<Blake2bWord>,
 }
 
 #[derive(Clone)]
-pub struct NegateCircuitConfig<F: PrimeField> {
+pub(crate) struct NegateCircuitConfig<F: PrimeField> {
     _ph: PhantomData<F>,
     negate_config: NegateConfig,
     decompose_8_config: Decompose8Config,

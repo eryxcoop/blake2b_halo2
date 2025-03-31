@@ -3,7 +3,7 @@ use crate::types::{AssignedBlake2bWord, Blake2bWord};
 
 /// This config handles the bitwise negation of a 64-bit number.
 #[derive(Clone, Debug)]
-pub struct NegateConfig {
+pub(crate) struct NegateConfig {
     q_negate: Selector,
 }
 

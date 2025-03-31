@@ -4,13 +4,13 @@ use halo2_proofs::circuit::SimpleFloorPlanner;
 use halo2_proofs::plonk::Circuit;
 use std::array;
 
-pub struct AdditionMod64Circuit8Bits<F: PrimeField> {
+pub(crate) struct AdditionMod64Circuit8Bits<F: PrimeField> {
     _ph: PhantomData<F>,
     trace: [[Value<F>; 9]; 3],
 }
 
 #[derive(Clone, Debug)]
-pub struct AdditionMod64Config8Bits<F: PrimeField + Clone> {
+pub(crate) struct AdditionMod64Config8Bits<F: PrimeField + Clone> {
     sum_8bits_config: AdditionMod64Config,
     decompose_8_config: Decompose8Config,
     _ph: PhantomData<F>,
