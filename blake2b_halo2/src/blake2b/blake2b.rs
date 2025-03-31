@@ -21,12 +21,12 @@ pub struct Blake2b<C: Blake2bInstructions> {
 
 impl<C: Blake2bInstructions> Blake2b<C> {
     /// Create a new hasher instance.
-    pub(crate) fn new(chip: C) -> Result<Self, Error> {
+    pub fn new(chip: C) -> Result<Self, Error> {
         Ok(Self { chip })
     }
 
     /// This method should be called only once in the circuit to initialize the chip's lookup tables
-    pub(crate) fn initialize<F: PrimeField>(
+    pub fn initialize<F: PrimeField>(
         &mut self,
         layouter: &mut impl Layouter<F>,
     ) -> Result<(), Error> {
@@ -34,7 +34,7 @@ impl<C: Blake2bInstructions> Blake2b<C> {
     }
 
     /// Main method of the Gadget. The 'input' and 'key' cells should be filled with byte values.
-    pub(crate) fn hash<F: PrimeField>(
+    pub fn hash<F: PrimeField>(
         &self,
         layouter: &mut impl Layouter<F>,
         input: &[AssignedNative<F>],
