@@ -1,29 +1,20 @@
 use ff::{Field, PrimeField};
 use halo2_proofs::circuit::Value;
 use halo2_proofs::halo2curves::bn256::Fr;
-use crate::types::{Blake2bWord, Byte};
+use crate::types::{Blake2bWord};
 
-pub fn max_u64() -> Value<Fr> {
-    value_for(u64::MAX)
-}
-
-pub fn max_u16() -> Value<Fr> {
-    let number = u16::MAX;
-    value_for(number)
-}
-
-pub fn one() -> Value<Fr> {
+pub(crate) fn one() -> Value<Fr> {
     Value::known(Fr::ONE)
 }
-pub fn zero() -> Value<Fr> {
+pub(crate) fn zero() -> Value<Fr> {
     Value::known(Fr::ZERO)
 }
 
-pub fn blake2b_value_for(number: u64) -> Value<Blake2bWord> {
+pub(crate) fn blake2b_value_for(number: u64) -> Value<Blake2bWord> {
     Value::known(Blake2bWord(number))
 }
 
-pub fn value_for<T, F>(number: T) -> Value<F>
+pub(crate) fn value_for<T, F>(number: T) -> Value<F>
 where
     T: Into<u128>,
     F: PrimeField,
@@ -31,7 +22,7 @@ where
     Value::known(field_for(number))
 }
 
-pub fn field_for<T, F>(number: T) -> F
+pub(crate) fn field_for<T, F>(number: T) -> F
 where
     T: Into<u128>,
     F: PrimeField,
@@ -43,11 +34,7 @@ where
     F::from(hi) * field_pow64 + F::from(lo)
 }
 
-pub fn decompose_field_8bit_limbs(number: Blake2bWord) -> [Byte; 8] {
-    (0..8).map(|i| get_limb_word(number, i)).collect::<Vec<_>>().try_into().unwrap()
-}
-
-pub fn generate_row_8bits<T, F>(number: T) -> [Value<F>; 9]
+pub(crate) fn generate_row_8bits<T, F>(number: T) -> [Value<F>; 9]
 where
     F: PrimeField,
     T: Into<u128>,
@@ -62,42 +49,6 @@ where
     ans
 }
 
-pub fn sum_mod_64(a: Blake2bWord, b: Blake2bWord) -> Blake2bWord {
-    ((a.0 as u128 + b.0 as u128) % (1u128 << 64)).into()
-}
-
-pub fn carry_mod_64<F: PrimeField>(a: Blake2bWord, b: Blake2bWord) -> F {
-    let carry = (a.0 as u128 + b.0 as u128) / (1u128 << 64);
-    F::from(carry as u64)
-}
-
-pub fn convert_to_u64<F: PrimeField>(a: F) -> u64 {
-    let binding = a.to_repr();
-    let a_bytes = binding.as_ref();
-
-    let mut a_value: u64 = 0;
-    for (i, b) in a_bytes[0..8].iter().enumerate() {
-        a_value += (*b as u64) * (1u64 << (8 * i));
-    }
-    a_value
-}
-
-pub fn xor_words(a: Blake2bWord, b: Blake2bWord) -> Blake2bWord {
-    Blake2bWord(a.0 ^ b.0)
-}
-
-pub fn get_limb_word(word: Blake2bWord, limb_number: usize) -> Byte {
-    let word_bytes: [u8; 8] = word.0.to_le_bytes();
-    let limb = word_bytes[limb_number];
-    Byte(limb)
-}
-
-pub fn get_limb_from_field<F: PrimeField>(field: F, limb_number: usize) -> u8 {
-    let binding = field.to_repr();
-    let a_bytes = binding.as_ref();
-    a_bytes[limb_number]
-}
-
 pub(crate) fn rotate_right_field_element(
     value_to_rotate: Blake2bWord,
     rotation_degree: usize,
@@ -107,8 +58,4 @@ pub(crate) fn rotate_right_field_element(
     let rotated_value = ((value_to_rotate as u128) >> rotation_degree)
         | ((value_to_rotate as u128) << (64 - rotation_degree));
     Blake2bWord(rotated_value as u64)
-}
-
-pub fn unknown_trace_for_rot63<F: PrimeField, const R: usize>() -> [[Value<F>; R]; 2] {
-    [[Value::unknown(); R]; 2]
 }

@@ -1,6 +1,6 @@
 use super::*;
 use crate::base_operations::decompose_8::Decompose8Config;
-use crate::types::{AssignedBlake2bWord, AssignedRow};
+use crate::types::{AssignedBlake2bWord, AssignedRow, Blake2bWord};
 
 /// This config handles the xor operation in the trace. Requires a representation in 8-bit limbs
 /// because it uses a lookup table like this one:
@@ -88,7 +88,7 @@ impl XorConfig {
         let result_value = previous_cell
             .value()
             .zip(cell_to_copy.value())
-            .map(|(v0, v1)| auxiliar_functions::xor_words(v0, v1));
+            .map(|(v0, v1)| Blake2bWord(v0.0 ^ v1.0));
 
         self.decompose.generate_row_from_cell(region, cell_to_copy, *offset)?;
         *offset += 1;
