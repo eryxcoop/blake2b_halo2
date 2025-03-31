@@ -5,17 +5,27 @@ use halo2_proofs::circuit::Layouter;
 use halo2_proofs::plonk::Error;
 use crate::blake2b::chips::utils::enforce_input_sizes;
 
-/// Main gadget to compute Blake2b hash function
+/// A gadget that constrains a Blake2b invocation. This interface works with
+/// in/out consisting of AssignedNative. The algorithm expects its values to be in the range of
+/// a Byte, and will fail if they're not.
+///
+/// The gadget is parametrised with a chip that implements [Blake2bInstructions].
+/// There is currently one implementation of the instruction set:
+/// * [Blake2bChip] This chip uses a lookup table of size `2**16`. This means
+///   that all circuits instantiating this chip will be at least `2**17` rows,
+///   as we need to padd the circuit to provide ZK. This chip achieves a Blake2b
+///   digest in 2469 rows.
 pub struct Blake2b<C: Blake2bInstructions> {
     chip: C,
 }
 
 impl<C: Blake2bInstructions> Blake2b<C> {
+    /// Create a new hasher instance.
     pub fn new(chip: C) -> Result<Self, Error> {
         Ok(Self { chip })
     }
 
-    /// This method should be called only once in the circuit
+    /// This method should be called only once in the circuit to initialize the chip's lookup tables
     pub fn initialize<F: PrimeField>(
         &mut self,
         layouter: &mut impl Layouter<F>,
@@ -23,6 +33,7 @@ impl<C: Blake2bInstructions> Blake2b<C> {
         self.chip.populate_lookup_tables(layouter)
     }
 
+    /// Main method of the Gadget. The 'input' and 'key' cells should be filled with byte values.
     pub fn hash<F: PrimeField>(
         &self,
         layouter: &mut impl Layouter<F>,
@@ -31,8 +42,7 @@ impl<C: Blake2bInstructions> Blake2b<C> {
         output_size: usize,
     ) -> Result<[AssignedByte<F>; 64], Error> {
         enforce_input_sizes(output_size, key.len());
-        /// All the computation is performed inside a single region. Some optimizations take advantage
-        /// of this fact, since we want to avoid copying cells between regions.
+        /// All the computation is performed inside a single region
         // [inigo] Which optimisations could not be applied if we split this into different regions, e.g.
         // one per compression round?
         layouter.assign_region(
