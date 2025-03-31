@@ -1,5 +1,5 @@
 use super::*;
-use crate::auxiliar_functions::{field_for, get_limb_from_field};
+use crate::auxiliar_functions::{field_for};
 use crate::types::{AssignedBlake2bWord, AssignedByte, AssignedNative, AssignedRow, Blake2bWord};
 
 // [Zhiyong comment] I suggest to remove this trait and the gate of decomposition_limb_range_check. Instead, we define a gate API like:
@@ -189,7 +189,7 @@ impl Decompose8Config {
 
     /// Given a value and a limb index, it returns the value of the limb
     fn get_limb_from<F: PrimeField>(value: Value<F>, limb_number: usize) -> Value<F> {
-        value.map(|v| field_for(get_limb_from_field(v, limb_number)))
+        value.map(|v| field_for(Self::get_limb_from_field(v, limb_number)))
     }
 
     /// Given a value of 64 bits, it generates a row with the assigned cells for the full number
@@ -220,5 +220,11 @@ impl Decompose8Config {
         let new_cells = self.generate_row_from_value_and_keep_row(
             region, value.map(|v| F::from(v.0)), offset)?;
         region.constrain_equal(cell.cell(), new_cells.full_number.cell())
+    }
+
+    fn get_limb_from_field<F: PrimeField>(field: F, limb_number: usize) -> u8 {
+        let binding = field.to_repr();
+        let a_bytes = binding.as_ref();
+        a_bytes[limb_number]
     }
 }

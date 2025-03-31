@@ -27,7 +27,8 @@ impl<F: PrimeField> Circuit<F> for Rotation63Circuit8bitLimbs<F> {
     fn without_witnesses(&self) -> Self {
         Self {
             _ph: PhantomData,
-            trace: unknown_trace_for_rot63(),
+            trace: [[Value::unknown(); 9]; 2]
+            ,
         }
     }
 

@@ -100,11 +100,20 @@ impl AdditionMod64Config {
         rhs: Value<Blake2bWord>,
     ) -> (Value<Blake2bWord>, Value<F>) {
         let result_value = lhs.and_then(|l| rhs.and_then(|r| {
-            Value::known(auxiliar_functions::sum_mod_64(l, r))
+            Value::known(Self::sum_mod_64(l, r))
         }));
         let carry_value = lhs.and_then(|l| rhs.and_then(|r| {
-            Value::known(auxiliar_functions::carry_mod_64(l, r))
+            Value::known(Self::carry_mod_64(l, r))
         }));
         (result_value, carry_value)
+    }
+
+    fn sum_mod_64(a: Blake2bWord, b: Blake2bWord) -> Blake2bWord {
+        ((a.0 as u128 + b.0 as u128) % (1u128 << 64)).into()
+    }
+
+    fn carry_mod_64<F: PrimeField>(a: Blake2bWord, b: Blake2bWord) -> F {
+        let carry = (a.0 as u128 + b.0 as u128) / (1u128 << 64);
+        F::from(carry as u64)
     }
 }
