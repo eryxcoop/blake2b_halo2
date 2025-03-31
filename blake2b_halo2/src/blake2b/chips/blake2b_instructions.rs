@@ -67,6 +67,10 @@ pub trait Blake2bInstructions: Clone {
 
     /// This method computes a single round of mixing for the Blake2b algorithm.
     /// One round of compress has 96 mixing rounds.
+    /// * 'x' and 'y' are the variables that hold the AssignedCell with the input values that will
+    /// be processed in this mixing round.
+    /// The 'state_indexes' are the indexes of the compress state that will take part on this
+    /// mixing round. These are also needed to update the state at the end of the mixing.
     fn mix<F: PrimeField>(
         &self,
         state_indexes: [usize; 4],

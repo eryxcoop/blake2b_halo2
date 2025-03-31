@@ -16,10 +16,10 @@ use crate::blake2b::chips::utils::{compute_processed_bytes_count_value_for_itera
 ///
 /// This implementation uses addition with 8 limbs and computes xor with a table that precomputes
 /// all the possible 8-bit operands. Since all operations have operands with 8-bit decompositions,
-/// we can recycle (hence the name) some rows per iteration of the algorithm for every operation.
+/// we can recycle some rows per iteration of the algorithm for every operation.
 #[derive(Clone, Debug)]
 pub struct Blake2bChip {
-    /// Decomposition configs
+    /// Decomposition config
     decompose_8_config: Decompose8Config,
     /// Base oprerations configs
     addition_config: AdditionMod64Config,
@@ -33,6 +33,9 @@ pub struct Blake2bChip {
 }
 
 impl Blake2bInstructions for Blake2bChip {
+    /// This optimization uses 2 tables:
+    /// * A lookup table for range-checks of 8 bits: [0, 255]
+    /// * A lookup table consisting of 3 columns that pre-computes the xor operation of 16 bits.
     fn populate_lookup_tables<F: PrimeField>(
         &self,
         layouter: &mut impl Layouter<F>,
@@ -41,6 +44,8 @@ impl Blake2bInstructions for Blake2bChip {
         self.populate_xor_lookup_table(layouter)
     }
 
+    /// Here the constants that will be used throughout the algorithm are assigned in some storage
+    /// cells at the begining of the trace.
     fn assign_constant_advice_cells<F: PrimeField>(
         &self,
         output_size: usize,
@@ -78,6 +83,8 @@ impl Blake2bInstructions for Blake2bChip {
         ))
     }
 
+    /// The initial state is known at circuit building time because it depends on fixed constants,
+    /// key size and output size.
     fn compute_initial_state<F: PrimeField>(
         &self,
         iv_constant_cells: &[AssignedBlake2bWord<F>; 8],
@@ -195,9 +202,9 @@ impl Blake2bInstructions for Blake2bChip {
         let mut state: [AssignedBlake2bWord<F>; 16] = state_vector.try_into().unwrap();
 
         // accumulative_state[12] ^= processed_bytes_count
-        // Since accumulative_state[12] is allways IV_CONSTANTS[4] at this point in execution
-        // and processed_bytes_count is public for both parties, the xor between both values
-        // is also a constant.
+        /// Since accumulative_state[12] is allways IV_CONSTANTS[4] at this point in execution
+        /// and processed_bytes_count is public for both parties, the xor between both values
+        /// is also a constant.
         let new_state_12 = processed_bytes_count ^ IV_CONSTANTS[4];
         state[12] = AssignedBlake2bWord::assign_fixed_word(
             region,
@@ -208,11 +215,6 @@ impl Blake2bInstructions for Blake2bChip {
         )?;
         *row_offset += 1;
 
-        // [Zhiyong comment - answered] not sure, the conditional constraint should be in circuit (select gate)?
-        //
-        // It's not necessary, the if is here only to check if the block being processed is the last one
-        // in the input, so its presence depends only on the input size, which is known at circuit building time.
-        // If we were to make a fixed size circuit, for example, this conditional wouldn't be needed
         if is_last_block {
             state[14] = self.not(&state[14], region, row_offset)?;
         }
@@ -233,15 +235,6 @@ impl Blake2bInstructions for Blake2bChip {
 
         let mut global_state_bytes: Vec<AssignedByte<F>> = Vec::new();
         for i in 0..8 {
-            // [Zhiyong comment -- answered] we have a trick for the operation of two xor's:
-            // to compute res = x \oplus y \oplus z, it suffices to compute M_even for
-            // M = spread(x) + spread(y) + spread(z) over F
-            //
-            // We're not using spread anymore, so I think the overhead of adding the spread tables
-            // for an operation that happens only once per block could worsen the overall performance.
-            // Besides, the whole point of using spread was that we didn't need the 2^16 xor table,
-            // but we're using that anyway, and the optimization would take more rows (7) compared
-            // to 2 regular xor operations (3+3)
             global_state[i] = self.xor(&global_state[i], &state[i], region, row_offset)?.full_number;
             let row =
                 self.xor(&global_state[i], &state[i + 8], region, row_offset)?;
@@ -295,7 +288,7 @@ impl Blake2bInstructions for Blake2bChip {
 
         // v[b] = rotr_64(v[b] ^ v[c], 63);
         let b_xor_c = self.xor_copying_one_parameter(&c, &b, region, offset)?;
-        let b = self.rotate_right_63(b_xor_c, region, offset)?;
+        let b = self.rotate_right_63(b_xor_c.full_number, region, offset)?;
 
         state[state_indexes[0]] = a;
         state[state_indexes[1]] = b;
@@ -336,7 +329,8 @@ impl Blake2bInstructions for Blake2bChip {
 
 impl Blake2bChip {
     /// Configuration of the circuit, this includes initialization of all the necessary configs.
-    /// It should be called in the configuration of the user circuit.
+    /// It should be called in the configuration of the user circuit before instantiating the
+    /// Blake2b gadget.
     pub fn configure<F: PrimeField>(
         meta: &mut ConstraintSystem<F>,
         full_number_u64: Column<Advice>,
@@ -352,7 +346,7 @@ impl Blake2bChip {
         meta.enable_constant(constants);
 
         /// Config that is optimization-specific
-        /// An extra carry column is needed for the sum operation with 8 limbs.
+        /// For the carry column we'll reuse the first limb column for optimization reasons
         let addition_config = AdditionMod64Config::configure(meta, full_number_u64, limbs[0], decompose_8_config.clone());
         let xor_config = XorConfig::configure(meta, limbs);
 
@@ -368,8 +362,9 @@ impl Blake2bChip {
         }
     }
 
-    /// Blake2b uses an initialization vector (iv) that is hardcoded. This method assigns those
-    /// values to fixed cells to use later on.
+    /// Blake2b uses a fixed initialization vector (iv). This method assigns those
+    /// fixed values to advice cells. The cells used are the 8 limbs in the very first row of the
+    /// trace. This is implementation specific.
     fn assign_iv_constants_to_fixed_cells<F: PrimeField>(
         &self,
         region: &mut Region<F>,
@@ -394,6 +389,9 @@ impl Blake2bChip {
         Ok(ret)
     }
 
+    /// Bitwise negation operation. This is used only once in the circuit, at the beginning of the
+    /// last compress iteration. It's implemented through a [NegateConfig] which establishes all the
+    /// necessary restrictions.
     fn not<F: PrimeField>(
         &self,
         input_cell: &AssignedBlake2bWord<F>,
@@ -408,6 +406,9 @@ impl Blake2bChip {
         )
     }
 
+    /// Bitwise xor operation. It's performed over two assigned blake2b words. Is one of the most
+    /// used operations in the Blake2b function and implemented through a [XorConfig] which
+    /// creates all the necessary lookups.
     fn xor<F: PrimeField>(
         &self,
         lhs: &AssignedBlake2bWord<F>,
@@ -425,6 +426,9 @@ impl Blake2bChip {
         )
     }
 
+    /// Addition operation. It's performed over two assigned blake2b words. Is one of the most
+    /// used operations in the Blake2b function and implemented through a [AdditionMod64Config]
+    /// which creates all the necessary lookups.
     fn add<F: PrimeField>(
         &self,
         lhs: &AssignedBlake2bWord<F>,
@@ -444,20 +448,26 @@ impl Blake2bChip {
         Ok(addition_cell)
     }
 
+    /// Bitwise rotation mod 64 bits. 63 bits to the right. Internally uses a [Rotate63Config] and
+    /// only receives the full number as input because it doesn't need the limbs to establish the
+    /// necessary restrictions.
     fn rotate_right_63<F: PrimeField>(
         &self,
-        input_row: AssignedRow<F>,
+        input: AssignedBlake2bWord<F>,
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<AssignedBlake2bWord<F>, Error> {
         self.rotate_63_config.generate_rotation_rows_from_cells(
             region,
             offset,
-            &input_row.full_number,
+            &input,
             self.full_number_u64,
         )
     }
 
+    /// Bitwise rotation mod 64 bits. 16 bits to the right. Internally uses the [LimbRotation] gate
+    /// and receives an [AssignedRow] as input because it needs the limbs to establish the
+    /// necessary restrictions. It only returns the full number, not the resulting row.
     fn rotate_right_16<F: PrimeField>(
         &self,
         input_row: AssignedRow<F>,
@@ -475,6 +485,9 @@ impl Blake2bChip {
         )
     }
 
+    /// Bitwise rotation mod 64 bits. 24 bits to the right. Internally uses the [LimbRotation] gate
+    /// and receives an [AssignedRow] as input because it needs the limbs to establish the
+    /// necessary restrictions. It only returns the full number, not the resulting row.
     fn rotate_right_24<F: PrimeField>(
         &self,
         input_row: AssignedRow<F>,
@@ -492,6 +505,9 @@ impl Blake2bChip {
         )
     }
 
+    /// Bitwise rotation mod 64 bits. 32 bits to the right. Internally uses the [LimbRotation] gate
+    /// and receives an [AssignedRow] as input because it needs the limbs to establish the
+    /// necessary restrictions. It only returns the full number, not the resulting row.
     fn rotate_right_32<F: PrimeField>(
         &self,
         input_row: AssignedRow<F>,
@@ -509,7 +525,7 @@ impl Blake2bChip {
         )
     }
 
-    /// This method performs a regular xor operation with the difference that it returns the full
+    /// This method performs a regular [xor] operation with the difference that it returns the full
     /// row in the trace, instead of just the cell holding the value. This allows an optimization
     /// where the next operation (which is a rotation) can just read the limbs directly and apply
     /// the limb rotation without copying the operand.
@@ -595,7 +611,7 @@ impl Blake2bChip {
     }
 
     /// Computes the values of the current block in the blake2b algorithm, based on the input and
-    /// the block number we're on.
+    /// the block number we're on, among other relevant data.
     fn build_values_for_current_block<F: PrimeField>(
         input: &[AssignedNative<F>],
         key: &[AssignedNative<F>],
