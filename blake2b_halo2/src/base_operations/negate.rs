@@ -31,8 +31,9 @@ impl NegateConfig {
         Self { q_negate }
     }
 
-    /// Receives a cell, generates a new row for that cell and generates the row for the negation
-    /// of the value
+    /// This method receives a [AssignedBlake2bWord] and a [full_number_column] where it will be
+    /// copied. In the same column, the result is placed in the next row. The gate constrains the
+    /// result.
     pub fn generate_rows_from_cell<F: PrimeField>(
         &self,
         region: &mut Region<F>,
@@ -40,12 +41,6 @@ impl NegateConfig {
         input: &AssignedBlake2bWord<F>,
         full_number_column: Column<Advice>,
     ) -> Result<AssignedBlake2bWord<F>, Error> {
-        // [Zhiyong comment - answered] if immediately after negate, we're gonna use the decomposition of the result, I think
-        // it is good to use the optimization trick of previous_row to save one row and one copy_advice.
-        //
-        // We don't need to do this because the negated element won't be used next,
-        // this gate is used only once in the whole circuit, and doesn't require decomposition
-
         self.q_negate.enable(region, *offset)?;
         input.0.copy_advice(|| "Negation input", region, full_number_column, *offset)?;
         *offset += 1;

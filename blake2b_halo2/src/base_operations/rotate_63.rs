@@ -40,8 +40,9 @@ impl Rotate63Config {
         Self { q_rot63 }
     }
 
-    /// Receives a row of cells, generates a row for the rotation of 63 bits to the right
-    /// and populates the circuit with it
+    /// This method receives a [AssignedBlake2bWord] and a [full_number_u64] column where it will be
+    /// copied. In the same column, the result is placed in the next row. The gate constrains the
+    /// result.
     pub fn generate_rotation_rows_from_cells<F: PrimeField>(
         &self,
         region: &mut Region<F>,
@@ -62,7 +63,8 @@ impl Rotate63Config {
         Ok(result_cell)
     }
 
-    /// Enforces the field's modulus to be greater than 2^65
+    /// Enforces the field's modulus to be greater than 2^65. This is necessary to preserve the
+    /// soundness of a circuit that uses this operation.
     pub fn enforce_modulus_size<F: PrimeField>() {
         let modulus_bytes: Vec<u8> = hex::decode(F::MODULUS.trim_start_matches("0x"))
             .expect("Modulus is not a valid hex number");
