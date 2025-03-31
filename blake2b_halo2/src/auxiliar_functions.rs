@@ -6,11 +6,7 @@ where
     T: Into<u128>,
     F: PrimeField,
 {
-    let number: u128 = number.into();
-    let lo: u64 = (number % (1u128 << 64)) as u64;
-    let hi: u64 = (number / (1u128 << 64)) as u64;
-    let field_pow64 = F::from(1 << 63) * F::from(2);
-    F::from(hi) * field_pow64 + F::from(lo)
+    F::from_u128(number.into())
 }
 
 pub(crate) fn rotate_right_field_element(
