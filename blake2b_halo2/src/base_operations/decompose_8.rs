@@ -167,11 +167,10 @@ impl Decompose8Config {
         )
     }
 
-    /// Convenience method for generating a row from a value and keeping the full row.
+    /// Method for generating a row from a value and keeping the full row.
     /// Given a Value, we might want to use it as an operand in the circuit, and sometimes we need
     /// to establish constraints over the result's limbs. That's why we need a way to retrieve the
-    /// full row that was created from that value. An example of this could be the Generic Limb
-    /// Rotation Operation, where we need to establish copy constraints over the rotated limbs.
+    /// full row that was created from that value.
     pub(crate) fn generate_row_from_value_and_keep_row<F: PrimeField>(
         &self,
         region: &mut Region<F>,
@@ -206,15 +205,13 @@ impl Decompose8Config {
 
     /// Given a value of 64 bits, it generates a row with the assigned cells for the full number
     /// and the limbs, and returns the full number
-    pub(crate) fn generate_row_from_value<F: PrimeField>(
+    pub(crate) fn generate_row_from_word_value<F: PrimeField>(
         &self,
         region: &mut Region<F>,
         value: Value<Blake2bWord>,
         offset: usize,
     ) -> Result<AssignedBlake2bWord<F>, Error> {
-        //TODO: remove cast later on
-        let value = value.map(|v| F::from(v.0));
-        let new_row = self.generate_row_from_value_and_keep_row(region, value, offset)?;
+        let new_row = self.generate_row_from_value_and_keep_row(region, value.map(|v| F::from(v.0)), offset)?;
         let full_number_cell = new_row.full_number;
         Ok(full_number_cell)
     }
@@ -228,7 +225,6 @@ impl Decompose8Config {
         offset: usize,
     ) -> Result<(), Error> {
         let value = cell.value();
-        // TODO: fix this
         let new_cells = self.generate_row_from_value_and_keep_row(
             region, value.map(|v| F::from(v.0)), offset)?;
         region.constrain_equal(cell.cell(), new_cells.full_number.cell())

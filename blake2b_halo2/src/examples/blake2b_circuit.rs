@@ -138,7 +138,7 @@ impl<F: PrimeField> Blake2bCircuit<F> {
                     config.limbs[column],
                     row,
                     || *input_byte
-                ).unwrap(); //TODO remove unwrap
+                ).unwrap();
                 cell
             }).collect::<Vec<_>>().try_into().unwrap();
             Ok(inner_result)
