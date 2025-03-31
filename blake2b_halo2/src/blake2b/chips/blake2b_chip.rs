@@ -525,10 +525,10 @@ impl Blake2bChip {
         )
     }
 
-    /// This method performs a regular [xor] operation with the difference that it returns the full
-    /// row in the trace, instead of just the cell holding the value. This allows an optimization
+    /// This method performs a regular [xor] operation with the difference that it returns the whole
+    /// row in the trace, instead of just the cell holding the full value. This allows an optimization
     /// where the next operation (which is a rotation) can just read the limbs directly and apply
-    /// the limb rotation without copying the operand.
+    /// the limb rotation without copying them.
     fn xor_copying_one_parameter<F: PrimeField>(
         &self,
         previous_cell: &AssignedBlake2bWord<F>,
@@ -542,25 +542,11 @@ impl Blake2bChip {
             previous_cell,
             cell_to_copy,
             &self.decompose_8_config,
-            true,
+            true, // Uses the optimization
         )
     }
 
-    fn populate_lookup_table_8<F: PrimeField>(
-        &self,
-        layouter: &mut impl Layouter<F>,
-    ) -> Result<(), Error> {
-        self.decompose_8_config.populate_lookup_table(layouter)
-    }
-
-    fn populate_xor_lookup_table<F: PrimeField>(
-        &self,
-        layouter: &mut impl Layouter<F>,
-    ) -> Result<(), Error> {
-        self.xor_config.populate_xor_lookup_table(layouter)
-    }
-
-    /// This method behaves like 'add', with the difference that it takes advantage of the fact that
+    /// This method behaves like [add], with the difference that it takes advantage of the fact that
     /// the last row in the circuit is one of the operands of the addition, so it only needs to copy
     /// one parameter because the other is already on the trace.
     fn add_copying_one_parameter<F: PrimeField>(
@@ -575,14 +561,32 @@ impl Blake2bChip {
             offset,
             previous_cell,
             cell_to_copy,
-            true,
+            true, // Uses the optimization
             self.full_number_u64,
         )?.0
             .clone())
     }
 
-    /// Given an array of byte-values, it puts in the circuit a full row with those bytes in the
-    /// limbs and the resulting full number in the first column.
+    /// The 8-bit range-check lookup table is created by the [Decompose8Config], since it
+    /// establishes the lookups over it.
+    fn populate_lookup_table_8<F: PrimeField>(
+        &self,
+        layouter: &mut impl Layouter<F>,
+    ) -> Result<(), Error> {
+        self.decompose_8_config.populate_lookup_table(layouter)
+    }
+
+    /// The xor lookup table is created by the [XorConfig], since it establishes the lookups over it.
+    fn populate_xor_lookup_table<F: PrimeField>(
+        &self,
+        layouter: &mut impl Layouter<F>,
+    ) -> Result<(), Error> {
+        self.xor_config.populate_xor_lookup_table(layouter)
+    }
+
+    /// Given an array of [AssignedNative] byte-values, it puts in the circuit a full row with those
+    /// bytes in the limbs and the resulting full number in the first column. The resulting values
+    /// are range-checked by the circuit in the [Decompose8Config].
     fn new_row_from_assigned_bytes<F: PrimeField>(
         &self,
         bytes: &[AssignedNative<F>; 8],
@@ -594,6 +598,10 @@ impl Blake2bChip {
         ret
     }
 
+    /// This method is used when building the block words from the input bytes. It receives a list
+    /// of 128 [AssignedNative] bytes that still haven't been range-checked and returns a list of
+    /// 16 [AssignedRow] putted in the trace, range-checked by the [Decompose8Config] and ready for
+    /// use in the algorithm.
     fn block_words_from_bytes<F: PrimeField>(
         &self,
         region: &mut Region<F>,
@@ -638,6 +646,7 @@ impl Blake2bChip {
         }
     }
 
+    /// Assigns an u64 constant to trace[row_offset][limbs[limb_index]] cell.
     fn assign_limb_constant_u64<F: PrimeField>(
         &self,
         region: &mut Region<F>,
