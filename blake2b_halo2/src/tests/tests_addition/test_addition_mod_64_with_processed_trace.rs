@@ -65,10 +65,11 @@ fn test_negative_random_addition() {
 #[test]
 #[should_panic]
 fn test_negative_sum_correct_but_no_carry_tracked() {
-    // This should panic because, although the sum is correct, the carry column is not computed. It should be 1.
+    // This should panic because, although the sum is correct, the carry column is not computed.
+    // It should be 1.
     let mut rng = rand::thread_rng();
     let x: u128 = rng.gen();
-    let max_u64 = (1u128 << 64) - 1;
+    let max_u64 = u64::MAX as u128;
     let trace = [
         generate_row_8bits::<u128, Fr>(x),
         generate_row_8bits::<u128, Fr>(max_u64),
