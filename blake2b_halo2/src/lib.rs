@@ -11,7 +11,7 @@ pub(crate) mod auxiliar_functions;
 pub(crate) mod base_operations;
 
 #[cfg(test)]
-pub(crate) mod tests;
+mod tests;
 pub(crate) mod blake2b;
 pub mod example_blake2b_circuit;
 mod types;

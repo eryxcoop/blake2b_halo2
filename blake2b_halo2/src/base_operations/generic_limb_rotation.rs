@@ -11,10 +11,6 @@ pub struct LimbRotation;
 /// uses copy constrains to ensure that the rotation is correct.
 /// This config is used in our circuit to implement 16-bit, 24-bit and 32-bit rotations.
 impl LimbRotation {
-    pub fn unknown_trace<F: PrimeField>() -> [[Value<F>; 9]; 2] {
-        [[Value::unknown(); 9]; 2]
-    }
-
     /// This method receives a row of cells, and rotates the limbs to the right by the number
     /// specified in the limbs_to_rotate_to_the_right parameter. It then constrains the output
     /// to be the correct rotation of the input.

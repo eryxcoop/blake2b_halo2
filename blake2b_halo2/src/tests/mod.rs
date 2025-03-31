@@ -4,7 +4,7 @@ use halo2_proofs::halo2curves::bn256::Fr;
 use ff::Field;
 use std::marker::PhantomData;
 use crate::base_operations::decompose_8::Decompose8Config;
-use crate::types::AssignedNative;
+use crate::types::{AssignedNative, Blake2bWord};
 
 mod test_blake2b;
 mod test_negate;
@@ -40,4 +40,38 @@ impl Decompose8Config {
         //return the full number and the limbs
         Ok(std::iter::once(full_number).chain(limbs).collect())
     }
+}
+
+pub(crate) fn one() -> Value<Fr> {
+    Value::known(Fr::ONE)
+}
+pub(crate) fn zero() -> Value<Fr> {
+    Value::known(Fr::ZERO)
+}
+
+pub(crate) fn blake2b_value_for(number: u64) -> Value<Blake2bWord> {
+    Value::known(Blake2bWord(number))
+}
+
+pub(crate) fn value_for<T, F>(number: T) -> Value<F>
+where
+    T: Into<u128>,
+    F: PrimeField,
+{
+    Value::known(field_for(number))
+}
+
+pub(crate) fn generate_row_8bits<T, F>(number: T) -> [Value<F>; 9]
+where
+    F: PrimeField,
+    T: Into<u128>,
+{
+    let mut number: u128 = number.into();
+    let mut ans = [Value::unknown(); 9];
+    ans[0] = value_for(number);
+    for ans_item in ans.iter_mut().take(9).skip(1) {
+        *ans_item = value_for(number % 256);
+        number /= 256;
+    }
+    ans
 }
