@@ -13,5 +13,5 @@ pub(crate) mod base_operations;
 #[cfg(test)]
 mod tests;
 pub(crate) mod blake2b;
-pub mod example_blake2b_circuit;
+pub mod examples;
 mod types;

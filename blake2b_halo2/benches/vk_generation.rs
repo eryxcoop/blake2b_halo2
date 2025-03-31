@@ -1,4 +1,4 @@
-use blake2b_halo2::blake2b::circuit_runner::CircuitRunner;
+use blake2b_halo2::examples::circuit_runner::CircuitRunner;
 use criterion::measurement::WallTime;
 use criterion::{
     criterion_group, criterion_main, BatchSize, BenchmarkGroup, BenchmarkId, Criterion, Throughput,

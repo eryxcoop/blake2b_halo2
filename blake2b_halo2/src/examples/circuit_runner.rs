@@ -1,7 +1,5 @@
-use super::*;
 use halo2_proofs::dev::MockProver;
 use halo2_proofs::halo2curves::bn256::Fr;
-use crate::example_blake2b_circuit::Blake2bCircuit as Blake2bCircuitGeneric;
 use halo2_proofs::{
     halo2curves::bn256::{Bn256},
     plonk::{create_proof, keygen_pk, keygen_vk_with_k, prepare, ProvingKey, VerifyingKey},
@@ -11,8 +9,10 @@ use halo2_proofs::{
     },
     transcript::{CircuitTranscript, Transcript},
 };
+use halo2_proofs::circuit::Value;
+use halo2_proofs::plonk::Error;
+use crate::examples::blake2b_circuit::Blake2bCircuit;
 
-type Blake2bCircuit<F> = Blake2bCircuitGeneric<F>;
 pub type Blake2bCircuitInputs = (Vec<Value<Fr>>, usize, Vec<Value<Fr>>, usize, [Fr; 64], usize);
 
 pub struct CircuitRunner;
@@ -51,7 +51,7 @@ impl CircuitRunner {
 
     pub fn mock_prove_with_public_inputs_ref(
         expected_output_fields: &[Fr],
-        circuit: &Blake2bCircuitGeneric<Fr>,
+        circuit: &Blake2bCircuit<Fr>,
     ) -> MockProver<Fr> {
         MockProver::run(17, circuit, vec![expected_output_fields.to_vec()]).unwrap()
     }
@@ -68,8 +68,8 @@ impl CircuitRunner {
 
     pub fn create_circuit_for_inputs_optimization(
         ci: Blake2bCircuitInputs,
-    ) -> Blake2bCircuitGeneric<Fr> {
-        Blake2bCircuitGeneric::<Fr>::new_for(ci.0, ci.1, ci.2, ci.3, ci.5)
+    ) -> Blake2bCircuit<Fr> {
+        Blake2bCircuit::<Fr>::new_for(ci.0, ci.1, ci.2, ci.3, ci.5)
     }
 
     pub fn prepare_parameters_for_test(
@@ -134,14 +134,14 @@ impl CircuitRunner {
     }
 
     pub fn create_vk(
-        circuit: &Blake2bCircuitGeneric<Fr>,
+        circuit: &Blake2bCircuit<Fr>,
         params: &ParamsKZG<Bn256>,
     ) -> VerifyingKey<Fr, KZGCommitmentScheme<Bn256>> {
         keygen_vk_with_k(params, circuit, 17).expect("Verifying key should be created")
     }
 
     pub fn create_pk(
-        circuit: &Blake2bCircuitGeneric<Fr>,
+        circuit: &Blake2bCircuit<Fr>,
         vk: VerifyingKey<Fr, KZGCommitmentScheme<Bn256>>,
     ) -> ProvingKey<Fr, KZGCommitmentScheme<Bn256>> {
         keygen_pk(vk.clone(), circuit).expect("Proving key should be created")
@@ -149,7 +149,7 @@ impl CircuitRunner {
 
     pub fn create_proof(
         expected_output_fields: &[Fr],
-        circuit: Blake2bCircuitGeneric<Fr>,
+        circuit: Blake2bCircuit<Fr>,
         params: &ParamsKZG<Bn256>,
         pk: &ProvingKey<Fr, KZGCommitmentScheme<Bn256>>,
     ) -> Vec<u8> {
