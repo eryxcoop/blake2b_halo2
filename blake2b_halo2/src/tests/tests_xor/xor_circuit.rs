@@ -19,7 +19,7 @@ pub struct XorCircuit<F: PrimeField> {
 }
 
 impl<F: PrimeField> XorCircuit<F> {
-    pub fn new_for_trace(trace: [[Value<F>; 9]; 3]) -> Self {
+    pub(crate) fn new_for_trace(trace: [[Value<F>; 9]; 3]) -> Self {
         Self {
             _ph: PhantomData,
             trace,

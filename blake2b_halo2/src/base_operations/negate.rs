@@ -1,5 +1,4 @@
 use super::*;
-use crate::auxiliar_functions::field_for;
 use crate::types::{AssignedBlake2bWord, Blake2bWord};
 
 /// This config handles the bitwise negation of a 64-bit number.
@@ -9,7 +8,7 @@ pub struct NegateConfig {
 }
 
 impl NegateConfig {
-    pub fn configure<F: PrimeField>(
+    pub(crate) fn configure<F: PrimeField>(
         meta: &mut ConstraintSystem<F>,
         full_number_u64: Column<Advice>,
     ) -> Self {
@@ -24,7 +23,7 @@ impl NegateConfig {
             let not_value = meta.query_advice(full_number_u64, Rotation(1));
 
             vec![
-                q_negate * (Expression::Constant(field_for((1u128 << 64) - 1)) - value - not_value),
+                q_negate * (Expression::Constant(F::from_u128(((1u128 << 64) - 1).into())) - value - not_value),
             ]
         });
 
@@ -34,7 +33,7 @@ impl NegateConfig {
     /// This method receives a [AssignedBlake2bWord] and a [full_number_column] where it will be
     /// copied. In the same column, the result is placed in the next row. The gate constrains the
     /// result.
-    pub fn generate_rows_from_cell<F: PrimeField>(
+    pub(crate) fn generate_rows_from_cell<F: PrimeField>(
         &self,
         region: &mut Region<F>,
         offset: &mut usize,

@@ -7,21 +7,21 @@ use blake2b_halo2::examples::circuit_runner::Blake2bCircuitInputs;
 use blake2_rfc::blake2b::blake2b;
 use hex;
 
-pub fn benchmarking_block_sizes() -> Vec<usize> {
+pub(crate) fn benchmarking_block_sizes() -> Vec<usize> {
     vec![1, 5, 10, 20, 30]
 }
 
-pub fn sample_size() -> usize {
+pub(crate) fn sample_size() -> usize {
     30
 }
 
-pub fn configure_group(group: &mut BenchmarkGroup<WallTime>) {
+pub(crate) fn configure_group(group: &mut BenchmarkGroup<WallTime>) {
     group.sampling_mode(SamplingMode::Flat);
     group.sample_size(sample_size());
     //group.measurement_time(Duration::from_secs(1000));
 }
 
-pub fn random_input_for_desired_blocks(amount_of_blocks: usize) -> Blake2bCircuitInputs {
+pub(crate) fn random_input_for_desired_blocks(amount_of_blocks: usize) -> Blake2bCircuitInputs {
     let mut rng = rand::thread_rng();
 
     let input_size = amount_of_blocks * 128;

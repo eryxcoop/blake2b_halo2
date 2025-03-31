@@ -12,7 +12,7 @@ pub struct Rotate63Config {
 }
 
 impl Rotate63Config {
-    pub fn configure<F: PrimeField>(
+    pub(crate) fn configure<F: PrimeField>(
         meta: &mut ConstraintSystem<F>,
         full_number_u64: Column<Advice>,
     ) -> Self {
@@ -43,7 +43,7 @@ impl Rotate63Config {
     /// This method receives a [AssignedBlake2bWord] and a [full_number_u64] column where it will be
     /// copied. In the same column, the result is placed in the next row. The gate constrains the
     /// result.
-    pub fn generate_rotation_rows_from_cells<F: PrimeField>(
+    pub(crate) fn generate_rotation_rows_from_cells<F: PrimeField>(
         &self,
         region: &mut Region<F>,
         offset: &mut usize,
@@ -52,7 +52,7 @@ impl Rotate63Config {
     ) -> Result<AssignedBlake2bWord<F>, Error> {
         self.q_rot63.enable(region, *offset)?;
         let result_value =
-            input.value().map(|input| auxiliar_functions::rotate_right_field_element(input, 63));
+            input.value().map(|input| rotate_right_field_element(input, 63));
 
         let result_cell = AssignedBlake2bWord(region.assign_advice(
             || "Rotate63 output",
@@ -65,7 +65,7 @@ impl Rotate63Config {
 
     /// Enforces the field's modulus to be greater than 2^65. This is necessary to preserve the
     /// soundness of a circuit that uses this operation.
-    pub fn enforce_modulus_size<F: PrimeField>() {
+    pub(crate) fn enforce_modulus_size<F: PrimeField>() {
         let modulus_bytes: Vec<u8> = hex::decode(F::MODULUS.trim_start_matches("0x"))
             .expect("Modulus is not a valid hex number");
         let modulus = BigUint::from_bytes_be(&modulus_bytes);

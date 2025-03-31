@@ -6,14 +6,14 @@ use halo2_proofs::plonk::Error;
 /// Enforces the output and key sizes.
 /// Output size must be between 1 and 64 bytes.
 /// Key size must be between 0 and 64 bytes.
-pub fn enforce_input_sizes(output_size: usize, key_size: usize) {
+pub(crate) fn enforce_input_sizes(output_size: usize, key_size: usize) {
     assert!(output_size <= 64, "Output size must be between 1 and 64 bytes");
     assert!(output_size > 0, "Output size must be between 1 and 64 bytes");
     assert!(key_size <= 64, "Key size must be between 1 and 64 bytes");
 }
 
 /// Extracts the full number cell of each of the state rows
-pub fn full_number_of_each_state_row<F: PrimeField>(
+pub(crate) fn full_number_of_each_state_row<F: PrimeField>(
     current_block_rows: [AssignedRow<F>; 16],
 ) -> [AssignedBlake2bWord<F>; 16] {
     current_block_rows.iter().map(|row| row.full_number.clone()).collect::<Vec<_>>().try_into().unwrap()
@@ -21,7 +21,7 @@ pub fn full_number_of_each_state_row<F: PrimeField>(
 
 /// The 'processed_bytes_count' is a variable in the algorithm that changes with every iteration,
 /// in each iteration we compute the new value for it.
-pub fn compute_processed_bytes_count_value_for_iteration(
+pub(crate) fn compute_processed_bytes_count_value_for_iteration(
     iteration: usize,
     is_last_block: bool,
     input_size: usize,
@@ -37,7 +37,7 @@ pub fn compute_processed_bytes_count_value_for_iteration(
 }
 
 /// Computes the edge cases in the amount of blocks to process.
-pub fn get_total_blocks_count(
+pub(crate) fn get_total_blocks_count(
     input_blocks: usize,
     is_input_empty: bool,
     is_key_empty: bool,
@@ -64,7 +64,7 @@ pub fn get_total_blocks_count(
 /// The idea is that since we decompose the state into 8 limbs, we already have the input
 /// bytes in the trace. It's just a matter of iterating the cells in the correct order and knowing
 /// which ones should equal zero. In Blake2b the padding is allways 0.
-pub fn constrain_padding_cells_to_equal_zero<F: PrimeField>(
+pub(crate) fn constrain_padding_cells_to_equal_zero<F: PrimeField>(
     region: &mut Region<F>,
     zeros_amount: usize,
     current_block_rows: &[AssignedRow<F>; 16],

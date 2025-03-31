@@ -16,7 +16,7 @@ impl LimbRotation {
     /// to be the correct rotation of the input.
     /// For this method to work, the input_row must be the last row of the trace at the moment
     /// the method is called
-    pub fn generate_rotation_rows_from_input_row<F: PrimeField>(
+    pub(crate) fn generate_rotation_rows_from_input_row<F: PrimeField>(
         &self,
         region: &mut Region<F>,
         offset: &mut usize,
@@ -59,7 +59,7 @@ impl LimbRotation {
     fn right_rotation_value(value: Value<Blake2bWord>, limbs_to_rotate: usize) -> Value<Blake2bWord> {
         value.map(|input| {
             let bits_to_rotate = limbs_to_rotate * 8;
-            auxiliar_functions::rotate_right_field_element(input, bits_to_rotate)
+            rotate_right_field_element(input, bits_to_rotate)
         })
     }
 }

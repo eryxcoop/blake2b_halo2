@@ -13,7 +13,7 @@ pub struct LimbRotationCircuit<F: PrimeField, const T: usize> {
 }
 
 impl<F: PrimeField, const T: usize> LimbRotationCircuit<F, T> {
-    pub fn new_for_trace(trace: [[Value<F>; 9]; 2]) -> Self {
+    pub(crate) fn new_for_trace(trace: [[Value<F>; 9]; 2]) -> Self {
         Self {
             _ph: PhantomData,
             trace,

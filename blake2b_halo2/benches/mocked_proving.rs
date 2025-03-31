@@ -10,7 +10,7 @@ use utils::*;
 criterion_group!(mocked_prover, benchmark_mocked_proving);
 criterion_main!(mocked_prover);
 
-pub fn benchmark_mocked_proving(c: &mut Criterion) {
+pub(crate) fn benchmark_mocked_proving(c: &mut Criterion) {
     let mut group = c.benchmark_group("optimization_comparison");
     configure_group(&mut group);
 

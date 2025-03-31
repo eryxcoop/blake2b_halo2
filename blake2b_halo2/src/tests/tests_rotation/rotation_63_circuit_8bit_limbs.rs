@@ -12,7 +12,7 @@ pub struct Rotation63Circuit8bitLimbs<F: PrimeField> {
 }
 
 impl<F: PrimeField> Rotation63Circuit8bitLimbs<F> {
-    pub fn new_for_trace(trace: [[Value<F>; 9]; 2]) -> Self {
+    pub(crate) fn new_for_trace(trace: [[Value<F>; 9]; 2]) -> Self {
         Self {
             _ph: PhantomData,
             trace,

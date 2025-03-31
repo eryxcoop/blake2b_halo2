@@ -12,7 +12,7 @@ use utils::*;
 criterion_group!(vk, benchmark_verification_key_generation);
 criterion_main!(vk);
 
-pub fn benchmark_verification_key_generation(c: &mut Criterion) {
+pub(crate) fn benchmark_verification_key_generation(c: &mut Criterion) {
     let mut group = c.benchmark_group("verification_key");
     configure_group(&mut group);
 

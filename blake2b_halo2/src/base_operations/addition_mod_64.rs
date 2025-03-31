@@ -1,7 +1,6 @@
 use super::*;
 use crate::base_operations::decompose_8::Decompose8Config;
 use crate::types::{AssignedBit, AssignedBlake2bWord, Blake2bWord};
-use auxiliar_functions::field_for;
 
 /// Config used to constrain addition mod 64-bits. It uses the [Decompose8Config] to generate
 /// a decomposed result, which will be used in one of the optimizations.
@@ -14,7 +13,7 @@ pub struct AdditionMod64Config {
 
 impl AdditionMod64Config {
     /// Creates the necessary gate for the operation to be constrained
-    pub fn configure<F: PrimeField>(
+    pub(crate) fn configure<F: PrimeField>(
         meta: &mut ConstraintSystem<F>,
         full_number_u64: Column<Advice>,
         carry: Column<Advice>,
@@ -40,8 +39,8 @@ impl AdditionMod64Config {
             vec![
                 q_add.clone()
                     * (full_number_result - full_number_x - full_number_y
-                        + carry.clone() * (Expression::Constant(field_for(1u128 << 64)))),
-                q_add * carry.clone() * (Expression::Constant(field_for(1u128)) - carry),
+                        + carry.clone() * (Expression::Constant(F::from_u128((1u128 << 64).into())))),
+                q_add * carry.clone() * (Expression::Constant(F::from_u128(1u128.into())) - carry),
             ]
         });
 
@@ -55,7 +54,7 @@ impl AdditionMod64Config {
     /// is the last cell that was generated in the circuit, by setting the [use_last_cell_as_first_operand]
     /// to [true] we can avoid copying the value of previous_cell again, and just copy the cell_to_copy.
     /// This saves one row per addition.
-    pub fn generate_addition_rows_from_cells<F: PrimeField>(
+    pub(crate) fn generate_addition_rows_from_cells<F: PrimeField>(
         &self,
         region: &mut Region<F>,
         offset: &mut usize,

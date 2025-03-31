@@ -13,7 +13,7 @@
 // |  constants   | (32, 24, 16, 63) |
 // +--------------+------------------+
 
-pub fn hex_to_bytes(hex: &str) -> Vec<u8> {
+pub(crate) fn hex_to_bytes(hex: &str) -> Vec<u8> {
     (0..hex.len())
         .step_by(2)
         .map(|i| u8::from_str_radix(&hex[i..i + 2], 16).unwrap())
@@ -74,7 +74,7 @@ impl Blake2bCtx {
 
 // Hash Function
 
-pub fn blake2b(out: &mut [u8], key: &mut [u8], input_message: &mut [u8]) -> i32 {
+pub(crate) fn blake2b(out: &mut [u8], key: &mut [u8], input_message: &mut [u8]) -> i32 {
     if out.is_empty() || out.len() > 64 || key.len() > 64 {
         panic!("Illegal input parameters")
     }

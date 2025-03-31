@@ -1,5 +1,4 @@
 use super::*;
-use crate::auxiliar_functions::*;
 use halo2_proofs::halo2curves::bn256::Fr;
 use ff::Field;
 use std::marker::PhantomData;
@@ -58,7 +57,7 @@ where
     T: Into<u128>,
     F: PrimeField,
 {
-    Value::known(field_for(number))
+    Value::known(F::from_u128(number.into()))
 }
 
 pub(crate) fn generate_row_8bits<T, F>(number: T) -> [Value<F>; 9]

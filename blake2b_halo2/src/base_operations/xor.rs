@@ -34,7 +34,7 @@ pub struct XorConfig {
 
 impl XorConfig {
     /// Method that populates the lookup table. Must be called only once in the user circuit.
-    pub fn populate_xor_lookup_table<F: PrimeField>(
+    pub(crate) fn populate_xor_lookup_table<F: PrimeField>(
         &self,
         layouter: &mut impl Layouter<F>,
     ) -> Result<(), Error> {
@@ -74,7 +74,7 @@ impl XorConfig {
     /// This method generates the xor rows in the trace. If the previous cell in the region is one
     /// of the operands, it won't be copied. Otherwise, it will be copied from the cell_to_copy,
     /// generating an extra row in the circuit.
-    pub fn generate_xor_rows_from_cells<F: PrimeField>(
+    pub(crate) fn generate_xor_rows_from_cells<F: PrimeField>(
         &self,
         region: &mut Region<F>,
         offset: &mut usize,
@@ -108,7 +108,7 @@ impl XorConfig {
         Ok(result_row)
     }
 
-    pub fn configure<F: PrimeField>(
+    pub(crate) fn configure<F: PrimeField>(
         meta: &mut ConstraintSystem<F>,
         limbs_8_bits: [Column<Advice>; 8],
         decompose: Decompose8Config,

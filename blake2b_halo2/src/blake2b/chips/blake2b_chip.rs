@@ -331,7 +331,7 @@ impl Blake2bChip {
     /// Configuration of the circuit, this includes initialization of all the necessary configs.
     /// It should be called in the configuration of the user circuit before instantiating the
     /// Blake2b gadget.
-    pub fn configure<F: PrimeField>(
+    pub(crate) fn configure<F: PrimeField>(
         meta: &mut ConstraintSystem<F>,
         full_number_u64: Column<Advice>,
         limbs: [Column<Advice>; 8],

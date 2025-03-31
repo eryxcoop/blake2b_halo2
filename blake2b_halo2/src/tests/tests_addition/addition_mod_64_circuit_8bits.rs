@@ -59,7 +59,7 @@ impl<F: PrimeField> Circuit<F> for AdditionMod64Circuit8Bits<F> {
 }
 
 impl<F: PrimeField> AdditionMod64Circuit8Bits<F> {
-    pub fn new_for_trace(trace: [[Value<F>; 9]; 3]) -> Self {
+    pub(crate) fn new_for_trace(trace: [[Value<F>; 9]; 3]) -> Self {
         Self {
             _ph: PhantomData,
             trace,

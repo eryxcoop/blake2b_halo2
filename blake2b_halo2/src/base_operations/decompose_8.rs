@@ -1,5 +1,4 @@
 use super::*;
-use crate::auxiliar_functions::{field_for};
 use crate::types::{AssignedBlake2bWord, AssignedByte, AssignedNative, AssignedRow, Blake2bWord};
 
 // [Zhiyong comment] I suggest to remove this trait and the gate of decomposition_limb_range_check. Instead, we define a gate API like:
@@ -36,7 +35,7 @@ pub struct Decompose8Config {
 impl Decompose8Config {
     /// Creates the corresponding gates and lookups to constrain range-checks and 8-limb
     /// decomposition of 64-bit numbers.
-    pub fn configure<F: PrimeField>(
+    pub(crate) fn configure<F: PrimeField>(
         meta: &mut ConstraintSystem<F>,
         // The full number and the limbs are not owned by the config.
         full_number_u64: Column<Advice>,
@@ -99,7 +98,7 @@ impl Decompose8Config {
     /// bytes in the limbs and the resulting full number in the first column. By turning on the
     /// q_decompose and q_range selectors, we ensure that each limb is in the range [0,255] and
     /// that the decomposition of the limbs is correct in relation with the full number.
-    pub fn generate_row_from_assigned_bytes<F: PrimeField>(
+    pub(crate) fn generate_row_from_assigned_bytes<F: PrimeField>(
         &self,
         region: &mut Region<F>,
         bytes: &[AssignedNative<F>; 8],
@@ -147,7 +146,7 @@ impl Decompose8Config {
     }
 
     /// Fills the [t_range] table with values in the range [0,255]
-    pub fn populate_lookup_table<F: PrimeField>(
+    pub(crate) fn populate_lookup_table<F: PrimeField>(
         &self,
         layouter: &mut impl Layouter<F>,
     ) -> Result<(), Error> {
@@ -173,7 +172,7 @@ impl Decompose8Config {
     /// to establish constraints over the result's limbs. That's why we need a way to retrieve the
     /// full row that was created from that value. An example of this could be the Generic Limb
     /// Rotation Operation, where we need to establish copy constraints over the rotated limbs.
-    pub fn generate_row_from_value_and_keep_row<F: PrimeField>(
+    pub(crate) fn generate_row_from_value_and_keep_row<F: PrimeField>(
         &self,
         region: &mut Region<F>,
         value: Value<F>,
@@ -199,12 +198,15 @@ impl Decompose8Config {
 
     /// Given a value and a limb index, it returns the value of the limb
     fn get_limb_from<F: PrimeField>(value: Value<F>, limb_number: usize) -> Value<F> {
-        value.map(|v| field_for(Self::get_limb_from_field(v, limb_number)))
+        value.map(|v| {
+            let number = Self::get_limb_from_field(v, limb_number);
+            F::from_u128(number.into())
+        })
     }
 
     /// Given a value of 64 bits, it generates a row with the assigned cells for the full number
     /// and the limbs, and returns the full number
-    pub fn generate_row_from_value<F: PrimeField>(
+    pub(crate) fn generate_row_from_value<F: PrimeField>(
         &self,
         region: &mut Region<F>,
         value: Value<Blake2bWord>,
@@ -219,7 +221,7 @@ impl Decompose8Config {
 
     /// Given a cell with a 64-bit value, it creates a new row with the copied full number and the
     /// decomposition in 8-bit limbs.
-    pub fn generate_row_from_cell<F: PrimeField>(
+    pub(crate) fn generate_row_from_cell<F: PrimeField>(
         &self,
         region: &mut Region<F>,
         cell: &AssignedBlake2bWord<F>,

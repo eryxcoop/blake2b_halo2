@@ -10,7 +10,7 @@ struct TestCase {
     out: String,
 }
 
-pub fn run_test(input: &String, key: &String, expected: &String) {
+pub(crate) fn run_test(input: &String, key: &String, expected: &String) {
     CircuitRunner::mocked_preprocess_inputs_synthesize_prove_and_verify(input, key, expected);
 }
 

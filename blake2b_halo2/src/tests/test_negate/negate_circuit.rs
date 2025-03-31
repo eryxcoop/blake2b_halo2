@@ -96,7 +96,7 @@ impl<F: PrimeField> Circuit<F> for NegateCircuit<F> {
 }
 
 impl<F: PrimeField> NegateCircuit<F> {
-    pub fn new_for(value: Value<Blake2bWord>, expected_result: Value<Blake2bWord>) -> Self {
+    pub(crate) fn new_for(value: Value<Blake2bWord>, expected_result: Value<Blake2bWord>) -> Self {
         Self {
             _ph: PhantomData,
             value,
