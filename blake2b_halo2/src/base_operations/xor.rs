@@ -142,8 +142,4 @@ impl XorConfig {
             decompose
         }
     }
-
-    pub fn unknown_trace<F: PrimeField>() -> [[Value<F>; 9]; 3] {
-        [[Value::unknown(); 9]; 3]
-    }
 }

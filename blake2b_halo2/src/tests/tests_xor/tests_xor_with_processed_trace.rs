@@ -1,5 +1,4 @@
 use super::*;
-use crate::auxiliar_functions::value_for;
 use crate::tests::tests_xor::xor_circuit::XorCircuit;
 use halo2_proofs::dev::MockProver;
 use rand::Rng;

@@ -17,11 +17,11 @@ use halo2_proofs::utils::rational::Rational;
 /// So everytime you see an AssignedByte, AssignedBlake2bWord or AssignedRow, you can be certain
 /// that all their values were range checked
 
-pub type AssignedNative<F> = AssignedCell<F, F>;
+pub(crate) type AssignedNative<F> = AssignedCell<F, F>;
 
 /// The inner type of AssignedByte. A wrapper around `u8`
 #[derive(Copy, Clone, Debug)]
-pub struct Byte(pub u8);
+struct Byte(pub u8);
 
 impl Byte {
     fn new_from_field<F: PrimeField>(field: F) -> Self {
@@ -33,7 +33,7 @@ impl Byte {
 }
 /// The inner type of AssignedBlake2bWord. A wrapper around `u64`
 #[derive(Copy, Clone, Debug)]
-pub struct Blake2bWord(pub u64);
+pub(crate) struct Blake2bWord(pub u64);
 
 impl From<u128> for Blake2bWord {
     fn from(value: u128) -> Self {
@@ -66,10 +66,10 @@ impl<F: PrimeField> From<&Bit> for Rational<F> {
 /// without using the designated entry points, which guarantee (with
 /// constraints) that the assigned value is indeed in the range [0, 256).
 #[derive(Clone, Debug)]
-pub struct AssignedByte<F: PrimeField>(AssignedCell<Byte, F>);
+pub(crate) struct AssignedByte<F: PrimeField>(AssignedCell<Byte, F>);
 
 impl<F: PrimeField> AssignedByte<F> {
-    pub fn copy_advice_byte_from_native(
+    pub(crate) fn copy_advice_byte_from_native(
         region: &mut Region<F>,
         annotation: &str,
         column: Column<Advice>,
@@ -88,7 +88,7 @@ impl<F: PrimeField> AssignedByte<F> {
         Ok(assigned_byte)
     }
 
-    pub fn copy_advice_byte(
+    pub(crate) fn copy_advice_byte(
         region: &mut Region<F>,
         annotation: &str,
         column: Column<Advice>,
@@ -107,7 +107,7 @@ impl<F: PrimeField> AssignedByte<F> {
         Ok(assigned_byte)
     }
 
-    pub fn assign_advice_byte(
+    pub(crate) fn assign_advice_byte(
         region: &mut Region<F>,
         annotation: &str,
         column: Column<Advice>,
@@ -123,14 +123,14 @@ impl<F: PrimeField> AssignedByte<F> {
         Ok(assigned_byte)
     }
 
-    pub fn cell(&self) -> Cell {
+    pub(crate) fn cell(&self) -> Cell {
         self.0.cell()
     }
 }
 
 /// The inner type of AssignedBit. A wrapper around `bool`
 #[derive(Copy, Clone, Debug)]
-pub struct Bit(pub bool);
+pub(crate) struct Bit(pub bool);
 
 impl Bit {
     fn new_from_field<F: PrimeField>(field: F) -> Self {
@@ -147,10 +147,10 @@ impl Bit {
 /// carry value is 0 or 1
 #[derive(Clone, Debug)]
 #[must_use]
-pub struct AssignedBit<F: PrimeField>(pub AssignedCell<Bit, F>);
+pub(crate) struct AssignedBit<F: PrimeField>(pub AssignedCell<Bit, F>);
 
 impl<F: PrimeField> AssignedBit<F> {
-    pub fn assign_advice_bit(
+    pub(crate) fn assign_advice_bit(
         region: &mut Region<F>,
         annotation: &str,
         column: Column<Advice>,
@@ -169,11 +169,11 @@ impl<F: PrimeField> AssignedBit<F> {
 
 #[derive(Clone, Debug)]
 #[must_use]
-pub struct AssignedBlake2bWord<F: PrimeField>(pub AssignedCell<Blake2bWord, F>);
+pub(crate) struct AssignedBlake2bWord<F: PrimeField>(pub AssignedCell<Blake2bWord, F>);
 
 impl<F: PrimeField> AssignedBlake2bWord<F> {
 
-    pub fn assign_advice_word(
+    pub(crate) fn assign_advice_word(
         region: &mut Region<F>,
         annotation: &str,
         column: Column<Advice>,
@@ -195,7 +195,7 @@ impl<F: PrimeField> AssignedBlake2bWord<F> {
         Ok(assigned_byte)
     }
 
-    pub fn assign_fixed_word(
+    pub(crate) fn assign_fixed_word(
         region: &mut Region<F>,
         annotation: &str,
         column: Column<Advice>,
@@ -206,16 +206,16 @@ impl<F: PrimeField> AssignedBlake2bWord<F> {
         Ok(Self(result))
     }
 
-    pub fn value(&self) -> Value<Blake2bWord> {
+    pub(crate) fn value(&self) -> Value<Blake2bWord> {
         self.0.value().cloned()
     }
 
-    pub fn cell(&self) -> Cell {
+    pub(crate) fn cell(&self) -> Cell {
         self.0.cell()
     }
 }
 
-pub fn fe_to_big<F: PrimeField>(fe: F) -> BigUint {
+fn fe_to_big<F: PrimeField>(fe: F) -> BigUint {
     BigUint::from_bytes_le(fe.to_repr().as_ref())
 }
 
@@ -226,13 +226,13 @@ pub fn fe_to_big<F: PrimeField>(fe: F) -> BigUint {
 /// Where full_number is a Blake2bWord (64 bits) and the limbs constitute the little endian repr
 ///of the full_number (each limb is an AssignedByte)
 #[derive(Debug)]
-pub struct AssignedRow<F: PrimeField> {
+pub(crate) struct AssignedRow<F: PrimeField> {
     pub full_number: AssignedBlake2bWord<F>,
     pub limbs: [AssignedByte<F>; 8],
 }
 
 impl<F: PrimeField> AssignedRow<F> {
-    pub fn new(full_number: AssignedBlake2bWord<F>, limbs: [AssignedByte<F>; 8]) -> Self {
+    pub(crate) fn new(full_number: AssignedBlake2bWord<F>, limbs: [AssignedByte<F>; 8]) -> Self {
         Self { full_number, limbs }
     }
 }

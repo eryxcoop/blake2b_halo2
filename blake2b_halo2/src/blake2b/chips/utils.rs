@@ -12,18 +12,6 @@ pub fn enforce_input_sizes(output_size: usize, key_size: usize) {
     assert!(key_size <= 64, "Key size must be between 1 and 64 bytes");
 }
 
-/// Sets copy constraints to the part of the state that is copied from iv_constants.
-pub fn constrain_initial_state<F: PrimeField>(
-    region: &mut Region<F>,
-    global_state: &[AssignedBlake2bWord<F>; 8],
-    iv_constant_cells: &[AssignedBlake2bWord<F>; 8],
-) -> Result<(), Error> {
-    for i in 0..8 {
-        region.constrain_equal(iv_constant_cells[i].cell(), global_state[i].cell())?;
-    }
-    Ok(())
-}
-
 /// Extracts the full number cell of each of the state rows
 pub fn full_number_of_each_state_row<F: PrimeField>(
     current_block_rows: [AssignedRow<F>; 16],

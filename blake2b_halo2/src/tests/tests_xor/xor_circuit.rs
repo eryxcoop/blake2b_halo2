@@ -34,7 +34,7 @@ impl<F: PrimeField> Circuit<F> for XorCircuit<F> {
     fn without_witnesses(&self) -> Self {
         Self {
             _ph: PhantomData,
-            trace: XorConfig::unknown_trace(),
+            trace: [[Value::unknown(); 9]; 3],
         }
     }
 
