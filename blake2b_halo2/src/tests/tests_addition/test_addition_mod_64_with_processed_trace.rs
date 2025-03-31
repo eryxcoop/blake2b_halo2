@@ -1,4 +1,4 @@
-use crate::auxiliar_functions::{generate_row_8bits, trash, value_for, zero};
+use crate::auxiliar_functions::{generate_row_8bits, value_for, zero};
 use crate::tests::tests_addition::addition_mod_64_circuit_8bits::AdditionMod64Circuit8Bits;
 use halo2_proofs::dev::MockProver;
 use halo2_proofs::halo2curves::bn256::Fr;
@@ -6,9 +6,12 @@ use rand::Rng;
 
 #[test]
 fn test_positive_addition_with_0() {
+    // This value is used to assigned in cells where the value is not relevant for the circuit
+    // it is zero, but it could be any value
+    let unconstrained_value = zero();
     let trace = [
         [zero(), zero(), zero(), zero(), zero(), zero(), zero(), zero(), zero()],
-        [value_for(42u64), zero(), trash(), trash(), trash(), trash(), trash(), trash(), trash()],
+        [value_for(42u64), zero(), unconstrained_value, unconstrained_value, unconstrained_value, unconstrained_value, unconstrained_value, unconstrained_value, unconstrained_value],
         [value_for(42u64), value_for(42u64), zero(), zero(), zero(), zero(), zero(), zero(), zero()],
     ];
     let circuit = AdditionMod64Circuit8Bits::<Fr>::new_for_trace(trace);
@@ -17,7 +20,7 @@ fn test_positive_addition_with_0() {
 
     let trace = [
         [value_for(42u64), zero(), zero(), zero(), zero(), zero(), zero(), zero(), zero()],
-        [zero(), zero(), trash(), trash(), trash(), trash(), trash(), trash(), trash()],
+        [zero(), zero(), unconstrained_value, unconstrained_value, unconstrained_value, unconstrained_value, unconstrained_value, unconstrained_value, unconstrained_value],
         [value_for(42u64), value_for(42u64), zero(), zero(), zero(), zero(), zero(), zero(), zero()],
     ];
     let circuit = AdditionMod64Circuit8Bits::<Fr>::new_for_trace(trace);
