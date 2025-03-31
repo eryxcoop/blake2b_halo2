@@ -348,7 +348,7 @@ impl Blake2bChip {
         /// Config that is optimization-specific
         /// For the carry column we'll reuse the first limb column for optimization reasons
         let addition_config = AdditionMod64Config::configure(meta, full_number_u64, limbs[0], decompose_8_config.clone());
-        let xor_config = XorConfig::configure(meta, limbs);
+        let xor_config = XorConfig::configure(meta, limbs, decompose_8_config.clone());
 
         Self {
             addition_config,
@@ -421,7 +421,6 @@ impl Blake2bChip {
             offset,
             lhs,
             rhs,
-            &self.decompose_8_config,
             false,
         )
     }
@@ -541,8 +540,7 @@ impl Blake2bChip {
             offset,
             previous_cell,
             cell_to_copy,
-            &self.decompose_8_config,
-            true, // Uses the optimization
+            true,
         )
     }
 

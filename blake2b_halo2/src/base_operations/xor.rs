@@ -27,6 +27,9 @@ pub struct XorConfig {
 
     /// Selector for the xor gate
     pub q_xor: Selector,
+
+    /// Decomposition
+    decompose: Decompose8Config
 }
 
 impl XorConfig {
@@ -77,7 +80,6 @@ impl XorConfig {
         offset: &mut usize,
         previous_cell: &AssignedBlake2bWord<F>,
         cell_to_copy: &AssignedBlake2bWord<F>,
-        decompose_8_config: &Decompose8Config,
         use_previous_cell: bool,
     ) -> Result<AssignedRow<F>, Error> {
         let difference_offset = if use_previous_cell { 1 } else { 0 };
@@ -88,15 +90,15 @@ impl XorConfig {
             .zip(cell_to_copy.value())
             .map(|(v0, v1)| auxiliar_functions::xor_words(v0, v1));
 
-        decompose_8_config.generate_row_from_cell(region, cell_to_copy, *offset)?;
+        self.decompose.generate_row_from_cell(region, cell_to_copy, *offset)?;
         *offset += 1;
 
         if !use_previous_cell {
-            decompose_8_config.generate_row_from_cell(region, previous_cell, *offset)?;
+            self.decompose.generate_row_from_cell(region, previous_cell, *offset)?;
             *offset += 1;
         }
 
-        let result_row = decompose_8_config.generate_row_from_value_and_keep_row(
+        let result_row = self.decompose.generate_row_from_value_and_keep_row(
             region,
             result_value.and_then(|word| Value::known(F::from(word.0))),
             *offset,
@@ -109,6 +111,7 @@ impl XorConfig {
     pub fn configure<F: PrimeField>(
         meta: &mut ConstraintSystem<F>,
         limbs_8_bits: [Column<Advice>; 8],
+        decompose: Decompose8Config,
     ) -> Self {
         let q_xor = meta.complex_selector();
         let t_xor_left = meta.lookup_table_column();
@@ -136,6 +139,7 @@ impl XorConfig {
             t_xor_right,
             t_xor_out,
             q_xor,
+            decompose
         }
     }
 

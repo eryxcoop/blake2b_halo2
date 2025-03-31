@@ -43,7 +43,7 @@ impl<F: PrimeField> Circuit<F> for XorCircuit<F> {
         let limbs_8_bits: [Column<Advice>; 8] = array::from_fn(|_| meta.advice_column());
 
         let decompose_8_config = Decompose8Config::configure(meta, full_number_u64, limbs_8_bits);
-        let xor_config = XorConfig::configure(meta, limbs_8_bits);
+        let xor_config = XorConfig::configure(meta, limbs_8_bits, decompose_8_config.clone());
 
         Self::Config {
             _ph: PhantomData,
