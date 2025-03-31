@@ -4,17 +4,13 @@ use crate::types::{AssignedBlake2bWord, AssignedByte, AssignedRow, Blake2bWord};
 use ff::PrimeField;
 use halo2_proofs::circuit::Value;
 
+
+/// This gate rotates the limbs of a number to the right and uses copy constrains to ensure that
+/// the rotation is correct. It's used in our circuit to implement 16-bit, 24-bit and 32-bit rotations.
 #[derive(Default, Clone, Debug)]
 pub struct LimbRotation;
 
-/// This config does not have a gate. It only rotates the limbs of a number to the right and
-/// uses copy constrains to ensure that the rotation is correct.
-/// This config is used in our circuit to implement 16-bit, 24-bit and 32-bit rotations.
 impl LimbRotation {
-    pub fn unknown_trace<F: PrimeField>() -> [[Value<F>; 9]; 2] {
-        [[Value::unknown(); 9]; 2]
-    }
-
     /// This method receives a row of cells, and rotates the limbs to the right by the number
     /// specified in the limbs_to_rotate_to_the_right parameter. It then constrains the output
     /// to be the correct rotation of the input.

@@ -28,7 +28,7 @@ impl<F: PrimeField, const T: usize> Circuit<F> for LimbRotationCircuit<F, T> {
     fn without_witnesses(&self) -> Self {
         Self {
             _ph: PhantomData,
-            trace: LimbRotation::unknown_trace(),
+            trace: [[Value::unknown(); 9]; 2],
         }
     }
 
