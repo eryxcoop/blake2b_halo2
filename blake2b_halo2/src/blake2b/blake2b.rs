@@ -43,8 +43,7 @@ impl<C: Blake2bInstructions> Blake2b<C> {
     ) -> Result<[AssignedByte<F>; 64], Error> {
         enforce_input_sizes(output_size, key.len());
         /// All the computation is performed inside a single region
-        // [inigo] Which optimisations could not be applied if we split this into different regions, e.g.
-        // one per compression round?
+        // TODO: experiment with a region per Mix of Compress, instead of a single region
         layouter.assign_region(
             || "single region",
             |mut region| {

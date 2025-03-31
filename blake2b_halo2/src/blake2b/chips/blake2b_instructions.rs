@@ -4,7 +4,8 @@ use ff::PrimeField;
 use halo2_proofs::circuit::{Layouter, Region};
 use halo2_proofs::plonk::Error;
 
-/// This is the trait that groups the Blake2b implementation chips.
+/// This is the trait that groups the Blake2b implementation chips. Every Blake2b chip
+/// should implement this trait.
 pub trait Blake2bInstructions: Clone {
     /// Populate all lookup tables needed for the chip
     fn populate_lookup_tables<F: PrimeField>(
@@ -12,7 +13,9 @@ pub trait Blake2bInstructions: Clone {
         layouter: &mut impl Layouter<F>,
     ) -> Result<(), Error>;
 
-    /// Assign all the constants at the beginning
+    /// Assign initializations constants at the beginning. These constants are the initialization
+    /// vector (IV) constants, the zero constant and a constant computed from the key and output
+    /// lengths that is used for the initial state of the rounds.
     fn assign_constant_advice_cells<F: PrimeField>(
         &self,
         output_size: usize,
@@ -34,6 +37,7 @@ pub trait Blake2bInstructions: Clone {
     /// The global state corresponds to 8 cells containing 64-bit numbers, which are updated when
     /// some of those words change. A change in a state value is represented by changing the cell
     /// that represent that particular word in the state.
+    /// The return bytes of this function are the digest of the Blake2b computation.
     #[allow(clippy::too_many_arguments)]
     fn perform_blake2b_iterations<F: PrimeField>(
         &self,
@@ -46,8 +50,9 @@ pub trait Blake2bInstructions: Clone {
         zero_constant_cell: AssignedNative<F>,
     ) -> Result<[AssignedByte<F>; 64], Error>;
 
-    /// This method computes a compression round of Blake2b. If the algorithm is in its last round,
-    /// the is_last_block parameter should be set to true.
+    /// This method computes a compression round of Blake2b. The global state is update through
+    /// consecutive calls of this method. If the algorithm is in its last round, the is_last_block
+    /// parameter should be set to true.
     #[allow(clippy::too_many_arguments)]
     fn compress<F: PrimeField>(
         &self,
@@ -61,7 +66,7 @@ pub trait Blake2bInstructions: Clone {
     ) -> Result<[AssignedByte<F>; 64], Error>;
 
     /// This method computes a single round of mixing for the Blake2b algorithm.
-    /// One round of compress has 96 mixing rounds
+    /// One round of compress has 96 mixing rounds.
     fn mix<F: PrimeField>(
         &self,
         state_indexes: [usize; 4],
@@ -74,7 +79,9 @@ pub trait Blake2bInstructions: Clone {
 
 
     /// This is the part where the inputs/key are organized inside the trace. Each iteration
-    /// processes 128 bytes, or as we represent them: 16 words of 64 bits.
+    /// processes 128 bytes, or as we represent them: 16 words of 64 bits. Here is also where
+    /// padding is applied, that's why the method needs data like if this is the last block,
+    /// or if it's the block holding the key.
     #[allow(clippy::too_many_arguments)]
     fn build_current_block_rows<F: PrimeField>(
         &self,
