@@ -51,14 +51,14 @@ impl Rotate63Config {
         full_number_u64: Column<Advice>,
     ) -> Result<AssignedBlake2bWord<F>, Error> {
         self.q_rot63.enable(region, *offset)?;
-        let result_value =
-            input.value().map(|input| rotate_right_field_element(input, 63));
+        let result_value = input.value().map(|input| rotate_right_field_element(input, 63));
 
         let result_cell = AssignedBlake2bWord(region.assign_advice(
             || "Rotate63 output",
             full_number_u64,
             *offset,
-            || result_value)?);
+            || result_value,
+        )?);
         *offset += 1;
         Ok(result_cell)
     }

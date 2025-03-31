@@ -19,12 +19,7 @@ pub fn benchmark_verification(c: &mut Criterion) {
     for amount_of_blocks in benchmarking_block_sizes() {
         group.throughput(Throughput::Bytes(amount_of_blocks as u64));
 
-        benchmark_verification_iteration(
-            &params,
-            &mut group,
-            amount_of_blocks,
-            "opt_recycle",
-        );
+        benchmark_verification_iteration(&params, &mut group, amount_of_blocks, "opt_recycle");
     }
     group.finish()
 }

@@ -19,12 +19,7 @@ pub fn benchmark_proof_generation(c: &mut Criterion) {
     for amount_of_blocks in benchmarking_block_sizes() {
         group.throughput(Throughput::Bytes(amount_of_blocks as u64));
 
-        benchmark_proof(
-            &params,
-            &mut group,
-            amount_of_blocks,
-            "opt_recycle",
-        );
+        benchmark_proof(&params, &mut group, amount_of_blocks, "opt_recycle");
     }
     group.finish()
 }

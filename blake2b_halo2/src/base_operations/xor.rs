@@ -29,7 +29,7 @@ pub(crate) struct XorConfig {
     pub q_xor: Selector,
 
     /// Decomposition
-    decompose: Decompose8Config
+    decompose: Decompose8Config,
 }
 
 impl XorConfig {
@@ -139,7 +139,7 @@ impl XorConfig {
             t_xor_right,
             t_xor_out,
             q_xor,
-            decompose
+            decompose,
         }
     }
 }

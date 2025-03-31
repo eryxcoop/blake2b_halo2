@@ -19,7 +19,7 @@ pub(crate) struct NegateCircuitConfig<F: PrimeField> {
     negate_config: NegateConfig,
     decompose_8_config: Decompose8Config,
     fixed_result: Column<Fixed>,
-    full_number_u64: Column<Advice>
+    full_number_u64: Column<Advice>,
 }
 
 impl<F: PrimeField> Circuit<F> for NegateCircuit<F> {
@@ -51,7 +51,7 @@ impl<F: PrimeField> Circuit<F> for NegateCircuit<F> {
             negate_config,
             decompose_8_config,
             fixed_result,
-            full_number_u64
+            full_number_u64,
         }
     }
 

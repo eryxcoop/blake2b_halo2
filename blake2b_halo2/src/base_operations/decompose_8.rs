@@ -9,7 +9,6 @@ use crate::types::{AssignedBlake2bWord, AssignedByte, AssignedNative, AssignedRo
 // for flexibity of the assignment (without enabling the gates) and making each gates complete (you should include all needed
 // columns and constraints, not only the extra ones)
 
-
 /// This config handles the decomposition of 64-bit numbers into 8-bit limbs in the trace,
 /// where each limbs is range checked regarding the designated limb size.
 /// T is the amount of limbs that the number will be decomposed into.
@@ -75,7 +74,7 @@ impl Decompose8Config {
             limbs,
             q_decompose,
             t_range,
-            q_range
+            q_range,
         }
     }
 
@@ -113,7 +112,8 @@ impl Decompose8Config {
             "full number",
             self.full_number_u64,
             offset,
-            Self::compute_full_value_u64_from_bytes(bytes))?;
+            Self::compute_full_value_u64_from_bytes(bytes),
+        )?;
 
         let mut limbs = vec![];
 
@@ -124,7 +124,8 @@ impl Decompose8Config {
                 "Copied input byte",
                 self.limbs[index],
                 offset,
-                byte_cell.clone())?;
+                byte_cell.clone(),
+            )?;
             limbs.push(assigned_byte)
         }
 
@@ -132,7 +133,9 @@ impl Decompose8Config {
     }
 
     /// Given a list of limb values, it returns the full number value that the limbs build up to.
-    fn compute_full_value_u64_from_bytes<F: PrimeField>(bytes: &[AssignedNative<F>; 8]) -> Value<F> {
+    fn compute_full_value_u64_from_bytes<F: PrimeField>(
+        bytes: &[AssignedNative<F>; 8],
+    ) -> Value<F> {
         let mut full_number = F::ZERO;
         // We process the limbs from the most significant to the least significant
         for byte_cell in bytes.iter().rev() {
@@ -180,19 +183,32 @@ impl Decompose8Config {
         self.q_decompose.enable(region, offset)?;
         self.q_range.enable(region, offset)?;
         let full_number_cell = AssignedBlake2bWord::assign_advice_word(
-            region,"full number", self.full_number_u64, offset, value)?;
+            region,
+            "full number",
+            self.full_number_u64,
+            offset,
+            value,
+        )?;
 
         let limbs: [Value<F>; 8] =
             (0..8).map(|i| Self::get_limb_from(value, i)).collect::<Vec<_>>().try_into().unwrap();
 
-        let assigned_limbs: Vec<AssignedByte<F>> = limbs.iter().enumerate().map(|(i, limb)|{
-            AssignedByte::assign_advice_byte(region,"limb", self.limbs[i], offset, limb.clone()).unwrap()
-        }).collect::<Vec<_>>();
+        let assigned_limbs: Vec<AssignedByte<F>> = limbs
+            .iter()
+            .enumerate()
+            .map(|(i, limb)| {
+                AssignedByte::assign_advice_byte(
+                    region,
+                    "limb",
+                    self.limbs[i],
+                    offset,
+                    limb.clone(),
+                )
+                .unwrap()
+            })
+            .collect::<Vec<_>>();
 
-        Ok(AssignedRow::new(
-            full_number_cell,
-            assigned_limbs.try_into().unwrap()
-        ))
+        Ok(AssignedRow::new(full_number_cell, assigned_limbs.try_into().unwrap()))
     }
 
     /// Given a value and a limb index, it returns the value of the limb
@@ -211,7 +227,8 @@ impl Decompose8Config {
         value: Value<Blake2bWord>,
         offset: usize,
     ) -> Result<AssignedBlake2bWord<F>, Error> {
-        let new_row = self.generate_row_from_value_and_keep_row(region, value.map(|v| F::from(v.0)), offset)?;
+        let new_row =
+            self.generate_row_from_value_and_keep_row(region, value.map(|v| F::from(v.0)), offset)?;
         let full_number_cell = new_row.full_number;
         Ok(full_number_cell)
     }
@@ -225,8 +242,8 @@ impl Decompose8Config {
         offset: usize,
     ) -> Result<(), Error> {
         let value = cell.value();
-        let new_cells = self.generate_row_from_value_and_keep_row(
-            region, value.map(|v| F::from(v.0)), offset)?;
+        let new_cells =
+            self.generate_row_from_value_and_keep_row(region, value.map(|v| F::from(v.0)), offset)?;
         region.constrain_equal(cell.cell(), new_cells.full_number.cell())
     }
 

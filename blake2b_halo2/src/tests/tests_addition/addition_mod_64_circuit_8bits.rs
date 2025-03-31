@@ -34,7 +34,12 @@ impl<F: PrimeField> Circuit<F> for AdditionMod64Circuit8Bits<F> {
 
         let decompose_8_config = Decompose8Config::configure(meta, full_number_u64, limbs);
 
-        let sum_8bits_config = AdditionMod64Config::configure(meta, full_number_u64, limbs[0], decompose_8_config.clone());
+        let sum_8bits_config = AdditionMod64Config::configure(
+            meta,
+            full_number_u64,
+            limbs[0],
+            decompose_8_config.clone(),
+        );
 
         Self::Config {
             _ph: PhantomData,
@@ -50,10 +55,7 @@ impl<F: PrimeField> Circuit<F> for AdditionMod64Circuit8Bits<F> {
         mut layouter: impl Layouter<F>,
     ) -> Result<(), Error> {
         config.decompose_8_config.populate_lookup_table(&mut layouter)?;
-        config.sum_8bits_config.populate_addition_rows(
-            &mut layouter,
-            self.trace,
-        )?;
+        config.sum_8bits_config.populate_addition_rows(&mut layouter, self.trace)?;
         Ok(())
     }
 }

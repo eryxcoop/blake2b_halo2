@@ -23,7 +23,10 @@ impl NegateConfig {
             let not_value = meta.query_advice(full_number_u64, Rotation(1));
 
             vec![
-                q_negate * (Expression::Constant(F::from_u128(((1u128 << 64) - 1).into())) - value - not_value),
+                q_negate
+                    * (Expression::Constant(F::from_u128(((1u128 << 64) - 1).into()))
+                        - value
+                        - not_value),
             ]
         });
 
@@ -44,13 +47,14 @@ impl NegateConfig {
         input.0.copy_advice(|| "Negation input", region, full_number_column, *offset)?;
         *offset += 1;
 
-        let result_value: Value<Blake2bWord> = input.value().map(|input| Blake2bWord(((1u128 << 64) - 1) as u64 - input.0));
+        let result_value: Value<Blake2bWord> =
+            input.value().map(|input| Blake2bWord(((1u128 << 64) - 1) as u64 - input.0));
 
         let result_cell = AssignedBlake2bWord(region.assign_advice(
             || "Negation output",
             full_number_column,
             *offset,
-            || result_value
+            || result_value,
         )?);
 
         *offset += 1;

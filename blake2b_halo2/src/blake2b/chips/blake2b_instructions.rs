@@ -81,7 +81,6 @@ pub trait Blake2bInstructions: Clone {
         offset: &mut usize,
     ) -> Result<(), Error>;
 
-
     /// This is the part where the inputs/key are organized inside the trace. Each iteration
     /// processes 128 bytes, or as we represent them: 16 words of 64 bits. Here is also where
     /// padding is applied, that's why the method needs data like if this is the last block,

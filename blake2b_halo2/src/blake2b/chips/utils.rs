@@ -16,7 +16,12 @@ pub(crate) fn enforce_input_sizes(output_size: usize, key_size: usize) {
 pub(crate) fn full_number_of_each_state_row<F: PrimeField>(
     current_block_rows: [AssignedRow<F>; 16],
 ) -> [AssignedBlake2bWord<F>; 16] {
-    current_block_rows.iter().map(|row| row.full_number.clone()).collect::<Vec<_>>().try_into().unwrap()
+    current_block_rows
+        .iter()
+        .map(|row| row.full_number.clone())
+        .collect::<Vec<_>>()
+        .try_into()
+        .unwrap()
 }
 
 /// The 'processed_bytes_count' is a variable in the algorithm that changes with every iteration,

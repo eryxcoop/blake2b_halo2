@@ -11,8 +11,28 @@ fn test_positive_addition_with_0() {
     let unconstrained_value = zero();
     let trace = [
         [zero(), zero(), zero(), zero(), zero(), zero(), zero(), zero(), zero()],
-        [value_for(42u64), zero(), unconstrained_value, unconstrained_value, unconstrained_value, unconstrained_value, unconstrained_value, unconstrained_value, unconstrained_value],
-        [value_for(42u64), value_for(42u64), zero(), zero(), zero(), zero(), zero(), zero(), zero()],
+        [
+            value_for(42u64),
+            zero(),
+            unconstrained_value,
+            unconstrained_value,
+            unconstrained_value,
+            unconstrained_value,
+            unconstrained_value,
+            unconstrained_value,
+            unconstrained_value,
+        ],
+        [
+            value_for(42u64),
+            value_for(42u64),
+            zero(),
+            zero(),
+            zero(),
+            zero(),
+            zero(),
+            zero(),
+            zero(),
+        ],
     ];
     let circuit = AdditionMod64Circuit8Bits::<Fr>::new_for_trace(trace);
     let prover = MockProver::run(17, &circuit, vec![]).unwrap();
@@ -20,8 +40,28 @@ fn test_positive_addition_with_0() {
 
     let trace = [
         [value_for(42u64), zero(), zero(), zero(), zero(), zero(), zero(), zero(), zero()],
-        [zero(), zero(), unconstrained_value, unconstrained_value, unconstrained_value, unconstrained_value, unconstrained_value, unconstrained_value, unconstrained_value],
-        [value_for(42u64), value_for(42u64), zero(), zero(), zero(), zero(), zero(), zero(), zero()],
+        [
+            zero(),
+            zero(),
+            unconstrained_value,
+            unconstrained_value,
+            unconstrained_value,
+            unconstrained_value,
+            unconstrained_value,
+            unconstrained_value,
+            unconstrained_value,
+        ],
+        [
+            value_for(42u64),
+            value_for(42u64),
+            zero(),
+            zero(),
+            zero(),
+            zero(),
+            zero(),
+            zero(),
+            zero(),
+        ],
     ];
     let circuit = AdditionMod64Circuit8Bits::<Fr>::new_for_trace(trace);
     let prover = MockProver::run(17, &circuit, vec![]).unwrap();

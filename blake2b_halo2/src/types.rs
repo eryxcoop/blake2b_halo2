@@ -74,14 +74,13 @@ impl<F: PrimeField> AssignedByte<F> {
         annotation: &str,
         column: Column<Advice>,
         offset: usize,
-        cell_to_copy: AssignedNative<F>
+        cell_to_copy: AssignedNative<F>,
     ) -> Result<Self, Error> {
         // Check value is in range
-        let byte_value = cell_to_copy.value().map(|v| {
-            Byte::new_from_field(*v)
-        });
+        let byte_value = cell_to_copy.value().map(|v| Byte::new_from_field(*v));
         // Create AssignedCell with the same value but different type
-        let assigned_byte = Self(region.assign_advice(|| annotation, column, offset, || byte_value)?);
+        let assigned_byte =
+            Self(region.assign_advice(|| annotation, column, offset, || byte_value)?);
         // Constrain cells have equal values
         region.constrain_equal(cell_to_copy.cell(), assigned_byte.cell())?;
 
@@ -93,14 +92,13 @@ impl<F: PrimeField> AssignedByte<F> {
         annotation: &str,
         column: Column<Advice>,
         offset: usize,
-        cell_to_copy: AssignedByte<F>
+        cell_to_copy: AssignedByte<F>,
     ) -> Result<Self, Error> {
         // Check value is in range
-        let byte_value = cell_to_copy.0.value().map(|v| {
-            Byte(v.0)
-        });
+        let byte_value = cell_to_copy.0.value().map(|v| Byte(v.0));
         // Create AssignedCell with the same value but different type
-        let assigned_byte = Self(region.assign_advice(|| annotation, column, offset, || byte_value)?);
+        let assigned_byte =
+            Self(region.assign_advice(|| annotation, column, offset, || byte_value)?);
         // Constrain cells have equal values
         region.constrain_equal(cell_to_copy.cell(), assigned_byte.cell())?;
 
@@ -112,14 +110,13 @@ impl<F: PrimeField> AssignedByte<F> {
         annotation: &str,
         column: Column<Advice>,
         offset: usize,
-        value: Value<F>
+        value: Value<F>,
     ) -> Result<Self, Error> {
         // Check value is in range
-        let byte_value = value.map(|v| {
-            Byte::new_from_field(v)
-        });
+        let byte_value = value.map(|v| Byte::new_from_field(v));
         // Create AssignedCell with the same value but different type
-        let assigned_byte = Self(region.assign_advice(|| annotation, column, offset, || byte_value)?);
+        let assigned_byte =
+            Self(region.assign_advice(|| annotation, column, offset, || byte_value)?);
         Ok(assigned_byte)
     }
 
@@ -155,14 +152,13 @@ impl<F: PrimeField> AssignedBit<F> {
         annotation: &str,
         column: Column<Advice>,
         offset: usize,
-        value: Value<F>
+        value: Value<F>,
     ) -> Result<Self, Error> {
         // Check value is in range
-        let bit_value = value.map(|v| {
-            Bit::new_from_field(v)
-        });
+        let bit_value = value.map(|v| Bit::new_from_field(v));
         // Create AssignedCell with the same value but different type
-        let assigned_bit = Self(region.assign_advice(|| annotation, column, offset, || bit_value)?);
+        let assigned_bit =
+            Self(region.assign_advice(|| annotation, column, offset, || bit_value)?);
         Ok(assigned_bit)
     }
 }
@@ -172,13 +168,12 @@ impl<F: PrimeField> AssignedBit<F> {
 pub(crate) struct AssignedBlake2bWord<F: PrimeField>(pub AssignedCell<Blake2bWord, F>);
 
 impl<F: PrimeField> AssignedBlake2bWord<F> {
-
     pub(crate) fn assign_advice_word(
         region: &mut Region<F>,
         annotation: &str,
         column: Column<Advice>,
         offset: usize,
-        value: Value<F>
+        value: Value<F>,
     ) -> Result<Self, Error> {
         // Check value is in range
         let word_value = value.map(|v| {
@@ -191,7 +186,8 @@ impl<F: PrimeField> AssignedBlake2bWord<F> {
             Blake2bWord(u64::from_le_bytes(bytes.try_into().unwrap()))
         });
         // Create AssignedCell with the same value but different type
-        let assigned_byte = Self(region.assign_advice(|| annotation, column, offset, || word_value)?);
+        let assigned_byte =
+            Self(region.assign_advice(|| annotation, column, offset, || word_value)?);
         Ok(assigned_byte)
     }
 
@@ -200,9 +196,10 @@ impl<F: PrimeField> AssignedBlake2bWord<F> {
         annotation: &str,
         column: Column<Advice>,
         offset: usize,
-        word_value: Blake2bWord
+        word_value: Blake2bWord,
     ) -> Result<Self, Error> {
-        let result = region.assign_advice_from_constant(|| annotation, column, offset, word_value)?;
+        let result =
+            region.assign_advice_from_constant(|| annotation, column, offset, word_value)?;
         Ok(Self(result))
     }
 
@@ -236,4 +233,3 @@ impl<F: PrimeField> AssignedRow<F> {
         Self { full_number, limbs }
     }
 }
-

@@ -50,21 +50,16 @@ impl<C: Blake2bInstructions> Blake2b<C> {
                 /// Initialize in 0 the offset for the advice cells in the region
                 let mut advice_offset: usize = 0;
 
-                let (
-                    iv_constant_cells,
-                    initial_state_0,
-                    zero_constant,
-                ) = self.chip.assign_constant_advice_cells(
-                    output_size,
-                    key.len(),
-                    &mut region,
-                    &mut advice_offset,
-                )?;
+                let (iv_constant_cells, initial_state_0, zero_constant) =
+                    self.chip.assign_constant_advice_cells(
+                        output_size,
+                        key.len(),
+                        &mut region,
+                        &mut advice_offset,
+                    )?;
 
-                let mut initial_global_state = self.chip.compute_initial_state(
-                    &iv_constant_cells,
-                    initial_state_0,
-                )?;
+                let mut initial_global_state =
+                    self.chip.compute_initial_state(&iv_constant_cells, initial_state_0)?;
 
                 self.chip.perform_blake2b_iterations(
                     &mut region,

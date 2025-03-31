@@ -29,9 +29,7 @@ pub struct Blake2bConfig<F: PrimeField> {
     limbs: [Column<Advice>; 8],
 }
 
-impl<F: PrimeField> Circuit<F>
-    for Blake2bCircuit<F>
-{
+impl<F: PrimeField> Circuit<F> for Blake2bCircuit<F> {
     type Config = Blake2bConfig<F>;
     type FloorPlanner = SimpleFloorPlanner;
 
@@ -68,7 +66,7 @@ impl<F: PrimeField> Circuit<F>
             _ph: PhantomData,
             blake2b_chip,
             expected_final_state,
-            limbs
+            limbs,
         }
     }
 
@@ -82,8 +80,10 @@ impl<F: PrimeField> Circuit<F>
         /// They're not constrained to be in the range [0,255] here, but they are when used inside
         /// the blake2b chip. This means that the chip does not expect the inputs to be bytes, but
         /// the execution will fail if they're not.
-        let assigned_input = Self::assign_inputs_to_the_trace(config.clone(), &mut layouter, &self.input)?;
-        let assigned_key = Self::assign_inputs_to_the_trace(config.clone(), &mut layouter, &self.key)?;
+        let assigned_input =
+            Self::assign_inputs_to_the_trace(config.clone(), &mut layouter, &self.input)?;
+        let assigned_key =
+            Self::assign_inputs_to_the_trace(config.clone(), &mut layouter, &self.key)?;
 
         /// The initialization function should be called before the hash computation. For many hash
         /// computations it should be called only once.
@@ -91,7 +91,8 @@ impl<F: PrimeField> Circuit<F>
         blake2b.initialize(&mut layouter)?;
 
         /// Call to the blake2b function
-        let result = blake2b.hash(&mut layouter, &assigned_input, &assigned_key, self.output_size)?;
+        let result =
+            blake2b.hash(&mut layouter, &assigned_input, &assigned_key, self.output_size)?;
 
         /// Assert results
         for (i, global_state_byte_cell) in result.iter().enumerate().take(self.output_size) {
@@ -129,20 +130,31 @@ impl<F: PrimeField> Blake2bCircuit<F> {
         layouter: &mut impl Layouter<F>,
         input: &[Value<F>],
     ) -> Result<Vec<AssignedNative<F>>, Error> {
-        let result = layouter.assign_region(|| "Inputs", |mut region|{
-            let inner_result = input.into_iter().enumerate().map(|(index, input_byte)|{
-                let row = index / 8;
-                let column = index % 8;
-                let cell = region.assign_advice(
-                    || format!("Input column: {}, row: {}", row, column),
-                    config.limbs[column],
-                    row,
-                    || *input_byte
-                ).unwrap();
-                cell
-            }).collect::<Vec<_>>().try_into().unwrap();
-            Ok(inner_result)
-        })?;
+        let result = layouter.assign_region(
+            || "Inputs",
+            |mut region| {
+                let inner_result = input
+                    .into_iter()
+                    .enumerate()
+                    .map(|(index, input_byte)| {
+                        let row = index / 8;
+                        let column = index % 8;
+                        let cell = region
+                            .assign_advice(
+                                || format!("Input column: {}, row: {}", row, column),
+                                config.limbs[column],
+                                row,
+                                || *input_byte,
+                            )
+                            .unwrap();
+                        cell
+                    })
+                    .collect::<Vec<_>>()
+                    .try_into()
+                    .unwrap();
+                Ok(inner_result)
+            },
+        )?;
         Ok(result)
     }
 }

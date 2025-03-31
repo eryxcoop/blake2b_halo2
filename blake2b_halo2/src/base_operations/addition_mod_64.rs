@@ -17,7 +17,7 @@ impl AdditionMod64Config {
         meta: &mut ConstraintSystem<F>,
         full_number_u64: Column<Advice>,
         carry: Column<Advice>,
-        decomposition: Decompose8Config
+        decomposition: Decompose8Config,
     ) -> Self {
         let q_add = meta.complex_selector();
 
@@ -39,12 +39,17 @@ impl AdditionMod64Config {
             vec![
                 q_add.clone()
                     * (full_number_result - full_number_x - full_number_y
-                        + carry.clone() * (Expression::Constant(F::from_u128((1u128 << 64).into())))),
+                        + carry.clone()
+                            * (Expression::Constant(F::from_u128((1u128 << 64).into())))),
                 q_add * carry.clone() * (Expression::Constant(F::from_u128(1u128.into())) - carry),
             ]
         });
 
-        Self { carry, q_add, decomposition }
+        Self {
+            carry,
+            q_add,
+            decomposition,
+        }
     }
 
     /// This method receives two cells, copies the values of the cells to the trace and then
@@ -73,20 +78,22 @@ impl AdditionMod64Config {
                 || "Sum first operand",
                 region,
                 full_number_u64_column,
-                *offset
+                *offset,
             )?;
             *offset += 1;
         }
         cell_to_copy.0.copy_advice(
-           || "Sum second operand",
-           region,
-           full_number_u64_column,
-           *offset
+            || "Sum second operand",
+            region,
+            full_number_u64_column,
+            *offset,
         )?;
-        let carry_cell = AssignedBit::assign_advice_bit(region,"carry", self.carry, *offset, carry_value)?;
+        let carry_cell =
+            AssignedBit::assign_advice_bit(region, "carry", self.carry, *offset, carry_value)?;
         *offset += 1;
 
-        let result_cell = self.decomposition.generate_row_from_word_value(region, result_value, *offset)?;
+        let result_cell =
+            self.decomposition.generate_row_from_word_value(region, result_value, *offset)?;
         *offset += 1;
 
         Ok((result_cell, carry_cell))
@@ -99,12 +106,9 @@ impl AdditionMod64Config {
         lhs: Value<Blake2bWord>,
         rhs: Value<Blake2bWord>,
     ) -> (Value<Blake2bWord>, Value<F>) {
-        let result_value = lhs.and_then(|l| rhs.and_then(|r| {
-            Value::known(Self::sum_mod_64(l, r))
-        }));
-        let carry_value = lhs.and_then(|l| rhs.and_then(|r| {
-            Value::known(Self::carry_mod_64(l, r))
-        }));
+        let result_value = lhs.and_then(|l| rhs.and_then(|r| Value::known(Self::sum_mod_64(l, r))));
+        let carry_value =
+            lhs.and_then(|l| rhs.and_then(|r| Value::known(Self::carry_mod_64(l, r))));
         (result_value, carry_value)
     }
 

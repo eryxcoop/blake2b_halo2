@@ -9,7 +9,11 @@ use crate::types::{AssignedBlake2bWord, AssignedByte, AssignedNative, AssignedRo
 use ff::PrimeField;
 use halo2_proofs::circuit::{Layouter, Region};
 use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Error};
-use crate::blake2b::chips::utils::{compute_processed_bytes_count_value_for_iteration, constrain_padding_cells_to_equal_zero, full_number_of_each_state_row, get_total_blocks_count, ABCD, BLAKE2B_BLOCK_SIZE, IV_CONSTANTS, SIGMA};
+use crate::blake2b::chips::utils::{
+    compute_processed_bytes_count_value_for_iteration, constrain_padding_cells_to_equal_zero,
+    full_number_of_each_state_row, get_total_blocks_count, ABCD, BLAKE2B_BLOCK_SIZE, IV_CONSTANTS,
+    SIGMA,
+};
 
 /// This is the main chip for the Blake2b hash function. It is responsible for the entire hash computation.
 /// It contains all the necessary chips and some extra columns.
@@ -52,17 +56,22 @@ impl Blake2bInstructions for Blake2bChip {
         key_size: usize,
         region: &mut Region<F>,
         advice_offset: &mut usize,
-    ) -> Result<([AssignedBlake2bWord<F>; 8], AssignedBlake2bWord<F>, AssignedNative<F>), Error> {
+    ) -> Result<([AssignedBlake2bWord<F>; 8], AssignedBlake2bWord<F>, AssignedNative<F>), Error>
+    {
         let iv_constant_cells: [AssignedBlake2bWord<F>; 8] =
             self.assign_iv_constants_to_fixed_cells(region, advice_offset)?;
 
         let zero_constant = region.assign_advice_from_constant(
-            || "zero", self.limbs[0], *advice_offset, F::from(0))?;
+            || "zero",
+            self.limbs[0],
+            *advice_offset,
+            F::from(0),
+        )?;
 
         let iv_constant_0 = IV_CONSTANTS[0];
         let out_len = output_size as u64;
         const INIT_CONST_STATE_0: u64 = 0x01010000u64;
-        let key_size_shifted= (key_size as u64) << 8;
+        let key_size_shifted = (key_size as u64) << 8;
         // state[0] = state[0] ^ 0x01010000 ^ (key.len() << 8) as u64 ^ outlen as u64;
         let initial_state_index_0 = iv_constant_0 ^ INIT_CONST_STATE_0 ^ key_size_shifted ^ out_len;
 
@@ -76,11 +85,7 @@ impl Blake2bInstructions for Blake2bChip {
 
         *advice_offset += 1;
 
-        Ok((
-            iv_constant_cells,
-            initial_state_0,
-            zero_constant,
-        ))
+        Ok((iv_constant_cells, initial_state_0, zero_constant))
     }
 
     /// The initial state is known at circuit building time because it depends on fixed constants,
@@ -235,9 +240,9 @@ impl Blake2bInstructions for Blake2bChip {
 
         let mut global_state_bytes: Vec<AssignedByte<F>> = Vec::new();
         for i in 0..8 {
-            global_state[i] = self.xor(&global_state[i], &state[i], region, row_offset)?.full_number;
-            let row =
-                self.xor(&global_state[i], &state[i + 8], region, row_offset)?;
+            global_state[i] =
+                self.xor(&global_state[i], &state[i], region, row_offset)?.full_number;
+            let row = self.xor(&global_state[i], &state[i + 8], region, row_offset)?;
             let mut row_limbs: Vec<_> = row.limbs.try_into().unwrap();
             global_state_bytes.append(&mut row_limbs);
             global_state[i] = row.full_number;
@@ -347,7 +352,12 @@ impl Blake2bChip {
 
         /// Config that is optimization-specific
         /// For the carry column we'll reuse the first limb column for optimization reasons
-        let addition_config = AdditionMod64Config::configure(meta, full_number_u64, limbs[0], decompose_8_config.clone());
+        let addition_config = AdditionMod64Config::configure(
+            meta,
+            full_number_u64,
+            limbs[0],
+            decompose_8_config.clone(),
+        );
         let xor_config = XorConfig::configure(meta, limbs, decompose_8_config.clone());
 
         Self {
@@ -358,7 +368,7 @@ impl Blake2bChip {
             xor_config,
             negate_config,
             full_number_u64,
-            limbs
+            limbs,
         }
     }
 
@@ -374,13 +384,8 @@ impl Blake2bChip {
             .iter()
             .enumerate()
             .map(|(index, constant)| {
-                self.assign_limb_constant_u64(
-                    region,
-                    offset,
-                    "iv constants",
-                    *constant,
-                    index
-                ).unwrap()
+                self.assign_limb_constant_u64(region, offset, "iv constants", *constant, index)
+                    .unwrap()
             })
             .collect::<Vec<AssignedBlake2bWord<F>>>()
             .try_into()
@@ -398,12 +403,7 @@ impl Blake2bChip {
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<AssignedBlake2bWord<F>, Error> {
-        self.negate_config.generate_rows_from_cell(
-            region,
-            offset,
-            input_cell,
-            self.full_number_u64,
-        )
+        self.negate_config.generate_rows_from_cell(region, offset, input_cell, self.full_number_u64)
     }
 
     /// Bitwise xor operation. It's performed over two assigned blake2b words. Is one of the most
@@ -416,13 +416,7 @@ impl Blake2bChip {
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<AssignedRow<F>, Error> {
-        self.xor_config.generate_xor_rows_from_cells(
-            region,
-            offset,
-            lhs,
-            rhs,
-            false,
-        )
+        self.xor_config.generate_xor_rows_from_cells(region, offset, lhs, rhs, false)
     }
 
     /// Addition operation. It's performed over two assigned blake2b words. Is one of the most
@@ -435,14 +429,17 @@ impl Blake2bChip {
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<AssignedBlake2bWord<F>, Error> {
-        let addition_cell = self.addition_config.generate_addition_rows_from_cells(
-            region,
-            offset,
-            lhs,
-            rhs,
-            false,
-            self.full_number_u64,
-        )?.0
+        let addition_cell = self
+            .addition_config
+            .generate_addition_rows_from_cells(
+                region,
+                offset,
+                lhs,
+                rhs,
+                false,
+                self.full_number_u64,
+            )?
+            .0
             .clone();
         Ok(addition_cell)
     }
@@ -554,14 +551,17 @@ impl Blake2bChip {
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<AssignedBlake2bWord<F>, Error> {
-        Ok(self.addition_config.generate_addition_rows_from_cells(
-            region,
-            offset,
-            previous_cell,
-            cell_to_copy,
-            true, // Uses the optimization
-            self.full_number_u64,
-        )?.0
+        Ok(self
+            .addition_config
+            .generate_addition_rows_from_cells(
+                region,
+                offset,
+                previous_cell,
+                cell_to_copy,
+                true, // Uses the optimization
+                self.full_number_u64,
+            )?
+            .0
             .clone())
     }
 
@@ -637,7 +637,8 @@ impl Blake2bChip {
             result.resize(128, zero_constant_cell);
             result
         } else {
-            let current_input_block_index = if is_key_empty { block_number } else { block_number - 1 };
+            let current_input_block_index =
+                if is_key_empty { block_number } else { block_number - 1 };
             input[current_input_block_index * BLAKE2B_BLOCK_SIZE
                 ..(current_input_block_index + 1) * BLAKE2B_BLOCK_SIZE]
                 .to_vec()
@@ -651,7 +652,7 @@ impl Blake2bChip {
         row_offset: &usize,
         description: &str,
         constant: u64,
-        limb_index: usize
+        limb_index: usize,
     ) -> Result<AssignedBlake2bWord<F>, Error> {
         AssignedBlake2bWord::assign_fixed_word(
             region,

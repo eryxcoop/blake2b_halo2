@@ -4,7 +4,6 @@ use crate::types::{AssignedBlake2bWord, AssignedByte, AssignedRow, Blake2bWord};
 use ff::PrimeField;
 use halo2_proofs::circuit::Value;
 
-
 /// This gate rotates the limbs of a number to the right and uses copy constrains to ensure that
 /// the rotation is correct. It's used in our circuit to implement 16-bit, 24-bit and 32-bit rotations.
 #[derive(Default, Clone, Debug)]
@@ -30,10 +29,11 @@ impl LimbRotation {
             Self::right_rotation_value(input_row.full_number.value(), limbs_to_rotate_to_the_right);
 
         let result_cell = AssignedBlake2bWord(region.assign_advice(
-            ||"Full number rotation output",
+            || "Full number rotation output",
             full_number_u64_column,
             *offset,
-            || result_value)?);
+            || result_value,
+        )?);
 
         decompose_config.q_decompose.enable(region, *offset)?;
 
@@ -47,7 +47,7 @@ impl LimbRotation {
                 "Limb rotation output",
                 limbs[out_limb_index],
                 *offset,
-                top_assigned_cell
+                top_assigned_cell,
             )?;
         }
 
@@ -56,7 +56,10 @@ impl LimbRotation {
     }
 
     /// Computes the actual value of the rotation of the number
-    fn right_rotation_value(value: Value<Blake2bWord>, limbs_to_rotate: usize) -> Value<Blake2bWord> {
+    fn right_rotation_value(
+        value: Value<Blake2bWord>,
+        limbs_to_rotate: usize,
+    ) -> Value<Blake2bWord> {
         value.map(|input| {
             let bits_to_rotate = limbs_to_rotate * 8;
             rotate_right_field_element(input, bits_to_rotate)
