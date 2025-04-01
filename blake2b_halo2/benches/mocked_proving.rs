@@ -31,7 +31,7 @@ fn benchmark_optimization_with_amount_of_blocks(
         b.iter_batched(
             || {
                 let ci = random_input_for_desired_blocks(amount_of_blocks);
-                let circuit = CircuitRunner::create_circuit_for_inputs_optimization(ci.clone());
+                let circuit = CircuitRunner::create_circuit_for_packed_inputs(ci.clone());
                 (circuit, ci.4)
             },
             |(circuit, expected)| {

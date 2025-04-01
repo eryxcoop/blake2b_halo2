@@ -31,7 +31,7 @@ fn benchmark_proving_key(
     name: &str,
 ) {
     let ci = random_input_for_desired_blocks(amount_of_blocks);
-    let circuit = CircuitRunner::create_circuit_for_inputs_optimization(ci);
+    let circuit = CircuitRunner::create_circuit_for_packed_inputs(ci);
     let vk = CircuitRunner::create_vk(&circuit, params);
 
     group.bench_function(BenchmarkId::new(name, amount_of_blocks), |b| {
