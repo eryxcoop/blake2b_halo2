@@ -1,5 +1,5 @@
 use super::*;
-use crate::types::{AssignedBlake2bWord, AssignedByte, AssignedNative, AssignedRow, Blake2bWord};
+use crate::types::{get_word_biguint_from_le_field, AssignedBlake2bWord, AssignedByte, AssignedNative, AssignedRow, Blake2bWord};
 
 // [Zhiyong comment] I suggest to remove this trait and the gate of decomposition_limb_range_check. Instead, we define a gate API like:
 // fn decomposition_gate(number: Expression<F>, limbs: &[Expressions]) who takes inputs of expressions and integrate this
@@ -214,7 +214,7 @@ impl Decompose8Config {
     /// Given a value and a limb index, it returns the value of the limb
     fn get_limb_from<F: PrimeField>(value: Value<F>, limb_number: usize) -> Value<F> {
         value.map(|v| {
-            let number = Self::get_word_limb_from_field(v, limb_number);
+            let number = Self::get_word_limb_from_le_field(v, limb_number);
             F::from_u128(number.into())
         })
     }
@@ -253,16 +253,13 @@ impl Decompose8Config {
     /// not, the result is undefined and probably incorrect.
     /// Finally, it obtains the corresponding limb value in little endian. This method ensures that
     /// the limb to be a value in range [0,7].
-    fn get_word_limb_from_field<F: PrimeField>(field: F, limb_number: usize) -> u8 {
-        let field_internal_representation = field.to_repr(); // Should be in little-endian
-        let (bytes, zeros) = field_internal_representation.as_ref().split_at(8);
-
-        let field_is_in_range = !zeros.iter().any(|&el| el != 0u8);
-        let index_is_in_range = limb_number < 8;
-
-        if !(field_is_in_range && index_is_in_range){
+    fn get_word_limb_from_le_field<F: PrimeField>(field: F, limb_number: usize) -> u8 {
+        let big_uint_field = get_word_biguint_from_le_field(field);
+        if limb_number >= 8 {
             panic!("Arguments to the function are incorrect")
         } else {
+            let mut bytes = big_uint_field.to_bytes_le();
+            bytes.resize(8, 0u8);
             bytes[limb_number] // Access the limb in little-endian
         }
     }

@@ -25,7 +25,7 @@ struct Byte(pub u8);
 
 impl Byte {
     fn new_from_field<F: PrimeField>(field: F) -> Self {
-        let bi_v = fe_to_big(field);
+        let bi_v = get_word_biguint_from_le_field(field);
         #[cfg(not(test))]
         assert!(bi_v <= BigUint::from(255u8));
         Byte(bi_v.to_bytes_le().first().copied().unwrap())
@@ -131,7 +131,7 @@ pub(crate) struct Bit(pub bool);
 
 impl Bit {
     fn new_from_field<F: PrimeField>(field: F) -> Self {
-        let bi_v = fe_to_big(field);
+        let bi_v = get_word_biguint_from_le_field(field);
         #[cfg(not(test))]
         assert!(bi_v == BigUint::from(0u8) || bi_v == BigUint::from(1u8));
         let bit = bi_v.to_bytes_le().first().copied().unwrap();
@@ -177,7 +177,7 @@ impl<F: PrimeField> AssignedBlake2bWord<F> {
     ) -> Result<Self, Error> {
         // Check value is in range
         let word_value = value.map(|v| {
-            let bi_v = fe_to_big(v);
+            let bi_v = get_word_biguint_from_le_field(v);
             #[cfg(not(test))]
             assert!(bi_v <= BigUint::from((1u128 << 64) - 1));
             let mut bytes = bi_v.to_bytes_le();
@@ -212,13 +212,27 @@ impl<F: PrimeField> AssignedBlake2bWord<F> {
     }
 }
 
-fn fe_to_big<F: PrimeField>(fe: F) -> BigUint {
-    BigUint::from_bytes_le(fe.to_repr().as_ref())
+/// Given a field element and a limb index in little endian form, this function checks that the
+/// field element is in range [0, 2^64-1]. If it's not, it will fail.
+/// We assume that the internal representation of the field is in little endian form. If it's
+/// not, the result is undefined and probably incorrect.
+/// Finally, it returns a [BigUint] holding the field element value.
+pub(crate) fn get_word_biguint_from_le_field<F: PrimeField>(fe: F) -> BigUint {
+    let field_internal_representation = fe.to_repr(); // Should be in little-endian
+    let (bytes, zeros) = field_internal_representation.as_ref().split_at(8);
+
+    let field_is_out_of_range = zeros.iter().any(|&el| el != 0u8);
+
+    if field_is_out_of_range {
+        panic!("Arguments to the function are incorrect")
+    } else {
+        BigUint::from_bytes_le(bytes)
+    }
 }
 
 /// We use this type to model the Row we generally use along this circuit. This row has the
 /// following shape:
-/// full_number | limb_0 | limb_1 | limb_2 | limb_3 | limb_4 | limb_5 | limb_6 | limb_7 | limb_8
+/// full_number | limb_0 | limb_1 | limb_2 | limb_3 | limb_4 | limb_5 | limb_6 | limb_7
 ///
 /// Where full_number is a Blake2bWord (64 bits) and the limbs constitute the little endian repr
 ///of the full_number (each limb is an AssignedByte)
