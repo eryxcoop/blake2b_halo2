@@ -62,20 +62,21 @@ impl From<u64> for Blake2bWord {
     fn from(value: u64) -> Self { Blake2bWord(value) }
 }
 
-/// This allows us to call the .assign_advice() method of the region with an AssignedBlake2bWord
-/// as its value
+/// Allows us to call the .assign_advice() method of the region with an Blake2bWord as its value
 impl<F: PrimeField> From<&Blake2bWord> for Rational<F> {
     fn from(value: &Blake2bWord) -> Self {
         Self::Trivial(F::from(value.0))
     }
 }
 
+/// Allows us to call the .assign_advice() method of the region with a Byte as its value
 impl<F: PrimeField> From<&Byte> for Rational<F> {
     fn from(value: &Byte) -> Self {
         Self::Trivial(F::from(value.0 as u64))
     }
 }
 
+/// Allows us to call the .assign_advice() method of the region with a Bit as its value
 impl<F: PrimeField> From<&Bit> for Rational<F> {
     fn from(value: &Bit) -> Self {
         Self::Trivial(F::from(value.0 as u64))
@@ -214,6 +215,7 @@ impl<F: PrimeField> AssignedBlake2bWord<F> {
         Ok(assigned_byte)
     }
 
+    /// Given a Blake2bWord, this method assigns it into a constant cell.
     pub(crate) fn assign_fixed_word(
         region: &mut Region<F>,
         annotation: &str,
