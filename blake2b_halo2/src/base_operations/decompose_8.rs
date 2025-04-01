@@ -214,7 +214,7 @@ impl Decompose8Config {
     /// Given a value and a limb index, it returns the value of the limb
     fn get_limb_from<F: PrimeField>(value: Value<F>, limb_number: usize) -> Value<F> {
         value.map(|v| {
-            let number = Self::get_limb_from_field(v, limb_number);
+            let number = Self::get_word_limb_from_field(v, limb_number);
             F::from_u128(number.into())
         })
     }
@@ -247,12 +247,23 @@ impl Decompose8Config {
         region.constrain_equal(cell.cell(), new_cells.full_number.cell())
     }
 
-    /// Given a field element and a limb number, we assume the field is in range [0, 2^64-1]
-    /// and obtain the corresponding limb value in little endian. This method expects the limb
-    /// to be a value in range [0,7].
-    fn get_limb_from_field<F: PrimeField>(field: F, limb_number: usize) -> u8 {
-        let binding = field.to_repr();
-        let a_bytes = binding.as_ref();
-        a_bytes[limb_number]
+    /// Given a field element and a limb index in little endian form, this function checks that the
+    /// field element is in range [0, 2^64-1]. If it's not, it will fail.
+    /// We assume that the internal representation of the field is in little endian form. If it's
+    /// not, the result is undefined and probably incorrect.
+    /// Finally, it obtains the corresponding limb value in little endian. This method ensures that
+    /// the limb to be a value in range [0,7].
+    fn get_word_limb_from_field<F: PrimeField>(field: F, limb_number: usize) -> u8 {
+        let field_internal_representation = field.to_repr(); // Should be in little-endian
+        let (bytes, zeros) = field_internal_representation.as_ref().split_at(8);
+
+        let field_is_in_range = !zeros.iter().any(|&el| el != 0u8);
+        let index_is_in_range = limb_number < 8;
+
+        if !(field_is_in_range && index_is_in_range){
+            panic!("Arguments to the function are incorrect")
+        } else {
+            bytes[limb_number] // Access the limb in little-endian
+        }
     }
 }
