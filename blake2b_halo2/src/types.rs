@@ -1,10 +1,3 @@
-use ff::PrimeField;
-use halo2_proofs::circuit::{AssignedCell, Cell, Region, Value};
-use num_bigint::BigUint;
-use std::fmt::Debug;
-use halo2_proofs::plonk::{Advice, Column, Error};
-use halo2_proofs::utils::rational::Rational;
-
 /// All these types are created to enforce safety across our code. The main types are:
 ///
 /// AssignedBit: It contains an AssignedCell that has a value in {true, false}.
@@ -21,6 +14,13 @@ use halo2_proofs::utils::rational::Rational;
 ///
 /// Everytime you see an AssignedByte, AssignedBlake2bWord or AssignedRow, you can be certain
 /// that all their values were range checked (both in the synthesize and in the circuit constraints)
+
+use ff::PrimeField;
+use halo2_proofs::circuit::{AssignedCell, Cell, Region, Value};
+use num_bigint::BigUint;
+use std::fmt::Debug;
+use halo2_proofs::plonk::{Advice, Column, Error};
+use halo2_proofs::utils::rational::Rational;
 
 
 /// Native type for an [AssignedCell] that hasn't been constrained yet
@@ -45,9 +45,8 @@ impl Byte {
 pub(crate) struct Blake2bWord(pub u64);
 
 impl From<u64> for Blake2bWord {
-    fn from(value: u64) -> Self {
-        Blake2bWord(value)
-    }
+    /// An u64 has a trivial conversion into a [Blake2bWord]
+    fn from(value: u64) -> Self { Blake2bWord(value) }
 }
 
 /// This allows us to call the .assign_advice() method of the region with an AssignedBlake2bWord
@@ -78,6 +77,9 @@ impl<F: PrimeField> From<&Bit> for Rational<F> {
 pub(crate) struct AssignedByte<F: PrimeField>(AssignedCell<Byte, F>);
 
 impl<F: PrimeField> AssignedByte<F> {
+    /// Given an AssignedNative cell somewhere, this method copies it into trace[offset][column]
+    /// while range-checking its value to be a Byte. This is one way we can obtain an [AssignedByte]
+    /// from an [AssignedNative].
     pub(crate) fn copy_advice_byte_from_native(
         region: &mut Region<F>,
         annotation: &str,
@@ -96,6 +98,8 @@ impl<F: PrimeField> AssignedByte<F> {
         Ok(assigned_byte)
     }
 
+    /// Given an AssignedByte cell somewhere, this method copies it into trace[offset][column]
+    /// without range-checking its value to be a Byte, since it already comes from one.
     pub(crate) fn copy_advice_byte(
         region: &mut Region<F>,
         annotation: &str,
@@ -103,15 +107,7 @@ impl<F: PrimeField> AssignedByte<F> {
         offset: usize,
         cell_to_copy: AssignedByte<F>,
     ) -> Result<Self, Error> {
-        // Check value is in range
-        let byte_value = cell_to_copy.0.value().map(|v| Byte(v.0));
-        // Create AssignedCell with the same value but different type
-        let assigned_byte =
-            Self(region.assign_advice(|| annotation, column, offset, || byte_value)?);
-        // Constrain cells have equal values
-        region.constrain_equal(cell_to_copy.cell(), assigned_byte.cell())?;
-
-        Ok(assigned_byte)
+        Ok(Self(cell_to_copy.0.copy_advice(|| annotation, region, column, offset)?))
     }
 
     pub(crate) fn assign_advice_byte(
