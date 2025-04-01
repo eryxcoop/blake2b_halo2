@@ -33,7 +33,7 @@ fn benchmark_proof(
     let ci = random_input_for_desired_blocks(amount_of_blocks);
     let expected_output_fields = ci.4.clone();
 
-    let circuit = CircuitRunner::create_circuit_for_inputs_optimization(ci);
+    let circuit = CircuitRunner::create_circuit_for_packed_inputs(ci);
     let vk = CircuitRunner::create_vk(&circuit, params);
     let pk = CircuitRunner::create_pk(&circuit, vk.clone());
 

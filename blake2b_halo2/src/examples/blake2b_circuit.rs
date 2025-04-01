@@ -1,3 +1,5 @@
+//! This is an example circuit of how you should use the Blake2b chip
+
 use crate::blake2b::blake2b::Blake2b;
 use crate::blake2b::chips::blake2b_chip::Blake2bChip;
 use crate::types::AssignedNative;
@@ -7,7 +9,8 @@ use halo2_proofs::plonk::{Advice, Circuit, Column, ConstraintSystem, Error, Inst
 use std::array;
 use std::marker::PhantomData;
 
-/// This is an example circuit of how you should use the Blake2b chip.
+/// The struct of the circuit. It contains the input and key that will be hashed. Also
+/// the sizes of the input, key and output.
 #[derive(Clone)]
 pub struct Blake2bCircuit<F: PrimeField> {
     /// The input and the key should be unknown for the verifier.
@@ -19,6 +22,8 @@ pub struct Blake2bCircuit<F: PrimeField> {
     output_size: usize,
 }
 
+/// The configuration of the circuit. It contains the chip that will be used to compute the hash and
+/// the columns that will hold the expected output of the hash in the form of public inputs.
 #[derive(Clone)]
 pub struct Blake2bConfig<F: PrimeField> {
     _ph: PhantomData<F>,
@@ -107,6 +112,7 @@ impl<F: PrimeField> Circuit<F> for Blake2bCircuit<F> {
 }
 
 impl<F: PrimeField> Blake2bCircuit<F> {
+    /// This method creates a new instance of the circuit with the given input, key and output sizes.
     pub fn new_for(
         input: Vec<Value<F>>,
         input_size: usize,

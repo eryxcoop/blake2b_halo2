@@ -21,5 +21,5 @@ fn test_negative_with_real_snark() {
 }
 
 fn test_in_production(input: String, out: String, key: String) -> Result<(), Error> {
-    CircuitRunner::real_preprocess_inputs_sintesize_prove_and_verify(input, out, key)
+    CircuitRunner::real_preprocess_inputs_synthesize_prove_and_verify(input, out, key)
 }
