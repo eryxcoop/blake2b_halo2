@@ -110,6 +110,8 @@ impl<F: PrimeField> AssignedByte<F> {
         Ok(Self(cell_to_copy.0.copy_advice(|| annotation, region, column, offset)?))
     }
 
+    /// Given an arbitrary value, this method checks the value is in the range of a Byte (by
+    /// creating a Byte object) and then assigns the byte into a cell.
     pub(crate) fn assign_advice_byte(
         region: &mut Region<F>,
         annotation: &str,
@@ -125,6 +127,7 @@ impl<F: PrimeField> AssignedByte<F> {
         Ok(assigned_byte)
     }
 
+    /// Getter for the internal cell
     pub(crate) fn cell(&self) -> Cell {
         self.0.cell()
     }
