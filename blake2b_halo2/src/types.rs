@@ -83,6 +83,12 @@ impl<F: PrimeField> From<&Bit> for Rational<F> {
     }
 }
 
+impl<F: PrimeField> From<AssignedCell<Blake2bWord, F>> for AssignedBlake2bWord<F> {
+    fn from(value: AssignedCell<Blake2bWord, F>) -> Self {
+        Self(value)
+    }
+}
+
 /// This wrapper type on `AssignedCell<Byte, F>` is designed to enforce type safety
 /// on assigned bytes. It prevents the user from creating an `AssignedByte`
 /// without using the designated entry points, which guarantee (with
@@ -168,7 +174,7 @@ impl Bit {
 /// carry value is 0 or 1.
 #[derive(Clone, Debug)]
 #[must_use]
-pub(crate) struct AssignedBit<F: PrimeField>(pub AssignedCell<Bit, F>);
+pub(crate) struct AssignedBit<F: PrimeField>(pub(crate) AssignedCell<Bit, F>);
 
 impl<F: PrimeField> AssignedBit<F> {
     /// Given an arbitrary value, this method checks the value is in the range of a Bit (by

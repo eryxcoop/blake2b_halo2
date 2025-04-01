@@ -28,12 +28,12 @@ impl LimbRotation {
         let result_value =
             Self::right_rotation_value(input_row.full_number.value(), limbs_to_rotate_to_the_right);
 
-        let result_cell = AssignedBlake2bWord(region.assign_advice(
+        let result_cell = region.assign_advice(
             || "Full number rotation output",
             full_number_u64_column,
             *offset,
             || result_value,
-        )?);
+        )?.into();
 
         decompose_config.q_decompose.enable(region, *offset)?;
 

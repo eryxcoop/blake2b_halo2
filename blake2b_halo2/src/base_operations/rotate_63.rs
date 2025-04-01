@@ -53,12 +53,12 @@ impl Rotate63Config {
         self.q_rot63.enable(region, *offset)?;
         let result_value = input.value().map(|input| rotate_right_field_element(input, 63));
 
-        let result_cell = AssignedBlake2bWord(region.assign_advice(
+        let result_cell = region.assign_advice(
             || "Rotate63 output",
             full_number_u64,
             *offset,
             || result_value,
-        )?);
+        )?.into();
         *offset += 1;
         Ok(result_cell)
     }
