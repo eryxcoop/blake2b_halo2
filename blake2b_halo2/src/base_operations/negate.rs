@@ -48,7 +48,7 @@ impl NegateConfig {
         *offset += 1;
 
         let result_value: Value<Blake2bWord> =
-            input.value().map(|input| Blake2bWord(((1u128 << 64) - 1) as u64 - input.0));
+            input.value().map(|input| Blake2bWord(u64::MAX) - input);
 
         let result_cell = region.assign_advice(
             || "Negation output",

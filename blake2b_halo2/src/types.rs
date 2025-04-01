@@ -19,6 +19,7 @@ use ff::PrimeField;
 use halo2_proofs::circuit::{AssignedCell, Cell, Region, Value};
 use num_bigint::BigUint;
 use std::fmt::Debug;
+use std::ops::{BitXor, Sub};
 use halo2_proofs::plonk::{Advice, Column, Error};
 use halo2_proofs::utils::rational::Rational;
 
@@ -53,9 +54,24 @@ impl Blake2bWord {
         assert!(bi_v <= BigUint::from((1u128 << 64) - 1));
         let mut bytes = bi_v.to_bytes_le();
         bytes.resize(8, 0);
-        Blake2bWord(u64::from_le_bytes(bytes.try_into().unwrap()))
+        u64::from_le_bytes(bytes.try_into().unwrap()).into()
     }
 }
+
+impl BitXor for Blake2bWord {
+    type Output = Self;
+    fn bitxor(self, rhs: Self) -> Self::Output {
+        Self(self.0 ^ rhs.0)
+    }
+}
+
+impl Sub for Blake2bWord {
+    type Output = Self;
+    fn sub(self, rhs: Self) -> Self::Output {
+        Self(self.0 - rhs.0)
+    }
+}
+
 
 impl From<u64> for Blake2bWord {
     /// An u64 has a trivial conversion into a [Blake2bWord]

@@ -49,7 +49,7 @@ pub(crate) fn zero() -> Value<Fr> {
 }
 
 pub(crate) fn blake2b_value_for(number: u64) -> Value<Blake2bWord> {
-    Value::known(Blake2bWord(number))
+    Value::known(number.into())
 }
 
 pub(crate) fn value_for<T, F>(number: T) -> Value<F>

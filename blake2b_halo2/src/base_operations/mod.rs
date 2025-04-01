@@ -17,5 +17,5 @@ pub(crate) fn rotate_right_field_element(
     let rotation_degree = rotation_degree % 64;
     let rotated_value = ((value_to_rotate as u128) >> rotation_degree)
         | ((value_to_rotate as u128) << (64 - rotation_degree));
-    Blake2bWord(rotated_value as u64)
+    (rotated_value as u64).into()
 }

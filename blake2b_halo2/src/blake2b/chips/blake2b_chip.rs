@@ -216,7 +216,7 @@ impl Blake2bInstructions for Blake2bChip {
             "New state[12]",
             self.full_number_u64,
             *row_offset,
-            Blake2bWord(new_state_12),
+            new_state_12.into(),
         )?;
         *row_offset += 1;
 
@@ -659,7 +659,7 @@ impl Blake2bChip {
             description,
             self.limbs[limb_index],
             *row_offset,
-            Blake2bWord(constant),
+            constant.into(),
         )
     }
 }
