@@ -113,7 +113,7 @@ impl AdditionMod64Config {
     }
 
     fn sum_mod_64(a: Blake2bWord, b: Blake2bWord) -> Blake2bWord {
-        ((a.0 as u128 + b.0 as u128) % (1u128 << 64)).into()
+        (((a.0 as u128 + b.0 as u128) % (1u128 << 64)) as u64).into()
     }
 
     fn carry_mod_64<F: PrimeField>(a: Blake2bWord, b: Blake2bWord) -> F {

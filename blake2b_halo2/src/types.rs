@@ -5,18 +5,25 @@ use std::fmt::Debug;
 use halo2_proofs::plonk::{Advice, Column, Error};
 use halo2_proofs::utils::rational::Rational;
 
-/// All these types are created to enforce safety across our code. The three main types are:
+/// All these types are created to enforce safety across our code. The main types are:
 ///
-/// AssignedByte: It contains an AssignedCell that has a value between 0 and 255.
+/// AssignedBit: It contains an AssignedCell that has a value in {true, false}.
 ///
-/// AssignedBlake2bWord: It contains an AssignedCell that has a value between 0 and 2^64 - 1
+/// AssignedByte: It contains an AssignedCell that has a value in [0, 255].
 ///
-/// AssignedRow: It contains an AssignedBlake2bWord and 8 AssignedLimb
+/// AssignedBlake2bWord: It contains an AssignedCell that has a value in [0, 2^64 - 1]
 ///
-/// All these types are created at the same place where a range check is enabled in their values
-/// So everytime you see an AssignedByte, AssignedBlake2bWord or AssignedRow, you can be certain
-/// that all their values were range checked
+/// AssignedRow: It contains an AssignedBlake2bWord and 8 AssignedLimb, like
+/// |Word|Limb|Limb|Limb|Limb|Limb|Limb|Limb|Limb| which is how it's going to be used in some cases
+///
+/// All these types are created with a range check in their creation, but also they're created in
+/// a context where its value has been constrained by a restriction to be in range.
+///
+/// Everytime you see an AssignedByte, AssignedBlake2bWord or AssignedRow, you can be certain
+/// that all their values were range checked (both in the synthesize and in the circuit constraints)
 
+
+/// Native type for an [AssignedCell] that hasn't been constrained yet
 pub(crate) type AssignedNative<F> = AssignedCell<F, F>;
 
 /// The inner type of AssignedByte. A wrapper around `u8`
@@ -24,6 +31,8 @@ pub(crate) type AssignedNative<F> = AssignedCell<F, F>;
 struct Byte(pub u8);
 
 impl Byte {
+    /// Creates a new [Byte] element. When the byte is created, it is constrained to be in the
+    /// range [0, 255].
     fn new_from_field<F: PrimeField>(field: F) -> Self {
         let bi_v = get_word_biguint_from_le_field(field);
         #[cfg(not(test))]
@@ -35,9 +44,9 @@ impl Byte {
 #[derive(Copy, Clone, Debug)]
 pub(crate) struct Blake2bWord(pub u64);
 
-impl From<u128> for Blake2bWord {
-    fn from(value: u128) -> Self {
-        Blake2bWord(value as u64)
+impl From<u64> for Blake2bWord {
+    fn from(value: u64) -> Self {
+        Blake2bWord(value)
     }
 }
 
