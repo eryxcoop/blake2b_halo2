@@ -5,7 +5,7 @@ use crate::base_operations::negate::NegateConfig;
 use crate::base_operations::rotate_63::Rotate63Config;
 use crate::base_operations::xor::XorConfig;
 use crate::blake2b::chips::blake2b_instructions::Blake2bInstructions;
-use crate::types::{AssignedBlake2bWord, AssignedByte, AssignedNative, AssignedRow, Blake2bWord};
+use crate::types::AssignedNative;
 use ff::PrimeField;
 use halo2_proofs::circuit::{Layouter, Region};
 use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Error};
@@ -14,6 +14,9 @@ use crate::blake2b::chips::utils::{
     full_number_of_each_state_row, get_total_blocks_count, ABCD, BLAKE2B_BLOCK_SIZE, IV_CONSTANTS,
     SIGMA,
 };
+use crate::types::blake2b_word::AssignedBlake2bWord;
+use crate::types::byte::AssignedByte;
+use crate::types::row::AssignedRow;
 
 /// This is the main chip for the Blake2b hash function. It is responsible for the entire hash computation.
 /// It contains all the necessary chips and some extra columns.

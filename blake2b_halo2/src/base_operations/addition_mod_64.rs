@@ -1,6 +1,7 @@
 use super::*;
 use crate::base_operations::decompose_8::Decompose8Config;
-use crate::types::{AssignedBit, AssignedBlake2bWord, Blake2bWord};
+use crate::types::bit::AssignedBit;
+use crate::types::blake2b_word::{AssignedBlake2bWord, Blake2bWord};
 
 /// Config used to constrain addition mod 64-bits. It uses the [Decompose8Config] to generate
 /// a decomposed result, which will be used in one of the optimizations.

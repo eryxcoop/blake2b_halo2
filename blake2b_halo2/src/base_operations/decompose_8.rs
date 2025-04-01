@@ -1,6 +1,8 @@
 use super::*;
-use crate::types::{get_word_biguint_from_le_field, AssignedBlake2bWord, AssignedByte, AssignedNative, AssignedRow, Blake2bWord};
-
+use crate::types::{get_word_biguint_from_le_field, AssignedNative};
+use crate::types::blake2b_word::{AssignedBlake2bWord, Blake2bWord};
+use crate::types::byte::AssignedByte;
+use crate::types::row::AssignedRow;
 // [Zhiyong comment] I suggest to remove this trait and the gate of decomposition_limb_range_check. Instead, we define a gate API like:
 // fn decomposition_gate(number: Expression<F>, limbs: &[Expressions]) who takes inputs of expressions and integrate this
 // into the operation gates, such as addition_mod_64 and xor_spread. On the other hand, we only

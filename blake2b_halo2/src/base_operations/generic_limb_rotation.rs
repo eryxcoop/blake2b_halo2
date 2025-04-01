@@ -1,8 +1,10 @@
 use super::*;
 use crate::base_operations::decompose_8::Decompose8Config;
-use crate::types::{AssignedBlake2bWord, AssignedByte, AssignedRow, Blake2bWord};
+use crate::types::row::AssignedRow;
 use ff::PrimeField;
 use halo2_proofs::circuit::Value;
+use crate::types::blake2b_word::{AssignedBlake2bWord, Blake2bWord};
+use crate::types::byte::AssignedByte;
 
 /// This gate rotates the limbs of a number to the right and uses copy constrains to ensure that
 /// the rotation is correct. It's used in our circuit to implement 16-bit, 24-bit and 32-bit rotations.

@@ -3,7 +3,8 @@ use halo2_proofs::halo2curves::bn256::Fr;
 use ff::Field;
 use std::marker::PhantomData;
 use crate::base_operations::decompose_8::Decompose8Config;
-use crate::types::{AssignedNative, Blake2bWord};
+use crate::types::AssignedNative;
+use crate::types::blake2b_word::Blake2bWord;
 
 mod test_blake2b;
 mod test_negate;

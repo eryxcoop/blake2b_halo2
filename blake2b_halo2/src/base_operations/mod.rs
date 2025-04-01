@@ -1,4 +1,4 @@
-use crate::types::Blake2bWord;
+use crate::types::blake2b_word::Blake2bWord;
 use super::*;
 
 pub mod addition_mod_64;
