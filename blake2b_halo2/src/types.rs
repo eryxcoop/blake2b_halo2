@@ -44,6 +44,19 @@ impl Byte {
 #[derive(Copy, Clone, Debug)]
 pub(crate) struct Blake2bWord(pub u64);
 
+impl Blake2bWord {
+    /// Creates a new [Blake2bWord] element. When the Blake2bWord is created, it is constrained to be in the
+    /// range [0, 2^64 - 1].
+    fn new_from_field<F: PrimeField>(field: F) -> Self {
+        let bi_v = get_word_biguint_from_le_field(field);
+        #[cfg(not(test))]
+        assert!(bi_v <= BigUint::from((1u128 << 64) - 1));
+        let mut bytes = bi_v.to_bytes_le();
+        bytes.resize(8, 0);
+        Blake2bWord(u64::from_le_bytes(bytes.try_into().unwrap()))
+    }
+}
+
 impl From<u64> for Blake2bWord {
     /// An u64 has a trivial conversion into a [Blake2bWord]
     fn from(value: u64) -> Self { Blake2bWord(value) }
@@ -138,6 +151,8 @@ impl<F: PrimeField> AssignedByte<F> {
 pub(crate) struct Bit(pub bool);
 
 impl Bit {
+    /// Creates a new [Bit] element. When the byte is created, it is constrained to be in the
+    /// range [0, 1] and its internal member is a boolean.
     fn new_from_field<F: PrimeField>(field: F) -> Self {
         let bi_v = get_word_biguint_from_le_field(field);
         #[cfg(not(test))]
@@ -147,14 +162,16 @@ impl Bit {
     }
 }
 
-/// This wrapper type on `AssignedNative<F>` is designed to enforce type safety
+/// This wrapper type on `AssignedCell<Bit, F>` is designed to enforce type safety
 /// on assigned bits. It is used in the addition chip to enforce that the
-/// carry value is 0 or 1
+/// carry value is 0 or 1.
 #[derive(Clone, Debug)]
 #[must_use]
 pub(crate) struct AssignedBit<F: PrimeField>(pub AssignedCell<Bit, F>);
 
 impl<F: PrimeField> AssignedBit<F> {
+    /// Given an arbitrary value, this method checks the value is in the range of a Bit (by
+    /// creating a Bit object) and then assigns the bit into a cell.
     pub(crate) fn assign_advice_bit(
         region: &mut Region<F>,
         annotation: &str,
@@ -171,11 +188,17 @@ impl<F: PrimeField> AssignedBit<F> {
     }
 }
 
+/// This wrapper type on `AssignedCell<Blake2bWord, F>` is designed to enforce type safety
+/// on assigned Blake2bWords. It prevents the user from creating an [AssignedWord]
+/// without using the designated entry points, which guarantee (with constraints) that the
+/// assigned value is indeed in the range [0, 2^64 - 1].
 #[derive(Clone, Debug)]
 #[must_use]
 pub(crate) struct AssignedBlake2bWord<F: PrimeField>(pub AssignedCell<Blake2bWord, F>);
 
 impl<F: PrimeField> AssignedBlake2bWord<F> {
+    /// Given an arbitrary value, this method checks the value is in the range of a Blake2bWord (by
+    /// creating a Blake2bWord object) and then assigns the Blake2bWord into a cell.
     pub(crate) fn assign_advice_word(
         region: &mut Region<F>,
         annotation: &str,
@@ -184,15 +207,7 @@ impl<F: PrimeField> AssignedBlake2bWord<F> {
         value: Value<F>,
     ) -> Result<Self, Error> {
         // Check value is in range
-        let word_value = value.map(|v| {
-            let bi_v = get_word_biguint_from_le_field(v);
-            #[cfg(not(test))]
-            assert!(bi_v <= BigUint::from((1u128 << 64) - 1));
-            let mut bytes = bi_v.to_bytes_le();
-            bytes.resize(8, 0);
-            // let first_8_bytes: [u8; 8] = bytes[..8].try_into().unwrap();
-            Blake2bWord(u64::from_le_bytes(bytes.try_into().unwrap()))
-        });
+        let word_value = value.map(|v| Blake2bWord::new_from_field(v));
         // Create AssignedCell with the same value but different type
         let assigned_byte =
             Self(region.assign_advice(|| annotation, column, offset, || word_value)?);
