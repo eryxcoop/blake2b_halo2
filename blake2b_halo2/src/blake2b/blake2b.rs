@@ -3,8 +3,8 @@ use crate::types::AssignedNative;
 use ff::PrimeField;
 use halo2_proofs::circuit::Layouter;
 use halo2_proofs::plonk::Error;
+use crate::base_operations::decompose_8::AssignedByte;
 use crate::blake2b::chips::utils::enforce_input_sizes;
-use crate::types::byte::AssignedByte;
 
 /// A gadget that constrains a Blake2b invocation. This interface works with
 /// in/out consisting of AssignedNative. The algorithm expects its values to be in the range of

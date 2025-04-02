@@ -1,7 +1,7 @@
 use super::*;
-use crate::base_operations::decompose_8::Decompose8Config;
-use crate::types::bit::AssignedBit;
-use crate::types::blake2b_word::{AssignedBlake2bWord, Blake2bWord};
+use crate::base_operations::decompose_8::{AssignedBlake2bWord, Decompose8Config};
+use halo2_proofs::circuit::{AssignedCell, Cell};
+use crate::types::bit::Bit;
 
 /// Config used to constrain addition mod 64-bits. It uses the [Decompose8Config] to generate
 /// a decomposed result, which will be used in one of the optimizations.
@@ -75,20 +75,23 @@ impl AdditionMod64Config {
         self.q_add.enable(region, offset_to_enable)?;
 
         if !use_last_cell_as_first_operand {
-            previous_cell.0.copy_advice(
-                || "Sum first operand",
+            AssignedBlake2bWord::copy_advice_word(
+                previous_cell,
                 region,
                 full_number_u64_column,
                 *offset,
-            )?;
+                "Sum first operand",
+                )?;
             *offset += 1;
         }
-        cell_to_copy.0.copy_advice(
-            || "Sum second operand",
+        AssignedBlake2bWord::copy_advice_word(
+            cell_to_copy,
             region,
             full_number_u64_column,
             *offset,
+            "Sum second operand",
         )?;
+
         let carry_cell =
             AssignedBit::assign_advice_bit(region, "carry", self.carry, *offset, carry_value)?;
         *offset += 1;
@@ -120,5 +123,33 @@ impl AdditionMod64Config {
     fn carry_mod_64<F: PrimeField>(a: Blake2bWord, b: Blake2bWord) -> F {
         let carry = (a.0 as u128 + b.0 as u128) / (1u128 << 64);
         F::from(carry as u64)
+    }
+}
+
+/// This wrapper type on `AssignedNative<F>` is designed to enforce type safety
+/// on assigned bits. It is used in the addition chip to enforce that the
+/// carry value is 0 or 1
+#[derive(Clone, Debug)]
+#[must_use]
+pub(crate) struct AssignedBit<F: PrimeField>(AssignedCell<Bit, F>);
+
+impl<F: PrimeField> AssignedBit<F> {
+    fn assign_advice_bit(
+        region: &mut Region<F>,
+        annotation: &str,
+        column: Column<Advice>,
+        offset: usize,
+        value: Value<F>,
+    ) -> Result<Self, Error> {
+        // Check value is in range
+        let bit_value = value.map(|v| Bit::new_from_field(v));
+        // Create AssignedCell with the same value but different type
+        let assigned_bit =
+            Self(region.assign_advice(|| annotation, column, offset, || bit_value)?);
+        Ok(assigned_bit)
+    }
+
+    pub fn cell(&self) -> Cell {
+        self.0.cell()
     }
 }

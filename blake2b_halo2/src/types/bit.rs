@@ -1,6 +1,4 @@
 use ff::PrimeField;
-use halo2_proofs::circuit::{AssignedCell, Region, Value};
-use halo2_proofs::plonk::{Advice, Column, Error};
 use halo2_proofs::utils::rational::Rational;
 use num_bigint::BigUint;
 use crate::types;
@@ -12,38 +10,12 @@ pub(crate) struct Bit(pub bool);
 impl Bit {
     /// Creates a new [Bit] element. When the byte is created, it is constrained to be in the
     /// range [0, 1] and its internal member is a boolean.
-    fn new_from_field<F: PrimeField>(field: F) -> Self {
+    pub fn new_from_field<F: PrimeField>(field: F) -> Self {
         let bi_v = types::get_word_biguint_from_le_field(field);
         #[cfg(not(test))]
         assert!(bi_v == BigUint::from(0u8) || bi_v == BigUint::from(1u8));
         let bit = bi_v.to_bytes_le().first().copied().unwrap();
         Bit(bit == 1)
-    }
-}
-
-/// This wrapper type on `AssignedCell<Bit, F>` is designed to enforce type safety
-/// on assigned bits. It is used in the addition chip to enforce that the
-/// carry value is 0 or 1.
-#[derive(Clone, Debug)]
-#[must_use]
-pub(crate) struct AssignedBit<F: PrimeField>(pub(crate) AssignedCell<Bit, F>);
-
-impl<F: PrimeField> AssignedBit<F> {
-    /// Given an arbitrary value, this method checks the value is in the range of a Bit (by
-    /// creating a Bit object) and then assigns the bit into a cell.
-    pub(crate) fn assign_advice_bit(
-        region: &mut Region<F>,
-        annotation: &str,
-        column: Column<Advice>,
-        offset: usize,
-        value: Value<F>,
-    ) -> Result<Self, Error> {
-        // Check value is in range
-        let bit_value = value.map(|v| Bit::new_from_field(v));
-        // Create AssignedCell with the same value but different type
-        let assigned_bit =
-            Self(region.assign_advice(|| annotation, column, offset, || bit_value)?);
-        Ok(assigned_bit)
     }
 }
 

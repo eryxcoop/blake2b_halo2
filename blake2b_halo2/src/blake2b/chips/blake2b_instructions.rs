@@ -1,10 +1,9 @@
-use crate::types::row::AssignedRow;
 use crate::types::AssignedNative;
 use ff::PrimeField;
 use halo2_proofs::circuit::{Layouter, Region};
 use halo2_proofs::plonk::Error;
-use crate::types::blake2b_word::AssignedBlake2bWord;
-use crate::types::byte::AssignedByte;
+use crate::base_operations::decompose_8::{AssignedBlake2bWord, AssignedByte};
+use crate::types::row::AssignedRow;
 
 /// This is the trait that groups the Blake2b implementation chips. Every Blake2b chip
 /// should implement this trait.

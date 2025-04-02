@@ -1,6 +1,6 @@
 use super::*;
-use crate::types::blake2b_word::AssignedBlake2bWord;
 use num_bigint::BigUint;
+use crate::base_operations::decompose_8::AssignedBlake2bWord;
 
 /// This config handles the 63-right-bit rotation of a 64-bit number, which is the same as the
 /// 1-bit rotation to the left.
@@ -53,12 +53,13 @@ impl Rotate63Config {
         self.q_rot63.enable(region, *offset)?;
         let result_value = input.value().map(|input| rotate_right_field_element(input, 63));
 
-        let result_cell = region.assign_advice(
+        let assigned_cell = region.assign_advice(
             || "Rotate63 output",
             full_number_u64,
             *offset,
             || result_value,
-        )?.into();
+        )?;
+        let result_cell = AssignedBlake2bWord(assigned_cell);
         *offset += 1;
         Ok(result_cell)
     }

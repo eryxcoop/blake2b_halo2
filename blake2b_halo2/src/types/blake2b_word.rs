@@ -1,9 +1,9 @@
 use ff::PrimeField;
-use halo2_proofs::circuit::{AssignedCell, Cell, Region, Value};
-use num_bigint::BigUint;
-use std::ops::{BitXor, Sub};
-use halo2_proofs::plonk::{Advice, Column, Error};
+use halo2_proofs::circuit::{AssignedCell};
 use halo2_proofs::utils::rational::Rational;
+use std::ops::{BitXor, Sub};
+use num_bigint::BigUint;
+use crate::base_operations::decompose_8::AssignedBlake2bWord;
 use crate::types;
 
 /// The inner type of AssignedBlake2bWord. A wrapper around `u64`
@@ -45,52 +45,6 @@ impl From<u64> for Blake2bWord {
 impl<F: PrimeField> From<AssignedCell<Blake2bWord, F>> for AssignedBlake2bWord<F> {
     fn from(value: AssignedCell<Blake2bWord, F>) -> Self {
         Self(value)
-    }
-}
-
-/// This wrapper type on `AssignedCell<Blake2bWord, F>` is designed to enforce type safety
-/// on assigned Blake2bWords. It prevents the user from creating an [AssignedWord]
-/// without using the designated entry points, which guarantee (with constraints) that the
-/// assigned value is indeed in the range [0, 2^64 - 1].
-#[derive(Clone, Debug)]
-#[must_use]
-pub(crate) struct AssignedBlake2bWord<F: PrimeField>(pub AssignedCell<Blake2bWord, F>);
-
-impl<F: PrimeField> AssignedBlake2bWord<F> {
-    /// Given an arbitrary value, this method checks the value is in the range of a Blake2bWord (by
-    /// creating a Blake2bWord object) and then assigns the Blake2bWord into a cell.
-    pub(crate) fn assign_advice_word(
-        region: &mut Region<F>,
-        annotation: &str,
-        column: Column<Advice>,
-        offset: usize,
-        value: Value<F>,
-    ) -> Result<Self, Error> {
-        // Check value is in range
-        let word_value = value.map(|v| Blake2bWord::new_from_field(v));
-        // Create AssignedCell with the same value but different type
-        Ok(Self(region.assign_advice(|| annotation, column, offset, || word_value)?))
-    }
-
-    /// Given a Blake2bWord, this method assigns it into a constant cell.
-    pub(crate) fn assign_fixed_word(
-        region: &mut Region<F>,
-        annotation: &str,
-        column: Column<Advice>,
-        offset: usize,
-        word_value: Blake2bWord,
-    ) -> Result<Self, Error> {
-        let result =
-            region.assign_advice_from_constant(|| annotation, column, offset, word_value)?;
-        Ok(Self(result))
-    }
-
-    pub(crate) fn value(&self) -> Value<Blake2bWord> {
-        self.0.value().cloned()
-    }
-
-    pub(crate) fn cell(&self) -> Cell {
-        self.0.cell()
     }
 }
 

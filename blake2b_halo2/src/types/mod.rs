@@ -19,7 +19,6 @@
 use ff::PrimeField;
 use halo2_proofs::circuit::AssignedCell;
 use num_bigint::BigUint;
-use std::fmt::Debug;
 
 /// Native type for an [AssignedCell] that hasn't been constrained yet
 pub(crate) type AssignedNative<F> = AssignedCell<F, F>;

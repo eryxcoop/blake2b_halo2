@@ -1,10 +1,8 @@
 use super::*;
-use crate::base_operations::decompose_8::Decompose8Config;
-use crate::types::row::AssignedRow;
+use crate::base_operations::decompose_8::{AssignedBlake2bWord, AssignedByte, Decompose8Config};
 use ff::PrimeField;
 use halo2_proofs::circuit::Value;
-use crate::types::blake2b_word::{AssignedBlake2bWord, Blake2bWord};
-use crate::types::byte::AssignedByte;
+use crate::types::row::AssignedRow;
 
 /// This gate rotates the limbs of a number to the right and uses copy constrains to ensure that
 /// the rotation is correct. It's used in our circuit to implement 16-bit, 24-bit and 32-bit rotations.
@@ -30,14 +28,7 @@ impl LimbRotation {
         let result_value =
             Self::right_rotation_value(input_row.full_number.value(), limbs_to_rotate_to_the_right);
 
-        let result_cell = region.assign_advice(
-            || "Full number rotation output",
-            full_number_u64_column,
-            *offset,
-            || result_value,
-        )?.into();
-
-        decompose_config.q_decompose.enable(region, *offset)?;
+        let result_cell = decompose_config.assign_decomposed_word(region, offset, full_number_u64_column, result_value)?;
 
         for i in 0..8 {
             // We must subtract limb_rotations_right because if a number is expressed bitwise

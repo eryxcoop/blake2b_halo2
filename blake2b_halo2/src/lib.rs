@@ -16,4 +16,4 @@ pub(crate) mod base_operations;
 mod tests;
 pub(crate) mod blake2b;
 pub mod examples;
-mod types;
+pub(crate) mod types;

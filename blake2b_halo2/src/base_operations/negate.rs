@@ -1,5 +1,5 @@
 use super::*;
-use crate::types::blake2b_word::{AssignedBlake2bWord, Blake2bWord};
+use crate::base_operations::decompose_8::AssignedBlake2bWord;
 
 /// This config handles the bitwise negation of a 64-bit number.
 #[derive(Clone, Debug)]
@@ -44,7 +44,13 @@ impl NegateConfig {
         full_number_column: Column<Advice>,
     ) -> Result<AssignedBlake2bWord<F>, Error> {
         self.q_negate.enable(region, *offset)?;
-        input.0.copy_advice(|| "Negation input", region, full_number_column, *offset)?;
+        AssignedBlake2bWord::copy_advice_word(
+            input,
+            region,
+            full_number_column,
+            *offset,
+            "Negation input",
+        )?;
         *offset += 1;
 
         let result_value: Value<Blake2bWord> =

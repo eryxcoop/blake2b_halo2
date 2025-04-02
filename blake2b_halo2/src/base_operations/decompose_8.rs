@@ -1,7 +1,8 @@
 use super::*;
+use halo2_proofs::circuit::{AssignedCell, Cell};
+use num_bigint::BigUint;
 use crate::types::{get_word_biguint_from_le_field, AssignedNative};
-use crate::types::blake2b_word::{AssignedBlake2bWord, Blake2bWord};
-use crate::types::byte::AssignedByte;
+use crate::types::byte::Byte;
 use crate::types::row::AssignedRow;
 // [Zhiyong comment] I suggest to remove this trait and the gate of decomposition_limb_range_check. Instead, we define a gate API like:
 // fn decomposition_gate(number: Expression<F>, limbs: &[Expressions]) who takes inputs of expressions and integrate this
@@ -249,6 +250,19 @@ impl Decompose8Config {
         region.constrain_equal(cell.cell(), new_cells.full_number.cell())
     }
 
+    // TODO este no me cierra, deberia crear los bytes tambien
+    pub(crate) fn assign_decomposed_word<F: PrimeField>(&self, region: &mut Region<F>, offset: &mut usize, full_number_u64_column: Column<Advice>, result_value: Value<Blake2bWord>) -> Result<AssignedBlake2bWord<F>, Error> {
+        let result_cell = AssignedBlake2bWord(region.assign_advice(
+            || "Full number rotation output",
+            full_number_u64_column,
+            *offset,
+            || result_value,
+        )?);
+
+        self.q_decompose.enable(region, *offset)?;
+        Ok(result_cell)
+    }
+
     /// Given a field element and a limb index in little endian form, this function checks that the
     /// field element is in range [0, 2^64-1]. If it's not, it will fail.
     /// We assume that the internal representation of the field is in little endian form. If it's
@@ -264,5 +278,128 @@ impl Decompose8Config {
             bytes.resize(8, 0u8);
             bytes[limb_number] // Access the limb in little-endian
         }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub(crate) struct AssignedBlake2bWord<F: PrimeField>(pub AssignedCell<Blake2bWord, F>);
+
+impl<F: PrimeField> AssignedBlake2bWord<F> {
+    fn assign_advice_word(
+        region: &mut Region<F>,
+        annotation: &str,
+        column: Column<Advice>,
+        offset: usize,
+        value: Value<F>,
+    ) -> Result<Self, Error> {
+        // Check value is in range
+        let word_value = value.map(|v| {
+            let bi_v = get_word_biguint_from_le_field(v);
+            #[cfg(not(test))]
+            assert!(bi_v <= BigUint::from((1u128 << 64) - 1));
+            let mut bytes = bi_v.to_bytes_le();
+            bytes.resize(8, 0);
+            // let first_8_bytes: [u8; 8] = bytes[..8].try_into().unwrap();
+            Blake2bWord(u64::from_le_bytes(bytes.try_into().unwrap()))
+        });
+        // Create AssignedCell with the same value but different type
+        let assigned_byte =
+            Self(region.assign_advice(|| annotation, column, offset, || word_value)?);
+        Ok(assigned_byte)
+    }
+
+    pub(crate) fn copy_advice_word(
+        &self,
+        region: &mut Region<F>,
+        column: Column<Advice>,
+        offset: usize,
+        annotation: &str,
+    ) -> Result<Self, Error> {
+        let result = self.0.copy_advice(|| annotation, region, column, offset)?;
+        Ok(Self(result))
+    }
+
+    pub(crate) fn assign_fixed_word(
+        region: &mut Region<F>,
+        annotation: &str,
+        column: Column<Advice>,
+        offset: usize,
+        word_value: Blake2bWord,
+    ) -> Result<Self, Error> {
+        let result =
+            region.assign_advice_from_constant(|| annotation, column, offset, word_value)?;
+        Ok(Self(result))
+    }
+
+    pub(crate) fn value(&self) -> Value<Blake2bWord> {
+        self.0.value().cloned()
+    }
+
+    pub(crate) fn cell(&self) -> Cell {
+        self.0.cell()
+    }
+}
+
+/// This wrapper type on `AssignedCell<Byte, F>` is designed to enforce type safety
+/// on assigned bytes. It prevents the user from creating an `AssignedByte`
+/// without using the designated entry points, which guarantee (with
+/// constraints) that the assigned value is indeed in the range [0, 256).
+#[derive(Clone, Debug)]
+pub(crate) struct AssignedByte<F: PrimeField>(AssignedCell<Byte, F>);
+
+impl<F: PrimeField> AssignedByte<F> {
+    fn copy_advice_byte_from_native(
+        region: &mut Region<F>,
+        annotation: &str,
+        column: Column<Advice>,
+        offset: usize,
+        cell_to_copy: AssignedNative<F>,
+    ) -> Result<Self, Error> {
+        // Check value is in range
+        let byte_value = cell_to_copy.value().map(|v| Byte::new_from_field(*v));
+        // Create AssignedCell with the same value but different type
+        let assigned_byte =
+            Self(region.assign_advice(|| annotation, column, offset, || byte_value)?);
+        // Constrain cells have equal values
+        region.constrain_equal(cell_to_copy.cell(), assigned_byte.cell())?;
+
+        Ok(assigned_byte)
+    }
+
+    pub(crate) fn copy_advice_byte(
+        region: &mut Region<F>,
+        annotation: &str,
+        column: Column<Advice>,
+        offset: usize,
+        cell_to_copy: AssignedByte<F>,
+    ) -> Result<Self, Error> {
+        // Check value is in range
+        let byte_value = cell_to_copy.0.value().map(|v| Byte(v.0));
+        // Create AssignedCell with the same value but different type
+        let assigned_byte =
+            Self(region.assign_advice(|| annotation, column, offset, || byte_value)?);
+        // Constrain cells have equal values
+        region.constrain_equal(cell_to_copy.cell(), assigned_byte.cell())?;
+
+        Ok(assigned_byte)
+    }
+
+    fn assign_advice_byte(
+        region: &mut Region<F>,
+        annotation: &str,
+        column: Column<Advice>,
+        offset: usize,
+        value: Value<F>,
+    ) -> Result<Self, Error> {
+        // Check value is in range
+        let byte_value = value.map(|v| Byte::new_from_field(v));
+        // Create AssignedCell with the same value but different type
+        let assigned_byte =
+            Self(region.assign_advice(|| annotation, column, offset, || byte_value)?);
+        Ok(assigned_byte)
+    }
+
+    pub(crate) fn cell(&self) -> Cell {
+        self.0.cell()
     }
 }
