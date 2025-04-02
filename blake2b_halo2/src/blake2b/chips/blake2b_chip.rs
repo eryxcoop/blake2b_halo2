@@ -273,6 +273,8 @@ impl Blake2bInstructions for Blake2bChip {
         let a = self.add_copying_one_parameter(&a_plus_b, &x, region, offset)?;
 
         // v[d] = rotr_64(v[d] ^ v[a], 32);
+        //[zhiyong]: v_d in the following assignment not necessarily 64-bit range-check as it is derived from globle state V, which 
+        // is either from IV or from the previous round ???
         let d_xor_a = self.xor_copying_one_parameter(&a, &v_d, region, offset)?;
         let d = self.rotate_right_32(d_xor_a, region, offset)?;
 

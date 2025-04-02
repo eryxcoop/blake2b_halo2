@@ -27,6 +27,7 @@ impl AdditionMod64Config {
         ///     sum mod 2 ^ 64 = full_number_result - full_number_x - full_number_y
         ///                     + carry * (1 << 64)
         ///    carry = carry * (1 << 0) - carry
+        ///    [zhiyong]: carry = carry * (1 - carry)??
         ///
         /// Note that the full number is implicitly range checked to be a 64-bit number because we
         /// are using 8-bit limbs (we are using the decompose 8 config)

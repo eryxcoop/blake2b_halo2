@@ -16,7 +16,7 @@ impl Byte {
     fn new_from_field<F: PrimeField>(field: F) -> Self {
         let bi_v = types::get_word_biguint_from_le_field(field);
         #[cfg(not(test))]
-        assert!(bi_v <= BigUint::from(255u8));
+        assert!(bi_v <= BigUint::from(255u8));  //[zhiyong]: no need to check in CPU, since it will be constrained in the circuit anyway
         Byte(bi_v.to_bytes_le().first().copied().unwrap())
     }
 }

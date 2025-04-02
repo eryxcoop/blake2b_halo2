@@ -29,7 +29,7 @@ pub(crate) struct XorConfig {
     /// Selector for the xor gate
     pub q_xor: Selector,
 
-    /// Decomposition
+    /// Decomposition  //[zhiyong]: logically, this config should not be part of XOR
     decompose: Decompose8Config,
 }
 
@@ -91,6 +91,11 @@ impl XorConfig {
             .zip(cell_to_copy.value())
             .map(|(v0, v1)| v0 ^ v1);
 
+        // [zhiyong]: how about computing the value of XOR for each limb and assign into the resulting limb, then 
+        // add the decomposition constraint on the resulting row *outside* XOR lookup config. Besides the integrity reasons,  
+        // the following assignment automatically enable 8-bit range check which is not necessary in this case (the XOR lookup already enforced it). I believe this
+        // design may casue such confusions in many places, then separating assignment and decomposition config might 
+        // be a good choice. 
         self.decompose.generate_row_from_cell(region, cell_to_copy, *offset)?;
         *offset += 1;
 
@@ -112,7 +117,7 @@ impl XorConfig {
     pub(crate) fn configure<F: PrimeField>(
         meta: &mut ConstraintSystem<F>,
         limbs_8_bits: [Column<Advice>; 8],
-        decompose: Decompose8Config,
+        decompose: Decompose8Config,  //[zhiyong]: is there a way to work around as decompose should not be part of xor
     ) -> Self {
         let q_xor = meta.complex_selector();
         let t_xor_left = meta.lookup_table_column();

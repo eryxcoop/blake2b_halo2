@@ -38,7 +38,7 @@ impl LimbRotation {
         )?.into();
 
         decompose_config.q_decompose.enable(region, *offset)?;
-
+        // [zhiyong]: nice and clean!
         for i in 0..8 {
             // We must subtract limb_rotations_right because if a number is expressed bitwise
             // as x = l1|l2|...|l7|l8, the limbs are stored as [l8, l7, ..., l2, l1]

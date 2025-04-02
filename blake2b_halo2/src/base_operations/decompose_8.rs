@@ -3,13 +3,6 @@ use crate::types::{get_word_biguint_from_le_field, AssignedNative};
 use crate::types::blake2b_word::{AssignedBlake2bWord, Blake2bWord};
 use crate::types::byte::AssignedByte;
 use crate::types::row::AssignedRow;
-// [Zhiyong comment] I suggest to remove this trait and the gate of decomposition_limb_range_check. Instead, we define a gate API like:
-// fn decomposition_gate(number: Expression<F>, limbs: &[Expressions]) who takes inputs of expressions and integrate this
-// into the operation gates, such as addition_mod_64 and xor_spread. On the other hand, we only
-// use decomposition (without range check) for generic_limb_rotation and negate. Then the assignment methods can be used
-// as utilities without enabling the gates. And we let each gate to enable the selectors. This manner would be beneficial
-// for flexibity of the assignment (without enabling the gates) and making each gates complete (you should include all needed
-// columns and constraints, not only the extra ones)
 
 /// This config handles the decomposition of 64-bit numbers into 8-bit limbs in the trace,
 /// where each limbs is range checked regarding the designated limb size.
@@ -102,6 +95,7 @@ impl Decompose8Config {
     pub(crate) fn generate_row_from_assigned_bytes<F: PrimeField>(
         &self,
         region: &mut Region<F>,
+        // [zhiyong]: &[AssignedByte<F>; 8]
         bytes: &[AssignedNative<F>; 8],
         offset: usize,
     ) -> Result<AssignedRow<F>, Error> {
@@ -121,7 +115,7 @@ impl Decompose8Config {
 
         /// Fill the row with copies of the limbs
         for (index, byte_cell) in bytes.iter().enumerate() {
-            let assigned_byte = AssignedByte::copy_advice_byte_from_native(
+            let assigned_byte = AssignedByte::copy_advice_byte_from_native(  // Nice!
                 region,
                 "Copied input byte",
                 self.limbs[index],
@@ -136,7 +130,7 @@ impl Decompose8Config {
 
     /// Given a list of limb values, it returns the full number value that the limbs build up to.
     fn compute_full_value_u64_from_bytes<F: PrimeField>(
-        bytes: &[AssignedNative<F>; 8],
+        bytes: &[AssignedNative<F>; 8], // [zhiyong]: use the type AssignedByte<F>
     ) -> Value<F> {
         let mut full_number = F::ZERO;
         // We process the limbs from the most significant to the least significant

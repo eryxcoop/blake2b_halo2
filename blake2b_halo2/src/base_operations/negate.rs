@@ -17,6 +17,8 @@ impl NegateConfig {
         /// The gate that will be used to negate a number
         /// The gate is defined as:
         ///    negate = (1 << 64) - 1 - value - not_value
+        
+        // [zhiyong]: should we enforce x and \neg x are all 64-bit long?
         meta.create_gate("negate", |meta| {
             let q_negate = meta.query_selector(q_negate);
             let value = meta.query_advice(full_number_u64, Rotation(0));
