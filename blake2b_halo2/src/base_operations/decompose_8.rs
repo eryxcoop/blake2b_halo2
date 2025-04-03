@@ -1,7 +1,9 @@
 use super::*;
-use crate::types::{get_word_biguint_from_le_field, AssignedNative};
-use crate::types::blake2b_word::{Blake2bWord};
+use crate::types::blake2b_word::Blake2bWord;
+use crate::types::byte::Byte;
 use crate::types::row::AssignedRow;
+use crate::types::AssignedNative;
+use halo2_proofs::circuit::{AssignedCell, Cell};
 // [Zhiyong comment] I suggest to remove this trait and the gate of decomposition_limb_range_check. Instead, we define a gate API like:
 // fn decomposition_gate(number: Expression<F>, limbs: &[Expressions]) who takes inputs of expressions and integrate this
 // into the operation gates, such as addition_mod_64 and xor_spread. On the other hand, we only
@@ -271,29 +273,6 @@ impl Decompose8Config {
 pub(crate) struct AssignedBlake2bWord<F: PrimeField>(pub AssignedCell<Blake2bWord, F>);
 
 impl<F: PrimeField> AssignedBlake2bWord<F> {
-    fn assign_advice_word(
-        region: &mut Region<F>,
-        annotation: &str,
-        column: Column<Advice>,
-        offset: usize,
-        value: Value<F>,
-    ) -> Result<Self, Error> {
-        // Check value is in range
-        let word_value = value.map(|v| {
-            let bi_v = get_word_biguint_from_le_field(v);
-            #[cfg(not(test))]
-            assert!(bi_v <= BigUint::from((1u128 << 64) - 1));
-            let mut bytes = bi_v.to_bytes_le();
-            bytes.resize(8, 0);
-            // let first_8_bytes: [u8; 8] = bytes[..8].try_into().unwrap();
-            Blake2bWord(u64::from_le_bytes(bytes.try_into().unwrap()))
-        });
-        // Create AssignedCell with the same value but different type
-        let assigned_byte =
-            Self(region.assign_advice(|| annotation, column, offset, || word_value)?);
-        Ok(assigned_byte)
-    }
-
     pub(crate) fn copy_advice_word(
         &self,
         region: &mut Region<F>,
@@ -315,6 +294,26 @@ impl<F: PrimeField> AssignedBlake2bWord<F> {
         let result =
             region.assign_advice_from_constant(|| annotation, column, offset, word_value)?;
         Ok(Self(result))
+    }
+
+    pub(crate) fn assign_advice_word_from_field(
+        region: &mut Region<F>,
+        annotation: &str,
+        column: Column<Advice>,
+        offset: usize,
+        value: Value<F>,
+    ) -> Result<Self, Error> {
+        // Check value is in range
+        let word_value = value.map(|v| Blake2bWord::new_from_field(v));
+        // Create AssignedCell with the same value but different type
+        Self::assign_advice_word(region, annotation, column, offset, word_value)
+    }
+
+    /// Given a value that contains a Blake2bWord it assigns the value into a cell
+    pub(crate) fn assign_advice_word(
+        region: &mut Region<F>, annotation: &str, column: Column<Advice>,
+        offset: usize, word_value: Value<Blake2bWord>) -> Result<Self, Error> {
+        Ok(Self(region.assign_advice(|| annotation, column, offset, || word_value)?))
     }
 
     pub(crate) fn value(&self) -> Value<Blake2bWord> {
@@ -370,7 +369,7 @@ impl<F: PrimeField> AssignedByte<F> {
         Ok(assigned_byte)
     }
 
-    fn assign_advice_byte(
+    fn assign_advice_byte_from_field(
         region: &mut Region<F>,
         annotation: &str,
         column: Column<Advice>,
@@ -380,6 +379,10 @@ impl<F: PrimeField> AssignedByte<F> {
         // Check value is in range
         let byte_value = value.map(|v| Byte::new_from_field(v));
         // Create AssignedCell with the same value but different type
+        Self::assign_advice_byte(region, annotation, column, offset, byte_value)
+    }
+
+    pub(crate) fn assign_advice_byte(region: &mut Region<F>, annotation: &str, column: Column<Advice>, offset: usize, byte_value: Value<Byte>) -> Result<AssignedByte<F>, Error> {
         let assigned_byte =
             Self(region.assign_advice(|| annotation, column, offset, || byte_value)?);
         Ok(assigned_byte)
@@ -387,5 +390,9 @@ impl<F: PrimeField> AssignedByte<F> {
 
     pub(crate) fn cell(&self) -> Cell {
         self.0.cell()
+    }
+
+    pub(crate) fn value(&self) -> Value<Byte> {
+        self.0.value().cloned()
     }
 }

@@ -1,3 +1,4 @@
+use std::ops::BitXor;
 use ff::PrimeField;
 use halo2_proofs::utils::rational::Rational;
 use crate::types::*;
@@ -15,6 +16,13 @@ impl Byte {
         #[cfg(not(test))]
         assert!(bi_v <= BigUint::from(255u8)); //[zhiyong]: no need to check in CPU, since it will be constrained in the circuit anyway
         Byte(bi_v.to_bytes_le().first().copied().unwrap())
+    }
+}
+
+impl BitXor for Byte {
+    type Output = Self;
+    fn bitxor(self, rhs: Self) -> Self::Output {
+        Self(self.0 ^ rhs.0)
     }
 }
 

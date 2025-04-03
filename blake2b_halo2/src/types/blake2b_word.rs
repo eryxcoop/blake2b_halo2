@@ -1,11 +1,10 @@
-use ff::PrimeField;
-use halo2_proofs::circuit::{AssignedCell, Cell, Region, Value};
-use std::ops::{BitXor, Sub};
-use halo2_proofs::plonk::{Advice, Column, Error};
-use halo2_proofs::utils::rational::Rational;
-use crate::types::*;
-use num_bigint::BigUint;
 use crate::base_operations::decompose_8::AssignedBlake2bWord;
+use crate::types::*;
+use ff::PrimeField;
+use halo2_proofs::circuit::AssignedCell;
+use halo2_proofs::utils::rational::Rational;
+use num_bigint::BigUint;
+use std::ops::{BitXor, Sub};
 
 /// The inner type of AssignedBlake2bWord. A wrapper around `u64`
 #[derive(Copy, Clone, Debug)]
@@ -14,7 +13,7 @@ pub(crate) struct Blake2bWord(pub u64);
 impl Blake2bWord {
     /// Creates a new [Blake2bWord] element. When the Blake2bWord is created, it is constrained to be in the
     /// range [0, 2^64 - 1].
-    fn new_from_field<F: PrimeField>(field: F) -> Self {
+    pub(crate) fn new_from_field<F: PrimeField>(field: F) -> Self {
         let bi_v = get_word_biguint_from_le_field(field);
         #[cfg(not(test))]
         assert!(bi_v <= BigUint::from((1u128 << 64) - 1));

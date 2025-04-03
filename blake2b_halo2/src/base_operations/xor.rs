@@ -1,5 +1,6 @@
 use super::*;
-use crate::base_operations::decompose_8::{Decompose8Config};
+use crate::base_operations::decompose_8::{AssignedBlake2bWord, Decompose8Config};
+use crate::types::byte::Byte;
 use crate::types::row::AssignedRow;
 
 /// This config handles the xor operation in the trace. Requires a representation in 8-bit limbs

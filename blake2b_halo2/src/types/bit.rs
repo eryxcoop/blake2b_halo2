@@ -9,7 +9,7 @@ pub(crate) struct Bit(pub bool);
 impl Bit {
     /// Creates a new [Bit] element. When the byte is created, it is constrained to be in the
     /// range [0, 1] and its internal member is a boolean.
-    fn new_from_field<F: PrimeField>(field: F) -> Self {
+    pub fn new_from_field<F: PrimeField>(field: F) -> Self {
         let bi_v = get_word_biguint_from_le_field(field);
         #[cfg(not(test))]
         assert!(bi_v == BigUint::from(0u8) || bi_v == BigUint::from(1u8));

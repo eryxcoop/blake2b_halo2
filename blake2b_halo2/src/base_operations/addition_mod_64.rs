@@ -1,5 +1,5 @@
 use super::*;
-use crate::types::blake2b_word::{AssignedBlake2bWord, Blake2bWord};
+use crate::types::blake2b_word::{Blake2bWord};
 use crate::types::row::AssignedRow;
 use crate::base_operations::decompose_8::{AssignedBlake2bWord, Decompose8Config};
 use halo2_proofs::circuit::{AssignedCell, Cell};
@@ -151,7 +151,7 @@ impl<F: PrimeField> AssignedBit<F> {
         Ok(assigned_bit)
     }
 
-    pub fn cell(&self) -> Cell {
+    pub(crate) fn cell(&self) -> Cell {
         self.0.cell()
     }
 }
