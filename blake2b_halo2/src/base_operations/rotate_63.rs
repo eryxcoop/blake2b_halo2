@@ -43,7 +43,7 @@ impl Rotate63Config {
     /// This method receives a [AssignedBlake2bWord] and a [full_number_u64] column where it will be
     /// copied. In the same column, the result is placed in the next row. The gate constrains the
     /// result.
-    pub(crate) fn generate_rotation_rows_from_cells<F: PrimeField>(
+    pub(crate) fn generate_64_bit_rotation_from_cells<F: PrimeField>(
         &self,
         region: &mut Region<F>,
         offset: &mut usize,

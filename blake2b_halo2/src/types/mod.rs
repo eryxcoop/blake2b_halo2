@@ -12,6 +12,9 @@
 /// All these types are created with a range check in their creation, but also they're created in
 /// a context where its value has been constrained by a circuit restriction to be in range.
 ///
+/// [zhiyong]: the comments here is a bit confusing, as the new types with their assignment methods are only facilities regarding
+/// the refined datetypes. The constraints about the byte, bit, word ... should always be enforced in configure regardless their names.
+///
 /// Everytime you see an AssignedBit, AssignedByte, AssignedBlake2bWord or AssignedRow,
 /// you can be certain that all their values were range checked (both in the synthesize and in the
 /// circuit constraints)

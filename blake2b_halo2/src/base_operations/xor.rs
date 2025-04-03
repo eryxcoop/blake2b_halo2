@@ -31,6 +31,7 @@ pub(crate) struct XorConfig {
     pub q_xor: Selector,
 
     /// Decomposition
+    //[zhiyong]: logically, this config should not be part of XOR
     decompose: Decompose8Config,
 }
 
@@ -163,7 +164,7 @@ impl XorConfig {
     pub(crate) fn configure<F: PrimeField>(
         meta: &mut ConstraintSystem<F>,
         limbs_8_bits: [Column<Advice>; 8],
-        decompose: Decompose8Config,
+        decompose: Decompose8Config, //[zhiyong]: is there a way to work around as decompose should not be part of xor
     ) -> Self {
         let q_xor = meta.complex_selector();
         let t_xor_left = meta.lookup_table_column();
