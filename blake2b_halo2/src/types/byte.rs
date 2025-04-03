@@ -1,3 +1,4 @@
+use std::ops::BitXor;
 use ff::PrimeField;
 use halo2_proofs::circuit::{AssignedCell, Cell, Region, Value};
 use halo2_proofs::plonk::{Advice, Column, Error};
@@ -64,7 +65,7 @@ impl<F: PrimeField> AssignedByte<F> {
 
     /// Given an arbitrary value, this method checks the value is in the range of a Byte (by
     /// creating a Byte object) and then assigns the byte into a cell.
-    pub(crate) fn assign_advice_byte(
+    pub(crate) fn assign_advice_byte_from_field(
         region: &mut Region<F>,
         annotation: &str,
         column: Column<Advice>,
@@ -73,6 +74,10 @@ impl<F: PrimeField> AssignedByte<F> {
     ) -> Result<Self, Error> {
         // Check value is in range
         let byte_value = value.map(|v| Byte::new_from_field(v));
+        Self::assign_advice_byte(region, annotation, column, offset, byte_value)
+    }
+
+    pub(crate) fn assign_advice_byte(region: &mut Region<F>, annotation: &str, column: Column<Advice>, offset: usize, byte_value: Value<Byte>) -> Result<Self, Error> {
         // Create AssignedCell with the same value but different type
         let assigned_byte =
             Self(region.assign_advice(|| annotation, column, offset, || byte_value)?);
@@ -82,6 +87,17 @@ impl<F: PrimeField> AssignedByte<F> {
     /// Getter for the internal cell
     pub(crate) fn cell(&self) -> Cell {
         self.0.cell()
+    }
+
+    pub(crate) fn value(&self) -> Value<Byte> {
+        self.0.value().cloned()
+    }
+}
+
+impl BitXor for Byte {
+    type Output = Self;
+    fn bitxor(self, rhs: Self) -> Self::Output {
+        Self(self.0 ^ rhs.0)
     }
 }
 

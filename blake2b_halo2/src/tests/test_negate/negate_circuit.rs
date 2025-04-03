@@ -71,7 +71,7 @@ impl<F: PrimeField> Circuit<F> for NegateCircuit<F> {
                     &mut region,
                     self.value,
                     offset,
-                )?;
+                )?.full_number;
                 offset += 1;
 
                 let result = config.negate_config.generate_rows_from_cell(

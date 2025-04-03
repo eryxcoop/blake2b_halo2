@@ -21,7 +21,10 @@ impl Blake2bWord {
         bytes.resize(8, 0);
         u64::from_le_bytes(bytes.try_into().unwrap()).into()
     }
-}
+
+    pub fn to_le_bytes(self) -> [u8; 8] {
+        self.0.to_le_bytes()
+    }}
 
 impl BitXor for Blake2bWord {
     type Output = Self;
@@ -59,7 +62,7 @@ pub(crate) struct AssignedBlake2bWord<F: PrimeField>(pub AssignedCell<Blake2bWor
 impl<F: PrimeField> AssignedBlake2bWord<F> {
     /// Given an arbitrary value, this method checks the value is in the range of a Blake2bWord (by
     /// creating a Blake2bWord object) and then assigns the Blake2bWord into a cell.
-    pub(crate) fn assign_advice_word(
+    pub(crate) fn assign_advice_word_from_field(
         region: &mut Region<F>,
         annotation: &str,
         column: Column<Advice>,
@@ -69,6 +72,10 @@ impl<F: PrimeField> AssignedBlake2bWord<F> {
         // Check value is in range
         let word_value = value.map(|v| Blake2bWord::new_from_field(v));
         // Create AssignedCell with the same value but different type
+        Self::assign_advice_word(region, annotation, column, offset, word_value)
+    }
+
+    pub(crate) fn assign_advice_word(region: &mut Region<F>, annotation: &str, column: Column<Advice>, offset: usize, word_value: Value<Blake2bWord>) -> Result<Self, Error> {
         Ok(Self(region.assign_advice(|| annotation, column, offset, || word_value)?))
     }
 

@@ -2,6 +2,7 @@ use super::*;
 use crate::base_operations::decompose_8::Decompose8Config;
 use crate::types::bit::AssignedBit;
 use crate::types::blake2b_word::{AssignedBlake2bWord, Blake2bWord};
+use crate::types::row::AssignedRow;
 
 /// Config used to constrain addition mod 64-bits. It uses the [Decompose8Config] to generate
 /// a decomposed result, which will be used in one of the optimizations.
@@ -68,7 +69,7 @@ impl AdditionMod64Config {
         cell_to_copy: &AssignedBlake2bWord<F>,
         use_last_cell_as_first_operand: bool,
         full_number_u64_column: Column<Advice>,
-    ) -> Result<(AssignedBlake2bWord<F>, AssignedBit<F>), Error> {
+    ) -> Result<(AssignedRow<F>, AssignedBit<F>), Error> {
         let (result_value, carry_value) =
             Self::calculate_result_and_carry(previous_cell.value(), cell_to_copy.value());
         let offset_to_enable = *offset - if use_last_cell_as_first_operand { 1 } else { 0 };
@@ -93,11 +94,11 @@ impl AdditionMod64Config {
             AssignedBit::assign_advice_bit(region, "carry", self.carry, *offset, carry_value)?;
         *offset += 1;
 
-        let result_cell =
+        let result_row =
             self.decomposition.generate_row_from_word_value(region, result_value, *offset)?;
         *offset += 1;
 
-        Ok((result_cell, carry_cell))
+        Ok((result_row, carry_cell))
     }
 
     /// Given 2 operand values, known at proof generation time, returns the values holding the

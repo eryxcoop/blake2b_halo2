@@ -1,7 +1,7 @@
 use super::*;
 use crate::types::{get_word_biguint_from_le_field, AssignedNative};
 use crate::types::blake2b_word::{AssignedBlake2bWord, Blake2bWord};
-use crate::types::byte::AssignedByte;
+use crate::types::byte::{AssignedByte, Byte};
 use crate::types::row::AssignedRow;
 // [Zhiyong comment] I suggest to remove this trait and the gate of decomposition_limb_range_check. Instead, we define a gate API like:
 // fn decomposition_gate(number: Expression<F>, limbs: &[Expressions]) who takes inputs of expressions and integrate this
@@ -109,7 +109,7 @@ impl Decompose8Config {
         self.q_range.enable(region, offset)?;
 
         /// Compute the full number from the limbs
-        let full_number_cell = AssignedBlake2bWord::assign_advice_word(
+        let full_number_cell = AssignedBlake2bWord::assign_advice_word_from_field(
             region,
             "full number",
             self.full_number_u64,
@@ -179,45 +179,20 @@ impl Decompose8Config {
     pub(crate) fn generate_row_from_value_and_keep_row<F: PrimeField>(
         &self,
         region: &mut Region<F>,
-        value: Value<F>,
+        value: Value<Blake2bWord>,
         offset: usize,
     ) -> Result<AssignedRow<F>, Error> {
-        self.q_decompose.enable(region, offset)?;
         self.q_range.enable(region, offset)?;
-        let full_number_cell = AssignedBlake2bWord::assign_advice_word(
-            region,
-            "full number",
-            self.full_number_u64,
-            offset,
-            value,
-        )?;
-
-        let limbs: [Value<F>; 8] =
+        let limbs: [Value<Byte>; 8] =
             (0..8).map(|i| Self::get_limb_from(value, i)).collect::<Vec<_>>().try_into().unwrap();
-
-        let assigned_limbs: Vec<AssignedByte<F>> = limbs
-            .iter()
-            .enumerate()
-            .map(|(i, limb)| {
-                AssignedByte::assign_advice_byte(
-                    region,
-                    "limb",
-                    self.limbs[i],
-                    offset,
-                    limb.clone(),
-                )
-                .unwrap()
-            })
-            .collect::<Vec<_>>();
-
-        Ok(AssignedRow::new(full_number_cell, assigned_limbs.try_into().unwrap()))
+        self.create_row_with(region, value, limbs, offset)
     }
 
     /// Given a value and a limb index, it returns the value of the limb
-    fn get_limb_from<F: PrimeField>(value: Value<F>, limb_number: usize) -> Value<F> {
+    fn get_limb_from(value: Value<Blake2bWord>, limb_number: usize) -> Value<Byte> {
         value.map(|v| {
-            let number = Self::get_word_limb_from_le_field(v, limb_number);
-            F::from_u128(number.into())
+            let number = v.to_le_bytes()[limb_number];
+            Byte(number.into())
         })
     }
 
@@ -228,11 +203,10 @@ impl Decompose8Config {
         region: &mut Region<F>,
         value: Value<Blake2bWord>,
         offset: usize,
-    ) -> Result<AssignedBlake2bWord<F>, Error> {
+    ) -> Result<AssignedRow<F>, Error> {
         let new_row =
-            self.generate_row_from_value_and_keep_row(region, value.map(|v| F::from(v.0)), offset)?;
-        let full_number_cell = new_row.full_number;
-        Ok(full_number_cell)
+            self.generate_row_from_value_and_keep_row(region, value, offset)?;
+        Ok(new_row)
     }
 
     /// Given a cell with a 64-bit value, it creates a new row with the copied full number and the
@@ -242,27 +216,41 @@ impl Decompose8Config {
         region: &mut Region<F>,
         cell: &AssignedBlake2bWord<F>,
         offset: usize,
-    ) -> Result<(), Error> {
+    ) -> Result<AssignedRow<F>, Error> {
         let value = cell.value();
         let new_cells =
-            self.generate_row_from_value_and_keep_row(region, value.map(|v| F::from(v.0)), offset)?;
-        region.constrain_equal(cell.cell(), new_cells.full_number.cell())
+            self.generate_row_from_value_and_keep_row(region, value, offset)?;
+        region.constrain_equal(cell.cell(), new_cells.full_number.cell())?;
+        Ok(new_cells)
     }
 
-    /// Given a field element and a limb index in little endian form, this function checks that the
-    /// field element is in range [0, 2^64-1]. If it's not, it will fail.
-    /// We assume that the internal representation of the field is in little endian form. If it's
-    /// not, the result is undefined and probably incorrect.
-    /// Finally, it obtains the corresponding limb value in little endian. This method ensures that
-    /// the limb to be a value in range [0,7].
-    fn get_word_limb_from_le_field<F: PrimeField>(field: F, limb_number: usize) -> u8 {
-        let big_uint_field = get_word_biguint_from_le_field(field);
-        if limb_number >= 8 {
-            panic!("Arguments to the function are incorrect")
-        } else {
-            let mut bytes = big_uint_field.to_bytes_le();
-            bytes.resize(8, 0u8);
-            bytes[limb_number] // Access the limb in little-endian
-        }
+    pub(crate) fn create_row_with<F: PrimeField>(
+        &self, region: &mut Region<F>, full_value: Value<Blake2bWord>, limb_values: [Value<Byte>; 8], offset: usize) -> Result<AssignedRow<F>, Error> {
+        self.q_decompose.enable(region, offset)?;
+
+        let full_number_cell = AssignedBlake2bWord::assign_advice_word(
+            region,
+            "full number",
+            self.full_number_u64,
+            offset,
+            full_value,
+        )?;
+
+        let assigned_limbs: Vec<AssignedByte<F>> = limb_values
+            .iter()
+            .enumerate()
+            .map(|(i, limb)| {
+                AssignedByte::assign_advice_byte(
+                    region,
+                    "limb",
+                    self.limbs[i],
+                    offset,
+                    limb.clone(),
+                )
+                    .unwrap()
+            })
+            .collect::<Vec<_>>();
+
+        Ok(AssignedRow::new(full_number_cell, assigned_limbs.try_into().unwrap()))
     }
 }
