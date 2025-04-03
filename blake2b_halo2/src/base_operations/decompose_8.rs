@@ -176,7 +176,7 @@ impl Decompose8Config {
     /// Given a Value, we might want to use it as an operand in the circuit, and sometimes we need
     /// to establish constraints over the result's limbs. That's why we need a way to retrieve the
     /// full row that was created from that value.
-    pub(crate) fn generate_row_from_value_and_keep_row<F: PrimeField>(
+    pub(crate) fn generate_row_from_word_and_keep_row<F: PrimeField>(
         &self,
         region: &mut Region<F>,
         value: Value<Blake2bWord>,
@@ -185,7 +185,7 @@ impl Decompose8Config {
         self.q_range.enable(region, offset)?;
         let limbs: [Value<Byte>; 8] =
             (0..8).map(|i| Self::get_limb_from(value, i)).collect::<Vec<_>>().try_into().unwrap();
-        self.create_row_with(region, value, limbs, offset)
+        self.create_row_with_word_and_limbs(region, value, limbs, offset)
     }
 
     /// Given a value and a limb index, it returns the value of the limb
@@ -204,9 +204,7 @@ impl Decompose8Config {
         value: Value<Blake2bWord>,
         offset: usize,
     ) -> Result<AssignedRow<F>, Error> {
-        let new_row =
-            self.generate_row_from_value_and_keep_row(region, value, offset)?;
-        Ok(new_row)
+        self.generate_row_from_word_and_keep_row(region, value, offset)
     }
 
     /// Given a cell with a 64-bit value, it creates a new row with the copied full number and the
@@ -219,12 +217,14 @@ impl Decompose8Config {
     ) -> Result<AssignedRow<F>, Error> {
         let value = cell.value();
         let new_cells =
-            self.generate_row_from_value_and_keep_row(region, value, offset)?;
+            self.generate_row_from_word_and_keep_row(region, value, offset)?;
         region.constrain_equal(cell.cell(), new_cells.full_number.cell())?;
         Ok(new_cells)
     }
 
-    pub(crate) fn create_row_with<F: PrimeField>(
+    /// Given a full number and the values of the limbs. It creates a new row with these values and
+    /// constrains the limbs to be the little endian representation of the full number.
+    pub(crate) fn create_row_with_word_and_limbs<F: PrimeField>(
         &self, region: &mut Region<F>, full_value: Value<Blake2bWord>, limb_values: [Value<Byte>; 8], offset: usize) -> Result<AssignedRow<F>, Error> {
         self.q_decompose.enable(region, offset)?;
 

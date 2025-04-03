@@ -88,7 +88,7 @@ impl<F: PrimeField, const T: usize> Circuit<F> for LimbRotationCircuitAutogenera
                 let input_row = config
                     .limb_rotation_config
                     .decompose_8_config
-                    .generate_row_from_value_and_keep_row(&mut region, self.input, offset)?;
+                    .generate_row_from_word_and_keep_row(&mut region, self.input, offset)?;
                 offset += 1;
 
                 let decompose_config = &config.limb_rotation_config.decompose_8_config;

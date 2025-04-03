@@ -77,8 +77,10 @@ impl<F: PrimeField> AssignedByte<F> {
         Self::assign_advice_byte(region, annotation, column, offset, byte_value)
     }
 
-    pub(crate) fn assign_advice_byte(region: &mut Region<F>, annotation: &str, column: Column<Advice>, offset: usize, byte_value: Value<Byte>) -> Result<Self, Error> {
-        // Create AssignedCell with the same value but different type
+    /// Given a value that contains a Byte it assigns the value into a cell
+    pub(crate) fn assign_advice_byte(
+        region: &mut Region<F>, annotation: &str, column: Column<Advice>, offset: usize,
+        byte_value: Value<Byte>) -> Result<Self, Error> {
         let assigned_byte =
             Self(region.assign_advice(|| annotation, column, offset, || byte_value)?);
         Ok(assigned_byte)

@@ -75,7 +75,10 @@ impl<F: PrimeField> AssignedBlake2bWord<F> {
         Self::assign_advice_word(region, annotation, column, offset, word_value)
     }
 
-    pub(crate) fn assign_advice_word(region: &mut Region<F>, annotation: &str, column: Column<Advice>, offset: usize, word_value: Value<Blake2bWord>) -> Result<Self, Error> {
+    /// Given a value that contains a Blake2bWord it assigns the value into a cell
+    pub(crate) fn assign_advice_word(
+        region: &mut Region<F>, annotation: &str, column: Column<Advice>,
+        offset: usize, word_value: Value<Blake2bWord>) -> Result<Self, Error> {
         Ok(Self(region.assign_advice(|| annotation, column, offset, || word_value)?))
     }
 
