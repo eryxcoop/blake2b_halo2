@@ -3,9 +3,7 @@ use ff::PrimeField;
 use halo2_proofs::circuit::{AssignedCell, Cell, Region, Value};
 use halo2_proofs::plonk::{Advice, Column, Error};
 use halo2_proofs::utils::rational::Rational;
-use num_bigint::BigUint;
-use crate::types;
-use crate::types::AssignedNative;
+use crate::types::*;
 
 /// The inner type of AssignedByte. A wrapper around `u8`
 #[derive(Copy, Clone, Debug)]
@@ -15,7 +13,7 @@ impl Byte {
     /// Creates a new [Byte] element. When the byte is created, it is constrained to be in the
     /// range [0, 255].
     fn new_from_field<F: PrimeField>(field: F) -> Self {
-        let bi_v = types::get_word_biguint_from_le_field(field);
+        let bi_v = get_word_biguint_from_le_field(field);
         #[cfg(not(test))]
         assert!(bi_v <= BigUint::from(255u8)); //[zhiyong]: no need to check in CPU, since it will be constrained in the circuit anyway
         Byte(bi_v.to_bytes_le().first().copied().unwrap())
@@ -63,27 +61,15 @@ impl<F: PrimeField> AssignedByte<F> {
         Ok(Self(cell_to_copy.0.copy_advice(|| annotation, region, column, offset)?))
     }
 
-    /// Given an arbitrary value, this method checks the value is in the range of a Byte (by
-    /// creating a Byte object) and then assigns the byte into a cell.
-    pub(crate) fn assign_advice_byte_from_field(
+    /// Given a value that contains a Byte it assigns the value into a cell
+    pub(crate) fn assign_advice_byte(
         region: &mut Region<F>,
         annotation: &str,
         column: Column<Advice>,
         offset: usize,
-        value: Value<F>,
+        byte_value: Value<Byte>
     ) -> Result<Self, Error> {
-        // Check value is in range
-        let byte_value = value.map(|v| Byte::new_from_field(v));
-        Self::assign_advice_byte(region, annotation, column, offset, byte_value)
-    }
-
-    /// Given a value that contains a Byte it assigns the value into a cell
-    pub(crate) fn assign_advice_byte(
-        region: &mut Region<F>, annotation: &str, column: Column<Advice>, offset: usize,
-        byte_value: Value<Byte>) -> Result<Self, Error> {
-        let assigned_byte =
-            Self(region.assign_advice(|| annotation, column, offset, || byte_value)?);
-        Ok(assigned_byte)
+        Ok(Self(region.assign_advice(|| annotation, column, offset, || byte_value)?))
     }
 
     /// Getter for the internal cell
