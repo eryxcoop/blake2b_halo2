@@ -1,5 +1,5 @@
 use super::*;
-use crate::base_operations::decompose_8::{AssignedBlake2bWord, Decompose8Config};
+use crate::base_operations::decompose_8::{Decompose8Config};
 use crate::types::row::AssignedRow;
 
 /// This config handles the xor operation in the trace. Requires a representation in 8-bit limbs
@@ -29,6 +29,7 @@ pub(crate) struct XorConfig {
     pub q_xor: Selector,
 
     /// Decomposition
+    //[zhiyong]: logically, this config should not be part of XOR
     decompose: Decompose8Config,
 }
 
@@ -71,47 +72,77 @@ impl XorConfig {
         Ok(())
     }
 
-    /// This method generates the xor rows in the trace. If the previous cell in the region is one
-    /// of the operands, it won't be copied. Otherwise, it will be copied from the cell_to_copy,
-    /// generating an extra row in the circuit.
+    /// This method generates the xor rows in the trace. Copying both operands into new rows on the
+    /// trace and then performing the xor operation on the row limbs. Each limb of the result is
+    /// looked up in a table to check that it is the xor result of the corresponding limbs of the
+    /// operands
     pub(crate) fn generate_xor_rows_from_cells<F: PrimeField>(
         &self,
         region: &mut Region<F>,
         offset: &mut usize,
-        previous_cell: &AssignedBlake2bWord<F>,
-        cell_to_copy: &AssignedBlake2bWord<F>,
-        use_previous_cell: bool,
+        lhs: &AssignedBlake2bWord<F>,
+        rhs: &AssignedBlake2bWord<F>,
     ) -> Result<AssignedRow<F>, Error> {
-        let difference_offset = if use_previous_cell { 1 } else { 0 };
-        self.q_xor.enable(region, *offset - difference_offset)?;
+        self.q_xor.enable(region, *offset)?;
 
-        let result_value = previous_cell
-            .value()
-            .zip(cell_to_copy.value())
-            .map(|(v0, v1)| v0 ^ v1);
-
-        self.decompose.generate_row_from_cell(region, cell_to_copy, *offset)?;
+        let first_operand_row = self.decompose.generate_row_from_cell(region, rhs, *offset)?;
         *offset += 1;
 
-        if !use_previous_cell {
-            self.decompose.generate_row_from_cell(region, previous_cell, *offset)?;
-            *offset += 1;
-        }
+        let second_operand_row = self.decompose.generate_row_from_cell(region, lhs, *offset)?;
+        *offset += 1;
 
-        let result_row = self.decompose.generate_row_from_value_and_keep_row(
+        self.generate_xor_rows(region, offset, &first_operand_row, &second_operand_row)
+    }
+
+    /// This is similar to generate_xor_rows_from_cells but it reuses the first operand of the
+    /// operation Note that this method will work only if first_operand_row is the immediate
+    /// previous row in the trace.
+    pub(crate) fn generate_xor_rows_reusing_first_operand<F: PrimeField>(
+        &self,
+        region: &mut Region<F>,
+        offset: &mut usize,
+        first_operand_row: &AssignedRow<F>,
+        second_operand: &AssignedBlake2bWord<F>,
+    ) -> Result<AssignedRow<F>, Error> {
+        // Since the first row is being reused, the selector must be enabled for offset - 1
+        self.q_xor.enable(region, *offset - 1)?;
+
+        let second_operand_row = self.decompose.generate_row_from_cell(region, second_operand, *offset)?;
+        *offset += 1;
+
+        self.generate_xor_rows(region, offset, first_operand_row, &second_operand_row)
+    }
+
+    fn generate_xor_rows<F: PrimeField>(&self, region: &mut Region<F>, offset: &mut usize, first_operand_row: &AssignedRow<F>, second_operand_row: &AssignedRow<F>) -> Result<AssignedRow<F>, Error> {
+        let mut result_limb_values: Vec<Value<Byte>> = Vec::with_capacity(8);
+        for i in 0..8 {
+            let left = first_operand_row.limbs[i].clone();
+            let right = second_operand_row.limbs[i].clone();
+            let result_value = left
+                .value()
+                .zip(right.value())
+                .map(|(v0, v1)| v0 ^ v1);
+            result_limb_values.push(result_value)
+        }
+        let result_value = first_operand_row.full_number
+            .value()
+            .zip(second_operand_row.full_number.value())
+            .map(|(v0, v1)| v0 ^ v1);
+
+        let result_row = self.decompose.create_row_with_word_and_limbs(
             region,
-            result_value.and_then(|word| Value::known(F::from(word.0))),
+            result_value,
+            result_limb_values.try_into().unwrap(),
             *offset,
         )?;
         *offset += 1;
-
         Ok(result_row)
     }
 
     pub(crate) fn configure<F: PrimeField>(
         meta: &mut ConstraintSystem<F>,
         limbs_8_bits: [Column<Advice>; 8],
-        decompose: Decompose8Config,
+        decompose: Decompose8Config, //[zhiyong]: is there a way to work around as decompose should not be part of xor
     ) -> Self {
         let q_xor = meta.complex_selector();
         let t_xor_left = meta.lookup_table_column();

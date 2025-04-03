@@ -1,4 +1,6 @@
 use super::*;
+use crate::types::blake2b_word::{AssignedBlake2bWord, Blake2bWord};
+use crate::types::row::AssignedRow;
 use crate::base_operations::decompose_8::{AssignedBlake2bWord, Decompose8Config};
 use halo2_proofs::circuit::{AssignedCell, Cell};
 use crate::types::bit::Bit;
@@ -26,7 +28,7 @@ impl AdditionMod64Config {
         /// The gate is defined as:
         ///     sum mod 2 ^ 64 = full_number_result - full_number_x - full_number_y
         ///                     + carry * (1 << 64)
-        ///    carry = carry * (1 << 0) - carry
+        ///    carry = carry * (1 - carry)
         ///
         /// Note that the full number is implicitly range checked to be a 64-bit number because we
         /// are using 8-bit limbs (we are using the decompose 8 config)
@@ -68,7 +70,7 @@ impl AdditionMod64Config {
         cell_to_copy: &AssignedBlake2bWord<F>,
         use_last_cell_as_first_operand: bool,
         full_number_u64_column: Column<Advice>,
-    ) -> Result<(AssignedBlake2bWord<F>, AssignedBit<F>), Error> {
+    ) -> Result<(AssignedRow<F>, AssignedBit<F>), Error> {
         let (result_value, carry_value) =
             Self::calculate_result_and_carry(previous_cell.value(), cell_to_copy.value());
         let offset_to_enable = *offset - if use_last_cell_as_first_operand { 1 } else { 0 };
@@ -96,11 +98,11 @@ impl AdditionMod64Config {
             AssignedBit::assign_advice_bit(region, "carry", self.carry, *offset, carry_value)?;
         *offset += 1;
 
-        let result_cell =
+        let result_row =
             self.decomposition.generate_row_from_word_value(region, result_value, *offset)?;
         *offset += 1;
 
-        Ok((result_cell, carry_cell))
+        Ok((result_row, carry_cell))
     }
 
     /// Given 2 operand values, known at proof generation time, returns the values holding the

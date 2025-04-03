@@ -268,9 +268,11 @@ impl Blake2bInstructions for Blake2bChip {
 
         // v[a] = ((v[a] as u128 + v[b] as u128 + x as u128) % (1 << 64)) as u64;
         let a_plus_b = self.add(&v_a, &v_b, region, offset)?;
-        let a = self.add_copying_one_parameter(&a_plus_b, &x, region, offset)?;
+        let a = self.add_copying_one_parameter(&a_plus_b.full_number, &x, region, offset)?;
 
         // v[d] = rotr_64(v[d] ^ v[a], 32);
+        //[zhiyong]: v_d in the following assignment not necessarily 64-bit range-check as it is derived from globle state V, which
+        // is either from IV or from the previous round ???
         let d_xor_a = self.xor_copying_one_parameter(&a, &v_d, region, offset)?;
         let d = self.rotate_right_32(d_xor_a, region, offset)?;
 
@@ -282,23 +284,23 @@ impl Blake2bInstructions for Blake2bChip {
         let b = self.rotate_right_24(b_xor_c, region, offset)?;
 
         // v[a] = ((v[a] as u128 + v[b] as u128 + y as u128) % (1 << 64)) as u64;
-        let a_plus_b = self.add_copying_one_parameter(&b, &a, region, offset)?;
-        let a = self.add_copying_one_parameter(&a_plus_b, &y, region, offset)?;
+        let a_plus_b = self.add_copying_one_parameter(&b, &a.full_number, region, offset)?;
+        let a = self.add_copying_one_parameter(&a_plus_b.full_number, &y, region, offset)?;
 
         // v[d] = rotr_64(v[d] ^ v[a], 16);
         let d_xor_a = self.xor_copying_one_parameter(&a, &d, region, offset)?;
         let d = self.rotate_right_16(d_xor_a, region, offset)?;
 
         // v[c] = ((v[c] as u128 + v[d] as u128) % (1 << 64)) as u64;
-        let c = self.add_copying_one_parameter(&d, &c, region, offset)?;
+        let c = self.add_copying_one_parameter(&d, &c.full_number, region, offset)?;
 
         // v[b] = rotr_64(v[b] ^ v[c], 63);
         let b_xor_c = self.xor_copying_one_parameter(&c, &b, region, offset)?;
         let b = self.rotate_right_63(b_xor_c.full_number, region, offset)?;
 
-        state[state_indexes[0]] = a;
+        state[state_indexes[0]] = a.full_number;
         state[state_indexes[1]] = b;
-        state[state_indexes[2]] = c;
+        state[state_indexes[2]] = c.full_number;
         state[state_indexes[3]] = d;
 
         Ok(())
@@ -417,7 +419,7 @@ impl Blake2bChip {
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<AssignedRow<F>, Error> {
-        self.xor_config.generate_xor_rows_from_cells(region, offset, lhs, rhs, false)
+        self.xor_config.generate_xor_rows_from_cells(region, offset, lhs, rhs)
     }
 
     /// Addition operation. It's performed over two assigned blake2b words. Is one of the most
@@ -429,8 +431,8 @@ impl Blake2bChip {
         rhs: &AssignedBlake2bWord<F>,
         region: &mut Region<F>,
         offset: &mut usize,
-    ) -> Result<AssignedBlake2bWord<F>, Error> {
-        let addition_cell = self
+    ) -> Result<AssignedRow<F>, Error> {
+        let addition_row = self
             .addition_config
             .generate_addition_rows_from_cells(
                 region,
@@ -440,9 +442,8 @@ impl Blake2bChip {
                 false,
                 self.full_number_u64,
             )?
-            .0
-            .clone();
-        Ok(addition_cell)
+            .0;
+        Ok(addition_row)
     }
 
     /// Bitwise rotation mod 64 bits. 63 bits to the right. Internally uses a [Rotate63Config] and
@@ -454,7 +455,7 @@ impl Blake2bChip {
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<AssignedBlake2bWord<F>, Error> {
-        self.rotate_63_config.generate_rotation_rows_from_cells(
+        self.rotate_63_config.generate_64_bit_rotation_from_cells(
             region,
             offset,
             &input,
@@ -526,19 +527,21 @@ impl Blake2bChip {
     /// row in the trace, instead of just the cell holding the full value. This allows an optimization
     /// where the next operation (which is a rotation) can just read the limbs directly and apply
     /// the limb rotation without copying them.
+    /// This method reuse the first operand of the operation, so it doesn't need to copy it.
+    /// That's why it receives a [AssignedRow] as input, to let us reuse the limbs, which we need
+    /// to perform the XOR operation
     fn xor_copying_one_parameter<F: PrimeField>(
         &self,
-        previous_cell: &AssignedBlake2bWord<F>,
+        previous_operand: &AssignedRow<F>,
         cell_to_copy: &AssignedBlake2bWord<F>,
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<AssignedRow<F>, Error> {
-        self.xor_config.generate_xor_rows_from_cells(
+        self.xor_config.generate_xor_rows_reusing_first_operand(
             region,
             offset,
-            previous_cell,
+            previous_operand,
             cell_to_copy,
-            true,
         )
     }
 
@@ -551,7 +554,7 @@ impl Blake2bChip {
         cell_to_copy: &AssignedBlake2bWord<F>,
         region: &mut Region<F>,
         offset: &mut usize,
-    ) -> Result<AssignedBlake2bWord<F>, Error> {
+    ) -> Result<AssignedRow<F>, Error> {
         Ok(self
             .addition_config
             .generate_addition_rows_from_cells(
@@ -562,8 +565,7 @@ impl Blake2bChip {
                 true, // Uses the optimization
                 self.full_number_u64,
             )?
-            .0
-            .clone())
+            .0)
     }
 
     /// The 8-bit range-check lookup table is created by the [Decompose8Config], since it

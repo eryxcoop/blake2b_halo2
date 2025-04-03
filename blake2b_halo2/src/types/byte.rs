@@ -1,7 +1,7 @@
 use ff::PrimeField;
 use halo2_proofs::utils::rational::Rational;
+use crate::types::*;
 use num_bigint::BigUint;
-use crate::types::get_word_biguint_from_le_field;
 
 /// The inner type of AssignedByte. A wrapper around `u8`
 #[derive(Copy, Clone, Debug)]
@@ -13,7 +13,7 @@ impl Byte {
     pub fn new_from_field<F: PrimeField>(field: F) -> Self {
         let bi_v = get_word_biguint_from_le_field(field);
         #[cfg(not(test))]
-        assert!(bi_v <= BigUint::from(255u8));
+        assert!(bi_v <= BigUint::from(255u8)); //[zhiyong]: no need to check in CPU, since it will be constrained in the circuit anyway
         Byte(bi_v.to_bytes_le().first().copied().unwrap())
     }
 }
