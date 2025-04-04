@@ -1,8 +1,7 @@
-use crate::base_operations::types::*;
+use super::*;
 use ff::PrimeField;
 use halo2_proofs::circuit::{AssignedCell, Cell, Region, Value};
 use halo2_proofs::utils::rational::Rational;
-use num_bigint::BigUint;
 use std::ops::{BitXor, Sub};
 use halo2_proofs::plonk::{Advice, Column, Error};
 

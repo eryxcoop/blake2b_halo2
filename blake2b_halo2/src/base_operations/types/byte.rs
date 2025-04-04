@@ -3,8 +3,8 @@ use ff::PrimeField;
 use halo2_proofs::circuit::{Cell, Region, Value};
 use halo2_proofs::plonk::{Advice, Column, Error};
 use halo2_proofs::utils::rational::Rational;
-use crate::base_operations::types::*;
-use num_bigint::BigUint;
+use super::*;
+
 
 /// The inner type of AssignedByte. A wrapper around `u8`
 #[derive(Copy, Clone, Debug)]
