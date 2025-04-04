@@ -30,7 +30,14 @@ impl LimbRotation {
         let result_value =
             Self::right_rotation_value(input_row.full_number.value(), limbs_to_rotate_to_the_right);
 
-        let result_cell = decompose_config.assign_decomposed_word(region, offset, full_number_u64_column, result_value)?;
+        let result_cell = AssignedBlake2bWord(region.assign_advice(
+            || "Full number rotation output",
+            full_number_u64_column,
+            *offset,
+            || result_value,
+        )?);
+
+        decompose_config.q_decompose.enable(region, *offset)?;
 
         for i in 0..8 {
             // We must subtract limb_rotations_right because if a number is expressed bitwise

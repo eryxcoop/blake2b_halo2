@@ -223,19 +223,6 @@ impl Decompose8Config {
         Ok(new_cells)
     }
 
-    // TODO este no me cierra, deberia crear los bytes tambien
-    pub(crate) fn assign_decomposed_word<F: PrimeField>(&self, region: &mut Region<F>, offset: &mut usize, full_number_u64_column: Column<Advice>, result_value: Value<Blake2bWord>) -> Result<AssignedBlake2bWord<F>, Error> {
-        let result_cell = AssignedBlake2bWord(region.assign_advice(
-            || "Full number rotation output",
-            full_number_u64_column,
-            *offset,
-            || result_value,
-        )?);
-
-        self.q_decompose.enable(region, *offset)?;
-        Ok(result_cell)
-    }
-
     /// Given a full number and the values of the limbs. It creates a new row with these values and
     /// constrains the limbs to be the little endian representation of the full number.
     pub(crate) fn create_row_with_word_and_limbs<F: PrimeField>(
