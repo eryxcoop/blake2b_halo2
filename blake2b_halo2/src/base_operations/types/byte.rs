@@ -8,12 +8,12 @@ use num_bigint::BigUint;
 
 /// The inner type of AssignedByte. A wrapper around `u8`
 #[derive(Copy, Clone, Debug)]
-pub struct Byte(pub u8);
+pub(crate) struct Byte(pub u8);
 
 impl Byte {
     /// Creates a new [Byte] element. When the byte is created, it is constrained to be in the
     /// range [0, 255].
-    pub fn new_from_field<F: PrimeField>(field: F) -> Self {
+    pub(crate) fn new_from_field<F: PrimeField>(field: F) -> Self {
         let bi_v = get_word_biguint_from_le_field(field);
         #[cfg(not(test))]
         assert!(bi_v <= BigUint::from(255u8)); //[zhiyong]: no need to check in CPU, since it will be constrained in the circuit anyway

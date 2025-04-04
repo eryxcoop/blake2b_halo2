@@ -10,8 +10,8 @@ use crate::base_operations::types::byte::AssignedByte;
 ///of the full_number (each limb is an AssignedByte)
 #[derive(Debug)]
 pub(crate) struct AssignedRow<F: PrimeField> {
-    pub full_number: AssignedBlake2bWord<F>,
-    pub limbs: [AssignedByte<F>; 8],
+    pub(crate) full_number: AssignedBlake2bWord<F>,
+    pub(crate) limbs: [AssignedByte<F>; 8],
 }
 
 impl<F: PrimeField> AssignedRow<F> {

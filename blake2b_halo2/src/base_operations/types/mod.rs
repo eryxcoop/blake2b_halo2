@@ -37,7 +37,7 @@ pub(crate) mod row;
 /// We assume that the internal representation of the field is in little endian form. If it's
 /// not, the result is undefined and probably incorrect.
 /// Finally, it returns a [BigUint] holding the field element value.
-pub(crate) fn get_word_biguint_from_le_field<F: PrimeField>(fe: F) -> BigUint {
+fn get_word_biguint_from_le_field<F: PrimeField>(fe: F) -> BigUint {
     let field_internal_representation = fe.to_repr(); // Should be in little-endian
     let (bytes, zeros) = field_internal_representation.as_ref().split_at(8);
 

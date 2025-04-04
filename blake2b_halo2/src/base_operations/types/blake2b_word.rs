@@ -22,7 +22,7 @@ impl Blake2bWord {
         u64::from_le_bytes(bytes.try_into().unwrap()).into()
     }
 
-    pub fn to_le_bytes(self) -> [u8; 8] {
+    pub(crate) fn to_le_bytes(self) -> [u8; 8] {
         self.0.to_le_bytes()
     }}
 
