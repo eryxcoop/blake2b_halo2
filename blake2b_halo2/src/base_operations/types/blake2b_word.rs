@@ -1,10 +1,9 @@
 use super::*;
 use ff::PrimeField;
 use halo2_proofs::circuit::{AssignedCell, Cell, Region, Value};
+use halo2_proofs::plonk::{Advice, Column, Error};
 use halo2_proofs::utils::rational::Rational;
 use std::ops::{BitXor, Sub};
-use halo2_proofs::plonk::{Advice, Column, Error};
-use crate::base_operations::types::bit::AssignedBit;
 
 /// The inner type of AssignedBlake2bWord. A wrapper around `u64`
 #[derive(Copy, Clone, Debug)]
@@ -63,7 +62,7 @@ impl<F: PrimeField> From<&Blake2bWord> for Rational<F> {
 /// without using the designated entry points, which guarantee (with constraints) that the
 /// assigned value is indeed in the range [0, 2^64 - 1].
 #[derive(Clone, Debug)]
-pub(crate) struct AssignedBlake2bWord<F: PrimeField>(pub(in crate::base_operations) AssignedCell<Blake2bWord, F>);
+pub(crate) struct AssignedBlake2bWord<F: PrimeField>(AssignedCell<Blake2bWord, F>);
 
 impl<F: PrimeField> AssignedBlake2bWord<F> {
     /// Method that copies an [AssignedBlake2bWord] in the trace into another cell.

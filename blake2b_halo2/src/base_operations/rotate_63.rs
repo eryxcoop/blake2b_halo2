@@ -59,7 +59,7 @@ impl Rotate63Config {
             *offset,
             || result_value,
         )?;
-        let result_cell = AssignedBlake2bWord(assigned_cell);
+        let result_cell = assigned_cell.into();
         *offset += 1;
         Ok(result_cell)
     }
