@@ -36,8 +36,8 @@ pub(crate) struct AssignedBit<F: PrimeField>(AssignedCell<Bit, F>);
 
 impl<F: PrimeField> AssignedBit<F> {
 
-    /// This method assigns a bit in the trace. The bit is range-checked both in circuit-building
-    /// time (synthesize) and constrained in the circuit. The idea is that only the base operations
+    /// This method assigns a bit in the trace. The bit is range-checked both in
+    /// synthesize time and constrained in the circuit. The idea is that only the base operations
     /// can create an [AssignedBit] from a Field value, since they're responsible to activate the
     /// constraints over the cells in the trace. In this case, the AdditionMod64 gate is the
     /// responsible to create constraints over the carry bit, which will be represented by an

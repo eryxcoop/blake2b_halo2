@@ -43,6 +43,11 @@ impl<F: PrimeField> From<&Byte> for Rational<F> {
 pub(crate) struct AssignedByte<F: PrimeField>(AssignedCell<Byte, F>);
 
 impl<F: PrimeField> AssignedByte<F> {
+    /// This method takes an [AssignedNative] copies it to another cell in the circuit as an
+    /// [AssignedByte]. The range-check is performed in synthesize time, but
+    /// WARNING: the caller of this method should allways constrain the value to be a byte in the
+    /// circuit. That's why only the base operations can create an [AssignedByte] from a Field value,
+    /// since they're responsible to activate the constraints over the cells in the trace.
     pub(in crate::base_operations) fn copy_advice_byte_from_native(
         region: &mut Region<F>,
         annotation: &str,
