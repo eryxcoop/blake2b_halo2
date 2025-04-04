@@ -5,7 +5,7 @@
 
 use halo2_proofs::{circuit::Layouter, plonk::ConstraintSystem};
 
-use ff::{PrimeField};
+use ff::PrimeField;
 use halo2_proofs::circuit::{Region, Value};
 use halo2_proofs::plonk::{Advice, Column, Error, Expression, Selector, TableColumn};
 use halo2_proofs::poly::Rotation;
@@ -16,4 +16,3 @@ pub(crate) mod base_operations;
 mod tests;
 pub(crate) mod blake2b;
 pub mod examples;
-pub(crate) mod types;

@@ -1,6 +1,6 @@
 use super::*;
 use num_bigint::BigUint;
-use crate::base_operations::decompose_8::AssignedBlake2bWord;
+use crate::base_operations::types::blake2b_word::AssignedBlake2bWord;
 
 /// This config handles the 63-right-bit rotation of a 64-bit number, which is the same as the
 /// 1-bit rotation to the left.

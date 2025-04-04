@@ -1,4 +1,4 @@
-use crate::types::blake2b_word::Blake2bWord;
+use types::blake2b_word::Blake2bWord;
 use super::*;
 
 pub mod addition_mod_64;
@@ -8,6 +8,7 @@ pub mod xor;
 
 pub mod generic_limb_rotation;
 pub mod rotate_63;
+pub(crate) mod types;
 
 pub(crate) fn rotate_right_field_element(
     value_to_rotate: Blake2bWord,

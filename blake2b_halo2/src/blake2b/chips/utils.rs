@@ -1,9 +1,9 @@
-use crate::types::AssignedNative;
+use crate::base_operations::types::AssignedNative;
 use ff::PrimeField;
 use halo2_proofs::circuit::Region;
 use halo2_proofs::plonk::Error;
-use crate::base_operations::decompose_8::AssignedBlake2bWord;
-use crate::types::row::AssignedRow;
+use crate::base_operations::types::blake2b_word::AssignedBlake2bWord;
+use crate::base_operations::types::row::AssignedRow;
 
 /// Enforces the output and key sizes.
 /// Output size must be between 1 and 64 bytes.

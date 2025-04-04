@@ -1,5 +1,6 @@
 use ff::PrimeField;
-use crate::base_operations::decompose_8::{AssignedBlake2bWord, AssignedByte};
+use crate::base_operations::types::blake2b_word::AssignedBlake2bWord;
+use crate::base_operations::types::byte::AssignedByte;
 
 /// We use this type to model the Row we generally use along this circuit. This row has the
 /// following shape:

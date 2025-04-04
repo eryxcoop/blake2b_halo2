@@ -1,5 +1,5 @@
+use crate::base_operations::types::blake2b_word::AssignedBlake2bWord;
 use super::*;
-use crate::base_operations::decompose_8::AssignedBlake2bWord;
 
 /// This config handles the bitwise negation of a 64-bit number.
 #[derive(Clone, Debug)]

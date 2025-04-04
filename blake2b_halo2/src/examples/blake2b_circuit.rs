@@ -2,7 +2,7 @@
 
 use crate::blake2b::blake2b::Blake2b;
 use crate::blake2b::chips::blake2b_chip::Blake2bChip;
-use crate::types::AssignedNative;
+use crate::base_operations::types::AssignedNative;
 use ff::PrimeField;
 use halo2_proofs::circuit::{Layouter, SimpleFloorPlanner, Value};
 use halo2_proofs::plonk::{Advice, Circuit, Column, ConstraintSystem, Error, Instance};

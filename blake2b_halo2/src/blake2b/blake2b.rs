@@ -1,9 +1,9 @@
 use crate::blake2b::chips::blake2b_instructions::Blake2bInstructions;
-use crate::types::AssignedNative;
+use crate::base_operations::types::AssignedNative;
 use ff::PrimeField;
 use halo2_proofs::circuit::Layouter;
 use halo2_proofs::plonk::Error;
-use crate::base_operations::decompose_8::AssignedByte;
+use crate::base_operations::types::byte::AssignedByte;
 use crate::blake2b::chips::utils::enforce_input_sizes;
 
 /// A gadget that constrains a Blake2b invocation. This interface works with

@@ -1,6 +1,6 @@
 use crate::base_operations::decompose_8::Decompose8Config;
 use crate::base_operations::negate::NegateConfig;
-use crate::types::blake2b_word::Blake2bWord;
+use crate::base_operations::types::blake2b_word::Blake2bWord;
 use ff::PrimeField;
 use halo2_proofs::circuit::{Layouter, SimpleFloorPlanner, Value};
 use halo2_proofs::plonk::{Advice, Circuit, Column, ConstraintSystem, Error, Fixed};
