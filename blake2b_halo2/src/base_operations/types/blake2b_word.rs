@@ -4,6 +4,7 @@ use halo2_proofs::circuit::{AssignedCell, Cell, Region, Value};
 use halo2_proofs::utils::rational::Rational;
 use std::ops::{BitXor, Sub};
 use halo2_proofs::plonk::{Advice, Column, Error};
+use crate::base_operations::types::bit::AssignedBit;
 
 /// The inner type of AssignedBlake2bWord. A wrapper around `u64`
 #[derive(Copy, Clone, Debug)]
@@ -65,6 +66,7 @@ impl<F: PrimeField> From<&Blake2bWord> for Rational<F> {
 pub(crate) struct AssignedBlake2bWord<F: PrimeField>(pub(in crate::base_operations) AssignedCell<Blake2bWord, F>);
 
 impl<F: PrimeField> AssignedBlake2bWord<F> {
+    /// Method that copies an [AssignedBlake2bWord] in the trace into another cell.
     pub(in crate::base_operations) fn copy_advice_word(
         &self,
         region: &mut Region<F>,
@@ -76,6 +78,8 @@ impl<F: PrimeField> AssignedBlake2bWord<F> {
         Ok(Self(result))
     }
 
+    /// Method that assigns a fixed word in the trace. It's safe to use because it's a constant,
+    /// therefore it's constrained to a fixed value known by everyone.
     pub(crate) fn assign_fixed_word(
         region: &mut Region<F>,
         annotation: &str,
@@ -89,7 +93,11 @@ impl<F: PrimeField> AssignedBlake2bWord<F> {
     }
 
     /// Given a value that contains a field element, this method converts it into a Blake2bWord and
-    /// assigns the value into a cell
+    /// assigns the value into a cell. The word is range-checked both in circuit-building
+    /// time (synthesize) and constrained in the circuit. The idea is that only the base operations
+    /// can create an [AssignedBlake2bWord] from a Field value, since they're responsible to
+    /// activate the constraints over the cells in the trace. In this case, the [Decompose8] gate
+    /// is the responsible to create them.
     pub(in crate::base_operations) fn assign_advice_word_from_field(
         region: &mut Region<F>,
         annotation: &str,
