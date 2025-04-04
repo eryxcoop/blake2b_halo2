@@ -93,7 +93,7 @@ impl XorConfig {
         let second_operand_row = self.decompose.generate_row_from_cell(region, lhs, *offset)?;
         *offset += 1;
 
-        self.generate_xor_rows(region, offset, &first_operand_row, &second_operand_row)
+        self.generate_xor_result_row(region, offset, &first_operand_row, &second_operand_row)
     }
 
     /// This is similar to generate_xor_rows_from_cells but it reuses the first operand of the
@@ -112,10 +112,20 @@ impl XorConfig {
         let second_operand_row = self.decompose.generate_row_from_cell(region, second_operand, *offset)?;
         *offset += 1;
 
-        self.generate_xor_rows(region, offset, first_operand_row, &second_operand_row)
+        self.generate_xor_result_row(region, offset, first_operand_row, &second_operand_row)
     }
 
-    fn generate_xor_rows<F: PrimeField>(&self, region: &mut Region<F>, offset: &mut usize, first_operand_row: &AssignedRow<F>, second_operand_row: &AssignedRow<F>) -> Result<AssignedRow<F>, Error> {
+
+    /// This method uses [create_row_with_word_and_limbs] which is a method that doesn't range
+    /// check the limbs. This is on purpose, because those limbs will be range-checked by this
+    /// gate when doing the lookups.
+    fn generate_xor_result_row<F: PrimeField>(
+        &self,
+        region: &mut Region<F>,
+        offset: &mut usize,
+        first_operand_row: &AssignedRow<F>,
+        second_operand_row: &AssignedRow<F>
+    ) -> Result<AssignedRow<F>, Error> {
         let mut result_limb_values: Vec<Value<Byte>> = Vec::with_capacity(8);
         for i in 0..8 {
             let left = first_operand_row.limbs[i].clone();

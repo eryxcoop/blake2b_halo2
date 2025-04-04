@@ -43,7 +43,7 @@ impl<F: PrimeField> From<&Byte> for Rational<F> {
 pub(crate) struct AssignedByte<F: PrimeField>(AssignedCell<Byte, F>);
 
 impl<F: PrimeField> AssignedByte<F> {
-    /// This method takes an [AssignedNative] copies it to another cell in the circuit as an
+    /// This method takes an [AssignedNative], copies it to another cell in the circuit as an
     /// [AssignedByte]. The range-check is performed in synthesize time, but
     /// WARNING: the caller of this method should allways constrain the value to be a byte in the
     /// circuit. That's why only the base operations can create an [AssignedByte] from a Field value,
@@ -66,6 +66,9 @@ impl<F: PrimeField> AssignedByte<F> {
         Ok(assigned_byte)
     }
 
+    /// This method takes an [AssignedByte], and copies it to another cell in the circuit.
+    /// The range-check is not needed here, since we're copying a cell that should already have
+    /// been constrained.
     pub(in crate::base_operations) fn copy_advice_byte(
         region: &mut Region<F>,
         annotation: &str,
@@ -84,10 +87,17 @@ impl<F: PrimeField> AssignedByte<F> {
         Ok(assigned_byte)
     }
 
-    pub(in crate::base_operations) fn assign_advice_byte(region: &mut Region<F>, annotation: &str, column: Column<Advice>, offset: usize, byte_value: Value<Byte>) -> Result<AssignedByte<F>, Error> {
-        let assigned_byte =
-            Self(region.assign_advice(|| annotation, column, offset, || byte_value)?);
-        Ok(assigned_byte)
+    /// Given a Byte value, it creates an [AssignedBlake2bWord] with its value.
+    /// WARNING: this method is only available to the base operations because they should make sure
+    /// that constrains over the byte values of these cells are enforced.
+    pub(in crate::base_operations) fn assign_advice_byte(
+        region: &mut Region<F>,
+        annotation: &str,
+        column: Column<Advice>,
+        offset: usize,
+        byte_value: Value<Byte>
+    ) -> Result<AssignedByte<F>, Error> {
+        Ok(Self(region.assign_advice(|| annotation, column, offset, || byte_value)?))
     }
 
     pub(crate) fn cell(&self) -> Cell {
