@@ -217,8 +217,7 @@ impl Decompose8Config {
         offset: usize,
     ) -> Result<AssignedRow<F>, Error> {
         let value = cell.value();
-        let new_cells =
-            self.generate_row_from_word_and_keep_row(region, value, offset)?;
+        let new_cells = self.generate_row_from_word_and_keep_row(region, value, offset)?;
         region.constrain_equal(cell.cell(), new_cells.full_number.cell())?;
         Ok(new_cells)
     }
@@ -226,7 +225,12 @@ impl Decompose8Config {
     /// Given a full number and the values of the limbs. It creates a new row with these values and
     /// constrains the limbs to be the little endian representation of the full number.
     pub(crate) fn create_row_with_word_and_limbs<F: PrimeField>(
-        &self, region: &mut Region<F>, full_value: Value<Blake2bWord>, limb_values: [Value<Byte>; 8], offset: usize) -> Result<AssignedRow<F>, Error> {
+        &self,
+        region: &mut Region<F>,
+        full_value: Value<Blake2bWord>,
+        limb_values: [Value<Byte>; 8],
+        offset: usize,
+    ) -> Result<AssignedRow<F>, Error> {
         self.q_decompose.enable(region, offset)?;
 
         let full_number_cell = AssignedBlake2bWord::assign_advice_word(
@@ -248,7 +252,7 @@ impl Decompose8Config {
                     offset,
                     limb.clone(),
                 )
-                    .unwrap()
+                .unwrap()
             })
             .collect::<Vec<_>>();
 

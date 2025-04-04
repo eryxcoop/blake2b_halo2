@@ -31,14 +31,10 @@ impl CircuitRunner {
         key: &String,
         expected: &String,
     ) {
-        let circuit_inputs =
-            Self::prepare_parameters_for_test(input, key, expected);
+        let circuit_inputs = Self::prepare_parameters_for_test(input, key, expected);
 
-        let circuit = Self::create_circuit_for_packed_inputs(
-            circuit_inputs.clone()
-        );
-        let prover = Self::mock_prove_with_public_inputs_ref(
-            &circuit_inputs.4, &circuit);
+        let circuit = Self::create_circuit_for_packed_inputs(circuit_inputs.clone());
+        let prover = Self::mock_prove_with_public_inputs_ref(&circuit_inputs.4, &circuit);
         Self::verify_mock_prover(prover);
     }
 
@@ -122,9 +118,8 @@ impl CircuitRunner {
     ) -> Result<(), Error> {
         let circuit_inputs = Self::prepare_parameters_for_test(&input, &key, &out);
 
-        let circuit: Blake2bCircuit<Fr> = Self::create_circuit_for_packed_inputs(
-            circuit_inputs.clone()
-        );
+        let circuit: Blake2bCircuit<Fr> =
+            Self::create_circuit_for_packed_inputs(circuit_inputs.clone());
 
         let params = ParamsKZG::<Bn256>::unsafe_setup(17, &mut rand::thread_rng());
         let vk: VerifyingKey<Fr, KZGCommitmentScheme<Bn256>> = Self::create_vk(&circuit, &params);

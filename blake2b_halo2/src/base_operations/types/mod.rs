@@ -18,7 +18,6 @@
 /// Everytime you see an AssignedBit, AssignedByte, AssignedBlake2bWord or AssignedRow,
 /// you can be certain that all their values were range checked (both in the synthesize and in the
 /// circuit constraints)
-
 use ff::PrimeField;
 use halo2_proofs::circuit::AssignedCell;
 use num_bigint::BigUint;
@@ -30,7 +29,6 @@ pub(crate) mod bit;
 pub(crate) mod byte;
 pub(crate) mod blake2b_word;
 pub(crate) mod row;
-
 
 /// Given a field element and a limb index in little endian form, this function checks that the
 /// field element is in range [0, 2^64-1]. If it's not, it will fail.
@@ -49,4 +47,3 @@ fn get_word_biguint_from_le_field<F: PrimeField>(fe: F) -> BigUint {
         BigUint::from_bytes_le(bytes)
     }
 }
-

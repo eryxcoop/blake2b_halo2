@@ -109,12 +109,12 @@ impl XorConfig {
         // Since the first row is being reused, the selector must be enabled for offset - 1
         self.q_xor.enable(region, *offset - 1)?;
 
-        let second_operand_row = self.decompose.generate_row_from_cell(region, second_operand, *offset)?;
+        let second_operand_row =
+            self.decompose.generate_row_from_cell(region, second_operand, *offset)?;
         *offset += 1;
 
         self.generate_xor_result_row(region, offset, first_operand_row, &second_operand_row)
     }
-
 
     /// This method uses [create_row_with_word_and_limbs] which is a method that doesn't range
     /// check the limbs. This is on purpose, because those limbs will be range-checked by this
@@ -124,19 +124,17 @@ impl XorConfig {
         region: &mut Region<F>,
         offset: &mut usize,
         first_operand_row: &AssignedRow<F>,
-        second_operand_row: &AssignedRow<F>
+        second_operand_row: &AssignedRow<F>,
     ) -> Result<AssignedRow<F>, Error> {
         let mut result_limb_values: Vec<Value<Byte>> = Vec::with_capacity(8);
         for i in 0..8 {
             let left = first_operand_row.limbs[i].clone();
             let right = second_operand_row.limbs[i].clone();
-            let result_value = left
-                .value()
-                .zip(right.value())
-                .map(|(v0, v1)| v0 ^ v1);
+            let result_value = left.value().zip(right.value()).map(|(v0, v1)| v0 ^ v1);
             result_limb_values.push(result_value)
         }
-        let result_value = first_operand_row.full_number
+        let result_value = first_operand_row
+            .full_number
             .value()
             .zip(second_operand_row.full_number.value())
             .map(|(v0, v1)| v0 ^ v1);

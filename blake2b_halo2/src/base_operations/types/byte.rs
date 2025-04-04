@@ -5,7 +5,6 @@ use halo2_proofs::plonk::{Advice, Column, Error};
 use halo2_proofs::utils::rational::Rational;
 use super::*;
 
-
 /// The inner type of AssignedByte. A wrapper around `u8`
 #[derive(Copy, Clone, Debug)]
 pub(crate) struct Byte(pub u8);
@@ -95,7 +94,7 @@ impl<F: PrimeField> AssignedByte<F> {
         annotation: &str,
         column: Column<Advice>,
         offset: usize,
-        byte_value: Value<Byte>
+        byte_value: Value<Byte>,
     ) -> Result<AssignedByte<F>, Error> {
         Ok(Self(region.assign_advice(|| annotation, column, offset, || byte_value)?))
     }

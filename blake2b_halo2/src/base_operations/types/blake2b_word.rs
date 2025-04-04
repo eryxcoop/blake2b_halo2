@@ -23,7 +23,8 @@ impl Blake2bWord {
 
     pub(crate) fn to_le_bytes(self) -> [u8; 8] {
         self.0.to_le_bytes()
-    }}
+    }
+}
 
 impl BitXor for Blake2bWord {
     type Output = Self;
@@ -41,7 +42,9 @@ impl Sub for Blake2bWord {
 
 impl From<u64> for Blake2bWord {
     /// An u64 has a trivial conversion into a [Blake2bWord]
-    fn from(value: u64) -> Self { Blake2bWord(value) }
+    fn from(value: u64) -> Self {
+        Blake2bWord(value)
+    }
 }
 
 impl<F: PrimeField> From<AssignedCell<Blake2bWord, F>> for AssignedBlake2bWord<F> {
@@ -112,8 +115,12 @@ impl<F: PrimeField> AssignedBlake2bWord<F> {
 
     /// Given a value that contains a Blake2bWord, this method assigns the value into a cell
     pub(in crate::base_operations) fn assign_advice_word(
-        region: &mut Region<F>, annotation: &str, column: Column<Advice>,
-        offset: usize, word_value: Value<Blake2bWord>) -> Result<Self, Error> {
+        region: &mut Region<F>,
+        annotation: &str,
+        column: Column<Advice>,
+        offset: usize,
+        word_value: Value<Blake2bWord>,
+    ) -> Result<Self, Error> {
         Ok(Self(region.assign_advice(|| annotation, column, offset, || word_value)?))
     }
 

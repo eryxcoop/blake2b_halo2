@@ -35,7 +35,6 @@ impl<F: PrimeField> From<&Bit> for Rational<F> {
 pub(crate) struct AssignedBit<F: PrimeField>(AssignedCell<Bit, F>);
 
 impl<F: PrimeField> AssignedBit<F> {
-
     /// This method assigns a bit in the trace. The bit is range-checked both in
     /// synthesize time and constrained in the circuit. The idea is that only the base operations
     /// can create an [AssignedBit] from a Field value, since they're responsible to activate the

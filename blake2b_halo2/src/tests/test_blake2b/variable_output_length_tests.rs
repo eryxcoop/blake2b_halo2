@@ -69,8 +69,7 @@ fn run_variable_output_length_test<const OUT_SIZE: usize>(
 ) {
     let circuit =
         CircuitRunner::create_circuit_for_inputs(input, input_size, vec![], 0, output_size);
-    let prover =
-        CircuitRunner::mock_prove_with_public_inputs_ref(&expected_output_state, &circuit);
+    let prover = CircuitRunner::mock_prove_with_public_inputs_ref(&expected_output_state, &circuit);
     CircuitRunner::verify_mock_prover(prover);
 }
 

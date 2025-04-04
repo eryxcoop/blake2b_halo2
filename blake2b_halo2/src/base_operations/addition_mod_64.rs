@@ -82,7 +82,7 @@ impl AdditionMod64Config {
                 full_number_u64_column,
                 *offset,
                 "Sum first operand",
-                )?;
+            )?;
             *offset += 1;
         }
         AssignedBlake2bWord::copy_advice_word(
