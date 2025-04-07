@@ -2,6 +2,10 @@ use crate::base_operations::types::blake2b_word::AssignedBlake2bWord;
 use super::*;
 
 /// This config handles the bitwise negation of a 64-bit number.
+///
+/// This gate assumes that the input
+/// will already be range checked in the circuit. This is true in the context of Blake2b usage, and
+/// allows us to avoid making duplicate constraints over both input and result.
 #[derive(Clone, Debug)]
 pub(crate) struct NegateConfig {
     q_negate: Selector,

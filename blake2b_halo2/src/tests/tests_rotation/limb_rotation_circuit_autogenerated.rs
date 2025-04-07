@@ -1,5 +1,5 @@
 use super::*;
-use crate::base_operations::decompose_8::Decompose8Config;
+use crate::tests::Decompose8Config;
 use crate::base_operations::generic_limb_rotation::LimbRotation;
 use ff::PrimeField;
 use halo2_proofs::circuit::SimpleFloorPlanner;
@@ -59,8 +59,8 @@ impl<F: PrimeField, const T: usize> Circuit<F> for LimbRotationCircuitAutogenera
         Self::Config {
             limb_rotation_config: LimbRotationCircuitConfig {
                 _ph: PhantomData,
-                decompose_8_config,
-                limb_rotation_config: LimbRotation,
+                decompose_8_config: decompose_8_config.clone(),
+                limb_rotation_config: LimbRotation::configure(decompose_8_config.q_decompose),
             },
             fixed,
             full_number_u64,
@@ -91,12 +91,10 @@ impl<F: PrimeField, const T: usize> Circuit<F> for LimbRotationCircuitAutogenera
                     .generate_row_from_word_and_keep_row(&mut region, self.input, offset)?;
                 offset += 1;
 
-                let decompose_config = &config.limb_rotation_config.decompose_8_config;
                 let result = (&config.limb_rotation_config.limb_rotation_config)
                     .generate_rotation_rows_from_input_row(
                         &mut region,
                         &mut offset,
-                        decompose_config,
                         input_row,
                         limbs_to_rotate_to_the_right,
                         config.full_number_u64,

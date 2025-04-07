@@ -1,5 +1,4 @@
 use super::*;
-use crate::base_operations::decompose_8::{Decompose8Config};
 use crate::base_operations::types::blake2b_word::AssignedBlake2bWord;
 use crate::base_operations::types::byte::Byte;
 use crate::base_operations::types::row::AssignedRow;
@@ -30,9 +29,12 @@ pub(crate) struct XorConfig {
     /// Selector for the xor gate
     pub q_xor: Selector,
 
-    /// Decomposition
-    //[zhiyong]: logically, this config should not be part of XOR
-    decompose: Decompose8Config,
+    /// Involved columns
+    full_number_u64: Column<Advice>,
+    limbs: [Column<Advice>; 8],
+
+    /// Selector for the decomposition
+    q_decompose: Selector,
 }
 
 impl XorConfig {
@@ -87,10 +89,16 @@ impl XorConfig {
     ) -> Result<AssignedRow<F>, Error> {
         self.q_xor.enable(region, *offset)?;
 
-        let first_operand_row = self.decompose.generate_row_from_cell(region, rhs, *offset)?;
+        // We only enable decomposition because the range-checks are performed by the lookups of the gate
+        self.q_decompose.enable(region, *offset)?;
+        let first_operand_row =
+            generate_row_from_cell(region, rhs, *offset, self.full_number_u64, self.limbs)?;
         *offset += 1;
 
-        let second_operand_row = self.decompose.generate_row_from_cell(region, lhs, *offset)?;
+        // We only enable decomposition because the range-checks are performed by the lookups of the gate
+        self.q_decompose.enable(region, *offset)?;
+        let second_operand_row =
+            generate_row_from_cell(region, lhs, *offset, self.full_number_u64, self.limbs)?;
         *offset += 1;
 
         self.generate_xor_result_row(region, offset, &first_operand_row, &second_operand_row)
@@ -109,8 +117,15 @@ impl XorConfig {
         // Since the first row is being reused, the selector must be enabled for offset - 1
         self.q_xor.enable(region, *offset - 1)?;
 
-        let second_operand_row =
-            self.decompose.generate_row_from_cell(region, second_operand, *offset)?;
+        // We only enable decomposition because the range-checks are performed by the lookups of the gate
+        self.q_decompose.enable(region, *offset)?;
+        let second_operand_row = generate_row_from_cell(
+            region,
+            second_operand,
+            *offset,
+            self.full_number_u64,
+            self.limbs,
+        )?;
         *offset += 1;
 
         self.generate_xor_result_row(region, offset, first_operand_row, &second_operand_row)
@@ -139,11 +154,15 @@ impl XorConfig {
             .zip(second_operand_row.full_number.value())
             .map(|(v0, v1)| v0 ^ v1);
 
-        let result_row = self.decompose.create_row_with_word_and_limbs(
+        // We only enable decomposition because the range-checks are performed by the lookups of the gate
+        self.q_decompose.enable(region, *offset)?;
+        let result_row = create_row_with_word_and_limbs(
             region,
             result_value,
             result_limb_values.try_into().unwrap(),
             *offset,
+            self.full_number_u64,
+            self.limbs,
         )?;
         *offset += 1;
         Ok(result_row)
@@ -152,15 +171,16 @@ impl XorConfig {
     pub(crate) fn configure<F: PrimeField>(
         meta: &mut ConstraintSystem<F>,
         limbs_8_bits: [Column<Advice>; 8],
-        decompose: Decompose8Config, //[zhiyong]: is there a way to work around as decompose should not be part of xor
+        full_number_u64: Column<Advice>,
+        limbs: [Column<Advice>; 8],
+        q_decompose: Selector,
     ) -> Self {
         let q_xor = meta.complex_selector();
         let t_xor_left = meta.lookup_table_column();
         let t_xor_right = meta.lookup_table_column();
         let t_xor_out = meta.lookup_table_column();
 
-        /// We need to perform a lookup for each limb, the 64-bit result will be ensured by the
-        /// Decompose8Config
+        /// We need to perform a lookup for each limb
         for limb in limbs_8_bits {
             meta.lookup(format!("xor lookup limb {:?}", limb), |meta| {
                 let left: Expression<F> = meta.query_advice(limb, Rotation(0));
@@ -180,7 +200,9 @@ impl XorConfig {
             t_xor_right,
             t_xor_out,
             q_xor,
-            decompose,
+            full_number_u64,
+            limbs,
+            q_decompose,
         }
     }
 }

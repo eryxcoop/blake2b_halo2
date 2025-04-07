@@ -1,5 +1,5 @@
 use super::*;
-use crate::base_operations::decompose_8::Decompose8Config;
+use crate::tests::Decompose8Config;
 use crate::base_operations::xor::XorConfig;
 use halo2_proofs::circuit::SimpleFloorPlanner;
 use halo2_proofs::plonk::Circuit;
@@ -40,10 +40,16 @@ impl<F: PrimeField> Circuit<F> for XorCircuit<F> {
 
     fn configure(meta: &mut ConstraintSystem<F>) -> Self::Config {
         let full_number_u64 = meta.advice_column();
-        let limbs_8_bits: [Column<Advice>; 8] = array::from_fn(|_| meta.advice_column());
+        let limbs: [Column<Advice>; 8] = array::from_fn(|_| meta.advice_column());
 
-        let decompose_8_config = Decompose8Config::configure(meta, full_number_u64, limbs_8_bits);
-        let xor_config = XorConfig::configure(meta, limbs_8_bits, decompose_8_config.clone());
+        let decompose_8_config = Decompose8Config::configure(meta, full_number_u64, limbs);
+        let xor_config = XorConfig::configure(
+            meta,
+            limbs,
+            full_number_u64,
+            limbs,
+            decompose_8_config.q_decompose,
+        );
 
         Self::Config {
             _ph: PhantomData,

@@ -1,16 +1,16 @@
 use super::*;
+use crate::base_operations::types::bit::AssignedBit;
 use crate::base_operations::types::blake2b_word::{AssignedBlake2bWord, Blake2bWord};
 use crate::base_operations::types::row::AssignedRow;
-use crate::base_operations::decompose_8::{Decompose8Config};
-use crate::base_operations::types::bit::AssignedBit;
 
-/// Config used to constrain addition mod 64-bits. It uses the [Decompose8Config] to generate
-/// a decomposed result, which will be used in one of the optimizations.
+/// Config used to constrain addition mod 64-bits. It generates
+/// a decomposed result in limbs, which will be used in one of the optimizations.
 #[derive(Clone, Debug)]
 pub(crate) struct AdditionMod64Config {
     carry: Column<Advice>,
     pub(crate) q_add: Selector,
-    pub(crate) decomposition: Decompose8Config,
+    q_decompose: Selector,
+    q_range: Selector,
 }
 
 impl AdditionMod64Config {
@@ -19,7 +19,8 @@ impl AdditionMod64Config {
         meta: &mut ConstraintSystem<F>,
         full_number_u64: Column<Advice>,
         carry: Column<Advice>,
-        decomposition: Decompose8Config,
+        q_decompose: Selector,
+        q_range: Selector,
     ) -> Self {
         let q_add = meta.complex_selector();
 
@@ -29,8 +30,8 @@ impl AdditionMod64Config {
         ///                     + carry * (1 << 64)
         ///    carry = carry * (1 - carry)
         ///
-        /// Note that the full number is implicitly range checked to be a 64-bit number because we
-        /// are using 8-bit limbs (we are using the decompose 8 config)
+        /// Note that the full number is range checked to be a 64-bit number because we
+        /// are using 8-bit limbs and the q_decompose and q_range selectors below.
         meta.create_gate("sum mod 2 ^ 64", |meta| {
             let q_add = meta.query_selector(q_add);
             let full_number_x = meta.query_advice(full_number_u64, Rotation(0));
@@ -50,7 +51,8 @@ impl AdditionMod64Config {
         Self {
             carry,
             q_add,
-            decomposition,
+            q_decompose,
+            q_range,
         }
     }
 
@@ -69,6 +71,7 @@ impl AdditionMod64Config {
         cell_to_copy: &AssignedBlake2bWord<F>,
         use_last_cell_as_first_operand: bool,
         full_number_u64_column: Column<Advice>,
+        limbs: [Column<Advice>; 8],
     ) -> Result<(AssignedRow<F>, AssignedBit<F>), Error> {
         let (result_value, carry_value) =
             Self::calculate_result_and_carry(previous_cell.value(), cell_to_copy.value());
@@ -97,8 +100,15 @@ impl AdditionMod64Config {
             AssignedBit::assign_advice_bit(region, "carry", self.carry, *offset, carry_value)?;
         *offset += 1;
 
-        let result_row =
-            self.decomposition.generate_row_from_word_value(region, result_value, *offset)?;
+        self.q_decompose.enable(region, *offset)?;
+        self.q_range.enable(region, *offset)?;
+        let result_row = generate_row_from_word_value(
+            region,
+            result_value,
+            *offset,
+            full_number_u64_column,
+            limbs,
+        )?;
         *offset += 1;
 
         Ok((result_row, carry_cell))

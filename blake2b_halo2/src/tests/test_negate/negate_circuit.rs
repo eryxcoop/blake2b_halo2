@@ -1,4 +1,4 @@
-use crate::base_operations::decompose_8::Decompose8Config;
+use crate::tests::Decompose8Config;
 use crate::base_operations::negate::NegateConfig;
 use crate::base_operations::types::blake2b_word::Blake2bWord;
 use ff::PrimeField;
@@ -69,7 +69,7 @@ impl<F: PrimeField> Circuit<F> for NegateCircuit<F> {
                 let mut offset = 0;
                 let cell = config
                     .decompose_8_config
-                    .generate_row_from_word_value(&mut region, self.value, offset)?
+                    .generate_row_from_word_and_keep_row(&mut region, self.value, offset)?
                     .full_number;
                 offset += 1;
 

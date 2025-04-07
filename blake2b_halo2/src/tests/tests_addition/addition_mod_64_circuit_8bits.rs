@@ -1,5 +1,5 @@
 use super::*;
-use crate::base_operations::decompose_8::Decompose8Config;
+use crate::tests::Decompose8Config;
 use halo2_proofs::circuit::SimpleFloorPlanner;
 use halo2_proofs::plonk::Circuit;
 use std::array;
@@ -38,7 +38,8 @@ impl<F: PrimeField> Circuit<F> for AdditionMod64Circuit8Bits<F> {
             meta,
             full_number_u64,
             limbs[0],
-            decompose_8_config.clone(),
+            decompose_8_config.q_decompose,
+            decompose_8_config.q_range,
         );
 
         Self::Config {
@@ -55,7 +56,11 @@ impl<F: PrimeField> Circuit<F> for AdditionMod64Circuit8Bits<F> {
         mut layouter: impl Layouter<F>,
     ) -> Result<(), Error> {
         config.decompose_8_config.populate_lookup_table(&mut layouter)?;
-        config.sum_8bits_config.populate_addition_rows(&mut layouter, self.trace)?;
+        config.sum_8bits_config.populate_addition_rows(
+            &mut layouter,
+            self.trace,
+            config.decompose_8_config.clone(),
+        )?;
         Ok(())
     }
 }

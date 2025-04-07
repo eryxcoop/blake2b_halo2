@@ -1,5 +1,5 @@
 use super::*;
-use crate::base_operations::decompose_8::Decompose8Config;
+use crate::tests::Decompose8Config;
 use crate::base_operations::generic_limb_rotation::LimbRotation;
 use ff::PrimeField;
 use halo2_proofs::circuit::SimpleFloorPlanner;
@@ -44,8 +44,8 @@ impl<F: PrimeField, const T: usize> Circuit<F> for LimbRotationCircuit<F, T> {
 
         Self::Config {
             _ph: PhantomData,
-            decompose_8_config,
-            limb_rotation_config: LimbRotation,
+            decompose_8_config: decompose_8_config.clone(),
+            limb_rotation_config: LimbRotation::configure(decompose_8_config.q_decompose),
         }
     }
 

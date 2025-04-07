@@ -1,17 +1,22 @@
 use super::*;
-use crate::base_operations::decompose_8::{Decompose8Config};
-use ff::PrimeField;
-use halo2_proofs::circuit::Value;
 use crate::base_operations::types::blake2b_word::AssignedBlake2bWord;
 use crate::base_operations::types::byte::AssignedByte;
 use crate::base_operations::types::row::AssignedRow;
+use ff::PrimeField;
+use halo2_proofs::circuit::Value;
 
 /// This gate rotates the limbs of a number to the right and uses copy constrains to ensure that
 /// the rotation is correct. It's used in our circuit to implement 16-bit, 24-bit and 32-bit rotations.
-#[derive(Default, Clone, Debug)]
-pub(crate) struct LimbRotation;
+#[derive(Clone, Debug)]
+pub(crate) struct LimbRotation {
+    q_decompose: Selector,
+}
 
 impl LimbRotation {
+    pub(crate) fn configure(q_decompose: Selector) -> Self {
+        Self { q_decompose }
+    }
+
     /// This method receives a row of cells, and rotates the limbs to the right by the number
     /// specified in the limbs_to_rotate_to_the_right parameter. It then constrains the output
     /// to be the correct rotation of the input.
@@ -21,7 +26,6 @@ impl LimbRotation {
         &self,
         region: &mut Region<F>,
         offset: &mut usize,
-        decompose_config: &Decompose8Config,
         input_row: AssignedRow<F>,
         limbs_to_rotate_to_the_right: usize,
         full_number_u64_column: Column<Advice>,
@@ -39,7 +43,7 @@ impl LimbRotation {
             )?
             .into();
 
-        decompose_config.q_decompose.enable(region, *offset)?;
+        self.q_decompose.enable(region, *offset)?;
 
         for i in 0..8 {
             // We must subtract limb_rotations_right because if a number is expressed bitwise

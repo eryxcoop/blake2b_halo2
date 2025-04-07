@@ -4,8 +4,14 @@ use crate::base_operations::types::blake2b_word::AssignedBlake2bWord;
 
 /// This config handles the 63-right-bit rotation of a 64-bit number, which is the same as the
 /// 1-bit rotation to the left.
+///
 /// For the gate of this config to be sound, it is necessary that the modulus of the field is
 /// greater than 2^65.
+///
+/// This gate assumes that the input will already be range checked in the circuit and this allows us
+/// to avoid making duplicate constraints. This condition holds in the context of Blake2b usage,
+/// because every time a rot63 operation appears is after a xor operation, and rot63 reuses the
+/// last row from the xor, which is the result, and therefore is range checked by the xor operation.
 #[derive(Clone, Debug)]
 pub(crate) struct Rotate63Config {
     pub q_rot63: Selector,
@@ -59,9 +65,8 @@ impl Rotate63Config {
             *offset,
             || result_value,
         )?;
-        let result_cell = assigned_cell.into();
         *offset += 1;
-        Ok(result_cell)
+        Ok(assigned_cell.into())
     }
 
     /// Enforces the field's modulus to be greater than 2^65. This is necessary to preserve the
