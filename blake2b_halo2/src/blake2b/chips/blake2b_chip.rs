@@ -12,11 +12,7 @@ use crate::base_operations::{
     populate_lookup_table,
 };
 use crate::blake2b::chips::blake2b_instructions::Blake2bInstructions;
-use crate::blake2b::chips::utils::{
-    compute_processed_bytes_count_value_for_iteration, constrain_padding_cells_to_equal_zero,
-    full_number_of_each_state_row, get_total_blocks_count, ABCD, BLAKE2B_BLOCK_SIZE, IV_CONSTANTS,
-    SIGMA,
-};
+use crate::blake2b::chips::utils::{compute_processed_bytes_count_value_for_iteration, constrain_padding_cells_to_equal_zero, full_number_of_each_state_row, get_total_blocks_count, zeros_to_pad_in_current_block, ABCD, BLAKE2B_BLOCK_SIZE, IV_CONSTANTS, SIGMA};
 use ff::PrimeField;
 use halo2_proofs::circuit::{Layouter, Region};
 use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Error, Selector, TableColumn};
@@ -112,7 +108,7 @@ impl Blake2bInstructions for Blake2bChip {
     fn perform_blake2b_iterations<F: PrimeField>(
         &self,
         region: &mut Region<F>,
-        advice_offset: &mut usize,
+        offset: &mut usize,
         input: &[AssignedNative<F>],
         key: &[AssignedNative<F>],
         iv_constants: &[AssignedBlake2bWord<F>; 8],
@@ -133,60 +129,35 @@ impl Blake2bInstructions for Blake2bChip {
                 let is_last_block = i == total_blocks - 1;
                 let is_key_block = !is_key_empty && i == 0;
 
-                /// This is an intermediate value in the Blake2b algorithm. It represents the amount of
-                /// bytes processed so far.
+                /// This is an intermediate value in the Blake2b algorithm. It represents the amount
+                /// of bytes processed so far.
                 let processed_bytes_count = compute_processed_bytes_count_value_for_iteration(
-                    i,
-                    is_last_block,
-                    input_size,
-                    is_key_empty,
-                );
+                    i, is_last_block, input_size, is_key_empty);
 
-                let current_block_rows = self.build_current_block_rows(
+                let amount_of_zeros_to_pad = zeros_to_pad_in_current_block(
+                    key, input_size, is_last_block, is_key_block);
+
+                let current_block_values = Self::build_values_for_current_block(
+                    &input, &key, i, last_input_block_index, is_key_empty, is_last_block,
+                    is_key_block, zero_constant_cell.clone());
+
+                let current_block_rows = self.block_words_from_bytes(
                     region,
-                    advice_offset,
-                    &input,
-                    &key,
-                    i,
-                    last_input_block_index,
-                    is_key_empty,
-                    is_last_block,
-                    is_key_block,
-                    zero_constant_cell.clone(),
-                )?;
+                    offset,
+                    current_block_values.try_into().unwrap())?;
 
-                /// Padding for the last block, in case the key block is not the only one.
-                if is_last_block && !is_key_block {
-                    let zeros_amount_for_input_padding = if input_size == 0 {
-                        128
-                    } else {
-                        // Complete the block with zeroes
-                        (BLAKE2B_BLOCK_SIZE - input_size % BLAKE2B_BLOCK_SIZE) % BLAKE2B_BLOCK_SIZE
-                    };
-                    constrain_padding_cells_to_equal_zero(
-                        region,
-                        zeros_amount_for_input_padding,
-                        &current_block_rows,
-                        &zero_constant_cell,
-                    )?;
-                }
-                /// Padding for the key block, in all cases that it exists. It is always the first block.
-                if is_key_block {
-                    /// Complete the block with zeroes
-                    let zeros_amount_for_key_padding = BLAKE2B_BLOCK_SIZE - key.len();
-                    constrain_padding_cells_to_equal_zero(
-                        region,
-                        zeros_amount_for_key_padding,
-                        &current_block_rows,
-                        &zero_constant_cell,
-                    )?;
-                }
+                constrain_padding_cells_to_equal_zero(
+                    region,
+                    amount_of_zeros_to_pad,
+                    &current_block_rows,
+                    &zero_constant_cell,
+                )?;
 
                 let current_block_cells = full_number_of_each_state_row(current_block_rows);
 
                 self.compress(
                     region,
-                    advice_offset,
+                    offset,
                     iv_constants,
                     global_state,
                     current_block_cells,
@@ -309,34 +280,6 @@ impl Blake2bInstructions for Blake2bChip {
         state[state_indexes[3]] = d;
 
         Ok(())
-    }
-
-    #[allow(clippy::too_many_arguments)]
-    fn build_current_block_rows<F: PrimeField>(
-        &self,
-        region: &mut Region<F>,
-        offset: &mut usize,
-        input: &[AssignedNative<F>],
-        key: &[AssignedNative<F>],
-        block_number: usize,
-        last_input_block_index: usize,
-        is_key_empty: bool,
-        is_last_block: bool,
-        is_key_block: bool,
-        zero_constant_cell: AssignedNative<F>,
-    ) -> Result<[AssignedRow<F>; 16], Error> {
-        let current_block_values = Self::build_values_for_current_block(
-            input,
-            key,
-            block_number,
-            last_input_block_index,
-            is_key_empty,
-            is_last_block,
-            is_key_block,
-            zero_constant_cell,
-        );
-
-        self.block_words_from_bytes(region, offset, current_block_values.try_into().unwrap())
     }
 }
 

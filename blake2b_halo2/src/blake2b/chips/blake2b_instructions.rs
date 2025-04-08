@@ -1,10 +1,9 @@
+use crate::base_operations::types::blake2b_word::AssignedBlake2bWord;
+use crate::base_operations::types::byte::AssignedByte;
 use crate::base_operations::types::AssignedNative;
 use ff::PrimeField;
 use halo2_proofs::circuit::{Layouter, Region};
 use halo2_proofs::plonk::Error;
-use crate::base_operations::types::blake2b_word::AssignedBlake2bWord;
-use crate::base_operations::types::byte::AssignedByte;
-use crate::base_operations::types::row::AssignedRow;
 
 /// This is the trait that groups the Blake2b implementation chips. Every Blake2b chip
 /// should implement this trait.
@@ -82,23 +81,4 @@ pub trait Blake2bInstructions: Clone {
         region: &mut Region<F>,
         offset: &mut usize,
     ) -> Result<(), Error>;
-
-    /// This is the part where the inputs/key are organized inside the trace. Each iteration
-    /// processes 128 bytes, or as we represent them: 16 words of 64 bits. Here is also where
-    /// padding is applied, that's why the method needs data like if this is the last block,
-    /// or if it's the block holding the key.
-    #[allow(clippy::too_many_arguments)]
-    fn build_current_block_rows<F: PrimeField>(
-        &self,
-        region: &mut Region<F>,
-        offset: &mut usize,
-        input: &[AssignedNative<F>],
-        key: &[AssignedNative<F>],
-        block_number: usize,
-        last_input_block_index: usize,
-        is_key_empty: bool,
-        is_last_block: bool,
-        is_key_block: bool,
-        zero_constant_cell: AssignedNative<F>,
-    ) -> Result<[AssignedRow<F>; 16], Error>;
 }

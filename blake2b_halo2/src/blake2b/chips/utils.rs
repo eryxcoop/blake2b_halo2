@@ -43,6 +43,33 @@ pub(crate) fn compute_processed_bytes_count_value_for_iteration(
     processed_bytes_count as u64
 }
 
+/// This function will return 0 in most cases, except in 3 opportunities:
+/// 1 - In the "key block": the first block (if there's a key)
+/// 2 - In the last block, if the input length in bytes isn't a multiple of 128
+/// 3 - If the input and key are empty, the algorithm will compute a single block of 128 zeros
+pub(crate) fn zeros_to_pad_in_current_block<F: PrimeField>(
+    key: &[AssignedNative<F>],
+    input_size: usize,
+    is_last_block: bool,
+    is_key_block: bool
+) -> usize {
+    if is_last_block && !is_key_block {
+        if input_size == 0 {
+            // Border case, the input and the key are empty
+            128
+        } else {
+            // Last block, need to complete the block with zeroes
+            (BLAKE2B_BLOCK_SIZE - input_size % BLAKE2B_BLOCK_SIZE) % BLAKE2B_BLOCK_SIZE
+        }
+    } else if is_key_block {
+        // First block when there's a key, need to complete the block with zeroes
+        BLAKE2B_BLOCK_SIZE - key.len()
+    } else {
+        // Middle block, no need to pad anything
+        0
+    }
+}
+
 /// Computes the edge cases in the amount of blocks to process.
 pub(crate) fn get_total_blocks_count(
     input_blocks: usize,
