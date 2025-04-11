@@ -51,7 +51,7 @@ pub(crate) fn zeros_to_pad_in_current_block<F: PrimeField>(
     key: &[AssignedNative<F>],
     input_size: usize,
     is_last_block: bool,
-    is_key_block: bool
+    is_key_block: bool,
 ) -> usize {
     if is_last_block && !is_key_block {
         if input_size == 0 {

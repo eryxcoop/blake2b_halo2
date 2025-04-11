@@ -47,7 +47,11 @@ impl Rotate63Config {
             ]
         });
 
-        Self { q_rot63, q_decompose, q_range }
+        Self {
+            q_rot63,
+            q_decompose,
+            q_range,
+        }
     }
 
     /// This method receives a [AssignedBlake2bWord] and a [full_number_u64] column where it will be
@@ -66,13 +70,8 @@ impl Rotate63Config {
 
         self.q_decompose.enable(region, *offset)?;
         self.q_range.enable(region, *offset)?;
-        let result_row = generate_row_from_word_value(
-            region,
-            result_value,
-            *offset,
-            full_number_u64,
-            limbs,
-        )?;
+        let result_row =
+            generate_row_from_word_value(region, result_value, *offset, full_number_u64, limbs)?;
         *offset += 1;
         Ok(result_row.full_number)
     }

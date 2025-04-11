@@ -12,7 +12,11 @@ use crate::base_operations::{
     populate_lookup_table,
 };
 use crate::blake2b::chips::blake2b_instructions::Blake2bInstructions;
-use crate::blake2b::chips::utils::{compute_processed_bytes_count_value_for_iteration, constrain_padding_cells_to_equal_zero, full_number_of_each_state_row, get_total_blocks_count, zeros_to_pad_in_current_block, ABCD, BLAKE2B_BLOCK_SIZE, IV_CONSTANTS, SIGMA};
+use crate::blake2b::chips::utils::{
+    compute_processed_bytes_count_value_for_iteration, constrain_padding_cells_to_equal_zero,
+    full_number_of_each_state_row, get_total_blocks_count, zeros_to_pad_in_current_block, ABCD,
+    BLAKE2B_BLOCK_SIZE, IV_CONSTANTS, SIGMA,
+};
 use ff::PrimeField;
 use halo2_proofs::circuit::{Layouter, Region};
 use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Error, Selector, TableColumn};
@@ -132,19 +136,31 @@ impl Blake2bInstructions for Blake2bChip {
                 /// This is an intermediate value in the Blake2b algorithm. It represents the amount
                 /// of bytes processed so far.
                 let processed_bytes_count = compute_processed_bytes_count_value_for_iteration(
-                    i, is_last_block, input_size, is_key_empty);
+                    i,
+                    is_last_block,
+                    input_size,
+                    is_key_empty,
+                );
 
-                let amount_of_zeros_to_pad = zeros_to_pad_in_current_block(
-                    key, input_size, is_last_block, is_key_block);
+                let amount_of_zeros_to_pad =
+                    zeros_to_pad_in_current_block(key, input_size, is_last_block, is_key_block);
 
                 let current_block_values = Self::build_values_for_current_block(
-                    &input, &key, i, last_input_block_index, is_key_empty, is_last_block,
-                    is_key_block, zero_constant_cell.clone());
+                    &input,
+                    &key,
+                    i,
+                    last_input_block_index,
+                    is_key_empty,
+                    is_last_block,
+                    is_key_block,
+                    zero_constant_cell.clone(),
+                );
 
                 let current_block_rows = self.block_words_from_bytes(
                     region,
                     offset,
-                    current_block_values.try_into().unwrap())?;
+                    current_block_values.try_into().unwrap(),
+                )?;
 
                 constrain_padding_cells_to_equal_zero(
                     region,
@@ -302,7 +318,8 @@ impl Blake2bChip {
         create_range_check_gate(meta, t_range, q_range, limbs);
 
         /// Config that is the same for every optimization
-        let rotate_63_config = Rotate63Config::configure(meta, full_number_u64, q_decompose, q_range);
+        let rotate_63_config =
+            Rotate63Config::configure(meta, full_number_u64, q_decompose, q_range);
         let negate_config = NegateConfig::configure(meta, full_number_u64);
         let generic_limb_rotation_config = LimbRotation::configure(q_decompose);
 
