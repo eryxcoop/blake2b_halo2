@@ -1,5 +1,5 @@
 use super::*;
-use crate::examples::circuit_runner::CircuitRunner;
+use crate::usage_utils::circuit_runner::CircuitRunner;
 
 #[test]
 fn test_with_real_snark() {

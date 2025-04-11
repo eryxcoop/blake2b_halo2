@@ -1,4 +1,4 @@
-use blake2b_halo2::examples::circuit_runner::CircuitRunner;
+use blake2b_halo2::usage_utils::circuit_runner::CircuitRunner;
 use criterion::measurement::WallTime;
 use criterion::{criterion_group, criterion_main, BenchmarkGroup, BenchmarkId, Criterion, Throughput};
 use halo2_proofs::halo2curves::bn256::Bn256;

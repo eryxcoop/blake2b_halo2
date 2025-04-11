@@ -1,5 +1,5 @@
 use blake2_rfc::blake2b::blake2b;
-use blake2b_halo2::examples::blake2b_circuit::Blake2bCircuit;
+use blake2b_halo2::usage_utils::blake2b_circuit::Blake2bCircuit;
 use halo2_proofs::circuit::Value;
 use halo2_proofs::dev::cost_model::{from_circuit_to_cost_model_options, CostOptions};
 use halo2_proofs::dev::MockProver;
@@ -17,8 +17,8 @@ struct Blake2bInput {
 }
 
 fn main() {
-    let workspace_root = concat!(env!("CARGO_MANIFEST_DIR"), "/..");
-    let file_path = format!("{}/interface/src/inputs.json", workspace_root);
+    let workspace_root = env!("CARGO_MANIFEST_DIR");
+    let file_path = format!("{}/examples/inputs.json", workspace_root);
 
     let file_content = std::fs::read_to_string(file_path).expect("Failed to read input file");
     let complete_input: Blake2bInput =

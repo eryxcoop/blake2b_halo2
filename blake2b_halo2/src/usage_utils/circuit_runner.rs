@@ -14,7 +14,7 @@ use halo2_proofs::{
 };
 use halo2_proofs::circuit::Value;
 use halo2_proofs::plonk::Error;
-use crate::examples::blake2b_circuit::Blake2bCircuit;
+use crate::usage_utils::blake2b_circuit::Blake2bCircuit;
 
 /// The inputs for the Blake2bCircuit. This helps us to avoid passing multiple parameters to the
 /// methods that create circuits
