@@ -302,7 +302,7 @@ impl Blake2bChip {
         create_range_check_gate(meta, t_range, q_range, limbs);
 
         /// Config that is the same for every optimization
-        let rotate_63_config = Rotate63Config::configure(meta, full_number_u64);
+        let rotate_63_config = Rotate63Config::configure(meta, full_number_u64, q_decompose, q_range);
         let negate_config = NegateConfig::configure(meta, full_number_u64);
         let generic_limb_rotation_config = LimbRotation::configure(q_decompose);
 
@@ -416,6 +416,7 @@ impl Blake2bChip {
             offset,
             &input,
             self.full_number_u64,
+            self.limbs,
         )
     }
 

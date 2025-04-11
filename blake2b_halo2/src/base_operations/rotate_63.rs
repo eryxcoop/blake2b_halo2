@@ -15,12 +15,16 @@ use crate::base_operations::types::blake2b_word::AssignedBlake2bWord;
 #[derive(Clone, Debug)]
 pub(crate) struct Rotate63Config {
     pub q_rot63: Selector,
+    q_decompose: Selector,
+    q_range: Selector,
 }
 
 impl Rotate63Config {
     pub(crate) fn configure<F: PrimeField>(
         meta: &mut ConstraintSystem<F>,
         full_number_u64: Column<Advice>,
+        q_decompose: Selector,
+        q_range: Selector,
     ) -> Self {
         Self::enforce_modulus_size::<F>();
 
@@ -43,7 +47,7 @@ impl Rotate63Config {
             ]
         });
 
-        Self { q_rot63 }
+        Self { q_rot63, q_decompose, q_range }
     }
 
     /// This method receives a [AssignedBlake2bWord] and a [full_number_u64] column where it will be
@@ -55,18 +59,22 @@ impl Rotate63Config {
         offset: &mut usize,
         input: &AssignedBlake2bWord<F>,
         full_number_u64: Column<Advice>,
+        limbs: [Column<Advice>; 8],
     ) -> Result<AssignedBlake2bWord<F>, Error> {
         self.q_rot63.enable(region, *offset)?;
         let result_value = input.value().map(|input| rotate_right_field_element(input, 63));
 
-        let assigned_cell = region.assign_advice(
-            || "Rotate63 output",
-            full_number_u64,
+        self.q_decompose.enable(region, *offset)?;
+        self.q_range.enable(region, *offset)?;
+        let result_row = generate_row_from_word_value(
+            region,
+            result_value,
             *offset,
-            || result_value,
+            full_number_u64,
+            limbs,
         )?;
         *offset += 1;
-        Ok(assigned_cell.into())
+        Ok(result_row.full_number)
     }
 
     /// Enforces the field's modulus to be greater than 2^65. This is necessary to preserve the
