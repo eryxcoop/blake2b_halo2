@@ -4,27 +4,21 @@ This repo holds an optimized Blake2b implementation in Halo2 prover.
 * We are using [this halo2 version](https://github.com/input-output-hk/halo2) to build our circuits.
 * The cargo version should be 1.84.0 or higher (no need for nightly).
 
-The repo is divided into three parts:
-* Under the directory ```rust_implementation``` there's an implementation in plain Rust of the algorithm Blake2b with its test vector. This implementation is based on the C implementation in the [Blake2 RFC](https://datatracker.ietf.org/doc/html/rfc7693.html).
-* Under the directory ```blake2b_halo2``` there are all the things that have to do with Halo2. In particular, there are Halo2 chips that implement primitives for operating modulo 2⁶⁴, a chip for the Blake2b operation and tests for all of the above.
-* Under the directory ```interface``` there is a simple package that lets you try the implementation. More details below.
-
-# Different blake implementations
+ Under the directory ```blake2b_halo2```  there are Halo2 chips that implement primitives for operating modulo 2⁶⁴, a chip for the Blake2b operation and tests for the above.
 
 ## Documentation
 
 We have a [documentation](https://hackmd.io/@BjOWve_hTxGZidE1ii0HJg/HkVu20JFkx) where you can find more detail about 
-out blake implementation. Also you can find more explanation of all our gates.
+out Blake2b implementation. You can also find more detailed explanations of all our gates.
 
 
 # Trying the implementation
-Under the directory ```interface``` you can try the halo2 implementation of Blake2b.
-Just fill the ```src/inputs.json``` file with the message, key and desired output length (in bytes) and run the following commands:
+WARNING: All the commands should be executed under the directory ```blake2b_halo2/blake2b_halo2```.
 
-To try the implementation run: 
+The executable in ```examples/interface``` allows you to try the halo2 implementation of Blake2b.
+Just fill the ```examples/inputs.json``` file with the message, key and desired output length (in bytes) and run the following command:
 
-```cargo run --release```
-
+```cargo run --release --example interface```
 
 # Running the tests
 
@@ -46,8 +40,6 @@ Just run
 ```cargo bench```
 
 The report should be found in ```/target/criterion/report/index.html```. 
-
-Alternatively, you can find our own generated report in ```/blake2b_halo2/benches/report/index.html```. 
 
 There are 5 targets for benchmarking: mocked proving, verification key generation, proving key generation, proof generation and verification. Each one will compare all the optimizations over inputs of different size. Running all the benchmarks can take quite some time, so if you want to run one specific target use:
 

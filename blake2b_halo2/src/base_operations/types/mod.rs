@@ -1,23 +1,10 @@
-/// This module holds types that exist to enforce safety across our code. The main types are:
-///
-/// AssignedBit: It contains an AssignedCell that has a value in {true, false}.
-///
-/// AssignedByte: It contains an AssignedCell that has a value in [0, 255].
-///
-/// AssignedBlake2bWord: It contains an AssignedCell that has a value in [0, 2^64 - 1]
-///
-/// AssignedRow: It contains an AssignedBlake2bWord and 8 AssignedLimb, like
-/// |Word|Limb|Limb|Limb|Limb|Limb|Limb|Limb|Limb| which is how it's going to be used in some cases
-///
-/// All these types are created with a range check in their creation, but also they're created in
-/// a context where its value has been constrained by a circuit restriction to be in range.
-///
-/// [zhiyong]: the comments here is a bit confusing, as the new types with their assignment methods are only facilities regarding
-/// the refined datetypes. The constraints about the byte, bit, word ... should always be enforced in configure regardless their names.
-///
-/// Everytime you see an AssignedBit, AssignedByte, AssignedBlake2bWord or AssignedRow,
+/// This module holds types that exist across our code to explicitly state that a value is in a
+/// given range. Everytime you see an AssignedBit, AssignedByte, AssignedBlake2bWord or AssignedRow,
 /// you can be certain that all their values were range checked (both in the synthesize and in the
-/// circuit constraints)
+/// circuit constraints).
+///
+/// All these types are created in a context where its value has been constrained by a circuit
+/// restriction to be in range.
 use ff::PrimeField;
 use halo2_proofs::circuit::AssignedCell;
 use num_bigint::BigUint;

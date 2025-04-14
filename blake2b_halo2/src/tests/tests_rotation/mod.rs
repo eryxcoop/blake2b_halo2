@@ -1,5 +1,5 @@
 use super::*;
-use crate::base_operations::decompose_8::Decompose8Config;
+use crate::tests::Decompose8Config;
 use crate::base_operations::generic_limb_rotation::LimbRotation;
 use crate::base_operations::rotate_63::Rotate63Config;
 

@@ -1,5 +1,5 @@
 use super::*;
-use crate::base_operations::decompose_8::Decompose8Config;
+use crate::tests::Decompose8Config;
 use crate::base_operations::rotate_63::Rotate63Config;
 use halo2_proofs::circuit::SimpleFloorPlanner;
 use halo2_proofs::plonk::Circuit;
@@ -36,7 +36,12 @@ impl<F: PrimeField> Circuit<F> for Rotation63Circuit8bitLimbs<F> {
         let limbs_8_bits: [Column<Advice>; 8] = array::from_fn(|_| meta.advice_column());
 
         let decompose_8_config = Decompose8Config::configure(meta, full_number_u64, limbs_8_bits);
-        let rotation_63_config = Rotate63Config::configure(meta, full_number_u64);
+        let rotation_63_config = Rotate63Config::configure(
+            meta,
+            full_number_u64,
+            decompose_8_config.q_decompose,
+            decompose_8_config.q_range,
+        );
 
         Self::Config {
             _ph: PhantomData,

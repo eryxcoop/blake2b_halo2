@@ -1,6 +1,6 @@
 use serde::Deserialize;
 use serde_json;
-use crate::examples::circuit_runner::CircuitRunner;
+use crate::usage_utils::circuit_runner::CircuitRunner;
 
 #[derive(Deserialize, Debug)]
 struct TestCase {

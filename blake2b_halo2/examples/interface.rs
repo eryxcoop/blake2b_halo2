@@ -1,5 +1,5 @@
 use blake2_rfc::blake2b::blake2b;
-use blake2b_halo2::examples::blake2b_circuit::Blake2bCircuit;
+use blake2b_halo2::usage_utils::blake2b_circuit::Blake2bCircuit;
 use halo2_proofs::circuit::Value;
 use halo2_proofs::dev::cost_model::{from_circuit_to_cost_model_options, CostOptions};
 use halo2_proofs::dev::MockProver;
@@ -17,8 +17,8 @@ struct Blake2bInput {
 }
 
 fn main() {
-    let workspace_root = concat!(env!("CARGO_MANIFEST_DIR"), "/..");
-    let file_path = format!("{}/interface/src/inputs.json", workspace_root);
+    let workspace_root = env!("CARGO_MANIFEST_DIR");
+    let file_path = format!("{}/examples/inputs.json", workspace_root);
 
     let file_content = std::fs::read_to_string(file_path).expect("Failed to read input file");
     let complete_input: Blake2bInput =
@@ -52,25 +52,13 @@ fn main() {
         cost_options.rows_count,
         amount_of_blocks(&input_bytes, &key_bytes)
     );
-    println!(
-        "The amount of advice columns is {}",
-        cost_options.advice.len()
-    );
-    println!(
-        "The amount of instance columns is {}",
-        cost_options.instance.len()
-    );
-    println!(
-        "The amount of fixed columns is {}",
-        cost_options.fixed.len()
-    );
+    println!("The amount of advice columns is {}", cost_options.advice.len());
+    println!("The amount of instance columns is {}", cost_options.instance.len());
+    println!("The amount of fixed columns is {}", cost_options.fixed.len());
     println!("The gate degree is {}", cost_options.gate_degree);
     println!("The max degree is {}", cost_options.max_degree);
     println!("The table rows count is {}", cost_options.table_rows_count);
-    println!(
-        "The compressed rows count is {}",
-        cost_options.compressed_rows_count
-    );
+    println!("The compressed rows count is {}", cost_options.compressed_rows_count);
 }
 
 fn run_blake2b_rust(input: &str, key: &str, output_size: usize) -> Vec<u8> {
@@ -85,24 +73,18 @@ fn run_blake2b_halo2(
 ) -> CostOptions {
     // INPUT
     let input_size = input_bytes.len();
-    let input_values = input_bytes
-        .iter()
-        .map(|x| Value::known(Fr::from(*x as u64)))
-        .collect::<Vec<_>>();
+    let input_values =
+        input_bytes.iter().map(|x| Value::known(Fr::from(*x as u64))).collect::<Vec<_>>();
 
     // OUTPUT
     let output_size = expected_output.len();
-    let expected_output_fields: Vec<Fr> = expected_output
-        .iter()
-        .map(|x| Fr::from(*x as u64))
-        .collect::<Vec<_>>();
+    let expected_output_fields: Vec<Fr> =
+        expected_output.iter().map(|x| Fr::from(*x as u64)).collect::<Vec<_>>();
 
     // KEY
     let key_size = key_bytes.len();
-    let key_values = key_bytes
-        .iter()
-        .map(|x| Value::known(Fr::from(*x as u64)))
-        .collect::<Vec<_>>();
+    let key_values =
+        key_bytes.iter().map(|x| Value::known(Fr::from(*x as u64))).collect::<Vec<_>>();
 
     // TEST
     let circuit =
