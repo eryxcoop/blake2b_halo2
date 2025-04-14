@@ -13,8 +13,6 @@ out Blake2b implementation. You can also find more detailed explanations of all 
 
 
 # Trying the implementation
-WARNING: All the commands should be executed under the directory ```blake2b_halo2/blake2b_halo2```.
-
 The executable in ```examples/interface``` allows you to try the halo2 implementation of Blake2b.
 Just fill the ```examples/inputs.json``` file with the message, key and desired output length (in bytes) and run the following command:
 
