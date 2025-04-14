@@ -51,7 +51,7 @@ fn test_hashes_in_circuit_with_key() {
             continue;
         }
 
-        // Uncomment to run representative test cases of edge cases
+        // Uncomment to run representative tests of edge cases
         // if i != 256 && i != 257 && i != 384 && i != 385 {
         //     continue;
         // }
@@ -62,7 +62,7 @@ fn test_hashes_in_circuit_with_key() {
 }
 
 fn obtain_test_cases() -> Vec<TestCase> {
-    let file_content = std::fs::read_to_string("../test_vector.json").expect("Failed to read file");
+    let file_content = std::fs::read_to_string("./test_vector.json").expect("Failed to read file");
     let test_cases: Vec<TestCase> =
         serde_json::from_str(&file_content).expect("Failed to parse JSON");
     test_cases
