@@ -1,6 +1,6 @@
 //! This is an example circuit of how you should use the Blake2b chip
 
-use crate::blake2b::blake2b::Blake2b;
+use crate::blake2b::blake2b_gadget::Blake2b;
 use crate::blake2b::chips::blake2b_chip::Blake2bChip;
 use crate::base_operations::types::AssignedNative;
 use ff::PrimeField;
@@ -140,24 +140,21 @@ impl<F: PrimeField> Blake2bCircuit<F> {
             || "Inputs",
             |mut region| {
                 let inner_result = input
-                    .into_iter()
+                    .iter()
                     .enumerate()
                     .map(|(index, input_byte)| {
                         let row = index / 8;
                         let column = index % 8;
-                        let cell = region
+                        region
                             .assign_advice(
                                 || format!("Input column: {}, row: {}", row, column),
                                 config.limbs[column],
                                 row,
                                 || *input_byte,
                             )
-                            .unwrap();
-                        cell
+                            .unwrap()
                     })
-                    .collect::<Vec<_>>()
-                    .try_into()
-                    .unwrap();
+                    .collect::<Vec<_>>();
                 Ok(inner_result)
             },
         )?;

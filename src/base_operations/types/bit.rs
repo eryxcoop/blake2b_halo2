@@ -1,6 +1,6 @@
 use super::*;
 use ff::PrimeField;
-use halo2_proofs::circuit::{Cell, Region, Value};
+use halo2_proofs::circuit::{Region, Value};
 use halo2_proofs::plonk::{Advice, Column, Error};
 use halo2_proofs::utils::rational::Rational;
 
@@ -30,7 +30,6 @@ impl<F: PrimeField> From<&Bit> for Rational<F> {
 /// This wrapper type on `AssignedNative<F>` is designed to enforce type safety
 /// on assigned bits. It is used in the addition chip to enforce that the
 /// carry value is 0 or 1
-#[derive(Clone, Debug)]
 #[must_use]
 pub(crate) struct AssignedBit<F: PrimeField>(AssignedCell<Bit, F>);
 
@@ -55,7 +54,12 @@ impl<F: PrimeField> AssignedBit<F> {
             Self(region.assign_advice(|| annotation, column, offset, || bit_value)?);
         Ok(assigned_bit)
     }
+}
 
+#[cfg(test)]
+use halo2_proofs::circuit::Cell;
+#[cfg(test)]
+impl<F: PrimeField> AssignedBit<F> {
     pub(crate) fn cell(&self) -> Cell {
         self.0.cell()
     }

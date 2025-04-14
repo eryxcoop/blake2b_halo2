@@ -11,7 +11,7 @@ use crate::base_operations::{
     create_limb_decomposition_gate, create_range_check_gate, generate_row_from_assigned_bytes,
     populate_lookup_table,
 };
-use crate::blake2b::chips::blake2b_instructions::Blake2bInstructions;
+use crate::blake2b::chips::blake2b_instructions::{Blake2bInstructions, ConstantCells};
 use crate::blake2b::chips::utils::{
     compute_processed_bytes_count_value_for_iteration, constrain_padding_cells_to_equal_zero,
     full_number_of_each_state_row, get_total_blocks_count, zeros_to_pad_in_current_block, ABCD,
@@ -64,7 +64,7 @@ impl Blake2bInstructions for Blake2bChip {
         key_size: usize,
         region: &mut Region<F>,
         advice_offset: &mut usize,
-    ) -> Result<([AssignedBlake2bWord<F>; 8], AssignedBlake2bWord<F>, AssignedNative<F>), Error>
+    ) -> Result<ConstantCells<F>, Error>
     {
         let iv_constant_cells: [AssignedBlake2bWord<F>; 8] =
             self.assign_iv_constants_to_fixed_cells(region, advice_offset)?;
@@ -146,8 +146,8 @@ impl Blake2bInstructions for Blake2bChip {
                     zeros_to_pad_in_current_block(key, input_size, is_last_block, is_key_block);
 
                 let current_block_values = Self::build_values_for_current_block(
-                    &input,
-                    &key,
+                    input,
+                    key,
                     i,
                     last_input_block_index,
                     is_key_empty,
@@ -182,7 +182,7 @@ impl Blake2bInstructions for Blake2bChip {
                 )
             })
             .last()
-            .unwrap_or_else(|| Err(Error::Synthesis))
+            .unwrap_or(Err(Error::Synthesis))
     }
 
     fn compress<F: PrimeField>(
@@ -238,7 +238,7 @@ impl Blake2bInstructions for Blake2bChip {
             global_state[i] =
                 self.xor(&global_state[i], &state[i], region, row_offset)?.full_number;
             let row = self.xor(&global_state[i], &state[i + 8], region, row_offset)?;
-            let mut row_limbs: Vec<_> = row.limbs.try_into().unwrap();
+            let mut row_limbs: Vec<_> = row.limbs.into();
             global_state_bytes.append(&mut row_limbs);
             global_state[i] = row.full_number;
         }
@@ -261,18 +261,18 @@ impl Blake2bInstructions for Blake2bChip {
         let v_d = &state[state_indexes[3]];
 
         // v[a] = ((v[a] as u128 + v[b] as u128 + x as u128) % (1 << 64)) as u64;
-        let a_plus_b = self.add(&v_a, &v_b, region, offset)?;
+        let a_plus_b = self.add(v_a, v_b, region, offset)?;
         let a = self.add_copying_one_parameter(&a_plus_b.full_number, &x, region, offset)?;
 
         // v[d] = rotr_64(v[d] ^ v[a], 32);
-        let d_xor_a = self.xor_copying_one_parameter(&a, &v_d, region, offset)?;
+        let d_xor_a = self.xor_copying_one_parameter(&a, v_d, region, offset)?;
         let d = self.rotate_right_32(d_xor_a, region, offset)?;
 
         // v[c] = ((v[c] as u128 + v[d] as u128) % (1 << 64)) as u64;
-        let c = self.add_copying_one_parameter(&d, &v_c, region, offset)?;
+        let c = self.add_copying_one_parameter(&d, v_c, region, offset)?;
 
         // v[b] = rotr_64(v[b] ^ v[c], 24);
-        let b_xor_c = self.xor_copying_one_parameter(&c, &v_b, region, offset)?;
+        let b_xor_c = self.xor_copying_one_parameter(&c, v_b, region, offset)?;
         let b = self.rotate_right_24(b_xor_c, region, offset)?;
 
         // v[a] = ((v[a] as u128 + v[b] as u128 + y as u128) % (1 << 64)) as u64;
@@ -599,6 +599,7 @@ impl Blake2bChip {
 
     /// Computes the values of the current block in the blake2b algorithm, based on the input and
     /// the block number we're on, among other relevant data.
+    #[allow(clippy::too_many_arguments)]
     fn build_values_for_current_block<F: PrimeField>(
         input: &[AssignedNative<F>],
         key: &[AssignedNative<F>],

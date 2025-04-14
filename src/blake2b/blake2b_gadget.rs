@@ -65,8 +65,8 @@ impl<C: Blake2bInstructions> Blake2b<C> {
                 self.chip.perform_blake2b_iterations(
                     &mut region,
                     &mut advice_offset,
-                    &input,
-                    &key,
+                    input,
+                    key,
                     &iv_constant_cells,
                     &mut initial_global_state,
                     zero_constant,

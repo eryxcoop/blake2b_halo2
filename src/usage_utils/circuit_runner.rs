@@ -154,15 +154,14 @@ impl CircuitRunner {
         let mut transcript = CircuitTranscript::init();
         create_proof(
             params,
-            &pk,
+            pk,
             &[circuit],
-            &[&[&expected_output_fields]],
+            &[&[expected_output_fields]],
             rand::thread_rng(),
             &mut transcript,
         )
         .expect("Proof generation should work");
-        let proof = transcript.finalize();
-        proof
+        transcript.finalize()
     }
 
     /// Verify the proof for the given circuit and parameters
@@ -170,9 +169,9 @@ impl CircuitRunner {
         expected_output_fields: &[Fr],
         params: &ParamsKZG<Bn256>,
         pk: ProvingKey<Fr, KZGCommitmentScheme<Bn256>>,
-        proof: &Vec<u8>,
+        proof: &[u8],
     ) -> Result<(), Error> {
-        let mut transcript = CircuitTranscript::init_from_bytes(&proof[..]);
+        let mut transcript = CircuitTranscript::init_from_bytes(proof);
 
         assert!(prepare::<Fr, KZGCommitmentScheme<Bn256>, _>(
             pk.get_vk(),

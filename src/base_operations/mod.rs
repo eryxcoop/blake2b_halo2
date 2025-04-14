@@ -124,7 +124,7 @@ pub(crate) fn generate_row_from_word_and_keep_row<F: PrimeField>(
 fn get_limb_from(value: Value<Blake2bWord>, limb_number: usize) -> Value<Byte> {
     value.map(|v| {
         let number = v.to_le_bytes()[limb_number];
-        Byte(number.into())
+        Byte(number)
     })
 }
 
@@ -150,7 +150,7 @@ pub(crate) fn create_row_with_word_and_limbs<F: PrimeField>(
         .iter()
         .enumerate()
         .map(|(i, limb)| {
-            AssignedByte::assign_advice_byte(region, "limb", limbs[i], offset, limb.clone())
+            AssignedByte::assign_advice_byte(region, "limb", limbs[i], offset, *limb)
                 .unwrap()
         })
         .collect::<Vec<_>>();

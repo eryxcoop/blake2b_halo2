@@ -5,6 +5,8 @@ use ff::PrimeField;
 use halo2_proofs::circuit::{Layouter, Region};
 use halo2_proofs::plonk::Error;
 
+pub(crate) type ConstantCells<F> = ([AssignedBlake2bWord<F>; 8], AssignedBlake2bWord<F>, AssignedNative<F>);
+
 /// This is the trait that groups the Blake2b implementation chips. Every Blake2b chip
 /// should implement this trait.
 pub trait Blake2bInstructions: Clone {
@@ -23,7 +25,7 @@ pub trait Blake2bInstructions: Clone {
         key_size: usize,
         region: &mut Region<F>,
         advice_offset: &mut usize,
-    ) -> Result<([AssignedBlake2bWord<F>; 8], AssignedBlake2bWord<F>, AssignedNative<F>), Error>;
+    ) -> Result<ConstantCells<F>, Error>;
 
     /// Computes the initial global state of Blake2b. It only depends on the key size and the
     /// output size, which are values known at circuit building time.
@@ -68,7 +70,7 @@ pub trait Blake2bInstructions: Clone {
 
     /// This method computes a single round of mixing for the Blake2b algorithm.
     /// One round of compress has 96 mixing rounds.
-    /// * 'x' and 'y' are the variables that hold the AssignedCell with the input values that will
+    /// 'x' and 'y' are the variables that hold the AssignedCell with the input values that will
     /// be processed in this mixing round.
     /// The 'state_indexes' are the indexes of the compress state that will take part on this
     /// mixing round. These are also needed to update the state at the end of the mixing.

@@ -43,8 +43,8 @@ impl AdditionMod64Config {
                 q_add.clone()
                     * (full_number_result - full_number_x - full_number_y
                         + carry.clone()
-                            * (Expression::Constant(F::from_u128((1u128 << 64).into())))),
-                q_add * carry.clone() * (Expression::Constant(F::from_u128(1u128.into())) - carry),
+                            * (Expression::Constant(F::from_u128(1u128 << 64)))),
+                q_add * carry.clone() * (Expression::Constant(F::from_u128(1u128)) - carry),
             ]
         });
 
@@ -63,6 +63,7 @@ impl AdditionMod64Config {
     /// is the last cell that was generated in the circuit, by setting the [use_last_cell_as_first_operand]
     /// to [true] we can avoid copying the value of previous_cell again, and just copy the cell_to_copy.
     /// This saves one row per addition.
+    #[allow(clippy::too_many_arguments)]
     pub(crate) fn generate_addition_rows_from_cells<F: PrimeField>(
         &self,
         region: &mut Region<F>,
