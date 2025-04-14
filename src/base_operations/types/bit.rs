@@ -31,7 +31,7 @@ impl<F: PrimeField> From<&Bit> for Rational<F> {
 /// on assigned bits. It is used in the addition chip to enforce that the
 /// carry value is 0 or 1
 #[must_use]
-pub(crate) struct AssignedBit<F: PrimeField>(AssignedCell<Bit, F>);
+pub(crate) struct AssignedBit<F: PrimeField>(#[allow(dead_code)] AssignedCell<Bit, F>);
 
 impl<F: PrimeField> AssignedBit<F> {
     /// This method assigns a bit in the trace. The bit is range-checked both in
