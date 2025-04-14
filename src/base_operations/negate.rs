@@ -28,9 +28,7 @@ impl NegateConfig {
 
             vec![
                 q_negate
-                    * (Expression::Constant(F::from_u128((1u128 << 64) - 1))
-                        - value
-                        - not_value),
+                    * (Expression::Constant(F::from_u128((1u128 << 64) - 1)) - value - not_value),
             ]
         });
 

@@ -64,8 +64,7 @@ impl Blake2bInstructions for Blake2bChip {
         key_size: usize,
         region: &mut Region<F>,
         advice_offset: &mut usize,
-    ) -> Result<ConstantCells<F>, Error>
-    {
+    ) -> Result<ConstantCells<F>, Error> {
         let iv_constant_cells: [AssignedBlake2bWord<F>; 8] =
             self.assign_iv_constants_to_fixed_cells(region, advice_offset)?;
 

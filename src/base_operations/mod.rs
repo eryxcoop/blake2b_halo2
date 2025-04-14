@@ -150,8 +150,7 @@ pub(crate) fn create_row_with_word_and_limbs<F: PrimeField>(
         .iter()
         .enumerate()
         .map(|(i, limb)| {
-            AssignedByte::assign_advice_byte(region, "limb", limbs[i], offset, *limb)
-                .unwrap()
+            AssignedByte::assign_advice_byte(region, "limb", limbs[i], offset, *limb).unwrap()
         })
         .collect::<Vec<_>>();
 
