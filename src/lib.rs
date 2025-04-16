@@ -1,6 +1,4 @@
 //! Halo2 Blake2b implementation.
-
-#![allow(unused_doc_comments)]
 #![deny(missing_docs)]
 
 use halo2_proofs::{circuit::Layouter, plonk::ConstraintSystem};

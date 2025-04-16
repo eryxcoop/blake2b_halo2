@@ -33,7 +33,7 @@ pub(crate) fn generate_row_from_assigned_bytes<F: PrimeField>(
     full_number_u64: Column<Advice>,
     limbs: [Column<Advice>; 8],
 ) -> Result<AssignedRow<F>, Error> {
-    /// Compute the full number from the limbs
+    // Compute the full number from the limbs
     let full_number_cell = AssignedBlake2bWord::assign_advice_word_from_field(
         region,
         "full number",
@@ -44,7 +44,7 @@ pub(crate) fn generate_row_from_assigned_bytes<F: PrimeField>(
 
     let mut assigned_limbs = vec![];
 
-    /// Fill the row with copies of the limbs
+    // Fill the row with copies of the limbs
     for (index, byte_cell) in bytes.iter().enumerate() {
         let assigned_byte = AssignedByte::copy_advice_byte_from_native(
             region,

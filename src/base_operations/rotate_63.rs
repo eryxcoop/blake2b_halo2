@@ -20,6 +20,10 @@ pub(crate) struct Rotate63Config {
 }
 
 impl Rotate63Config {
+    /// The gate that will be used to rotate a number 63 bits to the right
+    /// The gate is defined as:
+    ///    0 = 2 * input_full_number - output_full_number
+    ///                      * (2 * input_full_number - output_full_number - (1 << 64 - 1))
     pub(crate) fn configure<F: PrimeField>(
         meta: &mut ConstraintSystem<F>,
         full_number_u64: Column<Advice>,
@@ -29,10 +33,7 @@ impl Rotate63Config {
         Self::enforce_modulus_size::<F>();
 
         let q_rot63 = meta.complex_selector();
-        /// The gate that will be used to rotate a number 63 bits to the right
-        /// The gate is defined as:
-        ///    0 = 2 * input_full_number - output_full_number
-        ///                      * (2 * input_full_number - output_full_number - (1 << 64 - 1))
+
         meta.create_gate("rotate right 63", |meta| {
             let q_rot63 = meta.query_selector(q_rot63);
             let input_full_number = meta.query_advice(full_number_u64, Rotation(-1));

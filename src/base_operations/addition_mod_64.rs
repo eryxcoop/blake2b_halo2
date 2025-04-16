@@ -15,6 +15,14 @@ pub(crate) struct AdditionMod64Config {
 
 impl AdditionMod64Config {
     /// Creates the necessary gate for the operation to be constrained
+    /// The gate that will be used to check the sum of two numbers mod 2^64
+    /// The gate is defined as:
+    ///     sum mod 2 ^ 64 = full_number_result - full_number_x - full_number_y
+    ///                     + carry * (1 << 64)
+    ///    carry = carry * (1 - carry)
+    ///
+    /// Note that the full number is range checked to be a 64-bit number because we
+    /// are using 8-bit limbs and the q_decompose and q_range selectors below.
     pub(crate) fn configure<F: PrimeField>(
         meta: &mut ConstraintSystem<F>,
         full_number_u64: Column<Advice>,
@@ -24,14 +32,6 @@ impl AdditionMod64Config {
     ) -> Self {
         let q_add = meta.complex_selector();
 
-        /// The gate that will be used to check the sum of two numbers mod 2^64
-        /// The gate is defined as:
-        ///     sum mod 2 ^ 64 = full_number_result - full_number_x - full_number_y
-        ///                     + carry * (1 << 64)
-        ///    carry = carry * (1 - carry)
-        ///
-        /// Note that the full number is range checked to be a 64-bit number because we
-        /// are using 8-bit limbs and the q_decompose and q_range selectors below.
         meta.create_gate("sum mod 2 ^ 64", |meta| {
             let q_add = meta.query_selector(q_add);
             let full_number_x = meta.query_advice(full_number_u64, Rotation(0));

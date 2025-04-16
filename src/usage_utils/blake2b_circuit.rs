@@ -64,7 +64,7 @@ impl<F: PrimeField> Circuit<F> for Blake2bCircuit<F> {
         let expected_final_state = meta.instance_column();
         meta.enable_equality(expected_final_state);
 
-        /// We need to provide the chip with the advice columns that it will use.
+        // We need to provide the chip with the advice columns that it will use.
         let blake2b_chip = Blake2bChip::configure(meta, full_number_u64, limbs);
 
         Self::Config {
@@ -81,25 +81,25 @@ impl<F: PrimeField> Circuit<F> for Blake2bCircuit<F> {
         config: Self::Config,
         mut layouter: impl Layouter<F>,
     ) -> Result<(), Error> {
-        /// The input bytes are assigned in the circuit before calling the hash function.
-        /// They're not constrained to be in the range [0,255] here, but they are when used inside
-        /// the blake2b chip. This means that the chip does not expect the inputs to be bytes, but
-        /// the execution will fail if they're not.
+        // The input bytes are assigned in the circuit before calling the hash function.
+        // They're not constrained to be in the range [0,255] here, but they are when used inside
+        // the blake2b chip. This means that the chip does not expect the inputs to be bytes, but
+        // the execution will fail if they're not.
         let assigned_input =
             Self::assign_inputs_to_the_trace(config.clone(), &mut layouter, &self.input)?;
         let assigned_key =
             Self::assign_inputs_to_the_trace(config.clone(), &mut layouter, &self.key)?;
 
-        /// The initialization function should be called before the hash computation. For many hash
-        /// computations it should be called only once.
+        // The initialization function should be called before the hash computation. For many hash
+        // computations it should be called only once.
         let mut blake2b = Blake2b::new(config.blake2b_chip)?;
         blake2b.initialize(&mut layouter)?;
 
-        /// Call to the blake2b function
+        // Call to the blake2b function
         let result =
             blake2b.hash(&mut layouter, &assigned_input, &assigned_key, self.output_size)?;
 
-        /// Assert results
+        // Assert results
         for (i, global_state_byte_cell) in result.iter().enumerate().take(self.output_size) {
             layouter.constrain_instance(
                 global_state_byte_cell.cell(),

@@ -126,14 +126,14 @@ impl Blake2bInstructions for Blake2bChip {
         let total_blocks = get_total_blocks_count(input_blocks, is_input_empty, is_key_empty);
         let last_input_block_index = if is_input_empty { 0 } else { input_blocks - 1 };
 
-        /// Main loop
+        // Main loop
         (0..total_blocks)
             .map(|i| {
                 let is_last_block = i == total_blocks - 1;
                 let is_key_block = !is_key_empty && i == 0;
 
-                /// This is an intermediate value in the Blake2b algorithm. It represents the amount
-                /// of bytes processed so far.
+                // This is an intermediate value in the Blake2b algorithm. It represents the amount
+                // of bytes processed so far.
                 let processed_bytes_count = compute_processed_bytes_count_value_for_iteration(
                     i,
                     is_last_block,
@@ -201,9 +201,9 @@ impl Blake2bInstructions for Blake2bChip {
         let mut state: [AssignedBlake2bWord<F>; 16] = state_vector.try_into().unwrap();
 
         // accumulative_state[12] ^= processed_bytes_count
-        /// Since accumulative_state[12] is allways IV_CONSTANTS[4] at this point in execution
-        /// and processed_bytes_count is public for both parties, the xor between both values
-        /// is also a constant.
+        // Since accumulative_state[12] is allways IV_CONSTANTS[4] at this point in execution
+        // and processed_bytes_count is public for both parties, the xor between both values
+        // is also a constant.
         let new_state_12 = processed_bytes_count ^ IV_CONSTANTS[4];
         state[12] = AssignedBlake2bWord::assign_fixed_word(
             region,
@@ -218,7 +218,7 @@ impl Blake2bInstructions for Blake2bChip {
             state[14] = self.not(&state[14], region, row_offset)?;
         }
 
-        /// Main loop
+        // Main loop
         for i in 0..12 {
             for j in 0..8 {
                 self.mix(
@@ -307,16 +307,16 @@ impl Blake2bChip {
         full_number_u64: Column<Advice>,
         limbs: [Column<Advice>; 8],
     ) -> Self {
-        /// Gate that checks if the 8-bit limb decomposition is correct
+        // Gate that checks if the 8-bit limb decomposition is correct
         let q_decompose = meta.complex_selector();
         create_limb_decomposition_gate(meta, q_decompose, full_number_u64, limbs);
 
-        /// Range-check lookups
+        // Range-check lookups
         let q_range = meta.complex_selector();
         let t_range = meta.lookup_table_column();
         create_range_check_gate(meta, t_range, q_range, limbs);
 
-        /// Config that is the same for every optimization
+        // Config that is the same for every optimization
         let rotate_63_config =
             Rotate63Config::configure(meta, full_number_u64, q_decompose, q_range);
         let negate_config = NegateConfig::configure(meta, full_number_u64);
@@ -326,8 +326,8 @@ impl Blake2bChip {
         meta.enable_equality(constants);
         meta.enable_constant(constants);
 
-        /// Config that is optimization-specific
-        /// For the carry column we'll reuse the first limb column for optimization reasons
+        // Config that is optimization-specific
+        // For the carry column we'll reuse the first limb column for optimization reasons
         let addition_config =
             AdditionMod64Config::configure(meta, full_number_u64, limbs[0], q_decompose, q_range);
         let xor_config = XorConfig::configure(meta, limbs, full_number_u64, limbs, q_decompose);

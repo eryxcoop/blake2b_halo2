@@ -43,12 +43,11 @@ impl<C: Blake2bInstructions> Blake2b<C> {
         output_size: usize,
     ) -> Result<[AssignedByte<F>; 64], Error> {
         enforce_input_sizes(output_size, key.len());
-        /// All the computation is performed inside a single region
-        // TODO: experiment with a region per Mix of Compress, instead of a single region
+        // All the computation is performed inside a single region
         layouter.assign_region(
             || "single region",
             |mut region| {
-                /// Initialize in 0 the offset for the advice cells in the region
+                // Initialize in 0 the offset for the advice cells in the region
                 let mut advice_offset: usize = 0;
 
                 let (iv_constant_cells, initial_state_0, zero_constant) =
