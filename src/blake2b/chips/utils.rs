@@ -99,7 +99,7 @@ pub(crate) fn get_total_blocks_count(
 /// bytes in the trace. It's just a matter of iterating the cells in the correct order and knowing
 /// which ones should equal zero. In Blake2b the padding is allways 0.
 pub(crate) fn constrain_padding_cells_to_equal_zero<F: PrimeField>(
-    region: &mut Region<F>,
+    region: &mut Region<'_, F>,
     zeros_amount: usize,
     current_block_rows: &[AssignedRow<F>; 16],
     zero_constant_cell: &AssignedNative<F>,

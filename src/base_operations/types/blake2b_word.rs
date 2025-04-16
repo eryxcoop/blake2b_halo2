@@ -71,7 +71,7 @@ impl<F: PrimeField> AssignedBlake2bWord<F> {
     /// Method that copies an [AssignedBlake2bWord] in the trace into another cell.
     pub(in crate::base_operations) fn copy_advice_word(
         &self,
-        region: &mut Region<F>,
+        region: &mut Region<'_, F>,
         column: Column<Advice>,
         offset: usize,
         annotation: &str,
@@ -83,7 +83,7 @@ impl<F: PrimeField> AssignedBlake2bWord<F> {
     /// Method that assigns a fixed word in the trace. It's safe to use because it's a constant,
     /// therefore it's constrained to a fixed value known by everyone.
     pub(crate) fn assign_fixed_word(
-        region: &mut Region<F>,
+        region: &mut Region<'_, F>,
         annotation: &str,
         column: Column<Advice>,
         offset: usize,
@@ -101,7 +101,7 @@ impl<F: PrimeField> AssignedBlake2bWord<F> {
     /// activate the constraints over the cells in the trace. In this case, the [Decompose8] gate
     /// is the responsible to create them.
     pub(in crate::base_operations) fn assign_advice_word_from_field(
-        region: &mut Region<F>,
+        region: &mut Region<'_, F>,
         annotation: &str,
         column: Column<Advice>,
         offset: usize,
@@ -115,7 +115,7 @@ impl<F: PrimeField> AssignedBlake2bWord<F> {
 
     /// Given a value that contains a Blake2bWord, this method assigns the value into a cell
     pub(in crate::base_operations) fn assign_advice_word(
-        region: &mut Region<F>,
+        region: &mut Region<'_, F>,
         annotation: &str,
         column: Column<Advice>,
         offset: usize,

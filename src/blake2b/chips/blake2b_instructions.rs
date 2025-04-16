@@ -24,7 +24,7 @@ pub trait Blake2bInstructions: Clone {
         &self,
         output_size: usize,
         key_size: usize,
-        region: &mut Region<F>,
+        region: &mut Region<'_, F>,
         advice_offset: &mut usize,
     ) -> Result<ConstantCells<F>, Error>;
 
@@ -45,7 +45,7 @@ pub trait Blake2bInstructions: Clone {
     #[allow(clippy::too_many_arguments)]
     fn perform_blake2b_iterations<F: PrimeField>(
         &self,
-        region: &mut Region<F>,
+        region: &mut Region<'_, F>,
         advice_offset: &mut usize,
         input: &[AssignedNative<F>],
         key: &[AssignedNative<F>],
@@ -60,7 +60,7 @@ pub trait Blake2bInstructions: Clone {
     #[allow(clippy::too_many_arguments)]
     fn compress<F: PrimeField>(
         &self,
-        region: &mut Region<F>,
+        region: &mut Region<'_, F>,
         row_offset: &mut usize,
         iv_constants: &[AssignedBlake2bWord<F>; 8],
         global_state: &mut [AssignedBlake2bWord<F>; 8],
@@ -81,7 +81,7 @@ pub trait Blake2bInstructions: Clone {
         x: AssignedBlake2bWord<F>,
         y: AssignedBlake2bWord<F>,
         state: &mut [AssignedBlake2bWord<F>; 16],
-        region: &mut Region<F>,
+        region: &mut Region<'_, F>,
         offset: &mut usize,
     ) -> Result<(), Error>;
 }

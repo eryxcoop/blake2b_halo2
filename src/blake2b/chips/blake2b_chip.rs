@@ -62,7 +62,7 @@ impl Blake2bInstructions for Blake2bChip {
         &self,
         output_size: usize,
         key_size: usize,
-        region: &mut Region<F>,
+        region: &mut Region<'_, F>,
         advice_offset: &mut usize,
     ) -> Result<ConstantCells<F>, Error> {
         let iv_constant_cells: [AssignedBlake2bWord<F>; 8] =
@@ -110,7 +110,7 @@ impl Blake2bInstructions for Blake2bChip {
     #[allow(clippy::too_many_arguments)]
     fn perform_blake2b_iterations<F: PrimeField>(
         &self,
-        region: &mut Region<F>,
+        region: &mut Region<'_, F>,
         offset: &mut usize,
         input: &[AssignedNative<F>],
         key: &[AssignedNative<F>],
@@ -186,7 +186,7 @@ impl Blake2bInstructions for Blake2bChip {
 
     fn compress<F: PrimeField>(
         &self,
-        region: &mut Region<F>,
+        region: &mut Region<'_, F>,
         row_offset: &mut usize,
         iv_constants: &[AssignedBlake2bWord<F>; 8],
         global_state: &mut [AssignedBlake2bWord<F>; 8],
@@ -251,7 +251,7 @@ impl Blake2bInstructions for Blake2bChip {
         x: AssignedBlake2bWord<F>,
         y: AssignedBlake2bWord<F>,
         state: &mut [AssignedBlake2bWord<F>; 16],
-        region: &mut Region<F>,
+        region: &mut Region<'_, F>,
         offset: &mut usize,
     ) -> Result<(), Error> {
         let v_a = &state[state_indexes[0]];
@@ -351,7 +351,7 @@ impl Blake2bChip {
     /// trace. This is implementation specific.
     fn assign_iv_constants_to_fixed_cells<F: PrimeField>(
         &self,
-        region: &mut Region<F>,
+        region: &mut Region<'_, F>,
         offset: &mut usize,
     ) -> Result<[AssignedBlake2bWord<F>; 8], Error> {
         let ret: [AssignedBlake2bWord<F>; 8] = IV_CONSTANTS
@@ -374,7 +374,7 @@ impl Blake2bChip {
     fn not<F: PrimeField>(
         &self,
         input_cell: &AssignedBlake2bWord<F>,
-        region: &mut Region<F>,
+        region: &mut Region<'_, F>,
         offset: &mut usize,
     ) -> Result<AssignedBlake2bWord<F>, Error> {
         self.negate_config.generate_rows_from_cell(region, offset, input_cell, self.full_number_u64)
@@ -387,7 +387,7 @@ impl Blake2bChip {
         &self,
         lhs: &AssignedBlake2bWord<F>,
         rhs: &AssignedBlake2bWord<F>,
-        region: &mut Region<F>,
+        region: &mut Region<'_, F>,
         offset: &mut usize,
     ) -> Result<AssignedRow<F>, Error> {
         self.xor_config.generate_xor_rows_from_cells(region, offset, lhs, rhs)
@@ -400,7 +400,7 @@ impl Blake2bChip {
         &self,
         lhs: &AssignedBlake2bWord<F>,
         rhs: &AssignedBlake2bWord<F>,
-        region: &mut Region<F>,
+        region: &mut Region<'_, F>,
         offset: &mut usize,
     ) -> Result<AssignedRow<F>, Error> {
         let addition_row = self
@@ -424,7 +424,7 @@ impl Blake2bChip {
     fn rotate_right_63<F: PrimeField>(
         &self,
         input: AssignedBlake2bWord<F>,
-        region: &mut Region<F>,
+        region: &mut Region<'_, F>,
         offset: &mut usize,
     ) -> Result<AssignedBlake2bWord<F>, Error> {
         self.rotate_63_config.generate_64_bit_rotation_from_cells(
@@ -442,7 +442,7 @@ impl Blake2bChip {
     fn rotate_right_16<F: PrimeField>(
         &self,
         input_row: AssignedRow<F>,
-        region: &mut Region<F>,
+        region: &mut Region<'_, F>,
         offset: &mut usize,
     ) -> Result<AssignedBlake2bWord<F>, Error> {
         self.generic_limb_rotation_config.generate_rotation_rows_from_input_row(
@@ -461,7 +461,7 @@ impl Blake2bChip {
     fn rotate_right_24<F: PrimeField>(
         &self,
         input_row: AssignedRow<F>,
-        region: &mut Region<F>,
+        region: &mut Region<'_, F>,
         offset: &mut usize,
     ) -> Result<AssignedBlake2bWord<F>, Error> {
         self.generic_limb_rotation_config.generate_rotation_rows_from_input_row(
@@ -480,7 +480,7 @@ impl Blake2bChip {
     fn rotate_right_32<F: PrimeField>(
         &self,
         input_row: AssignedRow<F>,
-        region: &mut Region<F>,
+        region: &mut Region<'_, F>,
         offset: &mut usize,
     ) -> Result<AssignedBlake2bWord<F>, Error> {
         self.generic_limb_rotation_config.generate_rotation_rows_from_input_row(
@@ -504,7 +504,7 @@ impl Blake2bChip {
         &self,
         previous_operand: &AssignedRow<F>,
         cell_to_copy: &AssignedBlake2bWord<F>,
-        region: &mut Region<F>,
+        region: &mut Region<'_, F>,
         offset: &mut usize,
     ) -> Result<AssignedRow<F>, Error> {
         self.xor_config.generate_xor_rows_reusing_first_operand(
@@ -522,7 +522,7 @@ impl Blake2bChip {
         &self,
         previous_cell: &AssignedBlake2bWord<F>,
         cell_to_copy: &AssignedBlake2bWord<F>,
-        region: &mut Region<F>,
+        region: &mut Region<'_, F>,
         offset: &mut usize,
     ) -> Result<AssignedRow<F>, Error> {
         Ok(self
@@ -561,7 +561,7 @@ impl Blake2bChip {
     fn new_row_from_assigned_bytes<F: PrimeField>(
         &self,
         bytes: &[AssignedNative<F>; 8],
-        region: &mut Region<F>,
+        region: &mut Region<'_, F>,
         offset: &mut usize,
     ) -> Result<AssignedRow<F>, Error> {
         self.q_decompose.enable(region, *offset)?;
@@ -582,7 +582,7 @@ impl Blake2bChip {
     /// 16 [AssignedRow] putted in the trace, range-checked and ready for use in the algorithm.
     fn block_words_from_bytes<F: PrimeField>(
         &self,
-        region: &mut Region<F>,
+        region: &mut Region<'_, F>,
         offset: &mut usize,
         block: [AssignedNative<F>; 128],
     ) -> Result<[AssignedRow<F>; 16], Error> {
@@ -629,7 +629,7 @@ impl Blake2bChip {
     /// Assigns an u64 constant to trace[row_offset][limbs[limb_index]] cell.
     fn assign_limb_constant_u64<F: PrimeField>(
         &self,
-        region: &mut Region<F>,
+        region: &mut Region<'_, F>,
         row_offset: &usize,
         description: &str,
         constant: u64,

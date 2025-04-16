@@ -60,7 +60,7 @@ impl Rotate63Config {
     /// result.
     pub(crate) fn generate_64_bit_rotation_from_cells<F: PrimeField>(
         &self,
-        region: &mut Region<F>,
+        region: &mut Region<'_, F>,
         offset: &mut usize,
         input: &AssignedBlake2bWord<F>,
         full_number_u64: Column<Advice>,

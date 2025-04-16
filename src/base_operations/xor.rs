@@ -82,7 +82,7 @@ impl XorConfig {
     /// operands
     pub(crate) fn generate_xor_rows_from_cells<F: PrimeField>(
         &self,
-        region: &mut Region<F>,
+        region: &mut Region<'_, F>,
         offset: &mut usize,
         lhs: &AssignedBlake2bWord<F>,
         rhs: &AssignedBlake2bWord<F>,
@@ -109,7 +109,7 @@ impl XorConfig {
     /// previous row in the trace.
     pub(crate) fn generate_xor_rows_reusing_first_operand<F: PrimeField>(
         &self,
-        region: &mut Region<F>,
+        region: &mut Region<'_, F>,
         offset: &mut usize,
         first_operand_row: &AssignedRow<F>,
         second_operand: &AssignedBlake2bWord<F>,
@@ -136,7 +136,7 @@ impl XorConfig {
     /// gate when doing the lookups.
     fn generate_xor_result_row<F: PrimeField>(
         &self,
-        region: &mut Region<F>,
+        region: &mut Region<'_, F>,
         offset: &mut usize,
         first_operand_row: &AssignedRow<F>,
         second_operand_row: &AssignedRow<F>,

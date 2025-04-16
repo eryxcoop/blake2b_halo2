@@ -48,7 +48,7 @@ impl<F: PrimeField> AssignedByte<F> {
     /// circuit. That's why only the base operations can create an [AssignedByte] from a Field value,
     /// since they're responsible to activate the constraints over the cells in the trace.
     pub(in crate::base_operations) fn copy_advice_byte_from_native(
-        region: &mut Region<F>,
+        region: &mut Region<'_, F>,
         annotation: &str,
         column: Column<Advice>,
         offset: usize,
@@ -69,7 +69,7 @@ impl<F: PrimeField> AssignedByte<F> {
     /// The range-check is not needed here, since we're copying a cell that should already have
     /// been constrained.
     pub(in crate::base_operations) fn copy_advice_byte(
-        region: &mut Region<F>,
+        region: &mut Region<'_, F>,
         annotation: &str,
         column: Column<Advice>,
         offset: usize,
@@ -90,7 +90,7 @@ impl<F: PrimeField> AssignedByte<F> {
     /// WARNING: this method is only available to the base operations because they should make sure
     /// that constrains over the byte values of these cells are enforced.
     pub(in crate::base_operations) fn assign_advice_byte(
-        region: &mut Region<F>,
+        region: &mut Region<'_, F>,
         annotation: &str,
         column: Column<Advice>,
         offset: usize,

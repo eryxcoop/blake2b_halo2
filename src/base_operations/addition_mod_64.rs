@@ -65,7 +65,7 @@ impl AdditionMod64Config {
     #[allow(clippy::too_many_arguments)]
     pub(crate) fn generate_addition_rows_from_cells<F: PrimeField>(
         &self,
-        region: &mut Region<F>,
+        region: &mut Region<'_, F>,
         offset: &mut usize,
         previous_cell: &AssignedBlake2bWord<F>,
         cell_to_copy: &AssignedBlake2bWord<F>,

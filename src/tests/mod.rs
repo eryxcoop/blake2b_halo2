@@ -85,10 +85,10 @@ impl Decompose8Config {
         let t_range = meta.lookup_table_column();
         let q_decompose = meta.complex_selector();
 
-        /// Gate that checks if the decomposition is correct
+        // Gate that checks if the decomposition is correct
         create_limb_decomposition_gate(meta, q_decompose, full_number_u64, limbs);
 
-        /// Range checks for all the limbs (range [0,255])
+        // Range checks for all the limbs (range [0,255])
         create_range_check_gate(meta, t_range, q_range, limbs);
 
         Self {
@@ -113,7 +113,7 @@ impl Decompose8Config {
     /// row[1..T] are the limbs representation of row[0]
     fn populate_row_from_values<F: PrimeField>(
         &self,
-        region: &mut Region<F>,
+        region: &mut Region<'_, F>,
         row: &[Value<F>],
         offset: usize,
         check_decomposition: bool,
@@ -141,7 +141,7 @@ impl Decompose8Config {
     /// full row that was created from that value.
     fn generate_row_from_word_and_keep_row<F: PrimeField>(
         &self,
-        region: &mut Region<F>,
+        region: &mut Region<'_, F>,
         value: Value<Blake2bWord>,
         offset: usize,
     ) -> Result<AssignedRow<F>, Error> {

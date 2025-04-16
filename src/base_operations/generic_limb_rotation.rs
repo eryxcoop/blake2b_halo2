@@ -24,7 +24,7 @@ impl LimbRotation {
     /// the method is called
     pub(crate) fn generate_rotation_rows_from_input_row<F: PrimeField>(
         &self,
-        region: &mut Region<F>,
+        region: &mut Region<'_, F>,
         offset: &mut usize,
         input_row: AssignedRow<F>,
         limbs_to_rotate_to_the_right: usize,

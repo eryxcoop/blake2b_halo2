@@ -27,7 +27,7 @@ fn rotate_right_field_element(value_to_rotate: Blake2bWord, rotation_degree: usi
 /// bytes in the limbs and the resulting full number in the first column.
 /// WARNING: this method doesn't set any constraints. That's the responsibility of the caller.
 pub(crate) fn generate_row_from_assigned_bytes<F: PrimeField>(
-    region: &mut Region<F>,
+    region: &mut Region<'_, F>,
     bytes: &[AssignedNative<F>; 8],
     offset: usize,
     full_number_u64: Column<Advice>,
@@ -77,7 +77,7 @@ fn compute_full_value_u64_from_bytes<F: PrimeField>(bytes: &[AssignedNative<F>; 
 /// decomposition in 8-bit limbs.
 /// WARNING: this method doesn't set any constraints. That's the responsibility of the caller.
 fn generate_row_from_cell<F: PrimeField>(
-    region: &mut Region<F>,
+    region: &mut Region<'_, F>,
     cell: &AssignedBlake2bWord<F>,
     offset: usize,
     full_number_u64: Column<Advice>,
@@ -94,7 +94,7 @@ fn generate_row_from_cell<F: PrimeField>(
 /// and the limbs, and returns the full number
 /// WARNING: this method doesn't set any constraints. That's the responsibility of the caller.
 pub(crate) fn generate_row_from_word_value<F: PrimeField>(
-    region: &mut Region<F>,
+    region: &mut Region<'_, F>,
     value: Value<Blake2bWord>,
     offset: usize,
     full_number_u64: Column<Advice>,
@@ -109,7 +109,7 @@ pub(crate) fn generate_row_from_word_value<F: PrimeField>(
 /// full row that was created from that value.
 /// WARNING: this method doesn't set any constraints. That's the responsibility of the caller.
 pub(crate) fn generate_row_from_word_and_keep_row<F: PrimeField>(
-    region: &mut Region<F>,
+    region: &mut Region<'_, F>,
     value: Value<Blake2bWord>,
     offset: usize,
     full_number_u64: Column<Advice>,
@@ -131,7 +131,7 @@ fn get_limb_from(value: Value<Blake2bWord>, limb_number: usize) -> Value<Byte> {
 /// Given a full number and the values of the limbs. It creates a new row with these values.
 /// WARNING: this method doesn't set any constraints. That's the responsibility of the caller.
 pub(crate) fn create_row_with_word_and_limbs<F: PrimeField>(
-    region: &mut Region<F>,
+    region: &mut Region<'_, F>,
     full_value: Value<Blake2bWord>,
     limb_values: [Value<Byte>; 8],
     offset: usize,
