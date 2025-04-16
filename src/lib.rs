@@ -1,6 +1,7 @@
 //! Halo2 Blake2b implementation.
 #![deny(missing_docs)]
-
+#![deny(missing_debug_implementations)]
+// #![deny(rust_2018_idioms)]
 use halo2_proofs::{circuit::Layouter, plonk::ConstraintSystem};
 
 use ff::PrimeField;

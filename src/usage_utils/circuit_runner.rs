@@ -21,6 +21,7 @@ use crate::usage_utils::blake2b_circuit::Blake2bCircuit;
 pub type Blake2bCircuitInputs = (Vec<Value<Fr>>, usize, Vec<Value<Fr>>, usize, [Fr; 64], usize);
 
 /// Circuit runner struct
+#[derive(Debug)]
 pub struct CircuitRunner;
 
 /// Circuit runner methods for Mock Prover

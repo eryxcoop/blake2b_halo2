@@ -11,7 +11,7 @@ use std::marker::PhantomData;
 
 /// The struct of the circuit. It contains the input and key that will be hashed. Also
 /// the sizes of the input, key and output.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Blake2bCircuit<F: PrimeField> {
     /// The input and the key should be unknown for the verifier.
     input: Vec<Value<F>>,
@@ -24,7 +24,7 @@ pub struct Blake2bCircuit<F: PrimeField> {
 
 /// The configuration of the circuit. It contains the chip that will be used to compute the hash and
 /// the columns that will hold the expected output of the hash in the form of public inputs.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Blake2bConfig<F: PrimeField> {
     _ph: PhantomData<F>,
     /// The chip that will be used to compute the hash. We only need this.
