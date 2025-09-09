@@ -1,3 +1,4 @@
+use midnight_proofs::plonk::Constraints;
 use crate::base_operations::types::blake2b_word::AssignedBlake2bWord;
 use super::*;
 
@@ -26,10 +27,11 @@ impl NegateConfig {
             let value = meta.query_advice(full_number_u64, Rotation(0));
             let not_value = meta.query_advice(full_number_u64, Rotation(1));
 
-            vec![
+            let constraints = vec![
                 q_negate
                     * (Expression::Constant(F::from_u128((1u128 << 64) - 1)) - value - not_value),
-            ]
+            ];
+            Constraints::without_selector(constraints)
         });
 
         Self { q_negate }

@@ -1,7 +1,7 @@
 use blake2_rfc::blake2b::blake2b;
 use blake2b_halo2::usage_utils::blake2b_circuit::Blake2bCircuit;
 use midnight_proofs::circuit::Value;
-use midnight_proofs::dev::cost_model::{from_circuit_to_cost_model_options, CostOptions};
+// use midnight_proofs::dev::cost_model::{from_circuit_to_cost_model_options, CostOptions};
 use midnight_proofs::dev::MockProver;
 use midnight_proofs::halo2curves::bn256::Fr;
 use hex;
@@ -45,9 +45,9 @@ fn main() {
     of different sizes but same amount of blocks will have same length in the circuit\n\n"
     );
     println!("Computing the circuit and generating the proof, this could take a couple of seconds ...\n\n");
-    let cost_options = run_blake2b_halo2(input_bytes.clone(), key_bytes.clone(), buffer_out);
+    /*let cost_options = */run_blake2b_halo2(input_bytes.clone(), key_bytes.clone(), buffer_out);
     println!("Cost model options: ");
-    println!(
+    /*println!(
         "The amount of advice rows is {} (for {} blocks of input)",
         cost_options.rows_count,
         amount_of_blocks(&input_bytes, &key_bytes)
@@ -58,7 +58,7 @@ fn main() {
     println!("The gate degree is {}", cost_options.gate_degree);
     println!("The max degree is {}", cost_options.max_degree);
     println!("The table rows count is {}", cost_options.table_rows_count);
-    println!("The compressed rows count is {}", cost_options.compressed_rows_count);
+    println!("The compressed rows count is {}", cost_options.compressed_rows_count);*/
 }
 
 fn run_blake2b_rust(input: &str, key: &str, output_size: usize) -> Vec<u8> {
@@ -70,7 +70,7 @@ fn run_blake2b_halo2(
     input_bytes: Vec<u8>,
     key_bytes: Vec<u8>,
     expected_output: Vec<u8>,
-) -> CostOptions {
+) /*-> CostOptions*/ {
     // INPUT
     let input_size = input_bytes.len();
     let input_values =
@@ -91,11 +91,11 @@ fn run_blake2b_halo2(
         Blake2bCircuit::<Fr>::new_for(input_values, input_size, key_values, key_size, output_size);
 
     let k = compute_k(amount_of_blocks(&input_bytes, &key_bytes));
-    let options = from_circuit_to_cost_model_options(Some(k), &circuit, 1);
+    // let options = from_circuit_to_cost_model_options(Some(k), &circuit, 1);
     let prover = MockProver::run(k, &circuit, vec![expected_output_fields]).unwrap();
     prover.verify().unwrap();
 
-    options
+    // options
 }
 
 fn compute_k(amount_of_blocks: usize) -> u32 {

@@ -1,3 +1,4 @@
+use midnight_proofs::plonk::Constraints;
 use super::*;
 use num_bigint::BigUint;
 use crate::base_operations::types::blake2b_word::AssignedBlake2bWord;
@@ -38,14 +39,15 @@ impl Rotate63Config {
             let q_rot63 = meta.query_selector(q_rot63);
             let input_full_number = meta.query_advice(full_number_u64, Rotation(-1));
             let output_full_number = meta.query_advice(full_number_u64, Rotation(0));
-            vec![
+            let constraints = vec![
                 q_rot63
                     * (Expression::Constant(F::from(2)) * input_full_number.clone()
-                        - output_full_number.clone())
+                    - output_full_number.clone())
                     * (Expression::Constant(F::from(2)) * input_full_number
-                        - output_full_number
-                        - Expression::Constant(F::from(((1u128 << 64) - 1) as u64))),
-            ]
+                    - output_full_number
+                    - Expression::Constant(F::from(((1u128 << 64) - 1) as u64))),
+            ];
+            Constraints::without_selector(constraints)
         });
 
         Self {

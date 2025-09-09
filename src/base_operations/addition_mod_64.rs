@@ -1,3 +1,4 @@
+use midnight_proofs::plonk::Constraints;
 use super::*;
 use crate::base_operations::types::bit::AssignedBit;
 use crate::base_operations::types::blake2b_word::{AssignedBlake2bWord, Blake2bWord};
@@ -39,12 +40,14 @@ impl AdditionMod64Config {
             let full_number_result = meta.query_advice(full_number_u64, Rotation(2));
             let carry = meta.query_advice(carry, Rotation(1));
 
-            vec![
+            let constraints = vec![
                 q_add.clone()
                     * (full_number_result - full_number_x - full_number_y
-                        + carry.clone() * (Expression::Constant(F::from_u128(1u128 << 64)))),
+                    + carry.clone() * (Expression::Constant(F::from_u128(1u128 << 64)))),
                 q_add * carry.clone() * (Expression::Constant(F::from_u128(1u128)) - carry),
-            ]
+            ];
+
+            Constraints::without_selector(constraints)
         });
 
         Self {

@@ -1,3 +1,4 @@
+use midnight_proofs::plonk::Constraints;
 use super::*;
 use crate::base_operations::types::blake2b_word::AssignedBlake2bWord;
 use crate::base_operations::types::byte::{AssignedByte, Byte};
@@ -171,18 +172,19 @@ pub(crate) fn create_limb_decomposition_gate<F: PrimeField>(
         let full_number = meta.query_advice(full_number_u64, Rotation::cur());
         let limbs: Vec<Expression<F>> =
             limbs.iter().map(|column| meta.query_advice(*column, Rotation::cur())).collect();
-        vec![
+        let constraints = vec![
             q_decompose
                 * (full_number
-                    - limbs[0].clone()
-                    - limbs[1].clone() * Expression::Constant(F::from(1 << 8))
-                    - limbs[2].clone() * Expression::Constant(F::from(1 << 16))
-                    - limbs[3].clone() * Expression::Constant(F::from(1 << 24))
-                    - limbs[4].clone() * Expression::Constant(F::from(1 << 32))
-                    - limbs[5].clone() * Expression::Constant(F::from(1 << 40))
-                    - limbs[6].clone() * Expression::Constant(F::from(1 << 48))
-                    - limbs[7].clone() * Expression::Constant(F::from(1 << 56))),
-        ]
+                - limbs[0].clone()
+                - limbs[1].clone() * Expression::Constant(F::from(1 << 8))
+                - limbs[2].clone() * Expression::Constant(F::from(1 << 16))
+                - limbs[3].clone() * Expression::Constant(F::from(1 << 24))
+                - limbs[4].clone() * Expression::Constant(F::from(1 << 32))
+                - limbs[5].clone() * Expression::Constant(F::from(1 << 40))
+                - limbs[6].clone() * Expression::Constant(F::from(1 << 48))
+                - limbs[7].clone() * Expression::Constant(F::from(1 << 56))),
+        ];
+        Constraints::without_selector(constraints)
     })
 }
 
