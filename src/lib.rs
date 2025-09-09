@@ -3,7 +3,6 @@
 #![deny(missing_debug_implementations)]
 #![deny(rust_2018_idioms)]
 
-
 use midnight_proofs::{circuit::Layouter, plonk::ConstraintSystem};
 
 use ff::PrimeField;

@@ -42,10 +42,10 @@ impl Rotate63Config {
             let constraints = vec![
                 q_rot63
                     * (Expression::Constant(F::from(2)) * input_full_number.clone()
-                    - output_full_number.clone())
+                        - output_full_number.clone())
                     * (Expression::Constant(F::from(2)) * input_full_number
-                    - output_full_number
-                    - Expression::Constant(F::from(((1u128 << 64) - 1) as u64))),
+                        - output_full_number
+                        - Expression::Constant(F::from(((1u128 << 64) - 1) as u64))),
             ];
             Constraints::without_selector(constraints)
         });

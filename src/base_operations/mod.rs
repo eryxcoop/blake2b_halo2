@@ -175,14 +175,14 @@ pub(crate) fn create_limb_decomposition_gate<F: PrimeField>(
         let constraints = vec![
             q_decompose
                 * (full_number
-                - limbs[0].clone()
-                - limbs[1].clone() * Expression::Constant(F::from(1 << 8))
-                - limbs[2].clone() * Expression::Constant(F::from(1 << 16))
-                - limbs[3].clone() * Expression::Constant(F::from(1 << 24))
-                - limbs[4].clone() * Expression::Constant(F::from(1 << 32))
-                - limbs[5].clone() * Expression::Constant(F::from(1 << 40))
-                - limbs[6].clone() * Expression::Constant(F::from(1 << 48))
-                - limbs[7].clone() * Expression::Constant(F::from(1 << 56))),
+                    - limbs[0].clone()
+                    - limbs[1].clone() * Expression::Constant(F::from(1 << 8))
+                    - limbs[2].clone() * Expression::Constant(F::from(1 << 16))
+                    - limbs[3].clone() * Expression::Constant(F::from(1 << 24))
+                    - limbs[4].clone() * Expression::Constant(F::from(1 << 32))
+                    - limbs[5].clone() * Expression::Constant(F::from(1 << 40))
+                    - limbs[6].clone() * Expression::Constant(F::from(1 << 48))
+                    - limbs[7].clone() * Expression::Constant(F::from(1 << 56))),
         ];
         Constraints::without_selector(constraints)
     })

@@ -45,7 +45,8 @@ fn main() {
     of different sizes but same amount of blocks will have same length in the circuit\n\n"
     );
     println!("Computing the circuit and generating the proof, this could take a couple of seconds ...\n\n");
-    /*let cost_options = */run_blake2b_halo2(input_bytes.clone(), key_bytes.clone(), buffer_out);
+    /*let cost_options = */
+    run_blake2b_halo2(input_bytes.clone(), key_bytes.clone(), buffer_out);
     println!("Cost model options: ");
     /*println!(
         "The amount of advice rows is {} (for {} blocks of input)",
@@ -66,11 +67,9 @@ fn run_blake2b_rust(input: &str, key: &str, output_size: usize) -> Vec<u8> {
     res.as_bytes().try_into().unwrap()
 }
 
-fn run_blake2b_halo2(
-    input_bytes: Vec<u8>,
-    key_bytes: Vec<u8>,
-    expected_output: Vec<u8>,
-) /*-> CostOptions*/ {
+fn run_blake2b_halo2(input_bytes: Vec<u8>, key_bytes: Vec<u8>, expected_output: Vec<u8>)
+/*-> CostOptions*/
+{
     // INPUT
     let input_size = input_bytes.len();
     let input_values =

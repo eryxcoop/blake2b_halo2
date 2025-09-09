@@ -43,7 +43,7 @@ impl AdditionMod64Config {
             let constraints = vec![
                 q_add.clone()
                     * (full_number_result - full_number_x - full_number_y
-                    + carry.clone() * (Expression::Constant(F::from_u128(1u128 << 64)))),
+                        + carry.clone() * (Expression::Constant(F::from_u128(1u128 << 64)))),
                 q_add * carry.clone() * (Expression::Constant(F::from_u128(1u128)) - carry),
             ];
 
