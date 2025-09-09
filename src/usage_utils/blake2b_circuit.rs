@@ -147,7 +147,7 @@ impl<F: PrimeField> Blake2bCircuit<F> {
                         let column = index % 8;
                         region
                             .assign_advice(
-                                || format!("Input column: {}, row: {}", row, column),
+                                || format!("Input column: {row}, row: {column}"),
                                 config.limbs[column],
                                 row,
                                 || *input_byte,

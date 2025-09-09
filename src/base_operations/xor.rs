@@ -182,7 +182,7 @@ impl XorConfig {
 
         // We need to perform a lookup for each limb
         for limb in limbs_8_bits {
-            meta.lookup(format!("xor lookup limb {:?}", limb), |meta| {
+            meta.lookup(format!("xor lookup limb {limb:?}"), |meta| {
                 let left: Expression<F> = meta.query_advice(limb, Rotation(0));
                 let right: Expression<F> = meta.query_advice(limb, Rotation(1));
                 let out: Expression<F> = meta.query_advice(limb, Rotation(2));

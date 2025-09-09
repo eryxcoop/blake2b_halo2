@@ -209,7 +209,7 @@ fn range_check_for_limb<F: PrimeField>(
     q_range: &Selector,
     t_range: &TableColumn,
 ) {
-    meta.lookup(format!("lookup limb {:?}", limb), |meta| {
+    meta.lookup(format!("lookup limb {limb:?}"), |meta| {
         let limb: Expression<F> = meta.query_advice(*limb, Rotation::cur());
         let q_range = meta.query_selector(*q_range);
         vec![(q_range * limb, *t_range)]
@@ -223,7 +223,7 @@ pub(crate) fn populate_lookup_table<F: PrimeField>(
 ) -> Result<(), Error> {
     const LIMB_SIZE_IN_BITS: usize = 8;
     layouter.assign_table(
-        || format!("range {}-bit check table", LIMB_SIZE_IN_BITS),
+        || format!("range {LIMB_SIZE_IN_BITS}-bit check table"),
         |mut table| {
             for i in 0..1 << LIMB_SIZE_IN_BITS {
                 table.assign_cell(|| "value", t_range, i, || Value::known(F::from(i as u64)))?;
