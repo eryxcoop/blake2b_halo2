@@ -4,7 +4,7 @@ This repo holds an optimized Blake2b implementation in Halo2 prover.
 > This code has **not been audited**. Use at your own risk.  
 
 
-* We are using [this halo2 version](https://github.com/input-output-hk/halo2) to build our circuits.
+* We are using [this halo2 version](https://github.com/midnightntwrk/midnight-zk) to build our circuits.
 * The cargo version should be 1.84.0 or higher (no need for nightly).
 
  Under the directory ```blake2b_halo2```  there are Halo2 chips that implement primitives for operating modulo 2⁶⁴, a chip for the Blake2b operation and tests for the above.
