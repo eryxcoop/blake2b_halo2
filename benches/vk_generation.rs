@@ -3,8 +3,8 @@ use criterion::measurement::WallTime;
 use criterion::{
     criterion_group, criterion_main, BatchSize, BenchmarkGroup, BenchmarkId, Criterion, Throughput,
 };
-use halo2_proofs::halo2curves::bn256::Bn256;
-use halo2_proofs::poly::kzg::params::ParamsKZG;
+use midnight_proofs::halo2curves::bn256::Bn256;
+use midnight_proofs::poly::kzg::params::ParamsKZG;
 
 pub mod utils;
 use utils::*;

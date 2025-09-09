@@ -1,8 +1,8 @@
 use super::*;
 use crate::tests::Decompose8Config;
 use crate::base_operations::rotate_63::Rotate63Config;
-use halo2_proofs::circuit::SimpleFloorPlanner;
-use halo2_proofs::plonk::Circuit;
+use midnight_proofs::circuit::SimpleFloorPlanner;
+use midnight_proofs::plonk::Circuit;
 use std::array;
 use std::marker::PhantomData;
 

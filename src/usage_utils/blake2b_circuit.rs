@@ -4,8 +4,8 @@ use crate::blake2b::blake2b_gadget::Blake2b;
 use crate::blake2b::chips::blake2b_chip::Blake2bChip;
 use crate::base_operations::types::AssignedNative;
 use ff::PrimeField;
-use halo2_proofs::circuit::{Layouter, SimpleFloorPlanner, Value};
-use halo2_proofs::plonk::{Advice, Circuit, Column, ConstraintSystem, Error, Instance};
+use midnight_proofs::circuit::{Layouter, SimpleFloorPlanner, Value};
+use midnight_proofs::plonk::{Advice, Circuit, Column, ConstraintSystem, Error, Instance};
 use std::array;
 use std::marker::PhantomData;
 

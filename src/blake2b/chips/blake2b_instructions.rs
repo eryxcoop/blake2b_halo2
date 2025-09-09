@@ -2,8 +2,8 @@ use crate::base_operations::types::blake2b_word::AssignedBlake2bWord;
 use crate::base_operations::types::byte::AssignedByte;
 use crate::base_operations::types::AssignedNative;
 use ff::PrimeField;
-use halo2_proofs::circuit::{Layouter, Region};
-use halo2_proofs::plonk::Error;
+use midnight_proofs::circuit::{Layouter, Region};
+use midnight_proofs::plonk::Error;
 
 pub(crate) type ConstantCells<F> =
     ([AssignedBlake2bWord<F>; 8], AssignedBlake2bWord<F>, AssignedNative<F>);

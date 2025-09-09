@@ -18,8 +18,8 @@ use crate::blake2b::chips::utils::{
     BLAKE2B_BLOCK_SIZE, IV_CONSTANTS, SIGMA,
 };
 use ff::PrimeField;
-use halo2_proofs::circuit::{Layouter, Region};
-use halo2_proofs::plonk::{Advice, Column, ConstraintSystem, Error, Selector, TableColumn};
+use midnight_proofs::circuit::{Layouter, Region};
+use midnight_proofs::plonk::{Advice, Column, ConstraintSystem, Error, Selector, TableColumn};
 
 /// This is the main chip for the Blake2b hash function. It is responsible for the entire hash computation.
 /// It contains all the necessary chips and some extra columns.

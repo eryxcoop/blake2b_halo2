@@ -3,7 +3,7 @@ use crate::base_operations::types::blake2b_word::AssignedBlake2bWord;
 use crate::base_operations::types::byte::AssignedByte;
 use crate::base_operations::types::row::AssignedRow;
 use ff::PrimeField;
-use halo2_proofs::circuit::Value;
+use midnight_proofs::circuit::Value;
 
 /// This gate rotates the limbs of a number to the right and uses copy constrains to ensure that
 /// the rotation is correct. It's used in our circuit to implement 16-bit, 24-bit and 32-bit rotations.

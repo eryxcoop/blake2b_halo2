@@ -1,7 +1,7 @@
 use super::*;
 
-use halo2_proofs::circuit::SimpleFloorPlanner;
-use halo2_proofs::plonk::{Circuit, Fixed};
+use midnight_proofs::circuit::SimpleFloorPlanner;
+use midnight_proofs::plonk::{Circuit, Fixed};
 use std::array;
 use crate::base_operations::types::bit::AssignedBit;
 use crate::base_operations::types::blake2b_word::{AssignedBlake2bWord, Blake2bWord};

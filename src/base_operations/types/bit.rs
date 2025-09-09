@@ -1,8 +1,8 @@
 use super::*;
 use ff::PrimeField;
-use halo2_proofs::circuit::{Region, Value};
-use halo2_proofs::plonk::{Advice, Column, Error};
-use halo2_proofs::utils::rational::Rational;
+use midnight_proofs::circuit::{Region, Value};
+use midnight_proofs::plonk::{Advice, Column, Error};
+use midnight_proofs::utils::rational::Rational;
 
 /// The inner type of AssignedBit. A wrapper around `bool`
 #[derive(Copy, Clone, Debug)]
@@ -57,7 +57,7 @@ impl<F: PrimeField> AssignedBit<F> {
 }
 
 #[cfg(test)]
-use halo2_proofs::circuit::Cell;
+use midnight_proofs::circuit::Cell;
 #[cfg(test)]
 impl<F: PrimeField> AssignedBit<F> {
     pub(crate) fn cell(&self) -> Cell {

@@ -1,9 +1,9 @@
 use blake2_rfc::blake2b::blake2b;
 use blake2b_halo2::usage_utils::blake2b_circuit::Blake2bCircuit;
-use halo2_proofs::circuit::Value;
-use halo2_proofs::dev::cost_model::{from_circuit_to_cost_model_options, CostOptions};
-use halo2_proofs::dev::MockProver;
-use halo2_proofs::halo2curves::bn256::Fr;
+use midnight_proofs::circuit::Value;
+use midnight_proofs::dev::cost_model::{from_circuit_to_cost_model_options, CostOptions};
+use midnight_proofs::dev::MockProver;
+use midnight_proofs::halo2curves::bn256::Fr;
 use hex;
 use serde::Deserialize;
 use std::cmp::max;

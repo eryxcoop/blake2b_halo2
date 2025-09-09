@@ -1,8 +1,8 @@
 use super::*;
 use ff::PrimeField;
-use halo2_proofs::circuit::{AssignedCell, Cell, Region, Value};
-use halo2_proofs::plonk::{Advice, Column, Error};
-use halo2_proofs::utils::rational::Rational;
+use midnight_proofs::circuit::{AssignedCell, Cell, Region, Value};
+use midnight_proofs::plonk::{Advice, Column, Error};
+use midnight_proofs::utils::rational::Rational;
 use std::ops::{BitXor, Sub};
 
 /// The inner type of AssignedBlake2bWord. A wrapper around `u64`

@@ -2,7 +2,7 @@ use super::*;
 mod negate_circuit;
 
 use crate::tests::test_negate::negate_circuit::NegateCircuit;
-use halo2_proofs::dev::MockProver;
+use midnight_proofs::dev::MockProver;
 
 #[test]
 fn test_negate_zero_should_result_in_max_number() {

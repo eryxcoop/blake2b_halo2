@@ -1,6 +1,6 @@
 use super::*;
 use crate::tests::tests_xor::xor_circuit::XorCircuit;
-use halo2_proofs::dev::MockProver;
+use midnight_proofs::dev::MockProver;
 use rand::Rng;
 
 #[test]

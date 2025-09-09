@@ -2,8 +2,8 @@ use crate::tests::Decompose8Config;
 use crate::base_operations::negate::NegateConfig;
 use crate::base_operations::types::blake2b_word::Blake2bWord;
 use ff::PrimeField;
-use halo2_proofs::circuit::{Layouter, SimpleFloorPlanner, Value};
-use halo2_proofs::plonk::{Advice, Circuit, Column, ConstraintSystem, Error, Fixed};
+use midnight_proofs::circuit::{Layouter, SimpleFloorPlanner, Value};
+use midnight_proofs::plonk::{Advice, Circuit, Column, ConstraintSystem, Error, Fixed};
 use std::array;
 use std::marker::PhantomData;
 

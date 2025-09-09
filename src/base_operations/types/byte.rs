@@ -1,8 +1,8 @@
 use std::ops::BitXor;
 use ff::PrimeField;
-use halo2_proofs::circuit::{Cell, Region, Value};
-use halo2_proofs::plonk::{Advice, Column, Error};
-use halo2_proofs::utils::rational::Rational;
+use midnight_proofs::circuit::{Cell, Region, Value};
+use midnight_proofs::plonk::{Advice, Column, Error};
+use midnight_proofs::utils::rational::Rational;
 use super::*;
 
 /// The inner type of AssignedByte. A wrapper around `u8`

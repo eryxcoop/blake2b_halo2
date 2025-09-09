@@ -1,5 +1,5 @@
 use super::*;
-use halo2_proofs::halo2curves::bn256::Fr;
+use midnight_proofs::halo2curves::bn256::Fr;
 use ff::Field;
 use std::marker::PhantomData;
 use crate::base_operations::{

@@ -1,9 +1,9 @@
 //! Circuit runner module for creating Blake2bCircuit, synthesizing, proving and verifying it.
 //! It can work with both Mock Prover and Real Prover.
 
-use halo2_proofs::dev::MockProver;
-use halo2_proofs::halo2curves::bn256::Fr;
-use halo2_proofs::{
+use midnight_proofs::dev::MockProver;
+use midnight_proofs::halo2curves::bn256::Fr;
+use midnight_proofs::{
     halo2curves::bn256::{Bn256},
     plonk::{create_proof, keygen_pk, keygen_vk_with_k, prepare, ProvingKey, VerifyingKey},
     poly::{
@@ -12,8 +12,8 @@ use halo2_proofs::{
     },
     transcript::{CircuitTranscript, Transcript},
 };
-use halo2_proofs::circuit::Value;
-use halo2_proofs::plonk::Error;
+use midnight_proofs::circuit::Value;
+use midnight_proofs::plonk::Error;
 use crate::usage_utils::blake2b_circuit::Blake2bCircuit;
 
 /// The inputs for the Blake2bCircuit. This helps us to avoid passing multiple parameters to the

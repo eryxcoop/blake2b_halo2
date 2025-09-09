@@ -1,7 +1,7 @@
 use super::*;
 use crate::tests::Decompose8Config;
-use halo2_proofs::circuit::SimpleFloorPlanner;
-use halo2_proofs::plonk::Circuit;
+use midnight_proofs::circuit::SimpleFloorPlanner;
+use midnight_proofs::plonk::Circuit;
 use std::array;
 
 pub(crate) struct AdditionMod64Circuit8Bits<F: PrimeField> {

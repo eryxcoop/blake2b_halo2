@@ -1,7 +1,7 @@
 use criterion::{BenchmarkGroup, SamplingMode};
 use criterion::measurement::WallTime;
-use halo2_proofs::circuit::Value;
-use halo2_proofs::halo2curves::bn256::Fr;
+use midnight_proofs::circuit::Value;
+use midnight_proofs::halo2curves::bn256::Fr;
 use rand::Rng;
 use blake2b_halo2::usage_utils::circuit_runner::Blake2bCircuitInputs;
 use blake2_rfc::blake2b::blake2b;

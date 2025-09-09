@@ -4,12 +4,12 @@
 #![deny(rust_2018_idioms)]
 
 
-use halo2_proofs::{circuit::Layouter, plonk::ConstraintSystem};
+use midnight_proofs::{circuit::Layouter, plonk::ConstraintSystem};
 
 use ff::PrimeField;
-use halo2_proofs::circuit::{Region, Value};
-use halo2_proofs::plonk::{Advice, Column, Error, Expression, Selector, TableColumn};
-use halo2_proofs::poly::Rotation;
+use midnight_proofs::circuit::{Region, Value};
+use midnight_proofs::plonk::{Advice, Column, Error, Expression, Selector, TableColumn};
+use midnight_proofs::poly::Rotation;
 
 pub(crate) mod base_operations;
 

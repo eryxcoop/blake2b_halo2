@@ -2,8 +2,8 @@ use super::*;
 use crate::tests::Decompose8Config;
 use crate::base_operations::generic_limb_rotation::LimbRotation;
 use ff::PrimeField;
-use halo2_proofs::circuit::SimpleFloorPlanner;
-use halo2_proofs::plonk::Circuit;
+use midnight_proofs::circuit::SimpleFloorPlanner;
+use midnight_proofs::plonk::Circuit;
 use std::array;
 
 #[derive(Clone)]

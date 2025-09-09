@@ -6,7 +6,7 @@
 /// All these types are created in a context where its value has been constrained by a circuit
 /// restriction to be in range.
 use ff::PrimeField;
-use halo2_proofs::circuit::AssignedCell;
+use midnight_proofs::circuit::AssignedCell;
 use num_bigint::BigUint;
 
 /// Native type for an [AssignedCell] that hasn't been constrained yet
