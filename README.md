@@ -1,5 +1,8 @@
 # blake2b_halo2
 This repo holds an optimized Blake2b implementation in Halo2 prover.
+> ⚠️ **Security Warning**  
+> This code has **not been audited**. Use at your own risk.  
+
 
 * We are using [this halo2 version](https://github.com/input-output-hk/halo2) to build our circuits.
 * The cargo version should be 1.84.0 or higher (no need for nightly).
