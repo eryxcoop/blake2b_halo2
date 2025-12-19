@@ -7,8 +7,8 @@ edition = "2021"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1"
 ff = "0.13"
-midnight-curves = { git = "https://github.com/midnightntwrk/midnight-zk.git", tag = "midnight-curves-v0.2.0" }
-midnight-proofs = { git = "https://github.com/midnightntwrk/midnight-zk.git", tag = "midnight-proofs-v0.6.0", default-features = false, features = [
+midnight-curves = "0.2.0"
+midnight-proofs = { version = "0.7.0", default-features = false, features = [
   "circuit-params",
   "committed-instances",
 ] }
