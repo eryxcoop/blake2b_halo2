@@ -531,8 +531,7 @@ dependencies = [
 [[package]]
 name = "midnight-proofs"
 version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c977f57dc14235eb02ea9579f6bee1996b0edd50efaa5ab7ad55cb87966c0d7d"
+source = "git+https://github.com/midnightntwrk/midnight-zk?branch=iquerejeta%2Fbench_tests#239d67335ee44c4868ee0a5291ecca1d678590ac"
 dependencies = [
  "blake2b_simd",
  "ff",
