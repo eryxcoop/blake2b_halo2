@@ -211,7 +211,7 @@ fn range_check_for_limb<F: PrimeField>(
     meta.lookup(format!("lookup limb {limb:?}"), |meta| {
         let limb: Expression<F> = meta.query_advice(*limb, Rotation::cur());
         let q_range = meta.query_selector(*q_range);
-        vec![(q_range * limb, *t_range)]
+        vec![(vec![q_range * limb], *t_range)]
     });
 }
 
