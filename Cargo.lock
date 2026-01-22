@@ -531,7 +531,7 @@ dependencies = [
 [[package]]
 name = "midnight-proofs"
 version = "0.7.0"
-source = "git+https://github.com/midnightntwrk/midnight-zk?branch=iquerejeta%2Fbench_tests#239d67335ee44c4868ee0a5291ecca1d678590ac"
+source = "git+https://github.com/midnightntwrk/midnight-zk?branch=iquerejeta%2Flogup_selector#5d8d5a4729589401cb57251d9676916eb6e54502"
 dependencies = [
  "blake2b_simd",
  "ff",
