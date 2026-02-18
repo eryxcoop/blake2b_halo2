@@ -531,7 +531,7 @@ dependencies = [
 [[package]]
 name = "midnight-proofs"
 version = "0.7.0"
-source = "git+https://github.com/midnightntwrk/midnight-zk?branch=iquerejeta%2Flogup_selector#5d8d5a4729589401cb57251d9676916eb6e54502"
+source = "git+https://github.com/midnightntwrk/midnight-zk?rev=3b94a03381baad4d12a57b112c0ee61addbb89ec#3b94a03381baad4d12a57b112c0ee61addbb89ec"
 dependencies = [
  "blake2b_simd",
  "ff",
@@ -542,6 +542,7 @@ dependencies = [
  "rand_chacha",
  "rand_core",
  "rayon",
+ "rustc-hash",
  "serde",
  "serde_derive",
  "tracing",
@@ -772,6 +773,12 @@ name = "regex-syntax"
 version = "0.8.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7a2d987857b319362043e95f5353c0535c1f58eec5336fdfcf626430af7def58"
+
+[[package]]
+name = "rustc-hash"
+version = "2.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "357703d41365b4b27c590e3ed91eabb1b663f07c4c084095e60cbed4362dff0d"
 
 [[package]]
 name = "rustversion"
