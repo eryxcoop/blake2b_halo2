@@ -195,23 +195,9 @@ pub(crate) fn create_range_check_gate<F: PrimeField>(
     q_range: Selector,
     limbs: [Column<Advice>; 8],
 ) {
-    for limb in limbs {
-        range_check_for_limb(meta, &limb, &q_range, &t_range);
-    }
-}
-
-/// Creates the lookup of an 8-bit limb. It uses the [t-range] table, which is filled in the
-/// [populate_lookup_table()] method, and the [q_range], which is turned on whenever needed
-fn range_check_for_limb<F: PrimeField>(
-    meta: &mut ConstraintSystem<F>,
-    limb: &Column<Advice>,
-    q_range: &Selector,
-    t_range: &TableColumn,
-) {
-    meta.lookup(format!("lookup limb {limb:?}"), None, |meta| {
-        let q_range = meta.query_selector(*q_range);
-        let limb: Expression<F> = meta.query_advice(*limb, Rotation::cur());
-        vec![(q_range * limb, *t_range)]
+    meta.batched_lookup("lookup limbs", Some(q_range), |meta| {
+        let limb = limbs.iter().map(|limb| meta.query_advice(*limb, Rotation::cur())).collect();
+        vec![(limb, t_range)]
     });
 }
 
