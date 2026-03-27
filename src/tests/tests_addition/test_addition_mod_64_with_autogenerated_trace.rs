@@ -44,6 +44,6 @@ fn run_test_for_addition(a: u64, b: u64, expected_result: u64, expected_carry: u
         blake2b_value_for(expected_result),
         blake2b_value_for(expected_carry),
     );
-    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+    let prover = MockProver::run(&circuit, vec![]).unwrap();
     prover.verify().unwrap();
 }

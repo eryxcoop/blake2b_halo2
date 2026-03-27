@@ -15,7 +15,7 @@ fn test_positive_rotate_right_32() {
 
     let circuit = LimbRotationCircuit::<Fq, 32>::new_for_trace(valid_rotation_32_trace);
 
-    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+    let prover = MockProver::run(&circuit, vec![]).unwrap();
     prover.verify().unwrap();
 }
 
@@ -31,7 +31,7 @@ fn test_positive_random_rotate_right_32() {
 
     let circuit = LimbRotationCircuit::<Fq, 32>::new_for_trace(valid_rotation_32_trace);
 
-    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+    let prover = MockProver::run(&circuit, vec![]).unwrap();
     prover.verify().unwrap();
 }
 
@@ -46,7 +46,7 @@ fn test_negative_rotate_right_32() {
 
     let circuit = LimbRotationCircuit::<Fq, 32>::new_for_trace(invalid_rotation_32_trace);
 
-    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+    let prover = MockProver::run(&circuit, vec![]).unwrap();
     prover.verify().unwrap();
 }
 
@@ -61,7 +61,7 @@ fn test_negative_correct_rotation32_wrong_decomposition() {
 
     let circuit = LimbRotationCircuit::<Fq, 32>::new_for_trace(invalid_rotation_32_trace);
 
-    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+    let prover = MockProver::run(&circuit, vec![]).unwrap();
     prover.verify().unwrap();
 }
 
@@ -74,7 +74,7 @@ fn test_positive_rotate_right_24_limbs() {
 
     let circuit = LimbRotationCircuit::<Fq, 24>::new_for_trace(valid_rotation_trace);
 
-    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+    let prover = MockProver::run(&circuit, vec![]).unwrap();
     prover.verify().unwrap();
 }
 
@@ -90,7 +90,7 @@ fn test_positive_random_rotate_right_24() {
 
     let circuit = LimbRotationCircuit::<Fq, 24>::new_for_trace(valid_rotation_24_trace);
 
-    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+    let prover = MockProver::run(&circuit, vec![]).unwrap();
     prover.verify().unwrap();
 }
 
@@ -103,7 +103,7 @@ fn test_negative_rotate_right_24_limbs() {
 
     let circuit = LimbRotationCircuit::<Fq, 24>::new_for_trace(valid_rotation_trace);
 
-    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+    let prover = MockProver::run(&circuit, vec![]).unwrap();
     prover.verify().unwrap();
 }
 
@@ -118,7 +118,7 @@ fn test_negative_correct_rotation24_wrong_decomposition() {
 
     let circuit = LimbRotationCircuit::<Fq, 24>::new_for_trace(invalid_rotation_24_trace);
 
-    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+    let prover = MockProver::run(&circuit, vec![]).unwrap();
     prover.verify().unwrap();
 }
 
@@ -131,7 +131,7 @@ fn test_positive_rotate_right_16_limbs() {
 
     let circuit = LimbRotationCircuit::<Fq, 16>::new_for_trace(valid_rotation_trace);
 
-    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+    let prover = MockProver::run(&circuit, vec![]).unwrap();
     prover.verify().unwrap();
 }
 
@@ -147,7 +147,7 @@ fn test_positive_random_rotate_right_16() {
 
     let circuit = LimbRotationCircuit::<Fq, 16>::new_for_trace(valid_rotation_16_trace);
 
-    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+    let prover = MockProver::run(&circuit, vec![]).unwrap();
     prover.verify().unwrap();
 }
 
@@ -160,7 +160,7 @@ fn test_negative_rotate_right_16_limbs() {
 
     let circuit = LimbRotationCircuit::<Fq, 16>::new_for_trace(valid_rotation_trace);
 
-    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+    let prover = MockProver::run(&circuit, vec![]).unwrap();
     prover.verify().unwrap();
 }
 
@@ -175,6 +175,6 @@ fn test_negative_correct_rotation16_wrong_decomposition() {
 
     let circuit = LimbRotationCircuit::<Fq, 16>::new_for_trace(invalid_rotation_16_trace);
 
-    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+    let prover = MockProver::run(&circuit, vec![]).unwrap();
     prover.verify().unwrap();
 }

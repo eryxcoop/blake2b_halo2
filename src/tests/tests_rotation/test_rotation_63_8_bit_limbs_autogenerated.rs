@@ -8,7 +8,7 @@ fn test_rot_63_chip_should_know_how_to_create_trace_from_inputs() {
         Value::known(Blake2bWord(1u8.into())),
         Value::known(Blake2bWord(2u8.into())),
     );
-    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+    let prover = MockProver::run(&circuit, vec![]).unwrap();
     assert_eq!(prover.verify(), Ok(()));
 }
 
@@ -19,6 +19,6 @@ fn test_rot_63_chip_should_panic_over_a_wrong_result() {
         Value::known(Blake2bWord(1u8.into())),
         Value::known(Blake2bWord(3u8.into())),
     );
-    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+    let prover = MockProver::run(&circuit, vec![]).unwrap();
     assert_eq!(prover.verify(), Ok(()));
 }

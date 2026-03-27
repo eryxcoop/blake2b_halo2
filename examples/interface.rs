@@ -90,7 +90,7 @@ fn run_blake2b_halo2(input_bytes: Vec<u8>, key_bytes: Vec<u8>, expected_output: 
 
     let k = compute_k(amount_of_blocks(&input_bytes, &key_bytes));
     // let options = from_circuit_to_cost_model_options(Some(k), &circuit, 1);
-    let prover = MockProver::run(k, &circuit, vec![expected_output_fields]).unwrap();
+    let prover = MockProver::run(&circuit, vec![expected_output_fields]).unwrap();
     prover.verify().unwrap();
 
     // options
