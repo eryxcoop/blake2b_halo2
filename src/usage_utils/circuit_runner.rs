@@ -48,7 +48,7 @@ impl CircuitRunner {
         expected_output_fields: &[Fq],
         circuit: &Blake2bCircuit<Fq>,
     ) -> MockProver<Fq> {
-        MockProver::run(17, circuit, vec![expected_output_fields.to_vec()]).unwrap()
+        MockProver::run(circuit, vec![expected_output_fields.to_vec()]).unwrap()
     }
 
     /// Create circuit for the given inputs

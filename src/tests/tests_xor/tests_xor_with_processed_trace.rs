@@ -14,7 +14,7 @@ fn test_positive_random_duplicate_xor() {
     ];
 
     let circuit = XorCircuit::<Fq>::new_for_trace(valid_xor_trace);
-    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+    let prover = MockProver::run(&circuit, vec![]).unwrap();
 
     prover.verify().unwrap();
 }
@@ -30,7 +30,7 @@ fn test_positive_random_xor_with_0() {
     ];
 
     let circuit = XorCircuit::<Fq>::new_for_trace(valid_xor_trace);
-    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+    let prover = MockProver::run(&circuit, vec![]).unwrap();
 
     prover.verify().unwrap();
 }
@@ -47,7 +47,7 @@ fn test_positive_random_xor() {
     ];
 
     let circuit = XorCircuit::<Fq>::new_for_trace(valid_xor_trace);
-    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+    let prover = MockProver::run(&circuit, vec![]).unwrap();
 
     prover.verify().unwrap();
 }
@@ -63,7 +63,7 @@ fn test_xor_badly_done() {
 
     let circuit = XorCircuit::<Fq>::new_for_trace(incorrect_xor_trace);
 
-    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+    let prover = MockProver::run(&circuit, vec![]).unwrap();
     prover.verify().unwrap();
 }
 
@@ -78,7 +78,7 @@ fn test_incorrect_xor_in_fifth_limb() {
 
     let circuit = XorCircuit::<Fq>::new_for_trace(incorrect_xor_trace);
 
-    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+    let prover = MockProver::run(&circuit, vec![]).unwrap();
     prover.verify().unwrap();
 }
 
@@ -96,7 +96,7 @@ fn test_bad_decomposition_in_8_bit_limbs() {
 
     let circuit = XorCircuit::<Fq>::new_for_trace(badly_decomposed_xor_trace);
 
-    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+    let prover = MockProver::run(&circuit, vec![]).unwrap();
     prover.verify().unwrap();
 }
 
@@ -123,7 +123,7 @@ fn test_bad_range_check_limb_u8() {
 
     let circuit = XorCircuit::<Fq>::new_for_trace(badly_decomposed_xor_trace);
 
-    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+    let prover = MockProver::run(&circuit, vec![]).unwrap();
     prover.verify().unwrap();
 }
 

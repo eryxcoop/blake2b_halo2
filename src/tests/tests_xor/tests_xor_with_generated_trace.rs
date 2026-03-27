@@ -24,7 +24,7 @@ fn test_xor_operation(a: u64, b: u64, result: u64) {
         blake2b_value_for(b),
         blake2b_value_for(result),
     );
-    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+    let prover = MockProver::run(&circuit, vec![]).unwrap();
 
     prover.verify().unwrap();
 }

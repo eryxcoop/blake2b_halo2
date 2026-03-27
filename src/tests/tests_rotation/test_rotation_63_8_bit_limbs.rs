@@ -5,7 +5,7 @@ use midnight_proofs::dev::MockProver;
 #[test]
 fn test_positive_rotate_right_63() {
     let circuit = Rotation63Circuit8bitLimbs::<Fq>::new_for_trace(valid_rotation_63_trace_8bit());
-    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+    let prover = MockProver::run(&circuit, vec![]).unwrap();
     prover.verify().unwrap();
 }
 
@@ -17,7 +17,7 @@ fn test_negative_rotate_right_63() {
     invalid_rotation_trace[0][0] = one() + invalid_rotation_trace[0][0];
 
     let circuit = Rotation63Circuit8bitLimbs::<Fq>::new_for_trace(invalid_rotation_trace);
-    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+    let prover = MockProver::run(&circuit, vec![]).unwrap();
     prover.verify().unwrap();
 }
 
@@ -28,7 +28,7 @@ fn test_badly_decomposed_rotate_right_63() {
     invalid_rotation_trace[1][2] = one();
 
     let circuit = Rotation63Circuit8bitLimbs::<Fq>::new_for_trace(invalid_rotation_trace);
-    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+    let prover = MockProver::run(&circuit, vec![]).unwrap();
     prover.verify().unwrap();
 }
 
