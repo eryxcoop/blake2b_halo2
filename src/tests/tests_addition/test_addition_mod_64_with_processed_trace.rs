@@ -35,7 +35,7 @@ fn test_positive_addition_with_0() {
         ],
     ];
     let circuit = AdditionMod64Circuit8Bits::<Fq>::new_for_trace(trace);
-    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+    let prover = MockProver::run(&circuit, vec![]).unwrap();
     prover.verify().unwrap();
 
     let trace = [
@@ -64,12 +64,12 @@ fn test_positive_addition_with_0() {
         ],
     ];
     let circuit = AdditionMod64Circuit8Bits::<Fq>::new_for_trace(trace);
-    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+    let prover = MockProver::run(&circuit, vec![]).unwrap();
     prover.verify().unwrap();
 
     let trace = [generate_row_8bits::<u64, Fq>(0); 3];
     let circuit = AdditionMod64Circuit8Bits::<Fq>::new_for_trace(trace);
-    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+    let prover = MockProver::run(&circuit, vec![]).unwrap();
     prover.verify().unwrap();
 }
 
@@ -83,7 +83,7 @@ fn test_negative_addition() {
     ];
 
     let circuit = AdditionMod64Circuit8Bits::<Fq>::new_for_trace(trace);
-    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+    let prover = MockProver::run(&circuit, vec![]).unwrap();
     prover.verify().unwrap();
 }
 
@@ -98,7 +98,7 @@ fn test_negative_random_addition() {
     ];
 
     let circuit = AdditionMod64Circuit8Bits::<Fq>::new_for_trace(trace);
-    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+    let prover = MockProver::run(&circuit, vec![]).unwrap();
     prover.verify().unwrap();
 }
 
@@ -116,7 +116,7 @@ fn test_negative_sum_correct_but_no_carry_tracked() {
         generate_row_8bits::<u128, Fq>(x + max_u64),
     ];
     let circuit = AdditionMod64Circuit8Bits::<Fq>::new_for_trace(trace);
-    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+    let prover = MockProver::run(&circuit, vec![]).unwrap();
     prover.verify().unwrap();
 }
 
@@ -131,7 +131,7 @@ fn test_negative_sum_correct_but_unnecessary_carry() {
     ];
     trace[1][1] = value_for(1u8);
     let circuit = AdditionMod64Circuit8Bits::<Fq>::new_for_trace(trace);
-    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+    let prover = MockProver::run(&circuit, vec![]).unwrap();
     prover.verify().unwrap();
 }
 
@@ -148,6 +148,6 @@ fn test_negative_sum_correct_but_decomposition_exceedes_range_check() {
     trace[0][1] = value_for(1u16 << 8);
     trace[0][2] = value_for(0u8);
     let circuit = AdditionMod64Circuit8Bits::<Fq>::new_for_trace(trace);
-    let prover = MockProver::run(17, &circuit, vec![]).unwrap();
+    let prover = MockProver::run(&circuit, vec![]).unwrap();
     prover.verify().unwrap();
 }

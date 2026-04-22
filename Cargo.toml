@@ -16,6 +16,7 @@ midnight-proofs = { git = "https://github.com/midnightntwrk/midnight-zk", branch
   "circuit-params",
   "committed-instances",
 ] }
+blake2b_simd = "1"
 
 rand = "0.8"
 hex = "0.4.3"

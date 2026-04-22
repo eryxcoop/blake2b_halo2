@@ -11,6 +11,7 @@ use midnight_proofs::{
     },
     transcript::{CircuitTranscript, Transcript},
 };
+use blake2b_simd::State as Blake2bState;
 use midnight_proofs::circuit::Value;
 use midnight_proofs::plonk::Error;
 use crate::usage_utils::blake2b_circuit::Blake2bCircuit;
@@ -48,7 +49,7 @@ impl CircuitRunner {
         expected_output_fields: &[Fq],
         circuit: &Blake2bCircuit<Fq>,
     ) -> MockProver<Fq> {
-        MockProver::run(17, circuit, vec![expected_output_fields.to_vec()]).unwrap()
+        MockProver::run(0, circuit, vec![expected_output_fields.to_vec()]).unwrap()
     }
 
     /// Create circuit for the given inputs
@@ -151,7 +152,7 @@ impl CircuitRunner {
         params: &ParamsKZG<Bls12>,
         pk: &ProvingKey<Fq, KZGCommitmentScheme<Bls12>>,
     ) -> Vec<u8> {
-        let mut transcript = CircuitTranscript::init();
+        let mut transcript: CircuitTranscript<Blake2bState> = CircuitTranscript::init();
         create_proof(
             params,
             pk,
@@ -172,7 +173,8 @@ impl CircuitRunner {
         pk: ProvingKey<Fq, KZGCommitmentScheme<Bls12>>,
         proof: &[u8],
     ) -> Result<(), Error> {
-        let mut transcript = CircuitTranscript::init_from_bytes(proof);
+        let mut transcript: CircuitTranscript<Blake2bState> =
+            CircuitTranscript::init_from_bytes(proof);
 
         assert!(prepare::<Fq, KZGCommitmentScheme<Bls12>, _>(
             pk.get_vk(),
