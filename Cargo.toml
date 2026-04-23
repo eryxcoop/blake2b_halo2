@@ -26,6 +26,9 @@ num-bigint = "0.4"
 criterion = { version = "0.5.1", features = ["html_reports", "csv_output"] }
 blake2-rfc = "0.2.18"
 
+[patch.crates-io]
+midnight-curves = { git = "https://github.com/midnightntwrk/midnight-zk", branch = "iquerejeta/ecdsa_pop" }
+
 [profile.bench]
 lto = "fat"
 
