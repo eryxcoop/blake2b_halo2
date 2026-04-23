@@ -541,7 +541,7 @@ dependencies = [
 [[package]]
 name = "midnight-proofs"
 version = "0.7.0"
-source = "git+https://github.com/midnightntwrk/midnight-zk?branch=main#95bac2ab48d5447756a6816067c032345cac1193"
+source = "git+https://github.com/midnightntwrk/midnight-zk?branch=iquerejeta%2Fecdsa_pop#53132416a0eac4e71a6e7a948545542e7a38e211"
 dependencies = [
  "blake2b_simd",
  "ff",
