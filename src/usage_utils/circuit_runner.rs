@@ -159,8 +159,8 @@ impl CircuitRunner {
             &[circuit],
             0,
             &[&[expected_output_fields]],
-            rand::thread_rng(),
             &mut transcript,
+            rand::thread_rng(),
         )
         .expect("Proof generation should work");
         transcript.finalize()
