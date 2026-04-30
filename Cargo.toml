@@ -11,8 +11,8 @@ license = "Apache-2.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1"
 ff = "0.13"
-midnight-curves = "0.2.0"
-midnight-proofs = { git = "https://github.com/midnightntwrk/midnight-zk", branch = "next", default-features = false, features = [
+midnight-curves = "0.3.0"
+midnight-proofs = { version = "0.8.0", default-features = false, features = [
   "circuit-params",
   "committed-instances",
 ] }
