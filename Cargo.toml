@@ -11,8 +11,8 @@ license = "Apache-2.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1"
 ff = "0.13"
-midnight-curves = "0.2.0"
-midnight-proofs = { git = "https://github.com/midnightntwrk/midnight-zk", branch = "next", default-features = false, features = [
+midnight-curves = "0.3.0"
+midnight-proofs = { version = "0.8.0", default-features = false, features = [
   "circuit-params",
   "committed-instances",
 ] }
@@ -25,6 +25,10 @@ num-bigint = "0.4"
 [dev-dependencies]
 criterion = { version = "0.5.1", features = ["html_reports", "csv_output"] }
 blake2-rfc = "0.2.18"
+
+[patch.crates-io]
+midnight-curves = { git = "https://github.com/midnightntwrk/midnight-zk", branch = "iquerejeta/v2" }
+midnight-proofs = { git = "https://github.com/midnightntwrk/midnight-zk", branch = "iquerejeta/v2" }
 
 [profile.bench]
 lto = "fat"
