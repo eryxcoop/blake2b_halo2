@@ -156,9 +156,9 @@ impl CircuitRunner {
         create_proof(
             params,
             pk,
-            &[circuit],
+            &circuit,
             0,
-            &[&[expected_output_fields]],
+            &[expected_output_fields],
             &mut transcript,
             rand::thread_rng(),
         )
@@ -178,8 +178,8 @@ impl CircuitRunner {
 
         assert!(prepare::<Fq, KZGCommitmentScheme<Bls12>, _>(
             pk.get_vk(),
-            &[&[]],
-            &[&[expected_output_fields]],
+            &[],
+            &[expected_output_fields],
             &mut transcript,
         )?
         .verify(&params.verifier_params())
